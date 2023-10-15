@@ -133,29 +133,26 @@ class MultichannelDataset(Dataset):
         stacked_feats = torch.stack(stacked_feats)
         return stacked_feats
 
+    def pad(self, sequence, max_length, padding_idx=0):
+        if len(sequence) < max_length:
+            sequence = sequence + [padding_idx] * (max_length - len(sequence))
+        else:
+            sequence = sequence[:max_length]
+        return sequence
 
     def collator(self, samples):
         assert samples is not None
         max_input_length = max([len(s['input_ids']) for s in samples])
         max_input_length = min(max_input_length, self.max_words)
-        input_ids = torch.tensor([
-            s['input_ids'] + [0] * (max_input_length - len(s['input_ids']))
-            for s in samples
-        ])
+        input_ids = torch.tensor([self.pad(s['input_ids'], max_input_length) for s in samples])
 
         max_attention_length = max([len(s['attention_mask']) for s in samples])
         max_attention_length = min(max_attention_length, self.max_words)
-        attention_mask = torch.tensor([
-            s['attention_mask'] + [0] * (max_attention_length - len(s['attention_mask']))
-            for s in samples
-        ])
+        attention_mask = torch.tensor([self.pad(s['attention_mask'], max_attention_length) for s in samples])
 
         max_target_length = max([len(s['labels']) for s in samples])
         max_target_length = min(max_target_length, self.max_words)
-        labels = torch.tensor([
-            s['labels'] + [0] * (max_target_length - len(s['labels'])) 
-            for s in samples
-        ])
+        labels = torch.tensor([self.pad(s['labels'], max_target_length) for s in samples])
 
         inputs_embeds = torch.stack([s['inputs_embeds'] for s in samples])
         return {
