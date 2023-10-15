@@ -43,9 +43,8 @@ python src/transformers/models/llama/convert_llama_weights_to_hf.py \
 ```
 
 ## Train
-```
 modify scripts/single_finetune.sh
 audio_encoder_path model_name 
-
+```bash
 bash scripts/single_finetune.sh
 ```
