@@ -31,13 +31,10 @@ class alpaca_dataset:
 @dataclass
 class custom_dataset:
     dataset: str = "custom_dataset"
-    file: str = "src/llama_recipes/datasets/multichannel_dataset.py:get_multichannel_dataset"
+    file: str = "src/llama_recipes/datasets/audio_dataset.py:get_audio_dataset"
     train_split: str = "train"
     test_split: str = "eval"
-    qa_path: str = '/home/zhisheng/data/SpatialSound/closed-end/cls'
-    ir_root: str = '/home/zhisheng/data/SpatialSound/reverberation'
-    audioset_root: str = '/saltpool0/data/AudioSet/audio'
-    channel_type: str = 'BINAURAL'
+
     max_words: int = 80
     target_length: int = 1024
-    reverb_dataset: str = 'mp3d'
+    # add whatever other parameters you need here
