@@ -2,26 +2,24 @@
 # This software may be used and distributed according to the terms of the Llama 2 Community License Agreement.
 
 import os
+os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
 from pkg_resources import packaging
 
 import fire
 import torch
+from torch import nn
 import torch.distributed as dist
 import torch.optim as optim
-from peft import get_peft_model, prepare_model_for_int8_training
+from peft import get_peft_model, prepare_model_for_kbit_training
 from torch.distributed.fsdp import (
     FullyShardedDataParallel as FSDP,
 )
 from torch.distributed.fsdp.fully_sharded_data_parallel import CPUOffload
 from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import DistributedSampler
-from transformers import (
-    LlamaForCausalLM,
-    LlamaTokenizer,
-    LlamaConfig,
-    default_data_collator,
-)
-from transformers.models.llama.modeling_llama import LlamaDecoderLayer
+
+from llama_recipes.llama import LlamaForCausalLM, LlamaTokenizer, LlamaConfig
+from llama_recipes.llama.modeling_llama import LlamaDecoderLayer
 
 from llama_recipes.configs import fsdp_config, train_config
 from llama_recipes.policies import AnyPrecisionAdamW, apply_fsdp_checkpointing
@@ -93,12 +91,45 @@ def main(**kwargs):
                 model = LlamaForCausalLM(llama_config)
 
     else:
-        model = LlamaForCausalLM.from_pretrained(
+        model, loading_info = LlamaForCausalLM.from_pretrained(
             train_config.model_name,
             load_in_8bit=True if train_config.quantization else None,
             device_map="auto" if train_config.quantization else None,
             use_cache=use_cache,
+            output_loading_info=True,
         )
+    
+    # initialize missing keys
+    for name, module in model.named_modules():
+        if name.startswith('audio'):
+            if isinstance(module, nn.Parameter):
+                module.data = module.data.float()
+            else:
+                if hasattr(module, 'weight') and module.weight is not None:
+                    module.weight.data = module.weight.data.float()
+                if hasattr(module, 'bias') and module.bias is not None:
+                    module.bias.data = module.bias.data.float()
+
+            if isinstance(module, nn.Linear):
+                nn.init.xavier_uniform_(module.weight)
+                if module.bias is not None:
+                    nn.init.constant_(module.bias, 0)
+            elif isinstance(module, nn.Conv2d):
+                nn.init.kaiming_uniform_(module.weight, mode='fan_out', nonlinearity='relu')
+                if module.bias is not None:
+                    nn.init.constant_(module.bias, 0)
+            elif isinstance(module, (nn.LayerNorm, nn.BatchNorm2d)):
+                nn.init.constant_(module.weight, 1)
+                nn.init.constant_(module.bias, 0)
+            elif isinstance(module, nn.Embedding):
+                nn.init.uniform_(module.weight)
+
+
+    #! Load the pre-trained audio encoder
+    print(f"Load pre-trained checkpoint from: {train_config.audio_encoder}" )
+    audio_encoder_checkpoint = torch.load(train_config.audio_encoder, map_location='cpu')
+    model.audio_encoder.load_state_dict(audio_encoder_checkpoint['model'], strict=False)
+
     if train_config.enable_fsdp and train_config.use_fast_kernels:
         """
         For FSDP and FSDP+PEFT, setting 'use_fast_kernels' will enable
@@ -114,8 +145,7 @@ def main(**kwargs):
 
     # Prepare the model for int8 training if quantization is enabled
     if train_config.quantization:
-        model = prepare_model_for_int8_training(model)
-
+        model = prepare_model_for_kbit_training(model)
     # Convert the model to bfloat16 if fsdp and pure_bf16 is enabled
     if train_config.enable_fsdp and fsdp_config.pure_bf16:
         model.to(torch.bfloat16)
@@ -123,17 +153,26 @@ def main(**kwargs):
     # Load the tokenizer and add special tokens
     tokenizer = LlamaTokenizer.from_pretrained(train_config.model_name)
     tokenizer.add_special_tokens(
-            {
-
-                "pad_token": "<PAD>",
-            }
-        )
+        {
+            "pad_token": "<PAD>",
+            "sep_token": "<SEP>",   # "Hello, how are you? <SEP> I am fine."
+            "cls_token": "<CLS>",
+            "mask_token": "<MASK>"
+        }
+    )
     if train_config.use_peft:
         peft_config = generate_peft_config(train_config, kwargs)
-        model = get_peft_model(model, peft_config)
+        model = get_peft_model(model, peft_config) # modify training part
+        train_proj_name = ['audio_encoder_proj', 'audio_encoder_proj_norm', 'audio_query', 
+                           'audio_blocks', 'audio_proj', 'audio_proj_norm',]
+        for name, para in model.named_parameters():
+            for train_name in train_proj_name:
+                if train_name in name:
+                    para.requires_grad = True
+
         model.print_trainable_parameters()
 
-    #setting up FSDP if enable_fsdp is enabled
+    # setting up FSDP if enable_fsdp is enabled
     if train_config.enable_fsdp:
         if not train_config.use_peft and train_config.freeze_layers:
 
@@ -177,7 +216,7 @@ def main(**kwargs):
         split="test",
     )
     if not train_config.enable_fsdp or rank == 0:
-            print(f"--> Validation Set Length = {len(dataset_val)}")
+        print(f"--> Validation Set Length = {len(dataset_val)}")
 
     train_sampler = None
     val_sampler = None
@@ -203,7 +242,7 @@ def main(**kwargs):
         pin_memory=True,
         sampler=train_sampler if train_sampler else None,
         drop_last=True,
-        collate_fn=default_data_collator,
+        collate_fn=dataset_train.collator,
     )
 
     eval_dataloader = None
@@ -215,7 +254,7 @@ def main(**kwargs):
             pin_memory=True,
             sampler=val_sampler if val_sampler else None,
             drop_last=True,
-            collate_fn=default_data_collator,
+            collate_fn=dataset_val.collator,
         )
 
     # Initialize the optimizer and learning rate scheduler

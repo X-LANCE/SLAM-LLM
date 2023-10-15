@@ -7,10 +7,11 @@ from dataclasses import dataclass
 @dataclass
 class train_config:
     model_name: str="PATH/to/LLAMA/7B"
+    audio_encoder: str="/home/zhisheng/models/AudioMAE/finetuned.pth"
     enable_fsdp: bool=False
     low_cpu_fsdp: bool=False
     run_validation: bool=True
-    batch_size_training: int=4
+    batch_size_training: int=64
     gradient_accumulation_steps: int=1
     num_epochs: int=3
     num_workers_dataloader: int=1

@@ -6,6 +6,26 @@ from itertools import chain
 
 from torch.utils.data import Dataset
 
+def format_prompt(instruction, input=None):
+
+    PROMPT_DICT = {
+        # no user input
+        "prompt_input": (
+            "Below is an instruction that describes a task, paired with an input that provides further context. "
+            "Write a response that appropriately completes the request.\n\n"
+            "### Instruction:\n{instruction}\n\n### Input:\n{input}\n\n### Response:"
+        ),
+        "prompt_no_input": (
+            "Based on the audio you've heard, refer to the instruction and provide a response.\n\n"
+            "### Instruction:\n{instruction}\n\n### Response:"
+        ),
+    }
+    if input is None:
+        return PROMPT_DICT['prompt_no_input'].format_map({'instruction': instruction})
+    else:
+        return PROMPT_DICT["prompt_input"].format_map({'instruction': instruction, 'input': input})
+    
+        
 class Concatenator(object):
     def __init__(self, chunk_size=2048):
         self.chunk_size=chunk_size
