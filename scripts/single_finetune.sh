@@ -10,7 +10,7 @@ model_name=/home/zhisheng/models/llama-2-hf                    #/path/to/llama-2
 output_dir=/home/zhisheng/models/llama-2-hf-finetune           #/path/to/output_dir
 
 # -m debugpy --listen 55555 --wait-for-client
-python -m debugpy --listen 55555 --wait-for-client \
+python \
     -m llama_recipes.finetuning  \
     --use_peft --peft_method lora \
     --quantization \
