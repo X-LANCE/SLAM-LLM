@@ -51,7 +51,7 @@ class AudioDataset(Dataset):
             'input_ids': input2['input_ids'],
             'attention_mask': input2['attention_mask'],
             'labels': labels,
-            'inputs_embeds': feats,
+            'audio_feats': feats,
         }
 
     def _wav2feat(self, data):
@@ -96,12 +96,12 @@ class AudioDataset(Dataset):
         max_target_length = min(max_target_length, self.max_words)
         labels = torch.tensor([self.pad(s['labels'], max_target_length) for s in samples])
 
-        inputs_embeds = torch.stack([s['inputs_embeds'] for s in samples])
+        audio_feats = torch.stack([s['audio_feats'] for s in samples])
         return {
             'input_ids': input_ids,
             'attention_mask': attention_mask,
             'labels': labels,
-            'inputs_embeds': inputs_embeds,
+            'audio_feats': audio_feats,
         }
 
 
