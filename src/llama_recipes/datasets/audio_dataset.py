@@ -34,25 +34,41 @@ class AudioDataset(Dataset):
     def __getitem__(self, index):
         data = self.data[index]
         
-        feats = self._wav2feat(data)
+        audio_feats = self._wav2feat(data)
         question = "What is the answer to life, the universe and everything?"
         answer = "I don't know."
 
-        format_instruction = question
-        input1 = utils.format_prompt(format_instruction, None)
-        input2 = input1 + answer + '</s>'
-
-        input1 = self.tokenizer(input1)
-        input2 = self.tokenizer(input2)
-    
-        labels = input2['input_ids'][len(input1['input_ids']):]
+        prompt = utils.format_prompt(question, None)
+        example = prompt + answer
+        prompt = torch.tensor(
+            self.tokenizer.encode(prompt), dtype=torch.int64
+        )
+        example = self.tokenizer.encode(example)
+        example.append(self.tokenizer.eos_token_id)
+        example = torch.tensor(
+            example, dtype=torch.int64
+        )
+        padding = self.max_words - example.shape[0]
+        if padding > 0:
+            example = torch.cat((example, torch.zeros(padding, dtype=torch.int64) - 1))
+        elif padding < 0:
+            example = example[: self.max_words]
+        labels = copy.deepcopy(example)
+        labels[: len(prompt)] = -1
+        example_mask = example.ge(0)
+        label_mask = labels.ge(0)
+        example[~example_mask] = 0
+        labels[~label_mask] = self.IGNORE_INDEX
+        example_mask = example_mask.float()
+        label_mask = label_mask.float()
 
         return {
-            'input_ids': input2['input_ids'],
-            'attention_mask': input2['attention_mask'],
-            'labels': labels,
-            'audio_feats': feats,
-        }
+            "input_ids": example,
+            "labels": labels,
+            "attention_mask":example_mask,
+            'audio_feats': audio_feats
+        }     
+
 
     def _wav2feat(self, data):
         wav = data.reshape(1, -1)
@@ -84,26 +100,17 @@ class AudioDataset(Dataset):
 
     def collator(self, samples):
         assert samples is not None
-        max_input_length = max([len(s['input_ids']) for s in samples])
-        max_input_length = min(max_input_length, self.max_words)
-        input_ids = torch.tensor([self.pad(s['input_ids'], max_input_length) for s in samples])
-
-        max_attention_length = max([len(s['attention_mask']) for s in samples])
-        max_attention_length = min(max_attention_length, self.max_words)
-        attention_mask = torch.tensor([self.pad(s['attention_mask'], max_attention_length) for s in samples])
-
-        max_target_length = max([len(s['labels']) for s in samples])
-        max_target_length = min(max_target_length, self.max_words)
-        labels = torch.tensor([self.pad(s['labels'], max_target_length) for s in samples])
-
+        input_ids = torch.stack([s['input_ids'] for s in samples])
+        labels = torch.stack([s['labels'] for s in samples])
+        attention_mask = torch.stack([s['attention_mask'] for s in samples])
+        
         audio_feats = torch.stack([s['audio_feats'] for s in samples])
         return {
             'input_ids': input_ids,
-            'attention_mask': attention_mask,
             'labels': labels,
+            'attention_mask': attention_mask,
             'audio_feats': audio_feats,
         }
-
 
 
 def get_audio_dataset(dataset_config, tokenizer, split):

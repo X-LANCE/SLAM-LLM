@@ -1132,7 +1132,7 @@ class LlamaForCausalLM(LlamaPreTrainedModel):
             audio_query=audio_query
         )
 
-        hidden_states = outputs[0][:, -(labels.shape[1]+1):-1, :]
+        hidden_states = outputs[0][:, audio_query.shape[1]:, :]
         if self.config.pretraining_tp > 1:
             lm_head_slices = self.lm_head.weight.split(self.vocab_size // self.config.pretraining_tp, dim=0)
             logits = [F.linear(hidden_states, lm_head_slices[i]) for i in range(self.config.pretraining_tp)]
@@ -1142,13 +1142,10 @@ class LlamaForCausalLM(LlamaPreTrainedModel):
         logits = logits.float()
 
         loss = None
-        # compute loss here, TODO!
         if labels is not None:
             # Shift so that tokens < n predict n
-            # shift_logits = logits[..., :-1, :].contiguous()
-            # shift_labels = labels[..., 1:].contiguous()
-            shift_logits = logits
-            shift_labels = labels
+            shift_logits = logits[..., :-1, :].contiguous()
+            shift_labels = labels[..., 1:].contiguous()
             # Flatten the tokens
             loss_fct = CrossEntropyLoss()
             shift_logits = shift_logits.view(-1, self.config.vocab_size)
@@ -1156,6 +1153,7 @@ class LlamaForCausalLM(LlamaPreTrainedModel):
             # Enable model parallelism
             shift_labels = shift_labels.to(shift_logits.device)
             loss = loss_fct(shift_logits, shift_labels)
+            
         if not return_dict:
             output = (logits,) + outputs[1:]
             return (loss,) + output if loss is not None else output

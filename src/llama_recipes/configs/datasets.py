@@ -35,6 +35,6 @@ class custom_dataset:
     train_split: str = "train"
     test_split: str = "eval"
 
-    max_words: int = 80
+    max_words: int = 112
     target_length: int = 1024
     # add whatever other parameters you need here
