@@ -22,11 +22,13 @@ class AudioDataset(Dataset):
             split='train'
         ):
         super().__init__()
+        self.data = torch.randn(100, 160000)
+
         self.dataset_config = dataset_config
         self.max_words = dataset_config.max_words
         self.target_length = dataset_config.target_length # default = 1024
         self.tokenizer = tokenizer
-        self.data = torch.randn(100, 160000)
+        self.IGNORE_INDEX = -100
 
     def __len__(self) -> int:
         return len(self.data)
