@@ -19,6 +19,7 @@
 # limitations under the License.
 """ PyTorch LLaMA model."""
 import math
+import warnings
 from typing import List, Optional, Tuple, Union
 
 import torch
@@ -27,6 +28,8 @@ import torch.utils.checkpoint
 from torch import nn
 from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
 
+from einops import rearrange, reduce
+
 from transformers.activations import ACT2FN
 from transformers.modeling_outputs import BaseModelOutputWithPast, CausalLMOutputWithPast, SequenceClassifierOutputWithPast
 from transformers.modeling_utils import PreTrainedModel
@@ -34,14 +37,14 @@ from transformers.pytorch_utils import ALL_LAYERNORM_LAYERS
 from transformers.utils import (
     add_start_docstrings,
     add_start_docstrings_to_model_forward,
-    is_flash_attn_available,
+    is_flash_attn_2_available,
     logging,
     replace_return_docstrings,
 )
 from .configuration_llama import LlamaConfig
 
 
-if is_flash_attn_available():
+if is_flash_attn_2_available():
     from flash_attn import flash_attn_func, flash_attn_varlen_func
     from flash_attn.bert_padding import index_first_axis, pad_input, unpad_input  # noqa
 
@@ -51,9 +54,9 @@ logger = logging.get_logger(__name__)
 _CONFIG_FOR_DOC = "LlamaConfig"
 
 
-def _get_unpad_data(padding_mask):
-    seqlens_in_batch = padding_mask.sum(dim=-1, dtype=torch.int32)
-    indices = torch.nonzero(padding_mask.flatten(), as_tuple=False).flatten()
+def _get_unpad_data(attention_mask):
+    seqlens_in_batch = attention_mask.sum(dim=-1, dtype=torch.int32)
+    indices = torch.nonzero(attention_mask.flatten(), as_tuple=False).flatten()
     max_seqlen_in_batch = seqlens_in_batch.max().item()
     cu_seqlens = F.pad(torch.cumsum(seqlens_in_batch, dim=0, dtype=torch.torch.int32), (1, 0))
     return (
@@ -63,37 +66,140 @@ def _get_unpad_data(padding_mask):
     )
 
 
-# Copied from transformers.models.bart.modeling_bart._make_causal_mask
-def _make_causal_mask(
-    input_ids_shape: torch.Size, dtype: torch.dtype, device: torch.device, past_key_values_length: int = 0
-):
+class AttnMaskConverter:
     """
-    Make causal mask used for bi-directional self-attention.
+    A utility attention mask class that allows:
+        - Create a causal 4d mask
+        - Create a causal 4d mask with slided window
+        - Convert a 2d attention mask (batch_size, query_length) to a 4d attention mask (batch_size, 1, query_length,
+          key_value_length) that can be multiplied with attention scores
+
+    Parameters:
+        is_causal (`bool`):
+            Whether the attention mask should be a uni-directional (causal) or bi-directional mask.
+
+        sliding_window (`int`, *optional*):
+            Optionally, the sliding window masks can be created if `sliding_window` is defined to a positive integer.
     """
-    bsz, tgt_len = input_ids_shape
-    mask = torch.full((tgt_len, tgt_len), torch.finfo(dtype).min, device=device)
-    mask_cond = torch.arange(mask.size(-1), device=device)
-    mask.masked_fill_(mask_cond < (mask_cond + 1).view(mask.size(-1), 1), 0)
-    mask = mask.to(dtype)
 
-    if past_key_values_length > 0:
-        mask = torch.cat([torch.zeros(tgt_len, past_key_values_length, dtype=dtype, device=device), mask], dim=-1)
-    return mask[None, None, :, :].expand(bsz, 1, tgt_len, tgt_len + past_key_values_length)
+    def __init__(self, is_causal: bool, sliding_window: Optional[int] = None):
+        self.is_causal = is_causal
+        self.sliding_window = sliding_window
 
+    def to_causal_4d(
+        self,
+        batch_size: int,
+        query_length: int,
+        key_value_length: int,
+        dtype: torch.dtype = torch.float32,
+        device: Union[torch.device, "str"] = "cpu",
+    ) -> torch.Tensor:
+        """
+        Creates a causal 4D mask of (bsz, head_dim=1, query_length, key_value_length) shape and adds large negative
+        bias to upper right hand triangular matrix (causal mask).
+        """
+        if not self.is_causal:
+            raise ValueError(f"Please use `to_causal_4d` only if {self.__class__} has `is_causal` set to True.")
 
-# Copied from transformers.models.bart.modeling_bart._expand_mask
-def _expand_mask(mask: torch.Tensor, dtype: torch.dtype, tgt_len: Optional[int] = None):
-    """
-    Expands attention_mask from `[bsz, seq_len]` to `[bsz, 1, tgt_seq_len, src_seq_len]`.
-    """
-    bsz, src_len = mask.size()
-    tgt_len = tgt_len if tgt_len is not None else src_len
+        # If shape is not cached, create a new causal mask and cache it
+        input_shape = (batch_size, query_length)
+        past_key_values_length = key_value_length - query_length
 
-    expanded_mask = mask[:, None, None, :].expand(bsz, 1, tgt_len, src_len).to(dtype)
+        # create causal mask
+        # [bsz, seq_len] -> [bsz, 1, tgt_seq_len, src_seq_len]
+        causal_4d_mask = None
+        if input_shape[-1] > 1 or self.sliding_window is not None:
+            past_key_values_length = key_value_length - query_length
+            causal_4d_mask = self._make_causal_mask(
+                input_shape,
+                dtype,
+                device=device,
+                past_key_values_length=past_key_values_length,
+                sliding_window=self.sliding_window,
+            )
 
-    inverted_mask = 1.0 - expanded_mask
+        return causal_4d_mask
 
-    return inverted_mask.masked_fill(inverted_mask.to(torch.bool), torch.finfo(dtype).min)
+    def to_4d(
+        self,
+        attention_mask_2d: torch.Tensor,
+        query_length: int,
+        key_value_length: int,
+        dtype: torch.dtype = torch.float32,
+    ) -> torch.Tensor:
+        """
+        Converts 2D attention mask to 4D attention mask by expanding mask to (bsz, head_dim=1, query_length,
+        key_value_length) shape and by adding a large negative bias to not-attended positions. If attention_mask is
+        causal, a causal mask will be added.
+        """
+        input_shape = (attention_mask_2d.shape[0], query_length)
+        past_key_values_length = key_value_length - query_length
+
+        # create causal mask
+        # [bsz, seq_len] -> [bsz, 1, tgt_seq_len, src_seq_len]
+        causal_4d_mask = None
+        if (input_shape[-1] > 1 or self.sliding_window is not None) and self.is_causal:
+            past_key_values_length = key_value_length - query_length
+            causal_4d_mask = self._make_causal_mask(
+                input_shape,
+                dtype,
+                device=attention_mask_2d.device,
+                past_key_values_length=past_key_values_length,
+                sliding_window=self.sliding_window,
+            )
+        elif self.sliding_window is not None:
+            raise NotImplementedError("Sliding window is currently only implemented for causal masking")
+
+        # [bsz, seq_len] -> [bsz, 1, tgt_seq_len, src_seq_len]
+        expanded_attn_mask = self._expand_mask(attention_mask_2d, dtype, tgt_len=input_shape[-1]).to(
+            attention_mask_2d.device
+        )
+        expanded_4d_mask = expanded_attn_mask if causal_4d_mask is None else expanded_attn_mask + causal_4d_mask
+
+        return expanded_4d_mask
+
+    def _make_causal_mask(
+        self,
+        input_ids_shape: torch.Size,
+        dtype: torch.dtype,
+        device: torch.device,
+        past_key_values_length: int = 0,
+        sliding_window: Optional[int] = None,
+    ):
+        """
+        Make causal mask used for bi-directional self-attention.
+        """
+        bsz, tgt_len = input_ids_shape
+        mask = torch.full((tgt_len, tgt_len), torch.finfo(dtype).min, device=device)
+        mask_cond = torch.arange(mask.size(-1), device=device)
+        mask.masked_fill_(mask_cond < (mask_cond + 1).view(mask.size(-1), 1), 0)
+
+        mask = mask.to(dtype)
+
+        if past_key_values_length > 0:
+            mask = torch.cat([torch.zeros(tgt_len, past_key_values_length, dtype=dtype, device=device), mask], dim=-1)
+
+        # add lower triangular sliding window mask if necessary
+        if sliding_window is not None:
+            diagonal = past_key_values_length - sliding_window + 1
+
+            context_mask = 1 - torch.triu(torch.ones_like(mask, dtype=torch.int), diagonal=diagonal)
+            mask.masked_fill_(context_mask.bool(), torch.finfo(dtype).min)
+
+        return mask[None, None, :, :].expand(bsz, 1, tgt_len, tgt_len + past_key_values_length)
+
+    def _expand_mask(self, mask: torch.Tensor, dtype: torch.dtype, tgt_len: Optional[int] = None):
+        """
+        Expands attention_mask from `[bsz, seq_len]` to `[bsz, 1, tgt_seq_len, src_seq_len]`.
+        """
+        bsz, src_len = mask.size()
+        tgt_len = tgt_len if tgt_len is not None else src_len
+
+        expanded_mask = mask[:, None, None, :].expand(bsz, 1, tgt_len, src_len).to(dtype)
+
+        inverted_mask = 1.0 - expanded_mask
+
+        return inverted_mask.masked_fill(inverted_mask.to(torch.bool), torch.finfo(dtype).min)
 
 
 class LlamaRMSNorm(nn.Module):
@@ -272,6 +378,7 @@ class LlamaAttention(nn.Module):
         self.num_key_value_groups = self.num_heads // self.num_key_value_heads
         self.max_position_embeddings = config.max_position_embeddings
         self.rope_theta = config.rope_theta
+        self.is_causal = True
 
         if (self.head_dim * self.num_heads) != self.hidden_size:
             raise ValueError(
@@ -322,8 +429,13 @@ class LlamaAttention(nn.Module):
         past_key_value: Optional[Tuple[torch.Tensor]] = None,
         output_attentions: bool = False,
         use_cache: bool = False,
-        padding_mask: Optional[torch.LongTensor] = None,
+        **kwargs,
     ) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[torch.Tensor]]]:
+        if "padding_mask" in kwargs:
+            warnings.warn(
+                "Passing `padding_mask` is deprecated and will be removed in v4.37. Please make sure use `attention_mask` instead.`"
+            )
+
         bsz, q_len, _ = hidden_states.size()
 
         if self.config.pretraining_tp > 1:
@@ -420,14 +532,22 @@ class LlamaFlashAttention2(LlamaAttention):
     def forward(
         self,
         hidden_states: torch.Tensor,
-        attention_mask: Optional[torch.Tensor] = None,
+        attention_mask: Optional[torch.LongTensor] = None,
         position_ids: Optional[torch.LongTensor] = None,
         past_key_value: Optional[Tuple[torch.Tensor]] = None,
         output_attentions: bool = False,
         use_cache: bool = False,
-        padding_mask: Optional[torch.LongTensor] = None,
+        **kwargs,
     ) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[torch.Tensor]]]:
         # LlamaFlashAttention2 attention does not support output_attentions
+        if "padding_mask" in kwargs:
+            warnings.warn(
+                "Passing `padding_mask` is deprecated and will be removed in v4.37. Please make sure use `attention_mask` instead.`"
+            )
+
+            # overwrite attention_mask with padding_mask
+            attention_mask = kwargs.pop("padding_mask")
+
         output_attentions = False
 
         bsz, q_len, _ = hidden_states.size()
@@ -469,23 +589,30 @@ class LlamaFlashAttention2(LlamaAttention):
 
         # In PEFT, usually we cast the layer norms in float32 for training stability reasons
         # therefore the input hidden states gets silently casted in float32. Hence, we need
-        # cast them back in float16 just to be sure everything works as expected.
+        # cast them back in the correct dtype just to be sure everything works as expected.
         # This might slowdown training & inference so it is recommended to not cast the LayerNorms
         # in fp32. (LlamaRMSNorm handles it correctly)
+
         input_dtype = query_states.dtype
         if input_dtype == torch.float32:
+            # Handle the case where the model is quantized
+            if hasattr(self.config, "_pre_quantization_dtype"):
+                target_dtype = self.config._pre_quantization_dtype
+            else:
+                target_dtype = self.q_proj.weight.dtype
+
             logger.warning_once(
-                "The input hidden states seems to be silently casted in float32, this might be related to"
-                " the fact you have upcasted embedding or layer norm layers in float32. We will cast back the input in"
-                " float16."
+                f"The input hidden states seems to be silently casted in float32, this might be related to"
+                f" the fact you have upcasted embedding or layer norm layers in float32. We will cast back the input in"
+                f" {target_dtype}."
             )
 
-            query_states = query_states.to(torch.float16)
-            key_states = key_states.to(torch.float16)
-            value_states = value_states.to(torch.float16)
+            query_states = query_states.to(target_dtype)
+            key_states = key_states.to(target_dtype)
+            value_states = value_states.to(target_dtype)
 
         attn_output = self._flash_attention_forward(
-            query_states, key_states, value_states, padding_mask, q_len, dropout=dropout_rate
+            query_states, key_states, value_states, attention_mask, q_len, dropout=dropout_rate
         )
 
         attn_output = attn_output.reshape(bsz, q_len, self.hidden_size).contiguous()
@@ -497,7 +624,7 @@ class LlamaFlashAttention2(LlamaAttention):
         return attn_output, attn_weights, past_key_value
 
     def _flash_attention_forward(
-        self, query_states, key_states, value_states, padding_mask, query_length, dropout=0.0, softmax_scale=None
+        self, query_states, key_states, value_states, attention_mask, query_length, dropout=0.0, softmax_scale=None
     ):
         """
         Calls the forward method of Flash Attention - if the input hidden states contain at least one padding token
@@ -510,7 +637,7 @@ class LlamaFlashAttention2(LlamaAttention):
                 Input key states to be passed to Flash Attention API
             value_states (`torch.Tensor`):
                 Input value states to be passed to Flash Attention API
-            padding_mask (`torch.Tensor`):
+            attention_mask (`torch.Tensor`):
                 The padding mask - corresponds to a tensor of size `(batch_size, seq_len)` where 0 stands for the
                 position of padding tokens and 1 for the position of non-padding tokens.
             dropout (`int`, *optional*):
@@ -519,10 +646,10 @@ class LlamaFlashAttention2(LlamaAttention):
                 The scaling of QK^T before applying softmax. Default to 1 / sqrt(head_dim)
         """
         # Contains at least one padding token in the sequence
-        if padding_mask is not None:
+        if attention_mask is not None:
             batch_size = query_states.shape[0]
             query_states, key_states, value_states, indices_q, cu_seq_lens, max_seq_lens = self._upad_input(
-                query_states, key_states, value_states, padding_mask, query_length
+                query_states, key_states, value_states, attention_mask, query_length
             )
 
             cu_seqlens_q, cu_seqlens_k = cu_seq_lens
@@ -538,7 +665,7 @@ class LlamaFlashAttention2(LlamaAttention):
                 max_seqlen_k=max_seqlen_in_batch_k,
                 dropout_p=dropout,
                 softmax_scale=softmax_scale,
-                causal=True,
+                causal=self.is_causal,
             )
 
             attn_output = pad_input(attn_output_unpad, indices_q, batch_size, query_length)
@@ -549,8 +676,8 @@ class LlamaFlashAttention2(LlamaAttention):
 
         return attn_output
 
-    def _upad_input(self, query_layer, key_layer, value_layer, padding_mask, query_length):
-        indices_k, cu_seqlens_k, max_seqlen_in_batch_k = _get_unpad_data(padding_mask)
+    def _upad_input(self, query_layer, key_layer, value_layer, attention_mask, query_length):
+        indices_k, cu_seqlens_k, max_seqlen_in_batch_k = _get_unpad_data(attention_mask)
         batch_size, kv_seq_len, num_key_value_heads, head_dim = key_layer.shape
 
         key_layer = index_first_axis(
@@ -575,8 +702,8 @@ class LlamaFlashAttention2(LlamaAttention):
             query_layer = query_layer.squeeze(1)
         else:
             # The -q_len: slice assumes left padding.
-            padding_mask = padding_mask[:, -query_length:]
-            query_layer, indices_q, cu_seqlens_q, max_seqlen_in_batch_q = unpad_input(query_layer, padding_mask)
+            attention_mask = attention_mask[:, -query_length:]
+            query_layer, indices_q, cu_seqlens_q, max_seqlen_in_batch_q = unpad_input(query_layer, attention_mask)
 
         return (
             query_layer,
@@ -609,13 +736,13 @@ class LlamaDecoderLayer(nn.Module):
         past_key_value: Optional[Tuple[torch.Tensor]] = None,
         output_attentions: Optional[bool] = False,
         use_cache: Optional[bool] = False,
-        padding_mask: Optional[torch.LongTensor] = None,
+        **kwargs,
     ) -> Tuple[torch.FloatTensor, Optional[Tuple[torch.FloatTensor, torch.FloatTensor]]]:
         """
         Args:
             hidden_states (`torch.FloatTensor`): input to the layer of shape `(batch, seq_len, embed_dim)`
             attention_mask (`torch.FloatTensor`, *optional*): attention mask of size
-                `(batch, 1, tgt_len, src_len)` where padding elements are indicated by very large negative values.
+                `(batch, sequence_length)` where padding elements are indicated by 0.
             output_attentions (`bool`, *optional*):
                 Whether or not to return the attentions tensors of all attention layers. See `attentions` under
                 returned tensors for more detail.
@@ -624,6 +751,10 @@ class LlamaDecoderLayer(nn.Module):
                 (see `past_key_values`).
             past_key_value (`Tuple(torch.FloatTensor)`, *optional*): cached past key and value projection states
         """
+        if "padding_mask" in kwargs:
+            warnings.warn(
+                "Passing `padding_mask` is deprecated and will be removed in v4.37. Please make sure use `attention_mask` instead.`"
+            )
 
         residual = hidden_states
 
@@ -637,7 +768,7 @@ class LlamaDecoderLayer(nn.Module):
             past_key_value=past_key_value,
             output_attentions=output_attentions,
             use_cache=use_cache,
-            padding_mask=padding_mask,
+            **kwargs,
         )
         hidden_states = residual + hidden_states
 
@@ -784,6 +915,10 @@ class LlamaModel(LlamaPreTrainedModel):
         self.padding_idx = config.pad_token_id
         self.vocab_size = config.vocab_size
 
+        # create attention mask cache that trickles down to each attention layer
+        # so that the attention_mask cache can be shared among layers
+        self.attn_mask_converter = AttnMaskConverter(is_causal=True)
+
         self.embed_tokens = nn.Embedding(config.vocab_size, config.hidden_size, self.padding_idx)
         self.layers = nn.ModuleList([LlamaDecoderLayer(config) for _ in range(config.num_hidden_layers)])
         self.norm = LlamaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
@@ -797,30 +932,6 @@ class LlamaModel(LlamaPreTrainedModel):
 
     def set_input_embeddings(self, value):
         self.embed_tokens = value
-
-    # Copied from transformers.models.bart.modeling_bart.BartDecoder._prepare_decoder_attention_mask
-    def _prepare_decoder_attention_mask(self, attention_mask, input_shape, inputs_embeds, past_key_values_length):
-        # create causal mask
-        # [bsz, seq_len] -> [bsz, 1, tgt_seq_len, src_seq_len]
-        combined_attention_mask = None
-        if input_shape[-1] > 1:
-            combined_attention_mask = _make_causal_mask(
-                input_shape,
-                inputs_embeds.dtype,
-                device=inputs_embeds.device,
-                past_key_values_length=past_key_values_length,
-            )
-
-        if attention_mask is not None:
-            # [bsz, seq_len] -> [bsz, 1, tgt_seq_len, src_seq_len]
-            expanded_attn_mask = _expand_mask(attention_mask, inputs_embeds.dtype, tgt_len=input_shape[-1]).to(
-                inputs_embeds.device
-            )
-            combined_attention_mask = (
-                expanded_attn_mask if combined_attention_mask is None else expanded_attn_mask + combined_attention_mask
-            )
-
-        return combined_attention_mask
 
     @add_start_docstrings_to_model_forward(LLAMA_INPUTS_DOCSTRING)
     def forward(
@@ -844,35 +955,21 @@ class LlamaModel(LlamaPreTrainedModel):
 
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
-        audio_query = kwargs['audio_query']
+        audio_feats = kwargs['audio_feats']
         assert input_ids is not None, "You have to specify input_ids"
         text_embeds = self.embed_tokens(input_ids) # bsz, text_query_len, 4096
         attention_mask = torch.cat([
-            torch.ones(*audio_query.shape[:2], dtype=torch.int64, device=attention_mask.device), 
+            torch.ones(*audio_feats.shape[:2], dtype=torch.int64, device=attention_mask.device), 
             attention_mask], dim = 1)
         
-        inputs_embeds = torch.cat([audio_query, text_embeds], dim=1) # bsz, seq_len, 4096  
+        inputs_embeds = torch.cat([audio_feats, text_embeds], dim=1) # bsz, seq_len, 4096  
         # audio + instruction
 
         batch_size, seq_length, _ = inputs_embeds.shape
-        #seq_length: audio + instruction + answer
 
-        # # retrieve input_ids and inputs_embeds
-        # if input_ids is not None and inputs_embeds is not None:
-        #     raise ValueError("You cannot specify both input_ids and inputs_embeds at the same time")
-        # elif input_ids is not None:
-        #     batch_size, seq_length = input_ids.shape
-        # elif inputs_embeds is not None:
-        #     batch_size, seq_length, _ = inputs_embeds.shape
-        # else:
-        #     raise ValueError("You have to specify either input_ids or inputs_embeds")
-
-        seq_length_with_past = seq_length
         past_key_values_length = 0
-
         if past_key_values is not None:
             past_key_values_length = past_key_values[0][0].shape[2]
-            seq_length_with_past = seq_length_with_past + past_key_values_length
 
         if position_ids is None:
             device = input_ids.device if input_ids is not None else inputs_embeds.device
@@ -883,23 +980,23 @@ class LlamaModel(LlamaPreTrainedModel):
 
         # if inputs_embeds is None:
         #     inputs_embeds = self.embed_tokens(input_ids)
-        
-        # embed positions
-        if attention_mask is None:
-            attention_mask = torch.ones(
-                (batch_size, seq_length_with_past), dtype=torch.bool, device=inputs_embeds.device
-            )
-            padding_mask = None
+
+        if getattr(self.config, "_flash_attn_2_enabled", False):
+            # 2d mask is passed through the layers
+            attention_mask = attention_mask if (attention_mask is not None and 0 in attention_mask) else None
         else:
-            if 0 in attention_mask:
-                padding_mask = attention_mask
+            key_value_length = seq_length + past_key_values_length
+            # 4d mask is passed through the layers
+            if attention_mask is not None:
+                attention_mask = self.attn_mask_converter.to_4d(
+                    attention_mask, seq_length, key_value_length, dtype=inputs_embeds.dtype
+                )
             else:
-                padding_mask = None
+                attention_mask = self.attn_mask_converter.to_causal_4d(
+                    batch_size, seq_length, key_value_length, dtype=inputs_embeds.dtype, device=inputs_embeds.device
+                )
 
-        attention_mask = self._prepare_decoder_attention_mask(
-            attention_mask, (batch_size, seq_length), inputs_embeds, past_key_values_length
-        )
-
+        # embed positions
         hidden_states = inputs_embeds
 
         if self.gradient_checkpointing and self.training:
@@ -925,7 +1022,7 @@ class LlamaModel(LlamaPreTrainedModel):
                 def create_custom_forward(module):
                     def custom_forward(*inputs):
                         # None for past_key_value
-                        return module(*inputs, past_key_value, output_attentions, padding_mask=padding_mask)
+                        return module(*inputs, past_key_value, output_attentions)
 
                     return custom_forward
 
@@ -940,7 +1037,6 @@ class LlamaModel(LlamaPreTrainedModel):
                     past_key_value=past_key_value,
                     output_attentions=output_attentions,
                     use_cache=use_cache,
-                    padding_mask=padding_mask,
                 )
 
             hidden_states = layer_outputs[0]
@@ -974,48 +1070,11 @@ class LlamaForCausalLM(LlamaPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
 
-        # TODO: how to add audio model elegently
-        from timm.models.vision_transformer import Block
-        from llama_recipes.encoders import audioMAE
+        self.init_audio_encoder()
+        # self.init_adapter()
 
-        patch_size = (1024, 128)
-        audio_input_chans = 1
-        audio_embed_dim = 768
-        num_patches = 512
-
-        audio_encoder_proj_dim = 768
-
-        a_num_heads = 16
-        a_mlp_ratio = 4.0
-        a_depth = 8
-
-        self.query_len = 32
-
-        self.audio_encoder = audioMAE.models_vit.__dict__['vit_base_patch16'](
-            num_classes=527, drop_path_rate=0.1, global_pool=True,
-            mask_2d=True, use_custom_patch=False,
-        )
-        self.audio_encoder.patch_embed = audioMAE.utils.patch_embed.PatchEmbed_new(
-            img_size=patch_size, patch_size=(16,16), 
-            in_chans=audio_input_chans, embed_dim=audio_embed_dim, stride=16
-        ) 
-        
-        self.audio_encoder.pos_embed = nn.Parameter(
-            torch.zeros(1, num_patches + 1, audio_embed_dim), 
-            requires_grad=False
-        )
-
-        # 1. audio encoder projector
-        self.audio_encoder_proj = nn.Linear(audio_embed_dim, audio_encoder_proj_dim)
-        self.audio_encoder_proj_norm = nn.LayerNorm(audio_encoder_proj_dim, eps=1e-4)
-
-        self.audio_query = nn.Embedding(self.query_len, audio_encoder_proj_dim)
-        self.audio_blocks = nn.ModuleList([
-                Block(audio_encoder_proj_dim, a_num_heads, a_mlp_ratio, qkv_bias=True)
-                for _ in range(a_depth)])
-
-        self.audio_proj = nn.Linear(audio_encoder_proj_dim, 4096)
-        self.audio_proj_norm = nn.LayerNorm(4096, eps=1e-4)
+        self.audio_encoder_final_proj = nn.Linear(768, 4096)
+        self.audio_encoder_final_proj_norm = nn.LayerNorm(4096, eps=1e-4)
 
         # llama model
         self.model = LlamaModel(config)
@@ -1024,6 +1083,46 @@ class LlamaForCausalLM(LlamaPreTrainedModel):
 
         # Initialize weights and apply final processing
         self.post_init()
+
+    def init_adapter(self):
+        from timm.models.vision_transformer import Block
+        self.query_len = 32
+        embed_dim = 768
+
+        num_heads = 16
+        mlp_ratio = 4.0
+        depth = 4
+
+        self.audio_query = nn.Embedding(self.query_len, embed_dim)
+
+        self.audio_blocks = nn.ModuleList([
+               Block(embed_dim, num_heads, mlp_ratio, qkv_bias=True)
+                for _ in range(depth)])
+
+    def init_audio_encoder(self):
+        from llama_recipes.encoders import audioMAE
+        
+        patch_size = (1024, 128)
+        audio_input_chans = 1
+        audio_embed_dim = 768
+        num_patches = 512
+
+        self.audio_encoder = audioMAE.models_vit.__dict__['vit_base_patch16'](
+            num_classes=527, drop_path_rate=0.1, global_pool=True,
+            mask_2d=True, use_custom_patch=False,
+        )
+        self.audio_encoder.patch_embed = audioMAE.utils.patch_embed.PatchEmbed_new(
+            img_size=patch_size, patch_size=(16, 16), 
+            in_chans=audio_input_chans, embed_dim=audio_embed_dim, stride=16
+        ) 
+        
+        self.audio_encoder.pos_embed = nn.Parameter(
+            torch.zeros(1, num_patches + 1, audio_embed_dim), 
+            requires_grad=False
+        )
+
+        self.audio_encoder_proj = nn.Linear(audio_embed_dim, audio_embed_dim)
+        self.audio_encoder_proj_norm = nn.LayerNorm(audio_embed_dim, eps=1e-5)
 
     def get_input_embeddings(self):
         return self.model.embed_tokens
@@ -1043,30 +1142,22 @@ class LlamaForCausalLM(LlamaPreTrainedModel):
     def get_decoder(self):
         return self.model
 
-    def forward_audio(self, inputs_embeds):
-        channel_num = inputs_embeds.shape[1]
-        
+    def forward_audio(self, x):
+        self.audio_encoder.eval()
+
         audio_feats = []
-        for channel in range(channel_num):
-            audio_feats_channel_wise = self.audio_encoder(inputs_embeds[:, channel].unsqueeze(1)) 
-            audio_feats.append(audio_feats_channel_wise)
+        for chan in range(x.shape[1]):
+            audio_feat = self.audio_encoder(x[:, chan].unsqueeze(1))[:, 1:]
+            audio_feat = rearrange(audio_feat, 'b (h w) d -> b h w d', h=64)
+            audio_feat = reduce(audio_feat, 'b h w d -> b h d', 'mean')
+            audio_feats.append(audio_feat)
 
         audio_feats = torch.stack(audio_feats, dim=1).mean(dim=1)
-
+        # audio_feats = torch.cat(audio_feats, dim=1)
+        
         audio_feats = self.audio_encoder_proj_norm(self.audio_encoder_proj(audio_feats))
 
-        audio_query = self.audio_query.weight.unsqueeze(
-            0).repeat(len(audio_feats), 1, 1) # bsz * query_len * v_embed_dim
-        audio_query = torch.cat([audio_query, audio_feats], dim=1) # bsz * (query_len + feat_len) * v_embed_dim
-
-        for block in self.audio_blocks:
-            audio_query = block(audio_query) 
-
-        audio_query = audio_query[:, :self.query_len, :]
-        audio_query = self.audio_proj(audio_query)
-        audio_query = self.audio_proj_norm(audio_query)
-
-        return audio_query
+        return audio_feats
 
     @add_start_docstrings_to_model_forward(LLAMA_INPUTS_DOCSTRING)
     @replace_return_docstrings(output_type=CausalLMOutputWithPast, config_class=_CONFIG_FOR_DOC)
@@ -1115,8 +1206,10 @@ class LlamaForCausalLM(LlamaPreTrainedModel):
             output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
         )
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
-        
-        audio_query = self.forward_audio(kwargs['audio_feats'])
+
+        audio_feats = self.forward_audio(kwargs['audio_feats'])
+
+        audio_feats = self.audio_encoder_final_proj_norm(self.audio_encoder_final_proj(audio_feats))
 
         # decoder outputs consists of (dec_features, layer_state, dec_hidden, dec_attn)
         outputs = self.model(
@@ -1129,10 +1222,10 @@ class LlamaForCausalLM(LlamaPreTrainedModel):
             output_attentions=output_attentions,
             output_hidden_states=output_hidden_states,
             return_dict=return_dict,
-            audio_query=audio_query
+            audio_feats=audio_feats
         )
 
-        hidden_states = outputs[0][:, audio_query.shape[1]:, :]
+        hidden_states = outputs[0][:, audio_feats.shape[1]:, :]
         if self.config.pretraining_tp > 1:
             lm_head_slices = self.lm_head.weight.split(self.vocab_size // self.config.pretraining_tp, dim=0)
             logits = [F.linear(hidden_states, lm_head_slices[i]) for i in range(self.config.pretraining_tp)]
@@ -1153,7 +1246,7 @@ class LlamaForCausalLM(LlamaPreTrainedModel):
             # Enable model parallelism
             shift_labels = shift_labels.to(shift_logits.device)
             loss = loss_fct(shift_logits, shift_labels)
-            
+
         if not return_dict:
             output = (logits,) + outputs[1:]
             return (loss,) + output if loss is not None else output
