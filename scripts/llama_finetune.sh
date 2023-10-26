@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #if running on multi-gpu machine
-export CUDA_VISIBLE_DEVICES=2,3
+export CUDA_VISIBLE_DEVICES=4,5,6,7
 
 cd /home/zhisheng/scratch/projects/llama-recipes
 
@@ -26,7 +26,7 @@ if [[ $CUDA_VISIBLE_DEVICES != *","* ]]; then
     --output_dir $output_dir
 else
     torchrun \
-        --nnodes 1 --nproc_per_node 2 \
+        --nnodes 1 --nproc_per_node 4 \
         --master_port 31414 \
         -m llama_recipes.finetuning \
         --enable_fsdp --use_peft --peft_method lora \
