@@ -164,7 +164,7 @@ def main(**kwargs):
         peft_config = generate_peft_config(train_config, kwargs)
         model = get_peft_model(model, peft_config) # modify training part
         train_proj_name = ['audio_encoder_proj', 'audio_encoder_proj_norm', 'audio_query', 
-                           'audio_blocks', 'audio_proj', 'audio_proj_norm',]
+                           'audio_blocks', 'final_proj', 'final_proj_norm',]
         for name, para in model.named_parameters():
             for train_name in train_proj_name:
                 if train_name in name:
@@ -187,6 +187,7 @@ def main(**kwargs):
             cpu_offload=CPUOffload(offload_params=True) if fsdp_config.fsdp_cpu_offload else None,
             mixed_precision=mixed_precision_policy if not fsdp_config.pure_bf16 else None,
             sharding_strategy=fsdp_config.sharding_strategy,
+            ignored_modules=[model.audio_query],
             device_id=torch.cuda.current_device(),
             limit_all_gathers=True,
             sync_module_states=train_config.low_cpu_fsdp,

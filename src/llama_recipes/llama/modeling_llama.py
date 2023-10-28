@@ -955,14 +955,14 @@ class LlamaModel(LlamaPreTrainedModel):
 
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
-        audio_feats = kwargs['audio_feats']
+        multimodal_query = kwargs['multimodal_query']
         assert input_ids is not None, "You have to specify input_ids"
         text_embeds = self.embed_tokens(input_ids) # bsz, text_query_len, 4096
         attention_mask = torch.cat([
-            torch.ones(*audio_feats.shape[:2], dtype=torch.int64, device=attention_mask.device), 
+            torch.ones(*multimodal_query.shape[:2], dtype=torch.int64, device=attention_mask.device), 
             attention_mask], dim = 1)
         
-        inputs_embeds = torch.cat([audio_feats, text_embeds], dim=1) # bsz, seq_len, 4096  
+        inputs_embeds = torch.cat([multimodal_query, text_embeds], dim=1) # bsz, seq_len, 4096  
         # audio + instruction
 
         batch_size, seq_length, _ = inputs_embeds.shape
@@ -1071,10 +1071,10 @@ class LlamaForCausalLM(LlamaPreTrainedModel):
         super().__init__(config)
 
         self.init_audio_encoder()
-        # self.init_adapter()
+        self.init_adapter()
 
-        self.audio_encoder_final_proj = nn.Linear(768, 4096)
-        self.audio_encoder_final_proj_norm = nn.LayerNorm(4096, eps=1e-4)
+        self.final_proj = nn.Linear(768, 4096)
+        self.final_proj_norm = nn.LayerNorm(4096, eps=1e-4)
 
         # llama model
         self.model = LlamaModel(config)
@@ -1085,19 +1085,15 @@ class LlamaForCausalLM(LlamaPreTrainedModel):
         self.post_init()
 
     def init_adapter(self):
-        from timm.models.vision_transformer import Block
-        self.query_len = 32
-        embed_dim = 768
+        from transformers import Blip2QFormerConfig, Blip2QFormerModel
 
-        num_heads = 16
-        mlp_ratio = 4.0
-        depth = 4
+        configuration = Blip2QFormerConfig()
+        configuration.encoder_hidden_size = 768
+        configuration.num_hidden_layers = 4
 
-        self.audio_query = nn.Embedding(self.query_len, embed_dim)
-
-        self.audio_blocks = nn.ModuleList([
-               Block(embed_dim, num_heads, mlp_ratio, qkv_bias=True)
-                for _ in range(depth)])
+        self.query_len = 64
+        self.audio_query = nn.Embedding(self.query_len, configuration.encoder_hidden_size)
+        self.audio_blocks = Blip2QFormerModel(configuration)
 
     def init_audio_encoder(self):
         from llama_recipes.encoders import audioMAE
@@ -1158,7 +1154,23 @@ class LlamaForCausalLM(LlamaPreTrainedModel):
         audio_feats = self.audio_encoder_proj_norm(self.audio_encoder_proj(audio_feats))
 
         return audio_feats
+    
+    def forward_adapter(self, audio_feats):
 
+        audio_query = self.audio_query.weight.unsqueeze(
+            0).repeat(len(audio_feats), 1, 1) # bsz * query_len * v_embed_dim
+        
+        audio_query = self.audio_blocks(
+            query_embeds=audio_query,
+            encoder_hidden_states=audio_feats,
+            encoder_attention_mask=torch.ones(*audio_feats.shape[:2]).to(audio_feats.device),
+            return_dict=False
+        )[0]
+        
+        audio_query = self.final_proj_norm(self.final_proj(audio_query))
+        
+        return audio_query
+    
     @add_start_docstrings_to_model_forward(LLAMA_INPUTS_DOCSTRING)
     @replace_return_docstrings(output_type=CausalLMOutputWithPast, config_class=_CONFIG_FOR_DOC)
     def forward(
@@ -1208,8 +1220,7 @@ class LlamaForCausalLM(LlamaPreTrainedModel):
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
         audio_feats = self.forward_audio(kwargs['audio_feats'])
-
-        audio_feats = self.audio_encoder_final_proj_norm(self.audio_encoder_final_proj(audio_feats))
+        audio_query = self.forward_adapter(audio_feats)
 
         # decoder outputs consists of (dec_features, layer_state, dec_hidden, dec_attn)
         outputs = self.model(
@@ -1222,10 +1233,10 @@ class LlamaForCausalLM(LlamaPreTrainedModel):
             output_attentions=output_attentions,
             output_hidden_states=output_hidden_states,
             return_dict=return_dict,
-            audio_feats=audio_feats
+            multimodal_query=audio_query
         )
 
-        hidden_states = outputs[0][:, audio_feats.shape[1]:, :]
+        hidden_states = outputs[0][:, audio_query.shape[1]:, :]
         if self.config.pretraining_tp > 1:
             lm_head_slices = self.lm_head.weight.split(self.vocab_size // self.config.pretraining_tp, dim=0)
             logits = [F.linear(hidden_states, lm_head_slices[i]) for i in range(self.config.pretraining_tp)]
