@@ -50,20 +50,20 @@ def main(**kwargs):
     torch.cuda.manual_seed(train_config.seed)
     torch.manual_seed(train_config.seed)
 
-    if train_config.enable_fsdp:
+    if train_config.enable_fsdp:  #x
         setup()
         # torchrun specific
         local_rank = int(os.environ["LOCAL_RANK"])
         rank = int(os.environ["RANK"])
         world_size = int(os.environ["WORLD_SIZE"])
 
-    if torch.distributed.is_initialized():
+    if torch.distributed.is_initialized(): #x
         torch.cuda.set_device(local_rank)
         clear_gpu_cache(local_rank)
         setup_environ_flags(rank)
 
     # Load the pre-trained model and setup its configuration
-    use_cache = False if train_config.enable_fsdp else None
+    use_cache = False if train_config.enable_fsdp else None #None
     if train_config.enable_fsdp and train_config.low_cpu_fsdp:
         """
         for FSDP, we can save cpu memory by loading pretrained model on rank0 only.
@@ -89,14 +89,14 @@ def main(**kwargs):
             with torch.device("meta"):
                 model = LlamaForCausalLM(llama_config)
 
-    else:
+    else:  #
         model, loading_info = LlamaForCausalLM.from_pretrained(
-            train_config.model_name,
+            train_config.model_name,    #'/home/oss/zhifu.gzf/ckpt/Llama-2-7b-hf'
             load_in_8bit=True if train_config.quantization else None,
             device_map="auto" if train_config.quantization else None,
             use_cache=use_cache,
             output_loading_info=True,
-        )
+        )  # loading info 主要是missing_keys  audio_encoder.
     
     # initialize missing keys
     for name, module in model.named_modules():
@@ -129,7 +129,7 @@ def main(**kwargs):
     audio_encoder_checkpoint = torch.load(train_config.audio_encoder, map_location='cpu')
     model.audio_encoder.load_state_dict(audio_encoder_checkpoint['model'], strict=False)
 
-    if train_config.enable_fsdp and train_config.use_fast_kernels:
+    if train_config.enable_fsdp and train_config.use_fast_kernels:  #x
         """
         For FSDP and FSDP+PEFT, setting 'use_fast_kernels' will enable
         using of Flash Attention or Xformer memory-efficient kernels 

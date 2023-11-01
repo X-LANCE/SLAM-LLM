@@ -11,7 +11,7 @@ audio_encoder=/home/oss/maziyang.mzy/models/AudioMAE/finetuned.pth
 model_name=/home/oss/zhifu.gzf/ckpt/Llama-2-7b-hf                    #/path/to/llama-2-hf
 output_dir=/nfs/maziyang.mzy/models/llama-2-hf-finetune           #/path/to/output_dir
 
-# -m debugpy --listen 5678 --wait-for-client
+#      # -m debugpy --listen 5678 --wait-for-client \
 if [[ $CUDA_VISIBLE_DEVICES != *","* ]]; then
     python \
     -m llama_recipes.finetuning  \
