@@ -22,7 +22,7 @@ class AudioDataset(Dataset):
             split='train'
         ):
         super().__init__()
-        self.data = torch.randn(100, 160000)
+        self.data = torch.randn(100, 480000)  #害
 
         self.dataset_config = dataset_config
         self.max_words = dataset_config.max_words
@@ -36,12 +36,12 @@ class AudioDataset(Dataset):
     def __getitem__(self, index):
         data = self.data[index]
         
-        audio_feats = self._wav2feat(data)
+        audio_feats = self._wav2feat(data)  #torch.Size([1, 1024, 128])
         question = "What is the answer to life, the universe and everything?"
         answer = "I don't know."
 
         prompt = utils.format_prompt(question, None)
-        example = prompt + answer
+        example = prompt + answer   #"Based on the audio you've heard, refer to the instruction and provide a response.\n\n### Instruction:\nWhat is the answer to life, the universe and everything?\n\n### Response:I don't know."
         prompt = torch.tensor(
             self.tokenizer.encode(prompt), dtype=torch.int64
         )
@@ -73,24 +73,24 @@ class AudioDataset(Dataset):
 
 
     def _wav2feat(self, data):
-        wav = data.reshape(1, -1)
+        wav = data.reshape(1, -1) #torch.Size([1, 160000])
 
         feats = torchaudio.compliance.kaldi.fbank( # 25ms and 10ms
             wav, htk_compat=True, sample_frequency=16000, use_energy=False,
-            window_type='hanning', num_mel_bins=128, dither=0.0, frame_shift=10
-        )
+            window_type='hanning', num_mel_bins=80, dither=0.0, frame_shift=10   #改成80
+        )  #torch.Size([998, 128])
         n_frames = feats.shape[0]
 
-        p = self.target_length - n_frames
-
+        p = self.target_length - n_frames  #26    #1024-998   #好像一定要搞成1024？
+ 
         # cut and pad
         if p > 0:
             m = torch.nn.ZeroPad2d((0, 0, 0, p))
-            feats = m(feats)
+            feats = m(feats)    #（1024,128）
         elif p < 0:
-            feats = feats[0:self.target_length, :]
+            feats = feats[0:self.target_length, :]   
         
-        return feats.unsqueeze(0) # channels, frames, dim
+        return feats.unsqueeze(0) # channels, frames, dim    
 
 
     def pad(self, sequence, max_length, padding_idx=0):
@@ -100,7 +100,7 @@ class AudioDataset(Dataset):
             sequence = sequence[:max_length]
         return sequence
 
-    def collator(self, samples):
+    def collator(self, samples):   #batch 2
         assert samples is not None
         input_ids = torch.stack([s['input_ids'] for s in samples])
         labels = torch.stack([s['labels'] for s in samples])

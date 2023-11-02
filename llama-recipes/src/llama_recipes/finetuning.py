@@ -42,6 +42,7 @@ from llama_recipes.utils.train_utils import (
     get_policies
 )
 
+import whisper
 
 def main(**kwargs):
     # Update the configuration for the training and sharding process
@@ -51,14 +52,14 @@ def main(**kwargs):
     torch.cuda.manual_seed(train_config.seed)
     torch.manual_seed(train_config.seed)
 
-    if train_config.enable_fsdp:
+    if train_config.enable_fsdp: #x
         setup()
         # torchrun specific
         local_rank = int(os.environ["LOCAL_RANK"])
         rank = int(os.environ["RANK"])
         world_size = int(os.environ["WORLD_SIZE"])
 
-    if torch.distributed.is_initialized():
+    if torch.distributed.is_initialized(): #x
         torch.cuda.set_device(local_rank)
         clear_gpu_cache(local_rank)
         setup_environ_flags(rank)
@@ -90,7 +91,7 @@ def main(**kwargs):
             with torch.device("meta"):
                 model = LlamaForCausalLM(llama_config)
 
-    else:
+    else: #
         model, loading_info = LlamaForCausalLM.from_pretrained(
             train_config.model_name,
             load_in_8bit=True if train_config.quantization else None,
@@ -126,11 +127,15 @@ def main(**kwargs):
 
 
     #! Load the pre-trained audio encoder
-    print(f"Load pre-trained checkpoint from: {train_config.audio_encoder}" )
-    audio_encoder_checkpoint = torch.load(train_config.audio_encoder, map_location='cpu')
-    model.audio_encoder.load_state_dict(audio_encoder_checkpoint['model'], strict=False)
+    # print(f"Load pre-trained checkpoint from: {train_config.audio_encoder}" )
+    # audio_encoder_checkpoint = torch.load(train_config.audio_encoder, map_location='cpu')
+    # model.audio_encoder.load_state_dict(audio_encoder_checkpoint['model'], strict=False)
 
-    if train_config.enable_fsdp and train_config.use_fast_kernels:
+    print(f"Load pre-trained checkpoint from: {train_config.audio_encoder}" )
+    model.audio_encoder = whisper.load_model(train_config.audio_encoder)
+
+
+    if train_config.enable_fsdp and train_config.use_fast_kernels: #x
         """
         For FSDP and FSDP+PEFT, setting 'use_fast_kernels' will enable
         using of Flash Attention or Xformer memory-efficient kernels 
@@ -160,7 +165,7 @@ def main(**kwargs):
             "mask_token": "<MASK>"
         }
     )
-    if train_config.use_peft:
+    if train_config.use_peft:  #
         peft_config = generate_peft_config(train_config, kwargs)
         model = get_peft_model(model, peft_config) # modify training part
         train_proj_name = ['audio_encoder_proj', 'audio_encoder_proj_norm', 'audio_query', 
@@ -173,7 +178,7 @@ def main(**kwargs):
         model.print_trainable_parameters()
 
     # setting up FSDP if enable_fsdp is enabled
-    if train_config.enable_fsdp:
+    if train_config.enable_fsdp:  #x
         if not train_config.use_peft and train_config.freeze_layers:
 
             freeze_transformer_layers(train_config.num_freeze_layers)
@@ -196,20 +201,20 @@ def main(**kwargs):
         )
         if fsdp_config.fsdp_activation_checkpointing:
             apply_fsdp_checkpointing(model)
-    elif not train_config.quantization and not train_config.enable_fsdp:
+    elif not train_config.quantization and not train_config.enable_fsdp:  #x
         model.to("cuda")
 
     dataset_config = generate_dataset_config(train_config, kwargs)
 
      # Load and preprocess the dataset for training and validation
-    dataset_train = get_preprocessed_dataset(
+    dataset_train = get_preprocessed_dataset(    #(100,160000)
         tokenizer,
         dataset_config,
         split="train",
     )
 
     if not train_config.enable_fsdp or rank == 0:
-        print(f"--> Training Set Length = {len(dataset_train)}")
+        print(f"--> Training Set Length = {len(dataset_train)}")  #100
 
     dataset_val = get_preprocessed_dataset(
         tokenizer,
@@ -221,7 +226,7 @@ def main(**kwargs):
 
     train_sampler = None
     val_sampler = None
-    if train_config.enable_fsdp:
+    if train_config.enable_fsdp:  #x
         train_sampler = DistributedSampler(
             dataset_train,
             rank=dist.get_rank(),
@@ -247,7 +252,7 @@ def main(**kwargs):
     )
 
     eval_dataloader = None
-    if train_config.run_validation:
+    if train_config.run_validation: #
         eval_dataloader = torch.utils.data.DataLoader(
             dataset_val,
             batch_size=train_config.val_batch_size,
@@ -268,7 +273,7 @@ def main(**kwargs):
             use_kahan_summation=False,
             weight_decay=train_config.weight_decay,
         )
-    else:
+    else:  #
         optimizer = optim.AdamW(
             model.parameters(),
             lr=train_config.lr,

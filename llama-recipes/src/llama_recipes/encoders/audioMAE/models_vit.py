@@ -180,8 +180,8 @@ class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
     def forward(self, x, v=None, mask_t_prob=0.0, mask_f_prob=0.0):
         if mask_t_prob > 0.0 or mask_f_prob > 0.0:
             x = self.forward_features_mask(x, mask_t_prob=mask_t_prob, mask_f_prob=mask_f_prob)
-        else:
-            x = self.forward_features(x)
+        else:  #
+            x = self.forward_features(x)   #(2,513,768)
         # x = self.head(x)
         return x
 
