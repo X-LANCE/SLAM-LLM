@@ -37,7 +37,6 @@ from llama_recipes.utils.train_utils import (
     setup,
     setup_environ_flags,
     clear_gpu_cache,
-    print_model_size,
     get_policies
 )
 

@@ -10,12 +10,12 @@ from transformers import (
     LlamaConfig,
 )
 import whisper
-import librosa
 
 from llama_recipes.utils.config_utils import generate_peft_config
+from llama_recipes.utils.train_utils import print_model_size
 
 
-def setup_model(train_config, model_config, **kwargs):
+def setup_model(tokenizer, train_config, model_config, **kwargs):
     return slam_model(tokenizer, train_config, model_config, **kwargs)
 
 
@@ -118,17 +118,19 @@ class slam_model(nn.Module):
         super().__init__()
         # whisper 
         self.speech_encoder = whisper.load_model(model_config.encoder_path).encoder
-        self.speech_encoder.extract_features = types.MethodType(extract_variable_length_features, self.speech_encoder)
+        self.speech_encoder.extract_variable_length_features = types.MethodType(extract_variable_length_features, self.speech_encoder)
         for name, param in self.speech_encoder.named_parameters(): 
             param.requires_grad = False       
         self.speech_encoder.eval()
-        self.ln_speech = nn.LayerNorm(self.speech_encoder.config.d_model)
 
         # llama
-        llm = setup_llm(train_config, model_config, **kwargs)
+        self.llm = setup_llm(train_config, model_config, **kwargs)
 
-        # Projector
-        self.speech_encoder_projector = nn.Linear(self.speech_encoder.config.d_model ,self.llm.config.hidden_size)
+        # projector
+        self.speech_encoder_projector = nn.Linear(self.speech_encoder.ln_post.normalized_shape[0] ,self.llm.config.hidden_size)
+
+        # tokenizer
+        self.tokenizer = tokenizer
 
     def forward(self):
         pass #TODO

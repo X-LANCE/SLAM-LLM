@@ -95,6 +95,10 @@ def get_dataloader_kwargs(train_config, dataset, tokenizer, mode):
             kwargs["drop_last"] = True
             kwargs["collate_fn"] = default_data_collator
         else:
-            raise ValueError(f"Unknown batching strategy: {train_config.batching_strategy}")
+            # raise ValueError(f"Unknown batching strategy: {train_config.batching_strategy}")
+            kwargs["batch_size"] = batch_size
+            kwargs["drop_last"] = True
+            kwargs["collate_fn"] = dataset.collator
+            print(f"Using batching strategy: {train_config.batching_strategy}")
 
         return kwargs
