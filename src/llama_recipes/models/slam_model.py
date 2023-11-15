@@ -132,5 +132,20 @@ class slam_model(nn.Module):
         # tokenizer
         self.tokenizer = tokenizer
 
-    def forward(self):
-        pass #TODO
+    def forward(self,
+                input_ids: torch.LongTensor = None,
+                attention_mask: Optional[torch.Tensor] = None,
+                position_ids: Optional[torch.LongTensor] = None,
+                past_key_values: Optional[List[torch.FloatTensor]] = None,
+                inputs_embeds: Optional[torch.FloatTensor] = None,
+                use_cache: Optional[bool] = None,
+                output_attentions: Optional[bool] = None,
+                output_hidden_states: Optional[bool] = None,
+                return_dict: Optional[bool] = None,
+                **kwargs,
+                ):
+        labels = kwargs.get("labels", None)
+        speech_mel = kwargs.get("speech_mel", None)
+        speech_mask = kwargs.get("speech_mask", None)
+    
+        self.speech_encoder.extract_variable_length_features(speech_mel)
