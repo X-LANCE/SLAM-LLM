@@ -1,18 +1,19 @@
 #!/bin/bash
-export PYTHONPATH=/root/whisper:$PYTHONPATH
+#export PYTHONPATH=/root/whisper:$PYTHONPATH
 export CUDA_VISIBLE_DEVICES=0
 export CUDA_LAUNCH_BLOCKING=1
 
 cd /root/SLAM-LLM
 
-audio_encoder_path=/home/oss/maziyang.mzy/models/AudioMAE/finetuned.pth
 speech_encoder_path=/home/oss/maziyang.mzy/models/Whisper/base.pt
 llm_path=/home/oss/zhifu.gzf/ckpt/Llama-2-7b-hf
-output_dir=/nfs/maziyang.mzy/models/llama-2-hf-finetune
+output_dir=/nfs/zhifu.gzf/models/llama-2-hf-finetune
 
 # -m debugpy --listen 5678 --wait-for-client
-python -m debugpy --listen 5678 --wait-for-client src/llama_recipes/pipeline/finetune.py \
+#python -m debugpy --listen 5678 --wait-for-client src/llama_recipes/pipeline/finetune.py \
+python  src/llama_recipes/pipeline/finetune.py \
 --model_name echat \
+--use_peft --peft_method lora \
 --quantization \
 --llm_name llama-2-7b-hf \
 --llm_path $llm_path \
