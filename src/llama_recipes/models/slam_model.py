@@ -3,6 +3,7 @@ import torch
 import soundfile as sf
 import torch.nn as nn
 import torch.nn.functional as F
+from typing import List, Optional, Tuple, Union
 from peft import LoraConfig, TaskType, get_peft_model, prepare_model_for_kbit_training
 from transformers import (
     LlamaForCausalLM,
@@ -132,5 +133,37 @@ class slam_model(nn.Module):
         # tokenizer
         self.tokenizer = tokenizer
 
-    def forward(self):
-        pass #TODO
+    def forward(self,
+                input_ids: torch.LongTensor = None,
+                attention_mask: Optional[torch.Tensor] = None,
+                position_ids: Optional[torch.LongTensor] = None,
+                past_key_values: Optional[List[torch.FloatTensor]] = None,
+                inputs_embeds: Optional[torch.FloatTensor] = None,
+                labels: Optional[torch.LongTensor] = None,
+                use_cache: Optional[bool] = None,
+                output_attentions: Optional[bool] = None,
+                output_hidden_states: Optional[bool] = None,
+                return_dict: Optional[bool] = None,
+                **kwargs,
+                ):
+        speech_mel = kwargs.get("speech_mel", None)
+        speech_mask = kwargs.get("speech_mask", None)
+
+        speech_encoder_outs = None
+        if speech_mel is not None:
+            speech_encoder_outs = self.speech_encoder.extract_variable_length_features(speech_mel.permute(0, 2, 1))
+            speech_encoder_outs = self.speech_encoder_projector(speech_encoder_outs)
+
+        input_ids[input_ids == -1] = 0
+        if hasattr(self.llm.model, "embed_tokens"):
+            inputs_embeds = self.llm.model.embed_tokens(input_ids)
+        else:
+            inputs_embeds = self.llm.model.model.embed_tokens(input_ids)
+        batch_size, token_num, dims = inputs_embeds.shape
+        _, l, _ = speech_encoder_outs.shape
+        speech_encoder_outs_pad = F.pad(speech_encoder_outs, (0, 0, 0, token_num-l, 0, 0), value=0.0)
+        inputs_embeds = speech_encoder_outs_pad * speech_mask[:, :, None] + inputs_embeds * (~speech_mask[:, :, None])
+
+        model_outputs = self.llm(inputs_embeds=inputs_embeds, attention_mask=attention_mask, labels=labels)
+
+        return model_outputs

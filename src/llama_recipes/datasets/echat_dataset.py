@@ -13,7 +13,7 @@ from torch.utils.data import Dataset
 import whisper
 
 
-class AudioDataset(Dataset):
+class EChatDataset(Dataset):
     def __init__(
             self, 
             dataset_config,
@@ -66,9 +66,7 @@ class AudioDataset(Dataset):
 
         prompt = self.prompt_template.format(prompt)
         answer = self.answer_template.format(dialog_list[sentence_id+1]['emotion'], dialog_list[sentence_id+1]['trans'])
-        prompt_ids = torch.tensor(
-            self.tokenizer.encode(prompt), dtype=torch.int64
-        )
+        prompt_ids = self.tokenizer.encode(prompt)
         prompt_length = len(prompt_ids)
         speech_length = (speech_mel.shape[0] + 1) // 2 # ad-hoc for whisper for 2x downsample from mel to feats
         speech_pseudo = torch.full((speech_length,),-1)
@@ -83,7 +81,7 @@ class AudioDataset(Dataset):
         
         labels_ids = copy.deepcopy(example_ids) # [speech,prompt,answer,eos]
         labels_ids[:speech_length + prompt_length] = -1 #[-1,-1,answer,eos]
-        example_mask = example_ids.ge(0) #[True,True,True,True]
+        example_mask = example_ids.ge(-1) #[True,True,True,True]
         label_mask = labels_ids.ge(0) #[False,False,True,True]
         example_ids[~example_mask] = 0 #[speech,prompt,answer,eos]
         labels_ids[~label_mask] = self.IGNORE_INDEX #[-100,answer,eos,-100]
@@ -141,7 +139,7 @@ class AudioDataset(Dataset):
                                 for s in samples])
         labels = torch.stack([self.pad(s['labels'], input_ids_max_length, self.IGNORE_INDEX) 
                                 for s in samples])
-        attention_mask = torch.stack([self.pad(s['labels'], input_ids_max_length, False) 
+        attention_mask = torch.stack([self.pad(s['attention_mask'], input_ids_max_length, False) 
                                 for s in samples])
         
         speech_mel_max_length = max([s['speech_mel'].shape[0] for s in samples])
@@ -162,6 +160,6 @@ class AudioDataset(Dataset):
 
 
 def get_audio_dataset(dataset_config, tokenizer, split):
-    dataset = AudioDataset(dataset_config, tokenizer, split)
+    dataset = EChatDataset(dataset_config, tokenizer, split)
 
     return dataset
