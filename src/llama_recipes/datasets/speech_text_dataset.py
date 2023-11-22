@@ -81,7 +81,7 @@ class AudioDataset(Dataset):
         example_ids = torch.cat((speech_pseudo, example_ids)) # [speech,prompt,answer,eos]
         
         labels_ids = copy.deepcopy(example_ids) # [speech,prompt,answer,eos]
-        labels_ids[:speech_length + prompt_length+1] = -1 #[-1,-1,answer,eos]; FIX(zhifu): speech_length + prompt_length->speech_length + prompt_length+1
+        labels_ids[:speech_length + prompt_length] = -1 #[-1,-1,answer,eos]; FIX(zhifu): speech_length + prompt_length->speech_length + prompt_length+1
         example_mask = example_ids.ge(-1) #FIX(GZF): [True,True,True,True]
         label_mask = labels_ids.ge(0) #[False,False,True,True]
         example_ids[~example_mask] = 0 #[speech,prompt,answer,eos]
@@ -92,7 +92,8 @@ class AudioDataset(Dataset):
             "labels": labels_ids,
             "attention_mask": example_mask,
             'speech_mel': speech_mel,
-            'speech_length': speech_length
+            'speech_length': speech_length,
+            
         }     
 
 
@@ -149,7 +150,7 @@ class AudioDataset(Dataset):
         
         speech_mask = torch.zeros_like(attention_mask)
         for line, sample in enumerate(samples):
-            speech_mask[line, :sample['speech_length']+1] = 1 #FIX(GZF): sample['speech_length']+1
+            speech_mask[line, :sample['speech_length']] = 1 #FIX(GZF): sample['speech_length']+1
 
         return {
             'input_ids': input_ids,

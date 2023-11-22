@@ -129,7 +129,7 @@ class slam_model(nn.Module):
         self.llm = setup_llm(train_config, model_config, **kwargs)
 
         # projector
-        self.speech_encoder_projector = nn.Linear(self.speech_encoder.ln_post.normalized_shape[0] ,self.llm.config.hidden_size)
+        self.speech_encoder_projector = nn.Linear(self.speech_encoder.ln_post.normalized_shape[0], self.llm.config.hidden_size)
 
         # tokenizer
         self.tokenizer = tokenizer
