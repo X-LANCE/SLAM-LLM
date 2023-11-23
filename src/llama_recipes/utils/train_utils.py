@@ -52,7 +52,7 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
     # Create a gradient scaler for fp16
     if train_config.use_fp16 and train_config.enable_fsdp:
         scaler = ShardedGradScaler()
-    elif train_config.use_fp16 and not train_config.enable_fsdp:
+    elif train_config.use_fp16 and not train_config.enable_fsdp: #
         scaler = torch.cuda.amp.GradScaler()
     if train_config.enable_fsdp:
         world_size = int(os.environ["WORLD_SIZE"])
@@ -71,10 +71,12 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
         with MemoryTrace() as memtrace:  # track the memory usage
             model.train()
             total_loss = 0.0
-            total_length = len(train_dataloader)//gradient_accumulation_steps
+            total_length = len(train_dataloader)//gradient_accumulation_steps  #30
             pbar = tqdm(colour="blue", desc=f"Training Epoch: {epoch+1}", total=total_length, dynamic_ncols=True)
             for step, batch in enumerate(train_dataloader):
                 for key in batch.keys():
+                    if type(batch[key])==bool:
+                        continue
                     if train_config.enable_fsdp:
                         batch[key] = batch[key].to(local_rank)
                     else:

@@ -70,7 +70,7 @@ def generate_dataset_config(train_config, kwargs):
 
 def get_dataloader_kwargs(train_config, dataset, tokenizer, mode):
         kwargs = {}
-        batch_size = train_config.batch_size_training if mode=="train" else train_config.val_batch_size
+        batch_size = train_config.batch_size_training if mode=="train" else train_config.val_batch_size  #2
         if train_config.batching_strategy == "padding":
             if train_config.enable_fsdp:
                 kwargs["batch_sampler"] = DistributedLengthBasedBatchSampler(
@@ -94,7 +94,7 @@ def get_dataloader_kwargs(train_config, dataset, tokenizer, mode):
             kwargs["batch_size"] = batch_size
             kwargs["drop_last"] = True
             kwargs["collate_fn"] = default_data_collator
-        else:
+        else:  #
             # raise ValueError(f"Unknown batching strategy: {train_config.batching_strategy}")
             kwargs["batch_size"] = batch_size
             kwargs["drop_last"] = True

@@ -15,6 +15,7 @@ from torch.distributed.fsdp import (
 )
 from torch.distributed.fsdp.fully_sharded_data_parallel import CPUOffload
 from llama_recipes.policies import AnyPrecisionAdamW, apply_fsdp_checkpointing
+#from policies import AnyPrecisionAdamW, apply_fsdp_checkpointing
 
 # config
 from llama_recipes.configs import fsdp_config as FSDP_CONFIG
@@ -53,14 +54,14 @@ def main(**kwargs):
     torch.manual_seed(train_config.seed)
     random.seed(train_config.seed)
 
-    if train_config.enable_fsdp:
+    if train_config.enable_fsdp:  #x
         setup()
         # torchrun specific
         local_rank = int(os.environ["LOCAL_RANK"])
         rank = int(os.environ["RANK"])
         world_size = int(os.environ["WORLD_SIZE"])
 
-    if torch.distributed.is_initialized():
+    if torch.distributed.is_initialized(): #x
         torch.cuda.set_device(local_rank)
         clear_gpu_cache(local_rank)
         setup_environ_flags(rank)
@@ -69,7 +70,7 @@ def main(**kwargs):
 
     
     # Convert the model to bfloat16 if fsdp and pure_bf16 is enabled
-    if train_config.enable_fsdp and fsdp_config.pure_bf16:
+    if train_config.enable_fsdp and fsdp_config.pure_bf16:  #x
         model.to(torch.bfloat16)
 
     #setting up FSDP if enable_fsdp is enabled
@@ -95,7 +96,7 @@ def main(**kwargs):
         )
         if fsdp_config.fsdp_activation_checkpointing:
             apply_fsdp_checkpointing(model)
-    elif not train_config.quantization and not train_config.enable_fsdp:
+    elif not train_config.quantization and not train_config.enable_fsdp:  #
         model.to("cuda")
 
     dataset_config = generate_dataset_config(train_config, kwargs)
@@ -106,16 +107,16 @@ def main(**kwargs):
         dataset_config,
         split="train",
     )
-    if not train_config.enable_fsdp or rank == 0:
-        print(f"--> Training Set Length = {len(dataset_train)}")
+    if not train_config.enable_fsdp or rank == 0: #
+        print(f"--> Training Set Length = {len(dataset_train)}")  #60
     dataset_val = get_preprocessed_dataset(
         tokenizer,
         dataset_config,
         split="test",
     )
     if not train_config.enable_fsdp or rank == 0:
-        print(f"--> Validation Set Length = {len(dataset_val)}")
-    if train_config.batching_strategy == "packing":
+        print(f"--> Validation Set Length = {len(dataset_val)}")  #20
+    if train_config.batching_strategy == "packing":  #x   是custom
         dataset_train = ConcatDataset(dataset_train, chunk_size=train_config.context_length)
 
     train_dl_kwargs = get_dataloader_kwargs(train_config, dataset_train, tokenizer, "train")
@@ -130,7 +131,7 @@ def main(**kwargs):
 
     eval_dataloader = None
     if train_config.run_validation:
-        if train_config.batching_strategy == "packing":
+        if train_config.batching_strategy == "packing": #x
             dataset_val = ConcatDataset(dataset_val, chunk_size=train_config.context_length)
 
         val_dl_kwargs = get_dataloader_kwargs(train_config, dataset_val, tokenizer, "val")
@@ -152,7 +153,7 @@ def main(**kwargs):
             use_kahan_summation=False,
             weight_decay=train_config.weight_decay,
         )
-    else:
+    else: #
         optimizer = optim.AdamW(
             model.parameters(),
             lr=train_config.lr,
@@ -168,9 +169,9 @@ def main(**kwargs):
         tokenizer,
         optimizer,
         scheduler,
-        train_config.gradient_accumulation_steps,
+        train_config.gradient_accumulation_steps,  #1
         train_config,
-        fsdp_config if train_config.enable_fsdp else None,
+        fsdp_config if train_config.enable_fsdp else None,  #false
         local_rank if train_config.enable_fsdp else None,
         rank if train_config.enable_fsdp else None,
     )

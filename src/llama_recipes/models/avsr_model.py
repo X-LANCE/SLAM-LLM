@@ -15,9 +15,11 @@ import whisper
 from llama_recipes.utils.config_utils import generate_peft_config
 from llama_recipes.utils.train_utils import print_model_size
 
+from .av_net import AVNet
 
-def setup_model(tokenizer, train_config, model_config, **kwargs):
-    return slam_model(tokenizer, train_config, model_config, **kwargs)
+
+def setupavsr_model(tokenizer, train_config, model_config, **kwargs):
+    return avsrllm_model(tokenizer, train_config, model_config, **kwargs)
 
 
 def setup_tokenizer(train_config, model_config, **kwargs):
@@ -108,7 +110,7 @@ def setup_llm(train_config, model_config, **kwargs):
     return model
 
 
-class slam_model(nn.Module):
+class avsrllm_model(nn.Module):
     def __init__(
         self,
         tokenizer, 
@@ -117,53 +119,49 @@ class slam_model(nn.Module):
         **kwargs
     ):
         super().__init__()
-        # whisper 
-        self.speech_encoder = whisper.load_model(model_config.encoder_path).encoder
-        self.speech_encoder.extract_variable_length_features = types.MethodType(extract_variable_length_features, self.speech_encoder)  #动态地将一个函数绑定到一个对象上。运行时为类的实例动态添加方法。(函数，对象)
-        for name, param in self.speech_encoder.named_parameters(): 
-            param.requires_grad = False       
-        self.speech_encoder.eval()
-
-        # llama
-        self.llm = setup_llm(train_config, model_config, **kwargs)
+        # audio-visual 
+        self.avnet=AVNet(model_config)
+        
+        # load_ckpt TODO
+        #self.avnet = whisper.load_model(model_config.encoder_path).encoder
+        # for name, param in self.speech_encoder.named_parameters(): 
+        #     param.requires_grad = False       
+        # self.speech_encoder.eval()
 
         # projector
-        self.speech_encoder_projector = nn.Linear(self.speech_encoder.ln_post.normalized_shape[0] ,self.llm.config.hidden_size)  #(512,4096)
+        self.feature_projector = nn.Linear(model_config.FRONTEND_DMODEL, self.llm.config.hidden_size)  #(512,4096)
 
-        # tokenizer
-        self.tokenizer = tokenizer
 
-    def forward(self,
-                input_ids: torch.LongTensor = None,
-                attention_mask: Optional[torch.Tensor] = None,
-                position_ids: Optional[torch.LongTensor] = None,
-                past_key_values: Optional[List[torch.FloatTensor]] = None,
-                inputs_embeds: Optional[torch.FloatTensor] = None,
-                labels: Optional[torch.LongTensor] = None,
-                use_cache: Optional[bool] = None,
-                output_attentions: Optional[bool] = None,
-                output_hidden_states: Optional[bool] = None,
-                return_dict: Optional[bool] = None,
-                **kwargs,
-                ):
-        speech_mel = kwargs.get("speech_mel", None)  #torch.Size([2, 371, 80])
-        speech_mask = kwargs.get("speech_mask", None)
+        # # llama
+        # self.llm = setup_llm(train_config, model_config, **kwargs)
 
-        speech_encoder_outs = None
-        if speech_mel is not None:
-            speech_encoder_outs = self.speech_encoder.extract_variable_length_features(speech_mel.permute(0, 2, 1))  #torch.Size([2, 186, 512])
-            speech_encoder_outs = self.speech_encoder_projector(speech_encoder_outs)  #torch.Size([2, 186, 4096])
+        # # tokenizer
+        # self.tokenizer = tokenizer
+    
+    def forward(self, inputBatch0, inputBatch1,inputBatch2,inputBatch3,  targetinBatch, targetLenBatch, maskw2v, **kwargs,):
+    #def forward(self, inputBatch,targetinBatch, targetLenBatch, maskw2v, **kwargs,):
+        inputBatch=(inputBatch0, inputBatch1,inputBatch2,inputBatch3)
 
-        input_ids[input_ids == -1] = 0
-        if hasattr(self.llm.model, "embed_tokens"):
-            inputs_embeds = self.llm.model.embed_tokens(input_ids)
-        else: #
-            inputs_embeds = self.llm.model.model.embed_tokens(input_ids)  #torch.Size([2, 292, 4096])
-        batch_size, token_num, dims = inputs_embeds.shape
-        _, l, _ = speech_encoder_outs.shape #186
-        speech_encoder_outs_pad = F.pad(speech_encoder_outs, (0, 0, 0, token_num-l, 0, 0), value=0.0)  #0是填充大小  各个维度位置  我理解在speech_encoder_outs 后面补0，补到input_ids的长度
-        inputs_embeds = speech_encoder_outs_pad * speech_mask[:, :, None] + inputs_embeds * (~speech_mask[:, :, None])  # [2,292] [2,292,4096]  None 将 speech_mask 扩展为和 speech_encoder_outs_pad 相同的维度。通过添加一个新的维度，可以使得两个张量的维度匹配
+        jointBatch, inputLenBatch, mask = self.avnet(inputBatch, maskw2v)  #[80, 2, 1024], [80,80], [2,80] mask全是false  #输出应该是 bs,l,dim
+        jointBatch = jointBatch.transpose(0, 1)
+            
+        # project
+        feature_tokens = self.feature_projector(jointBatch)
 
-        model_outputs = self.llm(inputs_embeds=inputs_embeds, attention_mask=attention_mask, labels=labels)  #self PeftModelForCausalLM
+        #还原原来长度
+
+
+        # + 文本 + padding
+        # input_ids[input_ids == -1] = 0
+        # if hasattr(self.llm.model, "embed_tokens"):
+        #     inputs_embeds = self.llm.model.embed_tokens(input_ids)
+        # else: #
+        #     inputs_embeds = self.llm.model.model.embed_tokens(input_ids)  #torch.Size([2, 292, 4096])
+        # batch_size, token_num, dims = inputs_embeds.shape
+        # _, l, _ = speech_encoder_outs.shape #186
+        # speech_encoder_outs_pad = F.pad(speech_encoder_outs, (0, 0, 0, token_num-l, 0, 0), value=0.0)  #0是填充大小  各个维度位置  我理解在speech_encoder_outs 后面补0，补到input_ids的长度
+        # inputs_embeds = speech_encoder_outs_pad * speech_mask[:, :, None] + inputs_embeds * (~speech_mask[:, :, None])  # [2,292] [2,292,4096]  None 将 speech_mask 扩展为和 speech_encoder_outs_pad 相同的维度。通过添加一个新的维度，可以使得两个张量的维度匹配
+
+        # model_outputs = self.llm(inputs_embeds=inputs_embeds, attention_mask=attention_mask, labels=labels)  #self PeftModelForCausalLM
 
         return model_outputs  #logits:[2,292,32000]  #loss:6.9475
