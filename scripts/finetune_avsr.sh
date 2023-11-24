@@ -12,7 +12,7 @@ output_dir=/nfs/maziyang.mzy/models/llama-2-hf-finetune
 
 # -m debugpy --listen 5678 --wait-for-client
 python -m debugpy --listen 5678 --wait-for-client src/llama_recipes/pipeline/finetune.py \
---model_name echat \
+--model_name avsr \
 --use_peft --peft_method lora \
 --quantization \
 --llm_name llama-2-7b-hf \

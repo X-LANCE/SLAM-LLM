@@ -164,6 +164,6 @@ class slam_model(nn.Module):
         speech_encoder_outs_pad = F.pad(speech_encoder_outs, (0, 0, 0, token_num-l, 0, 0), value=0.0)  #0是填充大小  各个维度位置  我理解在speech_encoder_outs 后面补0，补到input_ids的长度
         inputs_embeds = speech_encoder_outs_pad * speech_mask[:, :, None] + inputs_embeds * (~speech_mask[:, :, None])  # [2,292] [2,292,4096]  None 将 speech_mask 扩展为和 speech_encoder_outs_pad 相同的维度。通过添加一个新的维度，可以使得两个张量的维度匹配
 
-        model_outputs = self.llm(inputs_embeds=inputs_embeds, attention_mask=attention_mask, labels=labels)  #self PeftModelForCausalLM
+        model_outputs = self.llm(inputs_embeds=inputs_embeds, attention_mask=attention_mask, labels=labels)  #self PeftModelForCausalLM   #(2,292)
 
         return model_outputs  #logits:[2,292,32000]  #loss:6.9475

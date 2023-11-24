@@ -11,7 +11,7 @@ llm_path=/home/oss/zhifu.gzf/ckpt/Llama-2-7b-hf
 output_dir=/nfs/maziyang.mzy/models/llama-2-hf-finetune
 
 # -m debugpy --listen 5679 --wait-for-client
-python src/llama_recipes/pipeline/finetune.py \
+python -m debugpy --listen 5679 --wait-for-client src/llama_recipes/pipeline/finetune.py \
 --model_name echat \
 --use_peft --peft_method lora \
 --quantization \
@@ -27,4 +27,4 @@ python src/llama_recipes/pipeline/finetune.py \
 --custom_dataset.max_words 1024 \
 --num_epochs 1 \
 --batch_size_training 2 \
---output_dir $output_dir 
+--output_dir $output_dir \

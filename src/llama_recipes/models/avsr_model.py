@@ -16,7 +16,8 @@ from llama_recipes.utils.config_utils import generate_peft_config
 from llama_recipes.utils.train_utils import print_model_size
 
 from .av_net import AVNet
-
+from torch.nn.utils.rnn import pad_sequence
+import copy
 
 def setupavsr_model(tokenizer, train_config, model_config, **kwargs):
     return avsrllm_model(tokenizer, train_config, model_config, **kwargs)
@@ -119,6 +120,9 @@ class avsrllm_model(nn.Module):
         **kwargs
     ):
         super().__init__()
+
+        self.IGNORE_INDEX = -100 # The default setting in CrossEntropyLoss
+        
         # audio-visual 
         self.avnet=AVNet(model_config)
         
@@ -128,40 +132,63 @@ class avsrllm_model(nn.Module):
         #     param.requires_grad = False       
         # self.speech_encoder.eval()
 
+
+
+        # llama
+        self.llm = setup_llm(train_config, model_config, **kwargs)
+
         # projector
-        self.feature_projector = nn.Linear(model_config.FRONTEND_DMODEL, self.llm.config.hidden_size)  #(512,4096)
+        self.feature_projector = nn.Linear(model_config.FRONTEND_DMODEL, self.llm.config.hidden_size)  #(1024,4096)
 
-
-        # # llama
-        # self.llm = setup_llm(train_config, model_config, **kwargs)
 
         # # tokenizer
         # self.tokenizer = tokenizer
     
-    def forward(self, inputBatch0, inputBatch1,inputBatch2,inputBatch3,  targetinBatch, targetLenBatch, maskw2v, **kwargs,):
+    def forward(self, inputBatch0, inputBatch1,inputBatch2,inputBatch3,  targetoutBatch, targetLenBatch, maskw2v, **kwargs,):
     #def forward(self, inputBatch,targetinBatch, targetLenBatch, maskw2v, **kwargs,):
-        inputBatch=(inputBatch0, inputBatch1,inputBatch2,inputBatch3)
+        inputBatch=(inputBatch0, inputBatch1,inputBatch2,inputBatch3)   # targetinBatch是前面加
 
-        jointBatch, inputLenBatch, mask = self.avnet(inputBatch, maskw2v)  #[80, 2, 1024], [80,80], [2,80] mask全是false  #输出应该是 bs,l,dim
-        jointBatch = jointBatch.transpose(0, 1)
+        jointBatch, inputLenBatch, mask = self.avnet(inputBatch, maskw2v)  #[129, 2, 1024], [129,125], [2,129] mask false的地方是不mask的，mask的位置是true , 就mask[1]末尾4个true  #输出应该是 bs,l,dim
+        jointBatch = jointBatch.transpose(0, 1)  #(2,129,1024)
             
         # project
-        feature_tokens = self.feature_projector(jointBatch)
+        feature_tokens = self.feature_projector(jointBatch)  #(2,129,4096)
+
+        if hasattr(self.llm.model, "embed_tokens"):
+            texts_embeds = self.llm.model.embed_tokens(targetoutBatch)
+        else: #
+            texts_embeds = self.llm.model.model.embed_tokens(targetoutBatch)  #(2,37)-> (2,37,4096)
 
         #还原原来长度
+        #搞出每个item的特征和文本 拼起来 再padding
+
+        #input_list=[torch.cat( (jointBatch[i, ~mask[i]] , targetoutBatch[i][:targetLenBatch[i]]),  dim=1) for i in range(jointBatch.size(0) )]
+        # for i in range(jointBatch.size(0)): 
+        #     a= feature_tokens[i, ~mask[i]]  #(129,4096) (125,4096)
+        #     b= texts_embeds[i][:targetLenBatch[i]][:] #(37,4096) (26,4096)
+        #     input= torch.cat( (a,b),  dim=0)  #(166,4096) (151,4096)
+
+        input_lists=[torch.cat(  (feature_tokens[i, ~mask[i]], texts_embeds[i][:targetLenBatch[i]][:] ) , dim=0  ) for i in range(jointBatch.size(0)) ]
+        inputs_embeds = pad_sequence(input_lists, batch_first=True, padding_value=0)  #(2,166,4096)
+
+        lengths=[item.size(0) for item in input_lists]  #[166, 151]
+        max_length=max(lengths)  #166
+        mask2 = torch.zeros(len(input_lists),max_length,dtype=torch.bool)  #(2,166)
+        for i,length in enumerate(lengths):
+            mask2[i,:length]=1  #mask的地方是false，其余是true，只有maks2[1]末尾有15个false   
 
 
-        # + 文本 + padding
-        # input_ids[input_ids == -1] = 0
-        # if hasattr(self.llm.model, "embed_tokens"):
-        #     inputs_embeds = self.llm.model.embed_tokens(input_ids)
-        # else: #
-        #     inputs_embeds = self.llm.model.model.embed_tokens(input_ids)  #torch.Size([2, 292, 4096])
-        # batch_size, token_num, dims = inputs_embeds.shape
-        # _, l, _ = speech_encoder_outs.shape #186
-        # speech_encoder_outs_pad = F.pad(speech_encoder_outs, (0, 0, 0, token_num-l, 0, 0), value=0.0)  #0是填充大小  各个维度位置  我理解在speech_encoder_outs 后面补0，补到input_ids的长度
-        # inputs_embeds = speech_encoder_outs_pad * speech_mask[:, :, None] + inputs_embeds * (~speech_mask[:, :, None])  # [2,292] [2,292,4096]  None 将 speech_mask 扩展为和 speech_encoder_outs_pad 相同的维度。通过添加一个新的维度，可以使得两个张量的维度匹配
+        # labels_list=[]
+        # for i in range(jointBatch.size(0)): 
+        #     labels= torch.cat(( torch.full((inputLenBatch[i],),self.IGNORE_INDEX , device=targetoutBatch.device) ,  targetoutBatch[i][:targetLenBatch[i]]) ,dim=0)   
+        #     labels_list.append((labels))
+        labels_list= [  torch.cat(( torch.full((inputLenBatch[i],),self.IGNORE_INDEX , device=targetoutBatch.device) ,  targetoutBatch[i][:targetLenBatch[i]]) ,dim=0)    for i in range(jointBatch.size(0))     ]  #[166,151]
+        labels = pad_sequence(labels_list, batch_first=True, padding_value=self.IGNORE_INDEX)  #(2,166)
 
-        # model_outputs = self.llm(inputs_embeds=inputs_embeds, attention_mask=attention_mask, labels=labels)  #self PeftModelForCausalLM
+
+        # 研究 attention_mask，labels,里面实现了错位
+        # 
+        model_outputs = self.llm(inputs_embeds=inputs_embeds, attention_mask = mask2, labels=labels)  #self PeftModelForCausalLM
 
         return model_outputs  #logits:[2,292,32000]  #loss:6.9475
+

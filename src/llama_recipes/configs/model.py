@@ -9,7 +9,7 @@ class model_config:
     encoder_path: str = None
     encoder_projector: str = "linear"
 
-    name: str =  "avsr"
+    # name: str =  "avsr"
     FRONTEND_DMODEL: int = 1024
     TX_ATTENTION_HEADS: int = 8
     TX_NUM_LAYERS: int = 6

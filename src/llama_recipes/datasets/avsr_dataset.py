@@ -13,6 +13,8 @@ class AVSRDataset(Dataset):
     def __init__(self, dataset_config, tokenizer=None, split='train'):
         super().__init__()
 
+        self.tokenizer = tokenizer
+
         self.modal = dataset_config.modal
         self.dataset = split                        #train|val|test
         self.data_path = dataset_config.data_path
@@ -109,16 +111,18 @@ class AVSRDataset(Dataset):
             noise = None
 
         if index < 118516:     #原本是96318   查过了 这个数确实是lrs2的那个行数 也就是文件数  原本应该是pretrain处理的 有一部分搞到main处理了 所以没有crop 导致超过500
-            inp, trgtin, trgtout, trgtLen = self.prepare_pretrain_input(index, self.modal, self.h5, targetFile, self.charToIx, self.transform, noise, self.noiseSNR, (3, 21), 160)
+            #inp, trgtin, trgtout, trgtLen, trgttext  = self.prepare_pretrain_input(index, self.modal, self.h5, targetFile, self.charToIx, self.transform, noise, self.noiseSNR, (3, 21), 160)
+            inp, trgtin, trgtout, trgtLen  = self.prepare_pretrain_input(index, self.modal, self.h5, targetFile, self.charToIx, self.transform, noise, self.noiseSNR, (3, 21), 160)
             if inp==0 and trgtin ==0 and  trgtout ==0 and trgtLen==0:
                 index+=1
                 targetFile = self.datalist[index] + ".txt"
+                #inp, trgtin, trgtout, trgtLen, trgttext = self.prepare_pretrain_input(index, self.modal, self.h5, targetFile,self.charToIx, self.transform, noise, self.noiseSNR, (3, 21), 160)  #就只是往后挪了一格 很弱
                 inp, trgtin, trgtout, trgtLen = self.prepare_pretrain_input(index, self.modal, self.h5, targetFile,self.charToIx, self.transform, noise, self.noiseSNR, (3, 21), 160)  #就只是往后挪了一格 很弱
-
         else:
-            inp, trgtin, trgtout, trgtLen = self.prepare_main_input(index, self.modal, self.h5, targetFile, self.charToIx, self.transform, noise, self.noiseSNR)
+            #inp, trgtin, trgtout, trgtLen, trgttext = self.prepare_main_input(index, self.modal, self.h5, targetFile, self.charToIx, self.transform, noise, self.noiseSNR)
+            inp, trgtin, trgtout, trgtLen = self.prepare_main_input(index, self.modal, self.h5, targetFile, self.charToIx, self.transform, noise, self.noiseSNR)                                                  
 
-        return inp, trgtin, trgtout, trgtLen   #VO (none,(72,1,112,112) )
+        return inp, trgtin, trgtout, trgtLen  #, trgttext   #VO (none,(72,1,112,112) )
 
     def __len__(self):
         """
@@ -176,7 +180,7 @@ class AVSRDataset(Dataset):
         targetMask = torch.zeros_like(targetoutBatch, device=targetoutBatch.device)
         targetMask[(torch.arange(targetMask.shape[0]), targetLenBatch.long() - 1)] = 1
         targetMask = (1 - targetMask.flip([-1]).cumsum(-1).flip([-1])).bool()
-        concatTargetoutBatch = targetoutBatch[~targetMask]  #(183,)
+
 
         return {
             "inputBatch0": inputBatch[0],
@@ -184,11 +188,14 @@ class AVSRDataset(Dataset):
             "inputBatch2": inputBatch[2],
             "inputBatch3": inputBatch[3],
             #"inputBatch":inputBatch,
-            "targetinBatch": targetinBatch,
+            
+            #"targetinBatch": targetinBatch,
+            "targetoutBatch": targetoutBatch,
             "targetLenBatch": targetLenBatch.long(),
             #"targetinBatch": targetinBatch.to('cuda:0'),
             #"targetLenBatch": targetLenBatch.long().to('cuda:0'),
             'maskw2v': True,
+         
         }     
 
     def prepare_pretrain_input(self,index, modal, h5, targetFile, charToIx, transform, noise, noiseSNR, numWordsRange, maxLength):  #(3,21)  160
@@ -311,10 +318,20 @@ class AVSRDataset(Dataset):
                 else:
                     vidInp = None
 
-            trgtin = [charToIx[item] for item in trgtNWord]
+            """
+            trgtin = [charToIx[item] for item in trgtNWord]  #trgtNWord: 'POPULATION BY PROVIDING THEM A SAFE SPACE WHERE THESE GIRLS COULD COME AND MEET OTHER GIRLS READ SOME BOOKS PLAY SOME'
             trgtout = [charToIx[item] for item in trgtNWord]
             trgtin.insert(0, charToIx["<EOS>"])
             trgtout.append(charToIx["<EOS>"])
+            """
+
+            # 替换成
+            trgtin = self.tokenizer.encode(trgtNWord)   #[1, 349, 4590, 13309, 8098, 6770, 13756, 13044, 4214, 6093, 29924, 319, 317, 5098, ...]
+            trgtout = self.tokenizer.encode(trgtNWord) 
+            trgtin.insert(0, self.tokenizer.eos_token_id ) #[2,xxx]
+            trgtout.append(self.tokenizer.eos_token_id ) #[]
+
+
             trgtin = np.array(trgtin)
             trgtout = np.array(trgtout)
             trgtLen = len(trgtout)
@@ -331,10 +348,10 @@ class AVSRDataset(Dataset):
             else:
                 numWords -= 1
 
-        return inp, trgtin, trgtout, trgtLen
+        return inp, trgtin, trgtout, trgtLen  #, trgtNWord
 
 
-    def prepare_main_input(index, modal, h5, targetFile, charToIx, transform, noise, noiseSNR):
+    def prepare_main_input(self, index, modal, h5, targetFile, charToIx, transform, noise, noiseSNR):
         """
         Function to convert the data sample in the main dataset into appropriate tensors.
         """
@@ -348,10 +365,18 @@ class AVSRDataset(Dataset):
                     right = trgt.find("}")
                     trgt  = trgt .replace(trgt [left:right + 2], "")
 
+        """
         trgtin = [charToIx[item] for item in trgt] #[8, 4, 1, 15, 2, 1, 7, 2, 2, 12, 1, 14, 4, 13, 1, 3, 4, 1, 9, 2, 11,
         trgtin.insert(0, charToIx["<EOS>"])  #[39,8,4,...]
         trgtout = [charToIx[item] for item in trgt]
         trgtout.append(charToIx["<EOS>"])   #[..,39] 在最后面加39
+        """
+
+        trgtin = self.tokenizer.encode(trgt) 
+        trgtout = self.tokenizer.encode(trgt) 
+        trgtin.insert(0, self.tokenizer.eos_token_id )
+        trgtout.append(self.tokenizer.eos_token_id )
+
         trgtin = np.array(trgtin)
         trgtout = np.array(trgtout)
         trgtLen = len(trgtout)  #50
@@ -385,7 +410,7 @@ class AVSRDataset(Dataset):
         trgtout = torch.from_numpy(trgtout)
         trgtLen = torch.tensor(trgtLen)
 
-        return inp, trgtin, trgtout, trgtLen
+        return inp, trgtin, trgtout, trgtLen#,trgt   #'THE FIRST TIME WHEN IT TOOK ME FIVE MONTHS FROM THE DECISION OF'
 
 
 

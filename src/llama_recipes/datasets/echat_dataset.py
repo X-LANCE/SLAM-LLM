@@ -81,8 +81,8 @@ class EChatDataset(Dataset):
         
         labels_ids = copy.deepcopy(example_ids) # [speech,prompt,answer,eos]
         labels_ids[:speech_length + prompt_length] = -1 #[-1,-1,answer,eos]
-        example_mask = example_ids.ge(-1) #[True,True,True,True]   #210    #返回一个新的张量，其中每个元素都是对应位置上的元素是否大于等于0的布尔值。
-        label_mask = labels_ids.ge(0) #[False,False,True,True]  #210
+        example_mask = example_ids.ge(-1) #[True,True,True,True]   #210    #返回一个新的张量，其中每个元素都是对应位置上的元素是否大于等于0的布尔值。  这里是全true
+        label_mask = labels_ids.ge(0) #[False,False,True,True]  #210   
         example_ids[~example_mask] = 0 #[speech,prompt,answer,eos]
         labels_ids[~label_mask] = self.IGNORE_INDEX #[-100,-100,answer,eos]  
         
@@ -139,8 +139,8 @@ class EChatDataset(Dataset):
         input_ids = torch.stack([self.pad(s['input_ids'], input_ids_max_length, self.tokenizer.pad_token_id) 
                                 for s in samples])
         labels = torch.stack([self.pad(s['labels'], input_ids_max_length, self.IGNORE_INDEX) 
-                                for s in samples])
-        attention_mask = torch.stack([self.pad(s['attention_mask'], input_ids_max_length, False) 
+                                for s in samples])  #前面也是ignore，尾部也是ignore 
+        attention_mask = torch.stack([self.pad(s['attention_mask'], input_ids_max_length, False)   #这里根据输入长度padding，尾部mask的地方是false
                                 for s in samples])
         
         speech_mel_max_length = max([s['speech_mel'].shape[0] for s in samples])
