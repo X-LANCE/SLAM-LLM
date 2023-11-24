@@ -126,19 +126,41 @@ class avsrllm_model(nn.Module):
         # audio-visual 
         self.avnet=AVNet(model_config)
         
-        # load_ckpt TODO
-        #self.avnet = whisper.load_model(model_config.encoder_path).encoder
-        # for name, param in self.speech_encoder.named_parameters(): 
-        #     param.requires_grad = False       
-        # self.speech_encoder.eval()
+        # load_ckpt
+        checkpoint = torch.load(model_config.TRAIN_LRS3_MODEL_FILE)
+        self.avnet.load_state_dict(checkpoint['state_dict'],strict=False)    # 最终输出ctc/attention的模块没有用到
 
+        # if not model_config.modal == "AV" and model_config.TRAIN_LRS3_MODEL_FILE is not None:
+        #     stateDict = torch.load(model_config.TRAIN_LRS3_MODEL_FILE, map_location="cpu")['state_dict']  #When you call torch.load() on a file which contains GPU tensors, those tensors will be loaded to GPU by default. You can call torch.load(.., map_location='cpu') and then load_state_dict() to avoid GPU RAM surge when loading a model checkpoint.
+        #     model.load_state_dict(stateDict, strict=False)
+
+        # if model_config.modal == "AV" and model_config.TRAINED_AO_FILE is not None and model_config.TRAINED_VO_FILE is not None:
+        #     AOstateDict = torch.load(model_config.TRAINED_AO_FILE)['state_dict']
+        #     stateDict = torch.load(model_config.TRAINED_VO_FILE)['state_dict']
+        #     for k in list(AOstateDict.keys()):
+        #         if not (k.startswith('audioConv') or k.startswith('wav2vecModel')):
+        #             del AOstateDict[k]
+
+        #     for k in list(stateDict.keys()):
+        #         if not (k.startswith('videoConv') or k.startswith('visualModel')):
+        #             del stateDict[k]
+        #     stateDict.update(AOstateDict)
+        #     model.load_state_dict(stateDict, strict=False)
+
+        # 直接load一个完整的 做初始化
+
+
+        # freeze
+        for name, param in self.avnet.named_parameters(): 
+            param.requires_grad = False       
+        self.avnet.eval()
 
 
         # llama
         self.llm = setup_llm(train_config, model_config, **kwargs)
 
         # projector
-        self.feature_projector = nn.Linear(model_config.FRONTEND_DMODEL, self.llm.config.hidden_size)  #(1024,4096)
+        self.feature_projector = nn.Linear(model_config.DMODEL, self.llm.config.hidden_size)  #(1024,4096)
 
 
         # # tokenizer

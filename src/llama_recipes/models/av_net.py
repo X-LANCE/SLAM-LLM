@@ -29,7 +29,7 @@ class AVNet(nn.Module):
         self.modal =  model_config.modal
         self.numClasses = model_config.CHAR_NUM_CLASSES
         self.reqInpLen = model_config.MAIN_REQ_INPUT_LENGTH
-        self.dModel= model_config.FRONTEND_DMODEL
+        self.dModel= model_config.DMODEL  #!!!
         self.nHeads = model_config.TX_ATTENTION_HEADS
         self.numLayers = model_config.TX_NUM_LAYERS
         self.peMaxLen= model_config.PE_MAX_LENGTH
