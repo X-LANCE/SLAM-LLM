@@ -108,10 +108,6 @@ def setup_llm(train_config, model_config, **kwargs):
         model.print_trainable_parameters()
         
         if kwargs.get("peft_ckpt", None):
-            # import pdb;
-            # pdb.set_trace()
-            # config = PeftConfig.from_pretrained(kwargs.get("peft_ckpt"))
-            # model = AutoModelForSeq2SeqLM.from_pretrained(config.base_model_name_or_path)
             print("loading ckpt from: ", kwargs.get("peft_ckpt"))
             model = PeftModel.from_pretrained(model, kwargs.get("peft_ckpt"))
 
@@ -135,7 +131,6 @@ class slam_model(nn.Module):
         self.speech_encoder.eval()
 
         # llama
-        # peft_ckpt = "/nfs/zhifu.gzf/models/llama-2-hf-finetune/echat/0"
         self.llm = setup_llm(train_config, model_config, **kwargs)
 
         # projector
@@ -143,9 +138,6 @@ class slam_model(nn.Module):
         ckpt_path = kwargs.get("ckpt_path", None)
         # ckpt_path = kwargs.get("ckpt_path", "/nfs/zhifu.gzf/models/llama-2-hf-finetune/echat/0/model.pt")
         if ckpt_path is not None:
-            # load ckpt
-            # import pdb;
-            # pdb.set_trace()
             print("loading ckpt from: ", ckpt_path)
             ckpt_dict = torch.load(ckpt_path, map_location="cpu")
             self.load_state_dict(ckpt_dict, strict=False)
@@ -180,6 +172,7 @@ class slam_model(nn.Module):
             inputs_embeds = self.llm.model.model.embed_tokens(input_ids)
         else:
             inputs_embeds = self.llm.model.model.model.embed_tokens(input_ids)
+
         batch_size, token_num, dims = inputs_embeds.shape
         _, l, _ = speech_encoder_outs.shape
         speech_encoder_outs_pad = F.pad(speech_encoder_outs, (0, 0, 0, token_num-l, 0, 0), value=0.0)
@@ -256,3 +249,4 @@ class slam_model(nn.Module):
         output_text = self.tokenizer.batch_decode(output, add_special_tokens=False, skip_special_tokens=True)
 
         return output_text
+

@@ -21,7 +21,7 @@ python  src/llama_recipes/pipeline/finetune.py \
 --encoder_path $speech_encoder_path \
 --encoder_projector linear \
 --dataset custom_dataset \
---custom_dataset.file src/llama_recipes/datasets/speech_text_dataset.py:get_audio_dataset \
+--custom_dataset.file src/llama_recipes/datasets/echat_dataset.py:get_audio_dataset \
 --custom_dataset.data_path /nfs/zhifu.gzf/data/IEMOCAP_full_release/datalist.jsonl \
 --batching_strategy custom \
 --custom_dataset.max_words 1024 \
