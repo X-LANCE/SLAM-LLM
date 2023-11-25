@@ -11,7 +11,7 @@ output_dir=/nfs/zhifu.gzf/models/llama-2-hf-finetune
 
 # -m debugpy --listen 5678 --wait-for-client
 #python -m debugpy --listen 5678 --wait-for-client src/llama_recipes/pipeline/finetune.py \
-python  src/llama_recipes/pipeline/finetune.py \
+python  src/llama_recipes/pipeline/inference.py \
 --model_name echat \
 --use_peft --peft_method lora \
 --quantization \

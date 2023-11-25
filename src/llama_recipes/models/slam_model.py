@@ -1,3 +1,4 @@
+import os
 import types
 import torch
 import soundfile as sf
@@ -14,7 +15,7 @@ import whisper
 
 from llama_recipes.utils.config_utils import generate_peft_config
 from llama_recipes.utils.train_utils import print_model_size
-
+from peft import PeftModel, PeftConfig
 from torch.nn import CrossEntropyLoss
 
 def setup_model(tokenizer, train_config, model_config, **kwargs):
@@ -105,6 +106,14 @@ def setup_llm(train_config, model_config, **kwargs):
         peft_config = generate_peft_config(train_config, kwargs)
         model = get_peft_model(model, peft_config)
         model.print_trainable_parameters()
+        
+        if kwargs.get("peft_ckpt", None):
+            # import pdb;
+            # pdb.set_trace()
+            # config = PeftConfig.from_pretrained(kwargs.get("peft_ckpt"))
+            # model = AutoModelForSeq2SeqLM.from_pretrained(config.base_model_name_or_path)
+            print("loading ckpt from: ", kwargs.get("peft_ckpt"))
+            model = PeftModel.from_pretrained(model, kwargs.get("peft_ckpt"))
 
     return model
 
@@ -126,11 +135,20 @@ class slam_model(nn.Module):
         self.speech_encoder.eval()
 
         # llama
+        # peft_ckpt = "/nfs/zhifu.gzf/models/llama-2-hf-finetune/echat/0"
         self.llm = setup_llm(train_config, model_config, **kwargs)
 
         # projector
         self.speech_encoder_projector = nn.Linear(self.speech_encoder.ln_post.normalized_shape[0], self.llm.config.hidden_size)
-
+        ckpt_path = kwargs.get("ckpt_path", None)
+        # ckpt_path = kwargs.get("ckpt_path", "/nfs/zhifu.gzf/models/llama-2-hf-finetune/echat/0/model.pt")
+        if ckpt_path is not None:
+            # load ckpt
+            # import pdb;
+            # pdb.set_trace()
+            print("loading ckpt from: ", ckpt_path)
+            ckpt_dict = torch.load(ckpt_path, map_location="cpu")
+            self.load_state_dict(ckpt_dict, strict=False)
         # tokenizer
         self.tokenizer = tokenizer
 
@@ -158,13 +176,83 @@ class slam_model(nn.Module):
         input_ids[input_ids == -1] = 0
         if hasattr(self.llm.model, "embed_tokens"):
             inputs_embeds = self.llm.model.embed_tokens(input_ids)
-        else:
+        elif hasattr(self.llm.model.model, "embed_tokens"):
             inputs_embeds = self.llm.model.model.embed_tokens(input_ids)
+        else:
+            inputs_embeds = self.llm.model.model.model.embed_tokens(input_ids)
         batch_size, token_num, dims = inputs_embeds.shape
         _, l, _ = speech_encoder_outs.shape
         speech_encoder_outs_pad = F.pad(speech_encoder_outs, (0, 0, 0, token_num-l, 0, 0), value=0.0)
         inputs_embeds = speech_encoder_outs_pad * speech_mask[:, :, None] + inputs_embeds * (~speech_mask[:, :, None])
         
-        model_outputs = self.llm(inputs_embeds=inputs_embeds, attention_mask=attention_mask, labels=labels)
+        model_outputs = self.llm.to(speech_encoder_outs.device)(inputs_embeds=inputs_embeds, attention_mask=attention_mask, labels=labels)
         
         return model_outputs
+    
+    @torch.no_grad()
+    def generate(
+        self,
+        wav_path = None,
+        generation_config = None,
+        logits_processor = None,
+        stopping_criteria = None,
+        prefix_allowed_tokens_fn = None,
+        synced_gpus = None,
+        assistant_model = None,
+        streamer = None,
+        negative_prompt_ids = None,
+        negative_prompt_attention_mask = None,
+        **kwargs,
+    ):
+
+        device = kwargs.get("device", "cuda")
+        assert os.path.exists(wav_path)
+        speech_raw = whisper.load_audio(wav_path)
+        # speech_raw = whisper.pad_or_trim(speech_raw)
+        speech_mel = whisper.log_mel_spectrogram(speech_raw).permute(1,0)[None, :, :].to(device)
+
+        speech_encoder_outs = self.speech_encoder.extract_variable_length_features(speech_mel.permute(0, 2, 1))
+        speech_encoder_outs = self.speech_encoder_projector.to(speech_encoder_outs.device)(speech_encoder_outs)
+
+        prompt="""
+        Please provide an emotional response based on the emotional speech you hear.
+        Remember to format your answer as follows: <|EMOTION|><|REPLY|>.
+        <|EMOTION|> is a standalone adjective.
+        <|REPLY|> is a reply based on a the speech.
+        """
+        prompt = "USER: {}\n ASSISTANT:".format(prompt)
+        prompt_ids = self.tokenizer.encode(prompt)  # FIX(GZF)
+        prompt_length = len(prompt_ids)
+        prompt_ids = torch.tensor(prompt_ids, dtype=torch.int64).to(device)
+        
+        if hasattr(self.llm.model, "embed_tokens"):
+            inputs_embeds = self.llm.model.embed_tokens(prompt_ids)
+        elif hasattr(self.llm.model.model, "embed_tokens"):
+            inputs_embeds = self.llm.model.model.embed_tokens(prompt_ids)
+        else:
+            inputs_embeds = self.llm.model.model.model.embed_tokens(prompt_ids)
+        
+        inputs_embeds = torch.cat((speech_encoder_outs, inputs_embeds[None, :, :]), dim=1)  # [speech,prompt]
+
+        atts = torch.ones(inputs_embeds.size()[:-1], dtype=torch.long).to(inputs_embeds.device)
+
+        # generate
+        output = self.llm.generate(
+            inputs_embeds=inputs_embeds,
+            max_length=kwargs.get("max_length", 200),
+            num_beams=kwargs.get("num_beams", 1),
+            do_sample=kwargs.get("do_sample", True),
+            min_length=kwargs.get("min_length", 1),
+            top_p=kwargs.get("top_p", 0.9),
+            repetition_penalty=kwargs.get("repetition_penalty", 1.0),
+            length_penalty=kwargs.get("length_penalty", 1.0),
+            temperature=kwargs.get("temperature", 1.0),
+            attention_mask=atts,
+            bos_token_id=self.tokenizer.bos_token_id,
+            eos_token_id=self.tokenizer.eos_token_id,
+            pad_token_id=self.tokenizer.pad_token_id
+        )
+
+        output_text = self.tokenizer.batch_decode(output, add_special_tokens=False, skip_special_tokens=True)
+
+        return output_text
