@@ -73,8 +73,8 @@ class EChatDataset(Dataset):
         speech_length = (speech_mel.shape[0] + 1) // 2 # ad-hoc for whisper for 2x downsample from mel to feats
         speech_pseudo = torch.full((speech_length,),-1)
         
-        example_ids = self.tokenizer.encode(answer) # FIX(GZF): [answer]
-        example_ids = prompt_ids + example_ids
+        example = prompt + answer #FIX(MZY): avoid putting a bos token before answer.
+        example_ids = self.tokenizer.encode(example) # [prompt,answer]
         example_ids.append(self.tokenizer.eos_token_id) # [prompt,answer,eos]
         example_ids = torch.tensor(
             example_ids, dtype=torch.int64
@@ -152,7 +152,7 @@ class EChatDataset(Dataset):
         
         speech_mask = torch.zeros_like(attention_mask)
         for line, sample in enumerate(samples):
-            speech_mask[line, :sample['speech_length']] = 1 #FIX(GZF): sample['speech_length']+1
+            speech_mask[line, :sample['speech_length']] = 1
 
         return {
             'input_ids': input_ids,

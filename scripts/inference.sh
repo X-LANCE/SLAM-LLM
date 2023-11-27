@@ -7,7 +7,7 @@ cd /root/SLAM-LLM
 
 speech_encoder_path=/nfs/zhifu.gzf/ckpt/Whisper/base.pt
 llm_path=/nfs/zhifu.gzf/ckpt/Llama-2-7b-hf
-output_dir=/nfs/zhifu.gzf/models/llama-2-hf-finetune
+output_dir=/nfs/maziyang.mzy/models/llama-2-hf-finetune
 
 # -m debugpy --listen 5678 --wait-for-client
 #python -m debugpy --listen 5678 --wait-for-client src/llama_recipes/pipeline/finetune.py \
@@ -28,5 +28,5 @@ python  src/llama_recipes/pipeline/inference.py \
 --num_epochs 1 \
 --batch_size_training 2 \
 --output_dir $output_dir \
---ckpt_path "/nfs/zhifu.gzf/models/llama-2-hf-finetune/echat/0/model.pt" \
---peft_ckpt "/nfs/zhifu.gzf/models/llama-2-hf-finetune/echat/0"
+--ckpt_path "/nfs/maziyang.mzy/models/llama-2-hf-finetune/echat/0/model.pt" \
+--peft_ckpt "/nfs/maziyang.mzy/models/llama-2-hf-finetune/echat/0"
