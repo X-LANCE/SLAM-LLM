@@ -1,6 +1,6 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 # This software may be used and distributed according to the terms of the Llama 2 Community License Agreement.
-
+import os
 from pathlib import Path
 from datetime import datetime
 import torch
@@ -160,7 +160,22 @@ def save_model_checkpoint(
         
         print(f"model checkpoint saved for epoch {epoch} at {save_full_path}\n")
       
+def save_model_checkpoint_peft(model, optimizer, rank, cfg, epoch=0):
+    save_dir = os.path.join(cfg.output_dir, cfg.model_name, str(epoch))
+    os.makedirs(save_dir, exist_ok=True)
+    model.llm.save_pretrained(save_dir)
+    
+    save_full_path = os.path.join(save_dir, "model.pt")
+    cpu_state = model.state_dict()
+    project_dict = {}
+    for key in cpu_state.keys():
+        if "_projector" in key:
+            project_dict[key] = cpu_state[key]
+    torch.save(project_dict, save_full_path)
 
+    print(f"model checkpoint saved for epoch {epoch} at {save_full_path}\n")
+    
+    
 
 def load_model_checkpoint(model, rank, cfg):
     """load local checkpoint to rank0 cpu
