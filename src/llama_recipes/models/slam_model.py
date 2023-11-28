@@ -96,7 +96,7 @@ def setup_llm(train_config, model_config, **kwargs):
         except ImportError:
             print("Module 'optimum' not found. Please install 'optimum' it before proceeding.")
 
-    print_model_size(model, train_config, rank if train_config.enable_fsdp else 0)
+    print_model_size(model, train_config, int(os.environ["RANK"]) if train_config.enable_fsdp else 0)
 
     # Prepare the model for int8 training if quantization is enabled
     if train_config.quantization:
@@ -161,6 +161,7 @@ class slam_model(nn.Module):
             speech_encoder_outs = self.speech_encoder_projector(speech_encoder_outs)
 
         input_ids[input_ids == -1] = 0
+        # print(input_ids[0])
         if hasattr(self.llm.model, "embed_tokens"):
             inputs_embeds = self.llm.model.embed_tokens(input_ids)
         elif hasattr(self.llm.model.model, "embed_tokens"):

@@ -6,6 +6,7 @@ import importlib
 
 # nn
 import torch
+from transformers.models.llama.modeling_llama import LlamaDecoderLayer
 
 # opt
 import torch.optim as optim
