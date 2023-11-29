@@ -144,10 +144,17 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                             print(f"we are about to save the PEFT modules")
                     else:
                         print(f"we are about to save the PEFT modules")
-                    # model.save_pretrained(train_config.output_dir)
-                    save_model_checkpoint_peft(
-                            model, optimizer, rank, train_config, epoch=epoch
-                        )
+                    if train_config.enable_fsdp:
+                        if rank==0:
+                            save_model_checkpoint_peft(
+                                model, optimizer, rank, train_config, epoch=epoch
+                            )
+                        dist.barrier()
+                    else:
+                        # model.save_pretrained(train_config.output_dir)
+                        save_model_checkpoint_peft(
+                                model, optimizer, rank, train_config, epoch=epoch
+                            )
                     if train_config.enable_fsdp:
                         if rank==0:
                             print(f"PEFT modules are saved in {train_config.output_dir} directory")
@@ -189,6 +196,19 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                     print(f"best eval loss on epoch {epoch+1} is {best_val_loss}")
             val_loss.append(best_val_loss)
             val_prep.append(eval_ppl)
+        if train_config.run_test_during_validation:
+            if train_config.enable_fsdp:
+                if rank==0:
+                    print("=====================================")
+                    print(f"Test the file {train_config.run_test_during_validation_file} during validation:")
+                    print(model.generate(train_config.run_test_during_validation_file))
+                    print("=====================================")
+                dist.barrier()
+            else:
+                print("=====================================")
+                print(f"Test the file {train_config.run_test_during_validation_file} during validation:")
+                print(model.generate(train_config.run_test_during_validation_file))
+                print("=====================================")
         if train_config.enable_fsdp:
             if rank==0:
                 print(f"Epoch {epoch+1}: train_perplexity={train_perplexity:.4f}, train_epoch_loss={train_epoch_loss:.4f}, epoch time {epoch_end_time}s")

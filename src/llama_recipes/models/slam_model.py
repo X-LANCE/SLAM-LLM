@@ -96,7 +96,7 @@ def setup_llm(train_config, model_config, **kwargs):
         except ImportError:
             print("Module 'optimum' not found. Please install 'optimum' it before proceeding.")
 
-    print_model_size(model, train_config, rank if train_config.enable_fsdp else 0)
+    print_model_size(model, train_config, int(os.environ["RANK"]) if train_config.enable_fsdp else 0)
 
     # Prepare the model for int8 training if quantization is enabled
     if train_config.quantization:
@@ -135,12 +135,7 @@ class slam_model(nn.Module):
 
         # projector
         self.speech_encoder_projector = nn.Linear(self.speech_encoder.ln_post.normalized_shape[0], self.llm.config.hidden_size)
-        ckpt_path = kwargs.get("ckpt_path", None)
-        # ckpt_path = kwargs.get("ckpt_path", "/nfs/zhifu.gzf/models/llama-2-hf-finetune/echat/0/model.pt")
-        if ckpt_path is not None:
-            print("loading ckpt from: ", ckpt_path)
-            ckpt_dict = torch.load(ckpt_path, map_location="cpu")
-            self.load_state_dict(ckpt_dict, strict=False)
+
         # tokenizer
         self.tokenizer = tokenizer
 
@@ -163,9 +158,10 @@ class slam_model(nn.Module):
         speech_encoder_outs = None
         if speech_mel is not None:
             speech_encoder_outs = self.speech_encoder.extract_variable_length_features(speech_mel.permute(0, 2, 1))
-            speech_encoder_outs = self.speech_encoder_projector.to(speech_encoder_outs.device)(speech_encoder_outs)
+            speech_encoder_outs = self.speech_encoder_projector(speech_encoder_outs)
 
         input_ids[input_ids == -1] = 0
+        # print(input_ids[0])
         if hasattr(self.llm.model, "embed_tokens"):
             inputs_embeds = self.llm.model.embed_tokens(input_ids)
         elif hasattr(self.llm.model.model, "embed_tokens"):
@@ -178,7 +174,7 @@ class slam_model(nn.Module):
         speech_encoder_outs_pad = F.pad(speech_encoder_outs, (0, 0, 0, token_num-l, 0, 0), value=0.0)
         inputs_embeds = speech_encoder_outs_pad * speech_mask[:, :, None] + inputs_embeds * (~speech_mask[:, :, None])
         
-        model_outputs = self.llm.to(speech_encoder_outs.device)(inputs_embeds=inputs_embeds, attention_mask=attention_mask, labels=labels)
+        model_outputs = self.llm(inputs_embeds=inputs_embeds, attention_mask=attention_mask, labels=labels)
         
         return model_outputs
     
@@ -205,7 +201,7 @@ class slam_model(nn.Module):
         speech_mel = whisper.log_mel_spectrogram(speech_raw).permute(1,0)[None, :, :].to(device)
 
         speech_encoder_outs = self.speech_encoder.extract_variable_length_features(speech_mel.permute(0, 2, 1))
-        speech_encoder_outs = self.speech_encoder_projector.to(speech_encoder_outs.device)(speech_encoder_outs)
+        speech_encoder_outs = self.speech_encoder_projector(speech_encoder_outs)
 
         prompt="""
         Please provide an emotional response based on the emotional speech you hear.
@@ -214,7 +210,7 @@ class slam_model(nn.Module):
         <|REPLY|> is a reply based on a the speech.
         """
         prompt = "USER: {}\n ASSISTANT:".format(prompt)
-        prompt_ids = self.tokenizer.encode(prompt)  # FIX(GZF)
+        prompt_ids = self.tokenizer.encode(prompt)
         prompt_length = len(prompt_ids)
         prompt_ids = torch.tensor(prompt_ids, dtype=torch.int64).to(device)
         

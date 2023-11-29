@@ -27,7 +27,8 @@ def main(**kwargs):
 	random.seed(train_config.seed)
 	
 	model, tokenizer = model_factory(train_config, model_config, **kwargs)
-	model.to(kwargs.get("device", "cuda"))
+	device = torch.device("cuda" if torch.cuda.is_available() else "cpu") # FIX(MZY): put the whole model to device.
+	model.to(device)
 	model.eval()
 	
 	print("=====================================")

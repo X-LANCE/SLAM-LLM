@@ -6,6 +6,7 @@ import importlib
 
 # nn
 import torch
+from transformers.models.llama.modeling_llama import LlamaDecoderLayer
 
 # opt
 import torch.optim as optim
@@ -66,6 +67,8 @@ def main(**kwargs):
         setup_environ_flags(rank)
 
     model, tokenizer = model_factory(train_config, model_config, **kwargs)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu") # FIX(MZY): put the whole model to device.
+    model.to(device)
 
     
     # Convert the model to bfloat16 if fsdp and pure_bf16 is enabled
