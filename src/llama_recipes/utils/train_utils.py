@@ -80,7 +80,12 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                     else:
                         batch[key] = batch[key].to('cuda:0')
                 with autocast():
-                    loss = model(**batch).loss
+                    model_outputs = model(**batch)
+                    acc = -1
+                    if isinstance(model_outputs, tuple):
+                        model_outputs, acc = model_outputs
+                loss = model_outputs.loss
+
                 loss = loss / gradient_accumulation_steps
                 total_loss += loss.detach().float()
                 if train_config.use_fp16:
@@ -99,7 +104,7 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                         optimizer.zero_grad()
                         pbar.update(1)
 
-                pbar.set_description(f"Training Epoch: {epoch+1}/{train_config.num_epochs}, step {step}/{len(train_dataloader)} completed (loss: {loss.detach().float()})")
+                pbar.set_description(f"Training Epoch: {epoch+1}/{train_config.num_epochs}, step {step}/{len(train_dataloader)} completed (loss: {loss.detach().float()}, acc: {acc})")
             pbar.close()
 
         epoch_end_time = time.perf_counter()-epoch_start_time
