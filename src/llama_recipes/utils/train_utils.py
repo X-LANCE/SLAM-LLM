@@ -80,11 +80,11 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                     else:
                         batch[key] = batch[key].to('cuda:0')
                 with autocast():
-                    model_outputs = model(**batch)
+                    outputs = model(**batch)
                     acc = -1
-                    if isinstance(model_outputs, tuple):
-                        model_outputs, acc = model_outputs
-                loss = model_outputs.loss
+                    if isinstance(outputs, tuple):
+                        outputs, acc = outputs
+                loss = outputs.loss
 
                 loss = loss / gradient_accumulation_steps
                 total_loss += loss.detach().float()
@@ -269,7 +269,11 @@ def evaluation(model,train_config, eval_dataloader, local_rank, tokenizer):
             with torch.no_grad():
                 # Forward pass and compute loss
                 outputs = model(**batch)
+                acc = -1
+                if isinstance(outputs, tuple):
+                    outputs, acc = outputs
                 loss = outputs.loss
+
                 eval_loss += loss.detach().float()
             # Decode predictions and add to evaluation predictions list
             preds = torch.argmax(outputs.logits, -1)
