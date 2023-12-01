@@ -178,7 +178,7 @@ class slam_model(nn.Module):
         inputs_embeds = speech_encoder_outs_pad * speech_mask[:, :, None] + inputs_embeds * (~speech_mask[:, :, None])
         
         model_outputs = self.llm(inputs_embeds=inputs_embeds, attention_mask=attention_mask, labels=labels)
-        # import pdb; pdb.set_trace()
+
         acc = -1
         if self.metric:
             with torch.no_grad():

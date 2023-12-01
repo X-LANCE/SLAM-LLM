@@ -35,8 +35,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         self.IGNORE_INDEX = -100  # The default setting in CrossEntropyLoss
         self.prompt_template = "USER: {}\n ASSISTANT:"
         self.answer_template = "<|{}|>"
-        import pdb;
-        pdb.set_trace()
+
         if split == "train":
             self.data_list = contents[:-1000]
         else:
