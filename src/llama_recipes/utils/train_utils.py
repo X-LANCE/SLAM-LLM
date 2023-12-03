@@ -85,7 +85,12 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                     else:
                         batch[key] = batch[key].to('cuda:0')
                 with autocast():
-                    loss = model(**batch).loss
+                    outputs = model(**batch)
+                    acc = -1
+                    if isinstance(outputs, tuple):
+                        outputs, acc = outputs
+                loss = outputs.loss
+
                 loss = loss / gradient_accumulation_steps
                 total_loss += loss.detach().float()
                 if train_config.use_fp16:
@@ -104,7 +109,7 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                         optimizer.zero_grad()
                         pbar.update(1)
 
-                pbar.set_description(f"Training Epoch: {epoch+1}/{train_config.num_epochs}, step {step}/{len(train_dataloader)} completed (loss: {loss.detach().float()})")
+                pbar.set_description(f"Training Epoch: {epoch+1}/{train_config.num_epochs}, step {step}/{len(train_dataloader)} completed (loss: {loss.detach().float()}, acc: {acc})")
             pbar.close()
 
         epoch_end_time = time.perf_counter()-epoch_start_time
@@ -282,7 +287,11 @@ def evaluation(model,train_config, eval_dataloader, local_rank, tokenizer):
             with torch.no_grad():
                 # Forward pass and compute loss
                 outputs = model(**batch)
+                acc = -1
+                if isinstance(outputs, tuple):
+                    outputs, acc = outputs
                 loss = outputs.loss
+
                 eval_loss += loss.detach().float()
             # Decode predictions and add to evaluation predictions list
             preds = torch.argmax(outputs.logits, -1)
