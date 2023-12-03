@@ -17,6 +17,8 @@ from llama_recipes.utils.config_utils import generate_peft_config
 from llama_recipes.utils.train_utils import print_model_size
 from peft import PeftModel, PeftConfig
 from torch.nn import CrossEntropyLoss
+from llama_recipes.utils.metric import compute_accuracy
+
 
 def setup_model(tokenizer, train_config, model_config, **kwargs):
     return slam_model(tokenizer, train_config, model_config, **kwargs)
@@ -138,6 +140,7 @@ class slam_model(nn.Module):
 
         # tokenizer
         self.tokenizer = tokenizer
+        self.metric = kwargs.get("metric", "acc")
 
     def forward(self,
                 input_ids: torch.LongTensor = None,
@@ -175,8 +178,15 @@ class slam_model(nn.Module):
         inputs_embeds = speech_encoder_outs_pad * speech_mask[:, :, None] + inputs_embeds * (~speech_mask[:, :, None])
         
         model_outputs = self.llm(inputs_embeds=inputs_embeds, attention_mask=attention_mask, labels=labels)
-        
-        return model_outputs
+
+        acc = -1
+        if self.metric:
+            with torch.no_grad():
+                logits = model_outputs.logits
+                batch_size, l, vocab_size = logits.size()
+                acc = compute_accuracy(logits.contiguous().view(-1, vocab_size), labels, ignore_label=-100)
+
+        return model_outputs, acc
     
     @torch.no_grad()
     def generate(
