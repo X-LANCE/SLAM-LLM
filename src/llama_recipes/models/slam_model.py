@@ -108,7 +108,7 @@ def setup_llm(train_config, model_config, **kwargs):
         model.print_trainable_parameters()
         
         if kwargs.get("peft_ckpt", None):
-            print("loading ckpt from: ", kwargs.get("peft_ckpt"))
+            print("loading peft_ckpt from: ", kwargs.get("peft_ckpt"))
             model = PeftModel.from_pretrained(model, kwargs.get("peft_ckpt"))
 
     return model
@@ -132,9 +132,16 @@ class slam_model(nn.Module):
 
         # llama
         self.llm = setup_llm(train_config, model_config, **kwargs)
+        if train_config.freeze_llm:
+            for name, param in self.llm.named_parameters(): 
+                param.requires_grad = False
 
         # projector
-        self.speech_encoder_projector = nn.Linear(self.speech_encoder.ln_post.normalized_shape[0], self.llm.config.hidden_size)
+        self.speech_encoder_projector = nn.Sequential(
+            nn.Linear(self.speech_encoder.ln_post.normalized_shape[0], 2048),
+            nn.ReLU(),
+            nn.Linear(2048, self.llm.config.hidden_size),
+        )
 
         # tokenizer
         self.tokenizer = tokenizer
@@ -229,7 +236,7 @@ class slam_model(nn.Module):
         output = self.llm.generate(
             inputs_embeds=inputs_embeds,
             max_length=kwargs.get("max_length", 200),
-            num_beams=kwargs.get("num_beams", 1),
+            num_beams=kwargs.get("num_beams", 4),
             do_sample=kwargs.get("do_sample", True),
             min_length=kwargs.get("min_length", 1),
             top_p=kwargs.get("top_p", 0.9),

@@ -34,3 +34,4 @@ class custom_dataset:
     test_split: str = "validation"
     data_path: str = NotImplemented
     max_words: int = NotImplemented
+    max_mel: int = 1000

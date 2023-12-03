@@ -164,7 +164,8 @@ def save_model_checkpoint_peft(model, optimizer, rank, cfg, epoch=0):
     print(f"--> saving model ...")
     save_dir = os.path.join(cfg.output_dir, cfg.model_name, str(epoch))
     os.makedirs(save_dir, exist_ok=True)
-    model.llm.save_pretrained(save_dir)
+    if not cfg.freeze_llm:
+        model.llm.save_pretrained(save_dir)
     
     save_full_path = os.path.join(save_dir, "model.pt")
     cpu_state = model.state_dict()

@@ -18,7 +18,12 @@ from tqdm import tqdm
 from transformers import LlamaTokenizer
 
 
-from llama_recipes.model_checkpointing import save_model_checkpoint, save_model_and_optimizer_sharded, save_optimizer_checkpoint, save_model_checkpoint_peft
+from llama_recipes.model_checkpointing import(
+    save_model_checkpoint, 
+    save_model_and_optimizer_sharded, 
+    save_optimizer_checkpoint, 
+    save_model_checkpoint_peft
+)
 from llama_recipes.policies import fpSixteen,bfSixteen_mixed, get_llama_wrapper
 from llama_recipes.utils.memory_utils import MemoryTrace
 
@@ -135,7 +140,7 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
         if train_config.run_validation:
             eval_ppl, eval_epoch_loss = evaluation(model, train_config, eval_dataloader, local_rank, tokenizer)
             checkpoint_start_time = time.perf_counter()
-            if train_config.save_model and eval_epoch_loss < best_val_loss:
+            if train_config.save_model:
                 if train_config.enable_fsdp:
                     dist.barrier()
                 if train_config.use_peft:
@@ -160,6 +165,19 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                             print(f"PEFT modules are saved in {train_config.output_dir} directory")
                     else:
                         print(f"PEFT modules are saved in {train_config.output_dir} directory")
+                
+                elif not train_config.use_peft and train_config.freeze_llm:
+                    print(f"llm is frozen, we are about to save other parts.")
+                    if train_config.enable_fsdp:
+                        if rank==0:
+                            save_model_checkpoint_peft(
+                                model, optimizer, rank, train_config, epoch=epoch
+                            )
+                        dist.barrier()
+                    else:
+                        save_model_checkpoint_peft(
+                                model, optimizer, rank, train_config, epoch=epoch
+                            )
 
                 else:
                     if not train_config.use_peft and fsdp_config.checkpoint_type == StateDictType.FULL_STATE_DICT:
