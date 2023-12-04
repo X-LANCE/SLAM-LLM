@@ -1,6 +1,6 @@
 #!/bin/bash
 #export PYTHONPATH=/root/whisper:$PYTHONPATH
-export CUDA_VISIBLE_DEVICES=0,1
+export CUDA_VISIBLE_DEVICES=0,1,2,3
 export CUDA_LAUNCH_BLOCKING=1
 export OMP_NUM_THREADS=1
 
@@ -11,9 +11,10 @@ export OMP_NUM_THREADS=1
 
 cd /root/SLAM-LLM
 
-speech_encoder_path=/nfs/zhifu.gzf/ckpt/Whisper/base.pt
+#speech_encoder_path=/nfs/zhifu.gzf/ckpt/Whisper/base.pt
+speech_encoder_path=/nfs/maziyang.mzy/models/Whisper/large-v2-qwen.pt
 llm_path=/nfs/zhifu.gzf/ckpt/Llama-2-7b-hf
-output_dir=/nfs/maziyang.mzy/models/llama-2-hf-finetune
+output_dir=/nfs/zhifu.gzf/models/llama-2-hf-finetune/speech_pretraining_qwen-audio-exp1
 
 # -m debugpy --listen 5678 --wait-for-client
 if [[ $CUDA_VISIBLE_DEVICES != *","* ]]; then
@@ -43,7 +44,7 @@ python  src/llama_recipes/pipeline/finetune.py \
 else
 torchrun \
 --nnodes 1 \
---nproc_per_node 2 \
+--nproc_per_node 4 \
 src/llama_recipes/pipeline/finetune.py \
 --model_name echat \
 --enable_fsdp \
