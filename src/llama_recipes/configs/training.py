@@ -39,3 +39,4 @@ class train_config:
     run_test_during_validation: bool = False
     run_test_during_validation_file: str = "test.wav"
     freeze_llm: bool = False
+    freeze_encoder: bool = False

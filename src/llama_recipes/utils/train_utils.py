@@ -26,6 +26,7 @@ from llama_recipes.model_checkpointing import(
 )
 from llama_recipes.policies import fpSixteen,bfSixteen_mixed, get_llama_wrapper
 from llama_recipes.utils.memory_utils import MemoryTrace
+from llama_recipes.utils.metric import compute_accuracy
 
 
 def set_tokenizer_params(tokenizer: LlamaTokenizer):
@@ -65,8 +66,10 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
 
     train_prep = []
     train_loss = []
+    train_acc = []
     val_prep = []
     val_loss =[]
+    val_acc = []
     epoch_times = []
     checkpoint_times = []
     results = {}
@@ -76,6 +79,7 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
         with MemoryTrace() as memtrace:  # track the memory usage
             model.train()
             total_loss = 0.0
+            total_acc = 0.0
             total_length = len(train_dataloader)//gradient_accumulation_steps
             pbar = tqdm(colour="blue", desc=f"Training Epoch: {epoch+1}", total=total_length, dynamic_ncols=True)
             for step, batch in enumerate(train_dataloader):
@@ -85,14 +89,14 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                     else:
                         batch[key] = batch[key].to('cuda:0')
                 with autocast():
-                    outputs = model(**batch)
-                    acc = -1
-                    if isinstance(outputs, tuple):
-                        outputs, acc = outputs
+                    outputs, *rest = model(**batch)
+                acc = rest[0] if rest else -1
                 loss = outputs.loss
 
                 loss = loss / gradient_accumulation_steps
+                acc = acc / gradient_accumulation_steps
                 total_loss += loss.detach().float()
+                total_acc += acc
                 if train_config.use_fp16:
                     # if fp16 is enabled, use gradient scaler to handle gradient update
                     scaler.scale(loss).backward()
@@ -117,13 +121,17 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
         # Reducing total_loss across all devices if there's more than one CUDA device
         if torch.cuda.device_count() > 1 and train_config.enable_fsdp:
             dist.all_reduce(total_loss, op=dist.ReduceOp.SUM)
+            dist.all_reduce(total_acc, op=dist.ReduceOp.SUM)
         train_epoch_loss = total_loss / len(train_dataloader)
+        train_epoch_acc = total_acc / len(train_dataloader)
         if train_config.enable_fsdp:
             train_epoch_loss = train_epoch_loss/world_size
+            train_epoch_acc = train_epoch_acc/world_size
         train_perplexity = torch.exp(train_epoch_loss)
 
         train_prep.append(train_perplexity)
         train_loss.append(train_epoch_loss)
+        train_acc.append(train_epoch_acc)
 
         if train_config.enable_fsdp:
             if rank==0:
@@ -143,7 +151,7 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
         lr_scheduler.step()
 
         if train_config.run_validation:
-            eval_ppl, eval_epoch_loss = evaluation(model, train_config, eval_dataloader, local_rank, tokenizer)
+            eval_ppl, eval_epoch_loss, *rest = evaluation(model, train_config, eval_dataloader, local_rank, tokenizer)
             checkpoint_start_time = time.perf_counter()
             if train_config.save_model:
                 if train_config.enable_fsdp:
@@ -217,20 +225,26 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                         print(f"best eval loss on epoch {epoch+1} is {best_val_loss}")
                 else:
                     print(f"best eval loss on epoch {epoch+1} is {best_val_loss}")
-            val_loss.append(best_val_loss)
+            val_loss.append(eval_epoch_loss)
             val_prep.append(eval_ppl)
+            if rest:
+                val_acc.append(rest[0]) 
+            else: 
+                val_acc.append(-1)
         if train_config.run_test_during_validation:
             if train_config.enable_fsdp:
                 if rank==0:
                     print("=====================================")
                     print(f"Test the file {train_config.run_test_during_validation_file} during validation:")
-                    print(model.generate(train_config.run_test_during_validation_file))
+                    with autocast():
+                        print(model.generate(train_config.run_test_during_validation_file))
                     print("=====================================")
                 dist.barrier()
             else:
                 print("=====================================")
                 print(f"Test the file {train_config.run_test_during_validation_file} during validation:")
-                print(model.generate(train_config.run_test_during_validation_file))
+                with autocast():
+                    print(model.generate(train_config.run_test_during_validation_file))
                 print("=====================================")
         if train_config.enable_fsdp:
             if rank==0:
@@ -241,15 +255,19 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
     avg_checkpoint_time = sum(checkpoint_times)/ len(checkpoint_times) if len(checkpoint_times) > 0 else 0
     avg_train_prep = sum(train_prep)/len(train_prep)
     avg_train_loss = sum(train_loss)/len(train_loss)
+    avg_train_acc = sum(train_acc)/len(train_acc)
     if train_config.run_validation:
         avg_eval_prep = sum(val_prep)/len(val_prep)
         avg_eval_loss = sum(val_loss)/len(val_loss)
+        avg_eval_acc = sum(val_acc)/len(val_acc)
 
     results['avg_train_prep'] = avg_train_prep
     results['avg_train_loss'] = avg_train_loss
+    results['avg_train_acc'] = avg_train_acc
     if train_config.run_validation:
         results['avg_eval_prep'] = avg_eval_prep
         results['avg_eval_loss'] = avg_eval_loss
+        results['avg_eval_acc'] = avg_eval_acc
     results["avg_epoch_time"] = avg_epoch_time
     results["avg_checkpoint_time"] = avg_checkpoint_time
 
@@ -276,6 +294,9 @@ def evaluation(model,train_config, eval_dataloader, local_rank, tokenizer):
     model.eval()
     eval_preds = []
     eval_loss = 0.0  # Initialize evaluation loss
+    eval_acc = 0.0
+    autocast = torch.cuda.amp.autocast if train_config.use_fp16 else nullcontext # (Fix:MZY): fix expected scalar type mismatch in norm 
+
     with MemoryTrace() as memtrace:
         for step, batch in enumerate(tqdm(eval_dataloader,colour="green", desc="evaluating Epoch", dynamic_ncols=True)):
             for key in batch.keys():
@@ -286,13 +307,13 @@ def evaluation(model,train_config, eval_dataloader, local_rank, tokenizer):
             # Ensure no gradients are computed for this scope to save memory
             with torch.no_grad():
                 # Forward pass and compute loss
-                outputs = model(**batch)
-                acc = -1
-                if isinstance(outputs, tuple):
-                    outputs, acc = outputs
+                with autocast(): # (Fix:MZY): fix expected scalar type mismatch in norm 
+                    outputs, *rest = model(**batch)
+                acc = rest[0] if rest else -1
                 loss = outputs.loss
 
                 eval_loss += loss.detach().float()
+                eval_acc += acc
             # Decode predictions and add to evaluation predictions list
             preds = torch.argmax(outputs.logits, -1)
             eval_preds.extend(
@@ -302,21 +323,24 @@ def evaluation(model,train_config, eval_dataloader, local_rank, tokenizer):
     # If there's more than one CUDA device, reduce evaluation loss across all devices
     if torch.cuda.device_count() > 1 and train_config.enable_fsdp:
         dist.all_reduce(eval_loss, op=dist.ReduceOp.SUM)
+        dist.all_reduce(eval_acc, op=dist.ReduceOp.SUM)
 
     # Compute average loss and perplexity
     eval_epoch_loss = eval_loss / len(eval_dataloader)
+    eval_epoch_acc = eval_acc / len(eval_dataloader)
     if train_config.enable_fsdp:
         eval_epoch_loss = eval_epoch_loss/world_size
+        eval_epoch_acc = eval_epoch_acc/world_size
     eval_ppl = torch.exp(eval_epoch_loss)
 
     # Print evaluation metrics
     if train_config.enable_fsdp:
         if local_rank==0:
-            print(f" {eval_ppl=} {eval_epoch_loss=}")
+            print(f" {eval_ppl=} {eval_epoch_loss=} {eval_epoch_acc=}")
     else:
-        print(f" {eval_ppl=} {eval_epoch_loss=}")
+        print(f" {eval_ppl=} {eval_epoch_loss=} {eval_epoch_acc=}")
 
-    return eval_ppl, eval_epoch_loss
+    return eval_ppl, eval_epoch_loss, eval_epoch_acc
 
 def freeze_transformer_layers(model, num_layer):
    for i, layer in enumerate(model.model.layers):
