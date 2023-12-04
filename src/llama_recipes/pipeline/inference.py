@@ -34,7 +34,7 @@ def main(**kwargs):
 	print("=====================================")
 	# wav_path = input("Your Wav Path:\n")
 	# prompt = input("Your Prompt:\n")
-	wav_path = "/nfs/zhifu.gzf/data/IEMOCAP_full_release/Session1/sentences/wav/Ses01M_impro01/Ses01M_impro01_M001.wav"
+	wav_path = kwargs.get('wav_path')
 	print(model.generate(wav_path))
 
 

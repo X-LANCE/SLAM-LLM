@@ -11,6 +11,7 @@ import torch
 import torchaudio
 from torch.utils.data import Dataset
 import whisper
+from llama_recipes.utils.compute_utils import calculate_output_length_1d
 
 
 class EChatDataset(Dataset):
@@ -23,7 +24,7 @@ class EChatDataset(Dataset):
         super().__init__()
 
         self.dataset_config = dataset_config
-        self.max_words = dataset_config.max_words
+        self.max_mel = dataset_config.max_mel
         self.tokenizer = tokenizer
         self.IGNORE_INDEX = -100 # The default setting in CrossEntropyLoss
         self.prompt_template = "USER: {}\n ASSISTANT:"
@@ -31,10 +32,33 @@ class EChatDataset(Dataset):
 
         with open(dataset_config.data_path, 'r') as file:
             data = file.readlines()
+
+        sentence_list = []
+
+        for item in data:
+            dialog_name, dialog = item.split('\t', 1)
+            dialog_list = eval(dialog)
+            for sentence_id in range(len(dialog_list)-2):
+                if 'emotion' in dialog_list[sentence_id].keys() and 'emotion' in dialog_list[sentence_id+1].keys():
+                    if dialog_list[sentence_id+1]['emotion'] != 'xxx':
+                        sentence_dict = {}
+                        sentence_dict['pre_wav'] = dialog_list[sentence_id]['wav']
+                        sentence_dict['post_emotion'] = dialog_list[sentence_id+1]['emotion']
+                        sentence_dict['post_trans'] = dialog_list[sentence_id+1]['trans']
+                        sentence_list.append(sentence_dict)
+
+        total_sentence = len(sentence_list)
+        print(f"Using {total_sentence} sentence totally.")
+        # if split == "train":
+        #     self.data = sentence_list[:int(total_sentence * 0.9)]
+        # else:
+        #     self.data = sentence_list[int(total_sentence * 0.9):]
+
+        # debug
         if split == "train":
-            self.data = data[:60]
+            self.data = sentence_list[:8]
         else:
-            self.data = data[60:]
+            self.data = sentence_list[8:16]
         
         
     def __len__(self) -> int:
@@ -42,17 +66,10 @@ class EChatDataset(Dataset):
 
     def __getitem__(self, index):
         item = self.data[index]
-        dialog_name, dialog = item.split('\t', 1)
-        dialog_list = eval(dialog)
-        
-        while True:
-            sentence_id = random.randint(0, len(dialog_list)-2)
-            if 'emotion' in dialog_list[sentence_id].keys() and 'emotion' in dialog_list[sentence_id+1].keys():
-                if dialog_list[sentence_id]['emotion'] != 'xxx' and dialog_list[sentence_id+1]['emotion'] != 'xxx':
-                    break 
-        speech_raw = whisper.load_audio(dialog_list[sentence_id]['wav'])
+
+        speech_raw = whisper.load_audio(item['pre_wav'])
         # speech_raw = whisper.pad_or_trim(speech_raw)
-        speech_mel = whisper.log_mel_spectrogram(speech_raw).permute(1,0)
+        speech_mel = whisper.log_mel_spectrogram(speech_raw).permute(1,0)[:self.max_mel]
 
         prompt="""
         Please provide an emotional response based on the emotional speech you hear.
@@ -65,12 +82,13 @@ class EChatDataset(Dataset):
         """
 
         prompt = self.prompt_template.format(prompt)
-        answer = self.answer_template.format(dialog_list[sentence_id+1]['emotion'], dialog_list[sentence_id+1]['trans'])
+        answer = self.answer_template.format(item['post_emotion'], item['post_trans'])
 
         prompt_ids = self.tokenizer.encode(prompt)
 
         prompt_length = len(prompt_ids)
         speech_length = (speech_mel.shape[0] + 1) // 2 # ad-hoc for whisper for 2x downsample from mel to feats
+        speech_length = calculate_output_length_1d(speech_length, 5, 5) # ad-hoc for 5x cov1d downsample
         speech_pseudo = torch.full((speech_length,),-1)
         
         example = prompt + answer #FIX(MZY): avoid putting a bos token before answer.

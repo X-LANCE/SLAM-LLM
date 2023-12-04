@@ -164,13 +164,18 @@ def save_model_checkpoint_peft(model, optimizer, rank, cfg, epoch=0):
     print(f"--> saving model ...")
     save_dir = os.path.join(cfg.output_dir, cfg.model_name, str(epoch))
     os.makedirs(save_dir, exist_ok=True)
-    model.llm.save_pretrained(save_dir)
+    if not cfg.freeze_llm:
+        model.llm.save_pretrained(save_dir)
     
     save_full_path = os.path.join(save_dir, "model.pt")
     cpu_state = model.state_dict()
     project_dict = {}
+    if not cfg.freeze_encoder:
+        for key in cpu_state.keys():
+            if key.startswith("encoder."):
+                project_dict[key] = cpu_state[key]
     for key in cpu_state.keys():
-        if "_projector" in key:
+        if key.startswith("encoder_projector."):
             project_dict[key] = cpu_state[key]
     torch.save(project_dict, save_full_path)
 
