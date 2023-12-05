@@ -20,12 +20,16 @@ output_dir=/nfs/zhifu.gzf/models/llama-2-hf-finetune/speech_pretraining_qwen-aud
 if [[ $CUDA_VISIBLE_DEVICES != *","* ]]; then
 python  src/llama_recipes/pipeline/finetune.py \
 --model_name echat \
+--freeze_encoder \
+--use_fp16 \
 --use_peft --peft_method lora \
 --llm_name llama-2-7b-hf \
 --llm_path $llm_path \
 --encoder_name whisper \
+--encoder_ds_rate 2 \
 --encoder_path $speech_encoder_path \
 --encoder_projector linear \
+--encoder_projector_ds_rate 5 \
 --dataset custom_dataset \
 --custom_dataset.file src/llama_recipes/datasets/speech_dataset.py:get_audio_dataset \
 --custom_dataset.data_path /nfs/beinian.lzr/workspace/datasets/speech_llm/train_dataset/data_wav_json/asr/librispeech_train_960h_wav_speech_llm_train_data.json \
@@ -47,13 +51,17 @@ torchrun \
 --nproc_per_node 4 \
 src/llama_recipes/pipeline/finetune.py \
 --model_name echat \
---enable_fsdp \
+--freeze_encoder \
+--use_fp16 \
+--enable_fsdp --low_cpu_fsdp \
 --use_peft --peft_method lora \
 --llm_name llama-2-7b-hf \
 --llm_path $llm_path \
 --encoder_name whisper \
+--encoder_ds_rate 2 \
 --encoder_path $speech_encoder_path \
 --encoder_projector linear \
+--encoder_projector_ds_rate 5 \
 --dataset custom_dataset \
 --custom_dataset.file src/llama_recipes/datasets/speech_dataset.py:get_audio_dataset \
 --custom_dataset.data_path /nfs/beinian.lzr/workspace/datasets/speech_llm/train_dataset/data_wav_json/asr/librispeech_train_960h_wav_speech_llm_train_data.json \
