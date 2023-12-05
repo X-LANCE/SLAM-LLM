@@ -4,6 +4,7 @@ import torch
 import soundfile as sf
 import torch.nn as nn
 import torch.nn.functional as F
+import torch.distributed as dist
 from typing import List, Optional, Tuple, Union
 from peft import LoraConfig, TaskType, get_peft_model, prepare_model_for_kbit_training
 from transformers import (
@@ -78,11 +79,12 @@ def setup_llm(train_config, model_config, **kwargs):
         model alone would consume 2+TB cpu mem (70 * 4 * 8). This will add some comms
         overhead and currently requires latest nightly.
         """
-        v = packaging.version.parse(torch.__version__)
-        verify_latest_nightly = v.is_devrelease and v.dev >= 20230701
-        if not verify_latest_nightly:
-            raise Exception("latest pytorch nightly build is required to run with low_cpu_fsdp config, "
-                            "please install latest nightly.")
+        # v = packaging.version.parse(torch.__version__)
+        # verify_latest_nightly = v.is_devrelease and v.dev >= 20230701
+        # if not verify_latest_nightly:
+        #     raise Exception("latest pytorch nightly build is required to run with low_cpu_fsdp config, "
+        #                     "please install latest nightly.")
+        rank = int(os.environ["RANK"])
         if rank == 0:
             model = LlamaForCausalLM.from_pretrained(
                 model_config.llm_path,
@@ -93,8 +95,8 @@ def setup_llm(train_config, model_config, **kwargs):
         else:
             llama_config = LlamaConfig.from_pretrained(model_config.llm_path)
             llama_config.use_cache = use_cache
-            with torch.device("meta"):
-                model = LlamaForCausalLM(llama_config)
+            # with torch.device("meta"):
+            model = LlamaForCausalLM(llama_config) #(FIX:MZY): torch 2.0.1 does not support `meta`
 
     else:
         model = LlamaForCausalLM.from_pretrained(
