@@ -71,7 +71,7 @@ src/llama_recipes/pipeline/finetune.py \
 --freeze_encoder \
 --freeze_llm \
 --use_fp16 \
---enable_fsdp \
+--enable_fsdp --low_cpu_fsdp \
 --llm_name llama-2-7b-hf \
 --llm_path $llm_path \
 --encoder_name whisper \
