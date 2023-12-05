@@ -4,6 +4,7 @@ import torch
 import soundfile as sf
 import torch.nn as nn
 import torch.nn.functional as F
+import torch.distributed as dist
 from typing import List, Optional, Tuple, Union
 from peft import LoraConfig, TaskType, get_peft_model, prepare_model_for_kbit_training
 from transformers import (
@@ -83,6 +84,7 @@ def setup_llm(train_config, model_config, **kwargs):
         if not verify_latest_nightly:
             raise Exception("latest pytorch nightly build is required to run with low_cpu_fsdp config, "
                             "please install latest nightly.")
+        rank = int(os.environ["RANK"])
         if rank == 0:
             model = LlamaForCausalLM.from_pretrained(
                 model_config.llm_path,
@@ -97,12 +99,26 @@ def setup_llm(train_config, model_config, **kwargs):
                 model = LlamaForCausalLM(llama_config)
 
     else:
-        model = LlamaForCausalLM.from_pretrained(
-            model_config.llm_path,
-            load_in_8bit=True if train_config.quantization else None,
-            device_map="auto" if train_config.quantization else None,
-            use_cache=use_cache,
-        )
+        if train_config.enable_fsdp:
+            rank = int(os.environ["RANK"])
+            if rank == 0:
+                model = LlamaForCausalLM.from_pretrained(
+                    model_config.llm_path,
+                    load_in_8bit=True if train_config.quantization else None,
+                    device_map="auto" if train_config.quantization else None,
+                    use_cache=use_cache,
+                )
+            else:
+                llama_config = LlamaConfig.from_pretrained(model_config.llm_path)
+                llama_config.use_cache = use_cache
+                model = LlamaForCausalLM(llama_config)
+        else:
+            model = LlamaForCausalLM.from_pretrained(
+                model_config.llm_path,
+                load_in_8bit=True if train_config.quantization else None,
+                device_map="auto" if train_config.quantization else None,
+                use_cache=use_cache,
+            )
     if train_config.enable_fsdp and train_config.use_fast_kernels:
         """
         For FSDP and FSDP+PEFT, setting 'use_fast_kernels' will enable

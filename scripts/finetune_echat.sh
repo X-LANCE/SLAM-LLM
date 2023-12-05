@@ -69,9 +69,9 @@ torchrun \
 src/llama_recipes/pipeline/finetune.py \
 --model_name echat \
 --freeze_encoder \
+--freeze_llm \
 --use_fp16 \
 --enable_fsdp \
---use_peft --peft_method lora \
 --llm_name llama-2-7b-hf \
 --llm_path $llm_path \
 --encoder_name whisper \
@@ -92,5 +92,5 @@ src/llama_recipes/pipeline/finetune.py \
 --run_test_during_validation_file /nfs/zhifu.gzf/data/IEMOCAP_full_release/Session5/sentences/wav/Ses05M_impro04/Ses05M_impro04_M040.wav \
 # --ckpt_path "/nfs/maziyang.mzy/models/llama-2-hf-finetune/echat/1/model.pt" \
 # --peft_ckpt "/nfs/maziyang.mzy/models/llama-2-hf-finetune/echat/1" 
-# --freeze_llm \
+# --use_peft --peft_method lora \
 fi
