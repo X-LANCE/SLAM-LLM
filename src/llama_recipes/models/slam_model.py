@@ -15,7 +15,7 @@ from transformers import (
 import whisper
 
 from llama_recipes.utils.config_utils import generate_peft_config
-from llama_recipes.utils.train_utils import print_model_size
+from llama_recipes.utils.train_utils import print_module_size
 from peft import PeftModel, PeftConfig
 from torch.nn import CrossEntropyLoss
 from llama_recipes.utils.metric import compute_accuracy
@@ -61,11 +61,13 @@ def setup_encoder(train_config, model_config, **kwargs):
             encoder.extract_variable_length_features = types.MethodType(extract_variable_length_features, encoder)
         if encoder_name == "audio-mae": #TODO
             pass
+    print_module_size(encoder, encoder_name, int(os.environ["RANK"]) if train_config.enable_fsdp else 0)
 
     if train_config.freeze_encoder:
         for name, param in encoder.named_parameters(): 
             param.requires_grad = False
         encoder.eval()
+    print_module_size(encoder, encoder_name, int(os.environ["RANK"]) if train_config.enable_fsdp else 0)
 
     return encoder
 
@@ -117,7 +119,7 @@ def setup_llm(train_config, model_config, **kwargs):
         except ImportError:
             print("Module 'optimum' not found. Please install 'optimum' it before proceeding.")
 
-    print_model_size(model, train_config, int(os.environ["RANK"]) if train_config.enable_fsdp else 0)
+    print_module_size(model, model_config.llm_name, int(os.environ["RANK"]) if train_config.enable_fsdp else 0)
 
     # Prepare the model for int8 training if quantization is enabled
     if train_config.quantization:
@@ -137,16 +139,40 @@ def setup_llm(train_config, model_config, **kwargs):
             print("loading peft_ckpt from: ", kwargs.get("peft_ckpt"))
             model = PeftModel.from_pretrained(model, kwargs.get("peft_ckpt"))
 
+    print_module_size(model, model_config.llm_name, int(os.environ["RANK"]) if train_config.enable_fsdp else 0)
     return model
 
 def setup_encoder_projector(train_config, model_config, **kwargs):
     if model_config.encoder_projector == "linear":
-        return EncoderProjector(model_config)
+        encoder_projector = EncoderProjectorConcat(model_config)
+    print_module_size(encoder_projector, model_config.encoder_projector, int(os.environ["RANK"]) if train_config.enable_fsdp else 0)
+    return encoder_projector
 
-class EncoderProjector(nn.Module):
+class EncoderProjectorConcat(nn.Module):
     def __init__(self, config):
-        super(EncoderProjector, self).__init__()
-        self.conv1d = nn.Conv1d(in_channels=1280, out_channels=1280, kernel_size=config.encoder_ds_rate, stride=config.encoder_ds_rate, padding=0)
+        super().__init__()
+        self.k = config.encoder_projector_ds_rate
+        self.linear1 = nn.Linear(1280 * self.k, 4096)
+        self.relu = nn.ReLU()
+        self.linear2 = nn.Linear(4096, 4096)
+
+    def forward(self, x):
+        batch_size, seq_len, dim = x.size()
+        num_frames_to_discard = seq_len % self.k
+        if num_frames_to_discard > 0:
+            x = x[:, :-num_frames_to_discard, :]
+        seq_len = x.size(1)
+        
+        x = x.view(batch_size, seq_len // self.k, dim * self.k)
+        x = self.linear1(x)
+        x = self.relu(x)
+        x = self.linear2(x)
+        return x
+
+class EncoderProjectorCov1d(nn.Module):
+    def __init__(self, config):
+        super(self).__init__()
+        self.conv1d = nn.Conv1d(in_channels=1280, out_channels=1280, kernel_size=config.encoder_projector_ds_rate, stride=config.encoder_projector_ds_rate, padding=0)
         self.linear1 = nn.Linear(1280, 2048)
         self.relu1 = nn.ReLU()
         self.linear2 = nn.Linear(2048, 4096)
@@ -237,6 +263,7 @@ class slam_model(nn.Module):
     def generate(
         self,
         wav_path = None,
+        prompt = None,
         generation_config = None,
         logits_processor = None,
         stopping_criteria = None,
@@ -258,12 +285,6 @@ class slam_model(nn.Module):
         encoder_outs = self.encoder.extract_variable_length_features(speech_mel.permute(0, 2, 1))
         encoder_outs = self.encoder_projector(encoder_outs)
 
-        prompt="""
-        Please provide an emotional response based on the emotional speech you hear.
-        Remember to format your answer as follows: <|EMOTION|><|REPLY|>.
-        <|EMOTION|> is a standalone adjective.
-        <|REPLY|> is a reply based on a the speech.
-        """
         prompt = "USER: {}\n ASSISTANT:".format(prompt)
         prompt_ids = self.tokenizer.encode(prompt)
         prompt_length = len(prompt_ids)

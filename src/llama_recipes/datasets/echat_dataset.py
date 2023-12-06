@@ -88,7 +88,7 @@ class EChatDataset(Dataset):
 
         prompt_length = len(prompt_ids)
         speech_length = (speech_mel.shape[0] + 1) // 2 # ad-hoc for whisper for 2x downsample from mel to feats
-        speech_length = calculate_output_length_1d(speech_length, 5, 5) # ad-hoc for 5x cov1d downsample
+        speech_length = speech_length // 5 # ad-hoc for 5x cov1d downsample
         speech_pseudo = torch.full((speech_length,),-1)
         
         example = prompt + answer #FIX(MZY): avoid putting a bos token before answer.

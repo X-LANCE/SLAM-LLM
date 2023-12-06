@@ -35,7 +35,8 @@ def main(**kwargs):
 	# wav_path = input("Your Wav Path:\n")
 	# prompt = input("Your Prompt:\n")
 	wav_path = kwargs.get('wav_path')
-	print(model.generate(wav_path))
+	prompt = kwargs.get('prompt')
+	print(model.generate(wav_path, prompt))
 
 
 

@@ -38,5 +38,6 @@ class train_config:
     use_fast_kernels: bool = False # Enable using SDPA from PyTroch Accelerated Transformers, make use Flash Attention and Xformer memory-efficient kernels
     run_test_during_validation: bool = False
     run_test_during_validation_file: str = "test.wav"
+    run_test_during_validation_prompt: str = "<|ASR|>"
     freeze_llm: bool = False
     freeze_encoder: bool = False

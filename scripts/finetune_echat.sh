@@ -15,7 +15,8 @@ cd /root/SLAM-LLM
 # speech_encoder_path=/nfs/zhifu.gzf/ckpt/Whisper/large-v2.pt
 speech_encoder_path=/nfs/maziyang.mzy/models/Whisper/large-v2-qwen.pt
 llm_path=/nfs/zhifu.gzf/ckpt/Llama-2-7b-hf
-output_dir=/nfs/maziyang.mzy/models/llama-2-hf-proj2048-debug
+output_dir=/nfs/maziyang.mzy/exps/llama-2-hf-finetune-echat-ds5-proj2048-debug
+mkdir -p output_dir
 
 # -m debugpy --listen 5678 --wait-for-client
 if [[ $CUDA_VISIBLE_DEVICES != *","* ]]; then
