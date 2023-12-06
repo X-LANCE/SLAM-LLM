@@ -31,6 +31,12 @@ python  src/llama_recipes/pipeline/inference.py \
 --batch_size_training 2 \
 --output_dir $output_dir \
 --ckpt_path "/nfs/maziyang.mzy/models/llama-2-hf-finetune/echat/1/model.pt" \
---wav_path "/nfs/zhifu.gzf/data/IEMOCAP_full_release/Session5/sentences/wav/Ses05M_impro04/Ses05M_impro04_F035.wav"
+--wav_path "/nfs/zhifu.gzf/data/IEMOCAP_full_release/Session5/sentences/wav/Ses05M_impro04/Ses05M_impro04_F035.wav" \
+--prompt """
+    Please provide an emotional response based on the emotional speech you hear.
+    Remember to format your answer as follows: <|EMOTION|><|REPLY|>.
+    <|EMOTION|> is a standalone adjective.
+    <|REPLY|> is a reply based on a the speech.
+    """ \
 # --peft_ckpt "/nfs/maziyang.mzy/models/llama-2-hf-finetune/echat/1"
 # --use_peft --peft_method lora \

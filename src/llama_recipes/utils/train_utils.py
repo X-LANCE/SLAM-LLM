@@ -237,14 +237,14 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                     print("=====================================")
                     print(f"Test the file {train_config.run_test_during_validation_file} during validation:")
                     with autocast():
-                        print(model.generate(train_config.run_test_during_validation_file))
+                        print(model.generate(train_config.run_test_during_validation_file, train_config.run_test_during_validation_prompt))
                     print("=====================================")
                 dist.barrier()
             else:
                 print("=====================================")
                 print(f"Test the file {train_config.run_test_during_validation_file} during validation:")
                 with autocast():
-                    print(model.generate(train_config.run_test_during_validation_file))
+                    print(model.generate(train_config.run_test_during_validation_file, train_config.run_test_during_validation_prompt))
                 print("=====================================")
         if train_config.enable_fsdp:
             if rank==0:
@@ -407,7 +407,19 @@ def print_model_size(model, config, rank: int = 0) -> None:
         total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
         print(f"\n--> {config.model_name} has {total_params / 1e6} Million params\n")
 
+def print_module_size(module, module_name, rank: int = 0) -> None:
+    """
+    Print module name, the number of trainable parameters and initialization time.
 
+    Args:
+        module: The PyTorch module.
+        module_name (str): Name of the model.
+        rank (int, optional): Current process's rank. Defaults to 0.
+    """
+    if rank == 0:
+        print(f"--> Module {module_name}")
+        total_params = sum(p.numel() for p in module.parameters() if p.requires_grad)
+        print(f"\n--> {module_name} has {total_params / 1e6} Million params\n")
 
 
 def get_policies(cfg, rank):
