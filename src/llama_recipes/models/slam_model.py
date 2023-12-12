@@ -152,9 +152,9 @@ class EncoderProjectorConcat(nn.Module):
     def __init__(self, config):
         super().__init__()
         self.k = config.encoder_projector_ds_rate
-        self.linear1 = nn.Linear(1280 * self.k, 4096)
+        self.linear1 = nn.Linear(1280 * self.k, 2048)
         self.relu = nn.ReLU()
-        self.linear2 = nn.Linear(4096, 4096)
+        self.linear2 = nn.Linear(2048, 4096)
 
     def forward(self, x):
         batch_size, seq_len, dim = x.size()
@@ -235,19 +235,20 @@ class slam_model(nn.Module):
             encoder_outs = self.encoder.extract_variable_length_features(speech_mel.permute(0, 2, 1)) # bs*seq*dim
             encoder_outs = self.encoder_projector(encoder_outs)
 
-        input_ids[input_ids == -1] = 0
-        # print(input_ids[0])
-        if hasattr(self.llm.model, "embed_tokens"):
-            inputs_embeds = self.llm.model.embed_tokens(input_ids)
-        elif hasattr(self.llm.model.model, "embed_tokens"):
-            inputs_embeds = self.llm.model.model.embed_tokens(input_ids)
-        else:
-            inputs_embeds = self.llm.model.model.model.embed_tokens(input_ids)
+        if input_ids is not None:
+            input_ids[input_ids == -1] = 0
+            if hasattr(self.llm.model, "embed_tokens"):
+                inputs_embeds = self.llm.model.embed_tokens(input_ids)
+            elif hasattr(self.llm.model.model, "embed_tokens"):
+                inputs_embeds = self.llm.model.model.embed_tokens(input_ids)
+            else:
+                inputs_embeds = self.llm.model.model.model.embed_tokens(input_ids)
 
-        batch_size, token_num, dims = inputs_embeds.shape
-        _, l, _ = encoder_outs.shape
-        encoder_outs_pad = F.pad(encoder_outs, (0, 0, 0, token_num-l, 0, 0), value=0.0)
-        inputs_embeds = encoder_outs_pad * speech_mask[:, :, None] + inputs_embeds * (~speech_mask[:, :, None])
+        if speech_mask is not None:
+            batch_size, token_num, dims = inputs_embeds.shape
+            _, l, _ = encoder_outs.shape
+            encoder_outs_pad = F.pad(encoder_outs, (0, 0, 0, token_num-l, 0, 0), value=0.0)
+            inputs_embeds = encoder_outs_pad * speech_mask[:, :, None] + inputs_embeds * (~speech_mask[:, :, None])
         
         model_outputs = self.llm(inputs_embeds=inputs_embeds, attention_mask=attention_mask, labels=labels)
 
@@ -255,12 +256,67 @@ class slam_model(nn.Module):
         if self.metric:
             with torch.no_grad():
                 preds = torch.argmax(model_outputs.logits, -1)
-                acc = compute_accuracy(preds.detach(), labels.detach(), ignore_label=-100)
+                acc = compute_accuracy(preds.detach()[:, :-1], labels.detach()[:, 1:], ignore_label=-100)
 
         return model_outputs, acc
     
     @torch.no_grad()
-    def generate(
+    def generate(self,
+                input_ids: torch.LongTensor = None,
+                attention_mask: Optional[torch.Tensor] = None,
+                position_ids: Optional[torch.LongTensor] = None,
+                past_key_values: Optional[List[torch.FloatTensor]] = None,
+                inputs_embeds: Optional[torch.FloatTensor] = None,
+                labels: Optional[torch.LongTensor] = None,
+                use_cache: Optional[bool] = None,
+                output_attentions: Optional[bool] = None,
+                output_hidden_states: Optional[bool] = None,
+                return_dict: Optional[bool] = None,
+                **kwargs,
+                ):
+        speech_mel = kwargs.get("speech_mel", None)
+        speech_mask = kwargs.get("speech_mask", None)
+
+        encoder_outs = None
+        if speech_mel is not None:
+            encoder_outs = self.encoder.extract_variable_length_features(speech_mel.permute(0, 2, 1)) # bs*seq*dim
+            encoder_outs = self.encoder_projector(encoder_outs)
+
+        if input_ids is not None:
+            input_ids[input_ids == -1] = 0
+            if hasattr(self.llm.model, "embed_tokens"):
+                inputs_embeds = self.llm.model.embed_tokens(input_ids)
+            elif hasattr(self.llm.model.model, "embed_tokens"):
+                inputs_embeds = self.llm.model.model.embed_tokens(input_ids)
+            else:
+                inputs_embeds = self.llm.model.model.model.embed_tokens(input_ids)
+
+        if speech_mask is not None:
+            batch_size, token_num, dims = inputs_embeds.shape
+            _, l, _ = encoder_outs.shape
+            encoder_outs_pad = F.pad(encoder_outs, (0, 0, 0, token_num-l, 0, 0), value=0.0)
+            inputs_embeds = encoder_outs_pad * speech_mask[:, :, None] + inputs_embeds * (~speech_mask[:, :, None])
+
+        model_outputs = self.llm.generate(
+            inputs_embeds=inputs_embeds,
+            max_length=kwargs.get("max_length", 200),
+            num_beams=kwargs.get("num_beams", 4),
+            do_sample=kwargs.get("do_sample", False),
+            min_length=kwargs.get("min_length", 1),
+            top_p=kwargs.get("top_p", 0.9),
+            repetition_penalty=kwargs.get("repetition_penalty", 1.0),
+            length_penalty=kwargs.get("length_penalty", 1.0),
+            temperature=kwargs.get("temperature", 1.0),
+            attention_mask=attention_mask,
+            bos_token_id=self.tokenizer.bos_token_id,
+            eos_token_id=self.tokenizer.eos_token_id,
+            pad_token_id=self.tokenizer.pad_token_id
+        )
+
+        return model_outputs
+
+    @torch.no_grad()
+    def inference(
         self,
         wav_path = None,
         prompt = None,
@@ -299,26 +355,15 @@ class slam_model(nn.Module):
         
         inputs_embeds = torch.cat((encoder_outs, inputs_embeds[None, :, :]), dim=1)  # [speech,prompt]
 
-        atts = torch.ones(inputs_embeds.size()[:-1], dtype=torch.long).to(inputs_embeds.device)
+        attention_mask = torch.ones(inputs_embeds.size()[:-1], dtype=torch.long).to(inputs_embeds.device)
 
         # generate
-        output = self.llm.generate(
+        model_outputs = self.generate(
             inputs_embeds=inputs_embeds,
-            max_length=kwargs.get("max_length", 200),
-            num_beams=kwargs.get("num_beams", 4),
-            do_sample=kwargs.get("do_sample", True),
-            min_length=kwargs.get("min_length", 1),
-            top_p=kwargs.get("top_p", 0.9),
-            repetition_penalty=kwargs.get("repetition_penalty", 1.0),
-            length_penalty=kwargs.get("length_penalty", 1.0),
-            temperature=kwargs.get("temperature", 1.0),
-            attention_mask=atts,
-            bos_token_id=self.tokenizer.bos_token_id,
-            eos_token_id=self.tokenizer.eos_token_id,
-            pad_token_id=self.tokenizer.pad_token_id
+            attention_mask=attention_mask,
+            **kwargs
         )
 
-        output_text = self.tokenizer.batch_decode(output, add_special_tokens=False, skip_special_tokens=True)
+        output_text = self.tokenizer.batch_decode(model_outputs, add_special_tokens=False, skip_special_tokens=True)
 
         return output_text
-

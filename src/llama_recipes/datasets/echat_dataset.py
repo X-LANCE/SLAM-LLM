@@ -24,7 +24,6 @@ class EChatDataset(Dataset):
         super().__init__()
 
         self.dataset_config = dataset_config
-        self.max_mel = dataset_config.max_mel
         self.tokenizer = tokenizer
         self.IGNORE_INDEX = -100 # The default setting in CrossEntropyLoss
         self.prompt_template = "USER: {}\n ASSISTANT:"
@@ -49,16 +48,16 @@ class EChatDataset(Dataset):
 
         total_sentence = len(sentence_list)
         print(f"Using {total_sentence} sentence totally.")
-        # if split == "train":
-        #     self.data = sentence_list[:int(total_sentence * 0.9)]
-        # else:
-        #     self.data = sentence_list[int(total_sentence * 0.9):]
-
-        # debug
         if split == "train":
-            self.data = sentence_list[:8]
+            self.data = sentence_list[:int(total_sentence * 0.9)]
         else:
-            self.data = sentence_list[8:16]
+            self.data = sentence_list[int(total_sentence * 0.9):]
+
+        # # debug
+        # if split == "train":
+        #     self.data = sentence_list[:8]
+        # else:
+        #     self.data = sentence_list[8:16]
         
         
     def __len__(self) -> int:
@@ -69,7 +68,7 @@ class EChatDataset(Dataset):
 
         speech_raw = whisper.load_audio(item['pre_wav'])
         # speech_raw = whisper.pad_or_trim(speech_raw)
-        speech_mel = whisper.log_mel_spectrogram(speech_raw).permute(1,0)[:self.max_mel]
+        speech_mel = whisper.log_mel_spectrogram(speech_raw).permute(1,0)
 
         prompt="""
         Please provide an emotional response based on the emotional speech you hear.
