@@ -30,7 +30,6 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         # self.data_list = contents
         self.IGNORE_INDEX = -100  # The default setting in CrossEntropyLoss
         self.prompt_template = "USER: {}\n ASSISTANT:"
-        self.answer_template = "<|{}|>"
 
         self.data_list = []
         if split == "train":
@@ -65,50 +64,33 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         speech_path = data_dict.get("source")
         target = data_dict.get("target", None)
         task = data_dict.get("prompt", "ASR")
+        key = data_dict.get("key", None)
         
         speech_raw = whisper.load_audio(speech_path)
         speech_mel = whisper.log_mel_spectrogram(speech_raw).permute(1, 0)
 
-        prompt = """
-        <|ASR|>
-        """
-        answer = """
-        <|The moon looks so beautiful tonight.|>
-        """
-
-        prompt = self.prompt_template.format(prompt)
-        answer = self.answer_template.format(target)
-
-        prompt_ids = self.tokenizer.encode(prompt)
-
-        prompt_length = len(prompt_ids)
         speech_length = (speech_mel.shape[0] + 1) // 2  # ad-hoc for whisper for 2x downsample from mel to feats
         speech_length = speech_length // 5 # ad-hoc for 5x cov1d downsample
         speech_pseudo = torch.full((speech_length,), -1)
 
-        example = prompt + answer  # FIX(MZY): avoid putting a bos token before answer.
-        example_ids = self.tokenizer.encode(example)  # [prompt,answer]
-        example_ids.append(self.tokenizer.eos_token_id)  # [prompt,answer,eos]
-        example_ids = torch.tensor(
-            example_ids, dtype=torch.int64
-        )
-        example_ids = torch.cat((speech_pseudo, example_ids))  # [speech,prompt,answer,eos]
+        prompt = """
+        <|ASR|>
+        """
+        prompt = self.prompt_template.format(prompt)
+        prompt_ids = self.tokenizer.encode(prompt)
+        prompt_length = len(prompt_ids)
+        prompt_ids = torch.tensor(prompt_ids, dtype=torch.int64)
 
-        labels_ids = copy.deepcopy(example_ids)  # [speech,prompt,answer,eos]
-        labels_ids[:speech_length + prompt_length] = -1  # [-1,-1,answer,eos];
-        example_mask = example_ids.ge(-1)  # FIX(GZF): [True,True,True,True]
-
-        label_mask = labels_ids.ge(0)  # [False,False,True,True]
-        example_ids[~example_mask] = 0  # [speech,prompt,answer,eos]
-        labels_ids[~label_mask] = self.IGNORE_INDEX  # [-100,answer,eos,-100]
+        example_ids = torch.cat((speech_pseudo, prompt_ids))  # [speech,prompt]
+        example_mask = example_ids.ge(-1)  # [True,True]
 
         return {
             "input_ids": example_ids,
-            "labels": labels_ids,
             "attention_mask": example_mask,
             'speech_mel': speech_mel,
             'speech_length': speech_length,
-    
+            'key': key,
+            'target':target
         }
 
     def pad(self, sequence, max_length, padding_idx=0):
@@ -132,8 +114,6 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         input_ids_max_length = max([s['input_ids'].shape[0] for s in samples])
         input_ids = torch.stack([self.pad(s['input_ids'], input_ids_max_length, self.tokenizer.pad_token_id)
                                  for s in samples])
-        labels = torch.stack([self.pad(s['labels'], input_ids_max_length, self.IGNORE_INDEX)
-                              for s in samples])
         attention_mask = torch.stack([self.pad(s['attention_mask'], input_ids_max_length, False)
                                       for s in samples])
     
@@ -144,13 +124,16 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         speech_mask = torch.zeros_like(attention_mask)
         for line, sample in enumerate(samples):
             speech_mask[line, :sample['speech_length']] = 1
+        keys = [s['key'] for s in samples]
+        targets = [s['target'] for s in samples]
     
         return {
             'input_ids': input_ids,
-            'labels': labels,
             'attention_mask': attention_mask,
             'speech_mel': speech_mel,
-            'speech_mask': speech_mask
+            'speech_mask': speech_mask,
+            'keys': keys,
+            'targets': targets
         }
 
 

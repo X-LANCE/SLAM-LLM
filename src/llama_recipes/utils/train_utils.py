@@ -153,7 +153,7 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
         if train_config.run_validation:
             eval_ppl, eval_epoch_loss, *rest = evaluation(model, train_config, eval_dataloader, local_rank, tokenizer)
             checkpoint_start_time = time.perf_counter()
-            if train_config.save_model:
+            if train_config.save_model and eval_epoch_loss < best_val_loss:
                 if train_config.enable_fsdp:
                     dist.barrier()
                 if train_config.use_peft:
@@ -237,14 +237,14 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                     print("=====================================")
                     print(f"Test the file {train_config.run_test_during_validation_file} during validation:")
                     with autocast():
-                        print(model.generate(train_config.run_test_during_validation_file, train_config.run_test_during_validation_prompt))
+                        print(model.inference(train_config.run_test_during_validation_file, train_config.run_test_during_validation_prompt))
                     print("=====================================")
                 dist.barrier()
             else:
                 print("=====================================")
                 print(f"Test the file {train_config.run_test_during_validation_file} during validation:")
                 with autocast():
-                    print(model.generate(train_config.run_test_during_validation_file, train_config.run_test_during_validation_prompt))
+                    print(model.inference(train_config.run_test_during_validation_file, train_config.run_test_during_validation_prompt))
                 print("=====================================")
         if train_config.enable_fsdp:
             if rank==0:
