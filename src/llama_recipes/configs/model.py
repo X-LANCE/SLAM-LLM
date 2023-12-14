@@ -6,8 +6,10 @@ class model_config:
     llm_name: str =  "llama-2-7b-hf"
     llm_path: str = "PATH/to/LLAMA/7B"
     encoder_name: str = None
+    encoder_ds_rate: int = 2
     encoder_path: str = None
     encoder_projector: str = "linear"
+    encoder_projector_ds_rate: int = 5
 
     # name: str =  "avsr"
     DMODEL: int = 512
@@ -30,6 +32,7 @@ class model_config:
     TRAIN_LRS3_MODEL_FILE: str = "/nfs/yangguanrou.ygr/AVSR/train-step_0108-wer_0.058.ckpt"  # "/home/oss/yangguanrou.ygr/AVSR/train-step_0108-wer_0.058.ckpt"  #单一模态是这个
     TRAINED_AO_FILE : str = "/nfs/yangguanrou.ygr/AVSR/check/train-step_0604-wer_0.054.ckpt"  #"/home/oss/yangguanrou.ygr/AVSR/check/train-step_0604-wer_0.054.ckpt"
     TRAINED_VO_FILE: str = "/nfs/yangguanrou.ygr/AVSR/check/train-step_1191-wer_0.674.ckpt"  #"/home/oss/yangguanrou.ygr/AVSR/check/train-step_1191-wer_0.674.ckpt"
+
 
 
 

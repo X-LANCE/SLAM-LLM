@@ -11,6 +11,7 @@ import torch
 import torchaudio
 from torch.utils.data import Dataset
 import whisper
+from llama_recipes.utils.compute_utils import calculate_output_length_1d
 
 
 class EChatDataset(Dataset):
@@ -23,7 +24,6 @@ class EChatDataset(Dataset):
         super().__init__()
 
         self.dataset_config = dataset_config
-        self.max_words = dataset_config.max_words  #1024
         self.tokenizer = tokenizer
         self.IGNORE_INDEX = -100 # The default setting in CrossEntropyLoss
         self.prompt_template = "USER: {}\n ASSISTANT:"
@@ -31,10 +31,33 @@ class EChatDataset(Dataset):
 
         with open(dataset_config.data_path, 'r') as file:
             data = file.readlines()
+
+        sentence_list = []
+
+        for item in data:
+            dialog_name, dialog = item.split('\t', 1)
+            dialog_list = eval(dialog)
+            for sentence_id in range(len(dialog_list)-2):
+                if 'emotion' in dialog_list[sentence_id].keys() and 'emotion' in dialog_list[sentence_id+1].keys():
+                    if dialog_list[sentence_id+1]['emotion'] != 'xxx':
+                        sentence_dict = {}
+                        sentence_dict['pre_wav'] = dialog_list[sentence_id]['wav']
+                        sentence_dict['post_emotion'] = dialog_list[sentence_id+1]['emotion']
+                        sentence_dict['post_trans'] = dialog_list[sentence_id+1]['trans']
+                        sentence_list.append(sentence_dict)
+
+        total_sentence = len(sentence_list)
+        print(f"Using {total_sentence} sentence totally.")
         if split == "train":
-            self.data = data[:60]  #好像一共80条
+            self.data = sentence_list[:int(total_sentence * 0.9)]
         else:
-            self.data = data[60:]
+            self.data = sentence_list[int(total_sentence * 0.9):]
+
+        # # debug
+        # if split == "train":
+        #     self.data = sentence_list[:8]
+        # else:
+        #     self.data = sentence_list[8:16]
         
         
     def __len__(self) -> int:
@@ -42,15 +65,8 @@ class EChatDataset(Dataset):
 
     def __getitem__(self, index):
         item = self.data[index]
-        dialog_name, dialog = item.split('\t', 1)  #'Ses01M_impro01'
-        dialog_list = eval(dialog)
-        
-        while True:
-            sentence_id = random.randint(0, len(dialog_list)-2)
-            if 'emotion' in dialog_list[sentence_id].keys() and 'emotion' in dialog_list[sentence_id+1].keys():
-                if dialog_list[sentence_id]['emotion'] != 'xxx' and dialog_list[sentence_id+1]['emotion'] != 'xxx':   # 当前语音 和下一句的情感和文本 因为要做emotional response
-                    break 
-        speech_raw = whisper.load_audio(dialog_list[sentence_id]['wav'])  #wav路径  (33759,)
+
+        speech_raw = whisper.load_audio(item['pre_wav'])
         # speech_raw = whisper.pad_or_trim(speech_raw)
         speech_mel = whisper.log_mel_spectrogram(speech_raw).permute(1,0)  #[210, 80]  #/160倍 应该是10s
 
@@ -64,14 +80,17 @@ class EChatDataset(Dataset):
         <|happy|><|The moon looks so beautiful tonight.|>
         """
 
-        prompt = self.prompt_template.format(prompt)   #很长
-        answer = self.answer_template.format(dialog_list[sentence_id+1]['emotion'], dialog_list[sentence_id+1]['trans']) #'<|fru|><|I need California ID.\n|>'
-        prompt_ids = self.tokenizer.encode(prompt) #torch.Size([89])  [1,3148,1001,29901,...]
-        prompt_length = len(prompt_ids) #89
-        speech_length = (speech_mel.shape[0] + 1) // 2 # ad-hoc for whisper for 2x downsample from mel to feats  #105
-        speech_pseudo = torch.full((speech_length,),-1) #105 个-1
+        prompt = self.prompt_template.format(prompt)
+        answer = self.answer_template.format(item['post_emotion'], item['post_trans'])
+
+        prompt_ids = self.tokenizer.encode(prompt)
+
+        prompt_length = len(prompt_ids)
+        speech_length = (speech_mel.shape[0] + 1) // 2 # ad-hoc for whisper for 2x downsample from mel to feats
+        speech_length = speech_length // 5 # ad-hoc for 5x cov1d downsample
+        speech_pseudo = torch.full((speech_length,),-1)
         
-        example = prompt + answer
+        example = prompt + answer #FIX(MZY): avoid putting a bos token before answer.
         example_ids = self.tokenizer.encode(example) # [prompt,answer]
         example_ids.append(self.tokenizer.eos_token_id) # [prompt,answer,eos]
         example_ids = torch.tensor(
@@ -80,9 +99,10 @@ class EChatDataset(Dataset):
         example_ids = torch.cat((speech_pseudo, example_ids)) # [speech,prompt,answer,eos]   #为什么要用pseudo？ 
         
         labels_ids = copy.deepcopy(example_ids) # [speech,prompt,answer,eos]
-        labels_ids[:speech_length + prompt_length] = -1 #[-1,-1,answer,eos]
-        example_mask = example_ids.ge(-1) #[True,True,True,True]   #210    #返回一个新的张量，其中每个元素都是对应位置上的元素是否大于等于0的布尔值。  这里是全true
-        label_mask = labels_ids.ge(0) #[False,False,True,True]  #210   
+        labels_ids[:speech_length + prompt_length] = -1 #[-1,-1,answer,eos];
+        example_mask = example_ids.ge(-1) #FIX(GZF): [True,True,True,True]
+
+        label_mask = labels_ids.ge(0) #[False,False,True,True]
         example_ids[~example_mask] = 0 #[speech,prompt,answer,eos]
         labels_ids[~label_mask] = self.IGNORE_INDEX #[-100,-100,answer,eos]  
         
@@ -91,7 +111,8 @@ class EChatDataset(Dataset):
             "labels": labels_ids,
             "attention_mask": example_mask,
             'speech_mel': speech_mel,
-            'speech_length': speech_length
+            'speech_length': speech_length,
+            
         }     
 
 
@@ -142,7 +163,7 @@ class EChatDataset(Dataset):
                                 for s in samples])  #前面也是ignore，尾部也是ignore 
         attention_mask = torch.stack([self.pad(s['attention_mask'], input_ids_max_length, False)   #这里根据输入长度padding，尾部mask的地方是false
                                 for s in samples])
-        
+       
         speech_mel_max_length = max([s['speech_mel'].shape[0] for s in samples])
         speech_mel = torch.stack([self.pad(s['speech_mel'], speech_mel_max_length, 0) 
                                 for s in samples])

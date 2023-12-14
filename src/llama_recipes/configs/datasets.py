@@ -35,6 +35,11 @@ class custom_dataset:
     test_split: str = "validation"
     data_path: str = NotImplemented
     max_words: int = NotImplemented
+    train_data_path: str = NotImplemented
+    val_data_path: str = NotImplemented
+    max_words: int = NotImplemented
+    max_mel: int = NotImplemented
+
 
 
 @dataclass

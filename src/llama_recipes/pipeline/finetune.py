@@ -6,6 +6,7 @@ import importlib
 
 # nn
 import torch
+from transformers.models.llama.modeling_llama import LlamaDecoderLayer
 
 # opt
 import torch.optim as optim
@@ -76,6 +77,7 @@ def main(**kwargs):
         local_rank = int(os.environ["LOCAL_RANK"])
         rank = int(os.environ["RANK"])
         world_size = int(os.environ["WORLD_SIZE"])
+        print(f"local_rank: {local_rank}, rank: {rank}, world_size: {world_size}")
 
     if torch.distributed.is_initialized(): #x
         torch.cuda.set_device(local_rank)
@@ -83,6 +85,8 @@ def main(**kwargs):
         setup_environ_flags(rank)
 
     model, tokenizer = model_factory(train_config, model_config, **kwargs)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu") # FIX(MZY): put the whole model to device.
+    model.to(device)
 
     
     # Convert the model to bfloat16 if fsdp and pure_bf16 is enabled
@@ -100,7 +104,7 @@ def main(**kwargs):
 
         model = FSDP(
             model,
-            auto_wrap_policy= my_auto_wrapping_policy if train_config.use_peft else wrapping_policy,
+            auto_wrap_policy= my_auto_wrapping_policy, #(FIX:MZY): Using my_auto_wrapping_policy whether peft or not. This will avoid model shard type check error of requires_grad mismatching.
             cpu_offload=CPUOffload(offload_params=True) if fsdp_config.fsdp_cpu_offload else None,
             mixed_precision=mixed_precision_policy if not fsdp_config.pure_bf16 else None,
             sharding_strategy=fsdp_config.sharding_strategy,
@@ -129,7 +133,7 @@ def main(**kwargs):
     dataset_val = get_preprocessed_dataset(
         tokenizer,
         dataset_config,
-        split="test",
+        split="val",
     )
     if not train_config.enable_fsdp or rank == 0:
         logger.info(f"--> Validation Set Length = {len(dataset_val)}")  #20
