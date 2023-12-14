@@ -43,9 +43,9 @@ class avsr_dataset:
     file: str = "examples/avsr_dataset.py"
     train_split: str = "train"
     test_split: str = "val"
-    data_path: str = "/home/oss/yangguanrou.ygr/"
-    h5file: str = "/home/oss/yangguanrou.ygr/LRS3/LRS3.h5"
-    noiseFile : str = "/home/oss/yangguanrou.ygr/AVSR/LRS3/Noise.h5"
+    data_path: str = "/nfs/yangguanrou.ygr/" #"/home/oss/yangguanrou.ygr/"
+    h5file: str =  "/nfs/yangguanrou.ygr/LRS3/LRS3.h5"       # "/home/oss/yangguanrou.ygr/LRS3/LRS3.h5"
+    noiseFile : str = "/nfs/yangguanrou.ygr/AVSR/LRS3/Noise.h5" #"/home/oss/yangguanrou.ygr/AVSR/LRS3/Noise.h5"
     noiseProb: float = 0.
     noiseSNR: float = 5
     stepSize: int = 16384
@@ -53,3 +53,8 @@ class avsr_dataset:
                          "B": 20, "E": 2, "D": 12, "G": 16, "F": 19, "I": 6, "H": 9, "K": 24, "J": 25, "M": 18, "L": 11, "O": 4, "N": 7, "Q": 27,
                          "P": 21, "S": 8, "R": 10, "U": 13, "T": 3, "W": 15, "V": 23, "Y": 14, "X": 26, "Z": 28, "<EOS>": 39}
     modal: str = "AV"
+    pretrain_subset: str = "LRS3/pretrain.txt"
+    train_subset: str = "LRS3/train.txt"
+    valid_subset: str = "LRS3/val.txt"
+    test_subset: str = "LRS3/test.txt"
+    

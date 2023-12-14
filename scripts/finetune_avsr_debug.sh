@@ -7,11 +7,12 @@ cd /root/SLAM-LLM
 
 audio_encoder_path=/home/oss/maziyang.mzy/models/AudioMAE/finetuned.pth
 speech_encoder_path=/home/oss/maziyang.mzy/models/Whisper/base.pt
-llm_path=/home/oss/zhifu.gzf/ckpt/Llama-2-7b-hf
-output_dir=/nfs/maziyang.mzy/models/llama-2-hf-finetune
 
-# -m debugpy --listen 5678 --wait-for-client
-python src/llama_recipes/pipeline/finetune.py \
+llm_path=/nfs/zhifu.gzf/ckpt/Llama-2-7b-hf             #/home/oss/zhifu.gzf/ckpt/Llama-2-7b-hf
+output_dir=/nfs/yangguanrou.ygr/ckpts/llama-2-hf-finetune   #/home/oss/yangguanrou.ygr/ckpts/llama-2-hf-finetune
+
+# -m debugpy --listen 5680 --wait-for-client
+python -m debugpy --listen 5680 --wait-for-client src/llama_recipes/pipeline/finetune.py \
 --model_name avsr \
 --use_peft --peft_method lora \
 --quantization \
@@ -25,4 +26,7 @@ python src/llama_recipes/pipeline/finetune.py \
 --batching_strategy custom \
 --num_epochs 1 \
 --batch_size_training 2 \
---output_dir $output_dir 
+--output_dir $output_dir \
+--stepSize 10 \
+--log_file "/root/SLAM-LLM/log/test.log" \
+--valid_subset "LRS3/val_debug.txt" \

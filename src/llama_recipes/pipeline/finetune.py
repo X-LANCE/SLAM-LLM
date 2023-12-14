@@ -15,7 +15,6 @@ from torch.distributed.fsdp import (
 )
 from torch.distributed.fsdp.fully_sharded_data_parallel import CPUOffload
 from llama_recipes.policies import AnyPrecisionAdamW, apply_fsdp_checkpointing
-#from policies import AnyPrecisionAdamW, apply_fsdp_checkpointing
 
 # config
 from llama_recipes.configs import fsdp_config as FSDP_CONFIG
@@ -42,12 +41,29 @@ from llama_recipes.utils.train_utils import (
 )
 
 from model_factory import model_factory
+import sys
+import logging
+logging.basicConfig(
+    format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+    level=os.environ.get("LOGLEVEL", "INFO").upper(),
+    stream=sys.stdout,
+)
+logger = logging.getLogger(__name__)
 
 
 def main(**kwargs):
     # Update the configuration for the training and sharding process
     train_config, fsdp_config, model_config = TRAIN_CONFIG(), FSDP_CONFIG(), MODEL_CONFIG()
     update_config((train_config, fsdp_config, model_config), **kwargs)
+
+    logger.info(train_config)
+    logger.info(fsdp_config)
+    logger.info(model_config)
+
+    if train_config.log_file is not None:
+        handler = logging.FileHandler(filename=train_config.log_file)
+        logger.addHandler(handler)
 
     # Set the seeds for reproducibility
     torch.cuda.manual_seed(train_config.seed)
@@ -100,6 +116,7 @@ def main(**kwargs):
         model.to("cuda")
 
     dataset_config = generate_dataset_config(train_config, kwargs)
+    logger.info(dataset_config)
     
     # Load and preprocess the dataset for training and validation
     dataset_train = get_preprocessed_dataset(
@@ -108,14 +125,14 @@ def main(**kwargs):
         split="train",
     )
     if not train_config.enable_fsdp or rank == 0: #
-        print(f"--> Training Set Length = {len(dataset_train)}")  #60
+        logger.info(f"--> Training Set Length = {len(dataset_train)}")  #60
     dataset_val = get_preprocessed_dataset(
         tokenizer,
         dataset_config,
         split="test",
     )
     if not train_config.enable_fsdp or rank == 0:
-        print(f"--> Validation Set Length = {len(dataset_val)}")  #20
+        logger.info(f"--> Validation Set Length = {len(dataset_val)}")  #20
     if train_config.batching_strategy == "packing":  #x   是custom
         dataset_train = ConcatDataset(dataset_train, chunk_size=train_config.context_length)
 
@@ -128,6 +145,22 @@ def main(**kwargs):
         pin_memory=True,
         **train_dl_kwargs,
     )
+
+    # for i, batch in enumerate(train_dataloader):
+
+    #     if batch["inputBatch0"].shape[1]<10000:
+    #         print(batch["inputBatch0"].shape)
+    #         print(batch["inputBatch2"].shape)
+    #         print(batch["targetLenBatch"])
+    #         print(i)
+
+    #     if i%1000==0:
+    #         print("step:%d"%i)
+
+
+        
+        
+
 
     eval_dataloader = None
     if train_config.run_validation:

@@ -23,13 +23,13 @@ class model_config:
 
     WORD_NUM_CLASSES: int = 500
     FRAME_LENGTH: int = 29
-    MOCO_FRONTEND_FILE: str = "/home/oss/yangguanrou.ygr/AVSR/pretrain_model/moco_frontend.pt"
-    WAV2VEC_FILE: str = "/home/oss/yangguanrou.ygr/AVSR/pretrain_model/wav2vec_vox_new.pt"
+    MOCO_FRONTEND_FILE: str = "/nfs/yangguanrou.ygr/AVSR/pretrain_model/moco_frontend.pt" #"/home/oss/yangguanrou.ygr/AVSR/pretrain_model/moco_frontend.pt"
+    WAV2VEC_FILE: str = "/nfs/yangguanrou.ygr/AVSR/pretrain_model/wav2vec_vox_new.pt" #"/home/oss/yangguanrou.ygr/AVSR/pretrain_model/wav2vec_vox_new.pt"
     MAIN_REQ_INPUT_LENGTH: int = 80
     modal: str = "AV"
-    TRAIN_LRS3_MODEL_FILE: str = "/home/oss/yangguanrou.ygr/AVSR/train-step_0108-wer_0.058.ckpt"  #单一模态是这个
-    TRAINED_AO_FILE : str = "/home/oss/yangguanrou.ygr/AVSR/check/train-step_0604-wer_0.054.ckpt"
-    TRAINED_VO_FILE: str = "/home/oss/yangguanrou.ygr/AVSR/check/train-step_1191-wer_0.674.ckpt"
+    TRAIN_LRS3_MODEL_FILE: str = "/nfs/yangguanrou.ygr/AVSR/train-step_0108-wer_0.058.ckpt"  # "/home/oss/yangguanrou.ygr/AVSR/train-step_0108-wer_0.058.ckpt"  #单一模态是这个
+    TRAINED_AO_FILE : str = "/nfs/yangguanrou.ygr/AVSR/check/train-step_0604-wer_0.054.ckpt"  #"/home/oss/yangguanrou.ygr/AVSR/check/train-step_0604-wer_0.054.ckpt"
+    TRAINED_VO_FILE: str = "/nfs/yangguanrou.ygr/AVSR/check/train-step_1191-wer_0.674.ckpt"  #"/home/oss/yangguanrou.ygr/AVSR/check/train-step_1191-wer_0.674.ckpt"
 
 
 

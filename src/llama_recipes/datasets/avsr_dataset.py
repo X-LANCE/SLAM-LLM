@@ -9,12 +9,14 @@ import torch
 import cv2 as cv
 from torch.nn.utils.rnn import pad_sequence
 
+import logging
+logger = logging.getLogger(__name__)
+
 class AVSRDataset(Dataset):
     def __init__(self, dataset_config, tokenizer=None, split='train'):
         super().__init__()
 
         self.tokenizer = tokenizer
-
         self.modal = dataset_config.modal
         self.dataset = split                        #train|val|test
         self.data_path = dataset_config.data_path
@@ -24,10 +26,14 @@ class AVSRDataset(Dataset):
         self.noiseProb = dataset_config.noiseProb
         self.stepSize = dataset_config.stepSize  #16384
         self.charToIx = dataset_config.charToIx
+        self.pretrain_subset = dataset_config.pretrain_subset
+        self.train_subset = dataset_config.train_subset
+        self.valid_subset = dataset_config.valid_subset
+        self.test_subset= dataset_config.test_subset
 
         if self.dataset == "train": 
-            pretrain_dir = self.data_path + "LRS3/pretrain.txt"
-            train_dir = self.data_path + "LRS3/train.txt"
+            pretrain_dir = self.data_path + self.pretrain_subset  # "LRS3/pretrain.txt"
+            train_dir = self.data_path + self.train_subset        # "LRS3/train.txt"
 
             with open(pretrain_dir, "r") as f:
                 lines = f.readlines()
@@ -41,7 +47,7 @@ class AVSRDataset(Dataset):
             lrs3Aug=True
 
         elif self.dataset == "val":
-            val_dir = self.data_path + "LRS3/val.txt"
+            val_dir = self.data_path +  self.valid_subset  # "LRS3/val.txt"
             with open(val_dir, "r") as f:
                 lines = f.readlines()
                 val_datalist = [self.data_path + line.strip()[3:] for line in lines]
@@ -49,7 +55,7 @@ class AVSRDataset(Dataset):
             lrs3Aug=False
 
         else:
-            test_dir = self.data_path + "LRS3/test.txt"
+            test_dir = self.data_path +  self.test_subset # "LRS3/test.txt"
             with open(test_dir, "r") as f:
                 lines = f.readlines()
                 test_datalist = [self.data_path + line.strip()[3:] for line in lines]
@@ -136,7 +142,7 @@ class AVSRDataset(Dataset):
             return len(self.datalist)
 
     def collator(self, dataBatch):
-    
+        # audio & mask
         if not self.modal == "VO":
             aud_seq_list = [data[0][0] for data in dataBatch]
             aud_padding_mask = torch.zeros((len(aud_seq_list), len(max(aud_seq_list, key=len))), dtype=torch.bool)
@@ -154,19 +160,12 @@ class AVSRDataset(Dataset):
             vis_seq_list = None
             vis_len = None
 
-        inputBatch = (aud_seq_list, aud_padding_mask, vis_seq_list, vis_len)
+        inputBatch = (aud_seq_list, aud_padding_mask, vis_seq_list, vis_len)  #!!!
 
         targetinBatch = pad_sequence([data[1] for data in dataBatch], batch_first=True)
         targetoutBatch = pad_sequence([data[2] for data in dataBatch], batch_first=True)
         targetLenBatch = torch.stack([data[3] for data in dataBatch])
  
-        #return inputBatch, targetinBatch, targetoutBatch, targetLenBatch   #这里是真的batch那一步  额到这里还不够捏
-        # if self.modal == "AO":
-        #     inputBatch = (inputBatch[0].float().to('cuda:0'), inputBatch[1].to('cuda:0'), None, None)
-        # elif self.modal == "VO":
-        #     inputBatch = (None, None, inputBatch[2].float().to('cuda:0'), inputBatch[3].int().to('cuda:0'))
-        # else:
-        #     inputBatch = (inputBatch[0].float().to('cuda:0'), inputBatch[1].to('cuda:0'), inputBatch[2].float().to('cuda:0'), inputBatch[3].int().to('cuda:0'))
         if self.modal == "AO":
             inputBatch = (inputBatch[0].float(), inputBatch[1], None, None)
         elif self.modal == "VO":
@@ -181,21 +180,15 @@ class AVSRDataset(Dataset):
         targetMask[(torch.arange(targetMask.shape[0]), targetLenBatch.long() - 1)] = 1
         targetMask = (1 - targetMask.flip([-1]).cumsum(-1).flip([-1])).bool()
 
-
         return {
             "inputBatch0": inputBatch[0],
             "inputBatch1": inputBatch[1],
             "inputBatch2": inputBatch[2],
             "inputBatch3": inputBatch[3],
-            #"inputBatch":inputBatch,
-            
-            #"targetinBatch": targetinBatch,
+
             "targetoutBatch": targetoutBatch,
             "targetLenBatch": targetLenBatch.long(),
-            #"targetinBatch": targetinBatch.to('cuda:0'),
-            #"targetLenBatch": targetLenBatch.long().to('cuda:0'),
             'maskw2v': True,
-         
         }     
 
     def prepare_pretrain_input(self,index, modal, h5, targetFile, charToIx, transform, noise, noiseSNR, numWordsRange, maxLength):  #(3,21)  160
@@ -207,9 +200,9 @@ class AVSRDataset(Dataset):
             with open(targetFile, "r") as f:
                 lines = f.readlines()
         except:
-            print("error")
-            print(targetFile)
-            print(index)
+            logger.info("error")
+            logger.info(targetFile)
+            logger.info(index)
             return 0, 0, 0, 0
 
         lines = [line.strip() for line in lines]
@@ -260,9 +253,9 @@ class AVSRDataset(Dataset):
                         vidInp = torch.tensor(vidInp).unsqueeze(1)
                         vidInp = transform(vidInp)
                     except:
-                        print("error")
-                        print(targetFile)
-                        print(index)
+                        logger.info("error")
+                        logger.info(targetFile)
+                        logger.info(index)
                         return 0,0,0,0
                 else:
                     vidInp = None
@@ -310,9 +303,9 @@ class AVSRDataset(Dataset):
                         vidInp = transform(vidInp)
                         vidInp = vidInp[int(np.floor(videoFPS * startTime)): int(np.ceil(videoFPS * endTime))]
                     except:
-                        print("error")
-                        print(targetFile)
-                        print(index)
+                        logger.info("error")
+                        logger.info(targetFile)
+                        logger.info(index)
                         return 0, 0, 0, 0
 
                 else:
@@ -331,7 +324,6 @@ class AVSRDataset(Dataset):
             trgtin.insert(0, self.tokenizer.eos_token_id ) #[2,xxx]
             trgtout.append(self.tokenizer.eos_token_id ) #[]
 
-
             trgtin = np.array(trgtin)
             trgtout = np.array(trgtout)
             trgtLen = len(trgtout)
@@ -349,7 +341,6 @@ class AVSRDataset(Dataset):
                 numWords -= 1
 
         return inp, trgtin, trgtout, trgtLen  #, trgtNWord
-
 
     def prepare_main_input(self, index, modal, h5, targetFile, charToIx, transform, noise, noiseSNR):
         """
@@ -413,16 +404,9 @@ class AVSRDataset(Dataset):
         return inp, trgtin, trgtout, trgtLen#,trgt   #'THE FIRST TIME WHEN IT TOOK ME FIVE MONTHS FROM THE DECISION OF'
 
 
-
-
-
 def get_audio_dataset(dataset_config, tokenizer, split):
     dataset = AVSRDataset(dataset_config, tokenizer, split)
-
     return dataset
-
-
-
 
 class ToTensor:
     """Applies the :class:`~torchvision.transforms.ToTensor` transform to a batch of images.

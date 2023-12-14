@@ -77,7 +77,7 @@ def setup_llm(train_config, model_config, **kwargs):
 
     else:  #
         model = LlamaForCausalLM.from_pretrained(
-            model_config.llm_path,
+            model_config.llm_path,   #'/home/oss/zhifu.gzf/ckpt/Llama-2-7b-hf'
             load_in_8bit=True if train_config.quantization else None,  #train_config.quantization: true
             device_map="auto" if train_config.quantization else None, 
             use_cache=use_cache,
@@ -92,18 +92,18 @@ def setup_llm(train_config, model_config, **kwargs):
             from optimum.bettertransformer import BetterTransformer
             model = BetterTransformer.transform(model)
         except ImportError:
-            print("Module 'optimum' not found. Please install 'optimum' it before proceeding.")
+            logger.warning("Module 'optimum' not found. Please install 'optimum' it before proceeding.")
 
     print_model_size(model, train_config, rank if train_config.enable_fsdp else 0)
 
     # Prepare the model for int8 training if quantization is enabled
     if train_config.quantization:  # 
-        model = prepare_model_for_kbit_training(model)
+        model = prepare_model_for_kbit_training(model)  #peft里的函数
 
-    if train_config.use_peft:  #x
+    if train_config.use_peft:  #
         peft_config = generate_peft_config(train_config, kwargs)
-        model = get_peft_model(model, peft_config)
-        model.print_trainable_parameters()
+        model = get_peft_model(model, peft_config)  #PeftModelForCausalLM
+        model.print_trainable_parameters()  
 
     return model
 

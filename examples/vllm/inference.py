@@ -7,6 +7,9 @@ import torch
 from vllm import LLM
 from vllm import LLM, SamplingParams
 
+import logging
+logger = logging.getLogger(__name__)
+
 
 torch.cuda.manual_seed(42)
 torch.manual_seed(42)
@@ -27,15 +30,15 @@ def main(
         if user_prompt is None:
             user_prompt = input("Enter your prompt: ")
             
-        print(f"User prompt:\n{user_prompt}")
+        logger.info(f"User prompt:\n{user_prompt}")
 
-        print(f"sampling params: top_p {top_p} and temperature {temperature} for this inference request")
+        logger.info(f"sampling params: top_p {top_p} and temperature {temperature} for this inference request")
         sampling_param = SamplingParams(top_p=top_p, temperature=temperature, max_tokens=max_new_tokens)
         
 
         outputs = model.generate(user_prompt, sampling_params=sampling_param)
    
-        print(f"model output:\n {user_prompt} {outputs[0].outputs[0].text}")
+        logger.info(f"model output:\n {user_prompt} {outputs[0].outputs[0].text}")
         user_prompt = input("Enter next prompt (press Enter to exit): ")
         if not user_prompt:
             break

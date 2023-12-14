@@ -1,4 +1,3 @@
-#import fairseq
 from fairseq.checkpoint_utils import load_model_ensemble_and_task  
 import numpy as np
 import torch
@@ -7,19 +6,11 @@ import torch.nn.functional as F
 from torch.nn.utils.rnn import pad_sequence
 from tqdm import tqdm
 
-# from utils.decoders import compute_CTC_prob
 from .moco_visual_frontend import MoCoVisualFrontend
 from .utils import PositionalEncoding, conv1dLayers, outputConv, MaskedLayerNorm, generate_square_subsequent_mask
 
 from transformers import TransfoXLTokenizer, TransfoXLLMHeadModel
-# from config import args
-# from operator import itemgetter
-# import math
-# from fairseq.models.transformer_lm import TransformerLanguageModel
-# from fairseq.models.lstm_lm import LSTMLanguageModel
-# import sentencepiece as spm
-# from tokenizers import Tokenizer
-# from tokenizers import decoders
+
 
 class AVNet(nn.Module):  
 
@@ -104,10 +95,13 @@ class AVNet(nn.Module):
         # self.jointAttentionOutputConv = outputConv("LN", self.dModel, self.numClasses)
 
     def forward(self, inputBatch, maskw2v):
-        audioBatch, audMask, videoBatch, vidLen = inputBatch  #torch.Size([2, 32480]),torch.Size([2, 32480]),torch.Size([2, 52, 1, 112, 112]),[52,47]
+        audioBatch, audMask, videoBatch, vidLen = inputBatch  #torch.Size([2, 32480]),torch.Size([2, 32480]),torch.Size([2, 52, 1, 112, 112]),[52,47]  # audMask尾部有一堆true表示mask，其余都是false
         if not self.modal == "VO":
             result = self.wav2vecModel.extract_features(audioBatch, padding_mask=audMask, mask=maskw2v)  #new_version
-            audioBatch,audMask =result["x"],result["padding_mask"]  #torch.Size([2, 101, 1024]), torch.Size([2, 101])
+            audioBatch,audMask =result["x"],result["padding_mask"]  #torch.Size([2, 101, 1024]), torch.Size([2, 101])   #形状变了 所以还得跟形状保持一致
+            if audMask==None:
+                audMask= torch.full( (audioBatch.shape[0], audioBatch.shape[1]), False, device=audioBatch.device ) #TODO
+
             audLen = torch.sum(~audMask, dim=1)  #tensor([101,  90], device='cuda:0')
         else:
             audLen = None
