@@ -300,7 +300,7 @@ class slam_model(nn.Module):
         model_outputs = self.llm.generate(
             inputs_embeds=inputs_embeds,
             max_length=kwargs.get("max_length", 200),
-            num_beams=kwargs.get("num_beams", 4),
+            num_beams=kwargs.get("num_beams", 1),
             do_sample=kwargs.get("do_sample", False),
             min_length=kwargs.get("min_length", 1),
             top_p=kwargs.get("top_p", 0.9),
