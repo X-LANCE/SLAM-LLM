@@ -42,3 +42,4 @@ class train_config:
     run_test_during_validation_prompt: str = "<|ASR|>"
     freeze_llm: bool = False
     freeze_encoder: bool = False
+    log_interval: int = 5

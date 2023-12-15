@@ -5,3 +5,4 @@ __pycache__
 debug.py
 .idea/*
 transformers
+wandb/

@@ -20,6 +20,8 @@ from peft import PeftModel, PeftConfig
 from torch.nn import CrossEntropyLoss
 from llama_recipes.utils.metric import compute_accuracy
 
+import logging
+logger = logging.getLogger(__name__)
 
 def setup_model(tokenizer, train_config, model_config, **kwargs):
     return slam_model(tokenizer, train_config, model_config, **kwargs)
@@ -122,7 +124,7 @@ def setup_llm(train_config, model_config, **kwargs):
     print_module_size(model, model_config.llm_name, int(os.environ["RANK"]) if train_config.enable_fsdp else 0)
 
     # Prepare the model for int8 training if quantization is enabled
-    if train_config.quantization:  # 
+    if train_config.quantization:  #x
         model = prepare_model_for_kbit_training(model)  #peft里的函数
 
     if train_config.freeze_llm: # TODO:to test offical `freeze_layers` and `num_freeze_layers`
@@ -136,7 +138,7 @@ def setup_llm(train_config, model_config, **kwargs):
         model.print_trainable_parameters()
         
         if kwargs.get("peft_ckpt", None):
-            print("loading peft_ckpt from: ", kwargs.get("peft_ckpt"))
+            logger.info("loading peft_ckpt from: ", kwargs.get("peft_ckpt"))
             model = PeftModel.from_pretrained(model, kwargs.get("peft_ckpt"))
 
     print_module_size(model, model_config.llm_name, int(os.environ["RANK"]) if train_config.enable_fsdp else 0)
@@ -151,7 +153,7 @@ def setup_encoder_projector(train_config, model_config, **kwargs):
 class EncoderProjectorConcat(nn.Module):
     def __init__(self, config):
         super().__init__()
-        self.k = config.encoder_projector_ds_rate
+        self.k = config.encoder_projector_ds_rate  # 5
         self.linear1 = nn.Linear(1280 * self.k, 2048)
         self.relu = nn.ReLU()
         self.linear2 = nn.Linear(2048, 4096)
@@ -227,18 +229,18 @@ class slam_model(nn.Module):
                 return_dict: Optional[bool] = None,
                 **kwargs,
                 ):
-        speech_mel = kwargs.get("speech_mel", None)
-        speech_mask = kwargs.get("speech_mask", None)
+        speech_mel = kwargs.get("speech_mel", None)  #torch.Size([4, 1583, 80])
+        speech_mask = kwargs.get("speech_mask", None)  #torch.Size([4, 227])
 
         encoder_outs = None
         if speech_mel is not None:
-            encoder_outs = self.encoder.extract_variable_length_features(speech_mel.permute(0, 2, 1)) # bs*seq*dim
-            encoder_outs = self.encoder_projector(encoder_outs)
+            encoder_outs = self.encoder.extract_variable_length_features(speech_mel.permute(0, 2, 1)) # bs*seq*dim  #torch.Size([4, 792, 1280])
+            encoder_outs = self.encoder_projector(encoder_outs) #torch.Size([4, 158, 4096])
 
-        if input_ids is not None:
+        if input_ids is not None: #
             input_ids[input_ids == -1] = 0
             if hasattr(self.llm.model, "embed_tokens"):
-                inputs_embeds = self.llm.model.embed_tokens(input_ids)
+                inputs_embeds = self.llm.model.embed_tokens(input_ids)  #torch.Size([4, 227, 4096])
             elif hasattr(self.llm.model.model, "embed_tokens"):
                 inputs_embeds = self.llm.model.model.embed_tokens(input_ids)
             else:
@@ -247,13 +249,13 @@ class slam_model(nn.Module):
         if speech_mask is not None:
             batch_size, token_num, dims = inputs_embeds.shape
             _, l, _ = encoder_outs.shape
-            encoder_outs_pad = F.pad(encoder_outs, (0, 0, 0, token_num-l, 0, 0), value=0.0)
-            inputs_embeds = encoder_outs_pad * speech_mask[:, :, None] + inputs_embeds * (~speech_mask[:, :, None])
+            encoder_outs_pad = F.pad(encoder_outs, (0, 0, 0, token_num-l, 0, 0), value=0.0)  #torch.Size([4, 227, 4096])
+            inputs_embeds = encoder_outs_pad * speech_mask[:, :, None] + inputs_embeds * (~speech_mask[:, :, None])  #torch.Size([4, 227, 4096])
         
-        model_outputs = self.llm(inputs_embeds=inputs_embeds, attention_mask=attention_mask, labels=labels)
+        model_outputs = self.llm(inputs_embeds=inputs_embeds, attention_mask=attention_mask, labels=labels)  #logits & loss
 
         acc = -1
-        if self.metric:
+        if self.metric: #
             with torch.no_grad():
                 preds = torch.argmax(model_outputs.logits, -1)
                 acc = compute_accuracy(preds.detach()[:, :-1], labels.detach()[:, 1:], ignore_label=-100)

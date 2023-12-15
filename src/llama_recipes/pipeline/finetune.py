@@ -44,27 +44,58 @@ from llama_recipes.utils.train_utils import (
 from model_factory import model_factory
 import sys
 import logging
-logging.basicConfig(
-    format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-    level=os.environ.get("LOGLEVEL", "INFO").upper(),
-    stream=sys.stdout,
-)
-logger = logging.getLogger(__name__)
-
+import wandb
 
 def main(**kwargs):
+
     # Update the configuration for the training and sharding process
     train_config, fsdp_config, model_config = TRAIN_CONFIG(), FSDP_CONFIG(), MODEL_CONFIG()
     update_config((train_config, fsdp_config, model_config), **kwargs)
 
-    logger.info(train_config)
-    logger.info(fsdp_config)
-    logger.info(model_config)
+    logging.basicConfig(
+        level=logging.INFO, 
+        format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+        filemode='w'
+    )
 
-    if train_config.log_file is not None:
-        handler = logging.FileHandler(filename=train_config.log_file)
-        logger.addHandler(handler)
+    logger = logging.getLogger()  
+    #logger = logging.getLogger("finetune")  #不知道为啥那么建完是warning
+    logger.setLevel(logging.INFO)
+
+    # 修改默认的console handler
+    # logger.handlers logger.handlers[0]
+    file_handler = logging.FileHandler(filename=train_config.log_file, mode='w')
+    file_handler.setLevel(logging.INFO)
+    file_formatter = logging.Formatter('[%(asctime)s][%(name)s][%(levelname)s] - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+    file_handler.setFormatter(file_formatter)
+
+    # console_handler = logging.StreamHandler()
+    # console_handler.setLevel(logging.INFO)
+    # console_formatter = logging.Formatter('[%(asctime)s][%(name)s][%(levelname)s] - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+    # console_handler.setFormatter(console_formatter)    
+
+    logger.handlers[0].setLevel(logging.INFO)
+    console_formatter = logging.Formatter('[%(asctime)s][%(name)s][%(levelname)s] - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+    logger.handlers[0].setFormatter(console_formatter) 
+
+    logger.addHandler(file_handler)
+    # logger.addHandler(console_handler)
+
+    # logger.propagate=False
+
+    # effective_level = logger.getEffectiveLevel()  # 打印有效日志级别
+    # print("Effective log level:", effective_level)
+
+    wandb_config={"train_config":vars(train_config), "fsdp_config":vars(fsdp_config), "model_config":vars(model_config)}
+    wandb.init(project="project_name",name="exp_name",config=wandb_config) #记录参数
+    
+    logger.info("train_config: {}".format(train_config))
+    logger.info("fsdp_config: {}".format(fsdp_config))
+    logger.info("model_config: {}".format(model_config))
+
+
+
 
     # Set the seeds for reproducibility
     torch.cuda.manual_seed(train_config.seed)
@@ -77,7 +108,7 @@ def main(**kwargs):
         local_rank = int(os.environ["LOCAL_RANK"])
         rank = int(os.environ["RANK"])
         world_size = int(os.environ["WORLD_SIZE"])
-        print(f"local_rank: {local_rank}, rank: {rank}, world_size: {world_size}")
+        logger.info(f"local_rank: {local_rank}, rank: {rank}, world_size: {world_size}")
 
     if torch.distributed.is_initialized(): #x
         torch.cuda.set_device(local_rank)
@@ -85,7 +116,7 @@ def main(**kwargs):
         setup_environ_flags(rank)
 
     model, tokenizer = model_factory(train_config, model_config, **kwargs)
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu") # FIX(MZY): put the whole model to device.
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu") # FIX(MZY): put the whole model to device.  #device(type='cuda')
     model.to(device)
 
     
@@ -120,7 +151,8 @@ def main(**kwargs):
         model.to("cuda")
 
     dataset_config = generate_dataset_config(train_config, kwargs)
-    logger.info(dataset_config)
+    logger.info("dataset_config: {}".format(dataset_config))
+    # wandb.config.update( {"dataset_config": vars(dataset_config)} )  数据集里有notimplemented
     
     # Load and preprocess the dataset for training and validation
     dataset_train = get_preprocessed_dataset(
@@ -151,20 +183,13 @@ def main(**kwargs):
     )
 
     # for i, batch in enumerate(train_dataloader):
-
     #     if batch["inputBatch0"].shape[1]<10000:
     #         print(batch["inputBatch0"].shape)
     #         print(batch["inputBatch2"].shape)
     #         print(batch["targetLenBatch"])
     #         print(i)
-
     #     if i%1000==0:
     #         print("step:%d"%i)
-
-
-        
-        
-
 
     eval_dataloader = None
     if train_config.run_validation:
@@ -213,7 +238,9 @@ def main(**kwargs):
         rank if train_config.enable_fsdp else None,
     )
     if not train_config.enable_fsdp or rank==0:
-        [print(f'Key: {k}, Value: {v}') for k, v in results.items()]
+        [logger.info(f'Key: {k}, Value: {v}') for k, v in results.items()]
+
+    wandb.finish()
 
 if __name__ == "__main__":
     fire.Fire(main)

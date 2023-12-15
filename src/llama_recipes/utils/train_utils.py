@@ -30,6 +30,8 @@ from llama_recipes.utils.metric import compute_accuracy
 
 import logging
 logger = logging.getLogger(__name__)
+import wandb
+
 
 def set_tokenizer_params(tokenizer: LlamaTokenizer):
     tokenizer.pad_token_id = 0
@@ -58,14 +60,14 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
     Returns: results dictionary containing average training and validation perplexity and loss
     """
     # Create a gradient scaler for fp16
-    if train_config.use_fp16 and train_config.enable_fsdp:
+    if train_config.use_fp16 and train_config.enable_fsdp:  # 都没有
         scaler = ShardedGradScaler()
     elif train_config.use_fp16 and not train_config.enable_fsdp: 
         scaler = torch.cuda.amp.GradScaler()
     if train_config.enable_fsdp:
         world_size = int(os.environ["WORLD_SIZE"])
     autocast = torch.cuda.amp.autocast if train_config.use_fp16 else nullcontext
-
+    
     train_prep = []
     train_loss = []
     train_acc = []
@@ -82,7 +84,7 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
             model.train()
             total_loss = 0.0
             total_acc = 0.0
-            total_length = len(train_dataloader)//gradient_accumulation_steps  #30
+            total_length = len(train_dataloader)//gradient_accumulation_steps  #30  #ASR:70219
             pbar = tqdm(colour="blue", desc=f"Training Epoch: {epoch+1}", total=total_length, dynamic_ncols=True)  #!!!
             for step, batch in enumerate(train_dataloader):
                 for key in batch.keys():
@@ -90,7 +92,7 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                         continue
                     if train_config.enable_fsdp:
                         batch[key] = batch[key].to(local_rank)
-                    else:
+                    else: #
                         batch[key] = batch[key].to('cuda:0')
                 with autocast():
                     try:
@@ -114,6 +116,10 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
 
                 loss = loss / gradient_accumulation_steps
                 acc = acc / gradient_accumulation_steps
+
+                if step % train_config.log_interval == 0:
+                    wandb.log({"train_inner/train_inner_loss":loss, "train_inner/train_inner_accuracy":acc})
+                    
                 total_loss += loss.detach().float()
                 total_acc += acc
                 if train_config.use_fp16:
@@ -151,6 +157,8 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
         train_prep.append(train_perplexity)
         train_loss.append(train_epoch_loss)
         train_acc.append(train_epoch_acc)
+
+        wandb.log({"train/train_perplexity":train_perplexity, "train/train_epoch_loss":train_epoch_loss, "train/train_epoch_acc":train_epoch_acc})
 
         if train_config.enable_fsdp:
             if rank==0:
@@ -195,12 +203,12 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                             )
                     if train_config.enable_fsdp:
                         if rank==0:
-                            print(f"PEFT modules are saved in {train_config.output_dir} directory")
+                            logger.info(f"PEFT modules are saved in {train_config.output_dir} directory")
                     else:
-                        print(f"PEFT modules are saved in {train_config.output_dir} directory")
+                        logger.info(f"PEFT modules are saved in {train_config.output_dir} directory")
                 
                 elif not train_config.use_peft and train_config.freeze_llm:
-                    print(f"llm is frozen, we are about to save other parts.")
+                    logger.info(f"llm is frozen, we are about to save other parts.")
                     if train_config.enable_fsdp:
                         if rank==0:
                             save_model_checkpoint_peft(
@@ -249,25 +257,31 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
             val_loss.append(eval_epoch_loss)
 
             val_prep.append(eval_ppl)
+
+            
+            
             if rest:
                 val_acc.append(rest[0]) 
             else: 
                 val_acc.append(-1)
+            
+            wandb.log({"valid/val_epoch_loss":eval_epoch_loss, "valid/val_perplexity":eval_ppl, "valid/best_val_loss":best_val_loss, "valid/val_accuracy":val_acc[-1]})
+
         if train_config.run_test_during_validation:
             if train_config.enable_fsdp:
                 if rank==0:
-                    print("=====================================")
-                    print(f"Test the file {train_config.run_test_during_validation_file} during validation:")
+                    logger.info("=====================================")
+                    logger.info(f"Test the file {train_config.run_test_during_validation_file} during validation:")
                     with autocast():
-                        print(model.inference(train_config.run_test_during_validation_file, train_config.run_test_during_validation_prompt))
-                    print("=====================================")
+                        logger.info(model.inference(train_config.run_test_during_validation_file, train_config.run_test_during_validation_prompt))
+                    logger.info("=====================================")
                 dist.barrier()
             else:
-                print("=====================================")
-                print(f"Test the file {train_config.run_test_during_validation_file} during validation:")
+                logger.info("=====================================")
+                logger.info(f"Test the file {train_config.run_test_during_validation_file} during validation:")
                 with autocast():
-                    print(model.inference(train_config.run_test_during_validation_file, train_config.run_test_during_validation_prompt))
-                print("=====================================")
+                    logger.info(model.inference(train_config.run_test_during_validation_file, train_config.run_test_during_validation_prompt))
+                logger.info("=====================================")
         if train_config.enable_fsdp:
             if rank==0:
                 logger.info(f"Epoch {epoch+1}: train_perplexity={train_perplexity:.4f}, train_epoch_loss={train_epoch_loss:.4f}, epoch time {epoch_end_time}s")
@@ -417,7 +431,7 @@ def get_parameter_dtypes(model):
 
 def print_model_size(model, config, rank: int = 0) -> None:
     """
-    logger.info model name, the number of trainable parameters and initialization time.
+    log model name, the number of trainable parameters and initialization time.
 
     Args:
         model: The PyTorch model.
@@ -429,7 +443,7 @@ def print_model_size(model, config, rank: int = 0) -> None:
     if rank == 0:
         logger.info(f"--> Model {config.model_name}")
         total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-        logger.info(f"\n--> {config.model_name} has {total_params / 1e6} Million params\n")
+        logger.info(f"--> {config.model_name} has {total_params / 1e6} Million params\n")
 
 def print_module_size(module, module_name, rank: int = 0) -> None:
     """
@@ -441,9 +455,9 @@ def print_module_size(module, module_name, rank: int = 0) -> None:
         rank (int, optional): Current process's rank. Defaults to 0.
     """
     if rank == 0:
-        print(f"--> Module {module_name}")
+        logger.info(f"--> Module {module_name}")
         total_params = sum(p.numel() for p in module.parameters() if p.requires_grad)
-        print(f"\n--> {module_name} has {total_params / 1e6} Million params\n")
+        logger.info(f"--> {module_name} has {total_params / 1e6} Million params\n")
 
 
 def get_policies(cfg, rank):

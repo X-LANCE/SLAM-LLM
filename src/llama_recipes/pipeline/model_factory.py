@@ -4,6 +4,9 @@ from llama_recipes.models.avsr_model import setupavsr_model
 from llama_recipes.utils.train_utils import print_model_size
 import os
 
+import logging
+logger = logging.getLogger(__name__)
+
 def model_factory(train_config, model_config, **kwargs):
 
     tokenizer = setup_tokenizer(train_config, model_config, **kwargs)
@@ -16,9 +19,11 @@ def model_factory(train_config, model_config, **kwargs):
 
     ckpt_path = kwargs.get("ckpt_path", None) #FIX(MZY): load model ckpt(mainly projector, related to model_checkpointing/checkpoint_handler.py: save_model_checkpoint_peft)
     if ckpt_path is not None:
-            print("loading other parts from: ", ckpt_path)
+            logger.info("loading other parts from: ", ckpt_path)
             ckpt_dict = torch.load(ckpt_path, map_location="cpu")
             model.load_state_dict(ckpt_dict, strict=False)
 
     print_model_size(model, train_config, int(os.environ["RANK"]) if train_config.enable_fsdp else 0)
     return model, tokenizer
+
+    # .cuda()搞到外面了

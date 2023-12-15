@@ -13,6 +13,8 @@ from torch.utils.data import Dataset
 import whisper
 from llama_recipes.utils.compute_utils import calculate_output_length_1d
 
+import logging
+logger = logging.getLogger(__name__)
 
 class EChatDataset(Dataset):
     def __init__(
@@ -47,7 +49,7 @@ class EChatDataset(Dataset):
                         sentence_list.append(sentence_dict)
 
         total_sentence = len(sentence_list)
-        print(f"Using {total_sentence} sentence totally.")
+        logger.info(f"Using {total_sentence} sentence totally.")
         if split == "train":
             self.data = sentence_list[:int(total_sentence * 0.9)]
         else:
