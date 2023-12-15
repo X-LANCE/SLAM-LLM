@@ -31,6 +31,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         self.IGNORE_INDEX = -100  # The default setting in CrossEntropyLoss
         self.prompt_template = "USER: {}\n ASSISTANT:"
         self.answer_template = "{}"
+        self.fix_length_audio = dataset_config.fix_length_audio
 
         self.data_list = []
         if split == "train":
@@ -80,7 +81,9 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         speech_length = (speech_mel.shape[0] + 1) // 2  # ad-hoc for whisper for 2x downsample from mel to feats
         speech_length = speech_length // 5 # ad-hoc for 5x fc downsample
         # speech_length = calculate_output_length_1d(speech_length, 5, 5, 0) # ad-hoc for 5x cov1d downsample
-        speech_pseudo = torch.full((speech_length,), -1)
+        if self.fix_length_audio > 0:
+            speech_length = self.fix_length_audio
+        speech_pseudo = torch.full((speech_length,), -1) # placeholder
 
         example = prompt + answer  # FIX(MZY): avoid putting a bos token before answer.
         example_ids = self.tokenizer.encode(example)  # [prompt,answer]
@@ -136,6 +139,9 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         speech_mel_max_length = max([s['speech_mel'].shape[0] for s in samples])
         speech_mel = torch.stack([self.pad(s['speech_mel'], speech_mel_max_length, 0)
                                   for s in samples])
+        speech_mel_post_mask = torch.zeros(len(samples), (speech_mel_max_length + 1) // 2) # ad-hoc for whisper for 2x downsample from mel to feats
+        for line, sample in enumerate(samples):
+            speech_mel_post_mask[line, :(sample['speech_mel'].shape[0] + 1) // 2] = 1
     
         speech_mask = torch.zeros_like(attention_mask)
         for line, sample in enumerate(samples):
@@ -146,6 +152,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
             'labels': labels,
             'attention_mask': attention_mask,
             'speech_mel': speech_mel,
+            'speech_mel_post_mask': speech_mel_post_mask,
             'speech_mask': speech_mask
         }
 

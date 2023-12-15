@@ -37,3 +37,4 @@ class custom_dataset:
     val_data_path: str = NotImplemented
     max_words: int = NotImplemented
     max_mel: int = NotImplemented
+    fix_length_audio: int = -1
