@@ -145,6 +145,8 @@ def setup_llm(train_config, model_config, **kwargs):
 def setup_encoder_projector(train_config, model_config, **kwargs):
     if model_config.encoder_projector == "linear":
         encoder_projector = EncoderProjectorConcat(model_config)
+    elif model_config.encoder_projector == "cov1d-linear":
+        encoder_projector = EncoderProjectorCov1d(model_config)
     print_module_size(encoder_projector, model_config.encoder_projector, int(os.environ["RANK"]) if train_config.enable_fsdp else 0)
     return encoder_projector
 
@@ -171,7 +173,7 @@ class EncoderProjectorConcat(nn.Module):
 
 class EncoderProjectorCov1d(nn.Module):
     def __init__(self, config):
-        super(self).__init__()
+        super().__init__()
         self.conv1d = nn.Conv1d(in_channels=1280, out_channels=1280, kernel_size=config.encoder_projector_ds_rate, stride=config.encoder_projector_ds_rate, padding=0)
         self.linear1 = nn.Linear(1280, 2048)
         self.relu1 = nn.ReLU()
