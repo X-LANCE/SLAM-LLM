@@ -1,6 +1,6 @@
 #!/bin/bash
 #export PYTHONPATH=/root/whisper:$PYTHONPATH
-export CUDA_VISIBLE_DEVICES=1
+export CUDA_VISIBLE_DEVICES=0
 export CUDA_LAUNCH_BLOCKING=1
 
 cd /root/SLAM-LLM
@@ -26,7 +26,7 @@ python src/llama_recipes/pipeline/inference_batch.py \
 --encoder_projector_ds_rate 5 \
 --dataset custom_dataset \
 --custom_dataset.file src/llama_recipes/datasets/speech_dataset_inference.py:get_audio_dataset \
---custom_dataset.val_data_path /nfs/maziyang.mzy/data/librispeech/librispeech_test_other.jsonl \
+--custom_dataset.val_data_path /nfs/maziyang.mzy/data/librispeech/librispeech_test_other_filtered.jsonl \
 --batching_strategy custom \
 --num_epochs 1 \
 --val_batch_size 8 \
