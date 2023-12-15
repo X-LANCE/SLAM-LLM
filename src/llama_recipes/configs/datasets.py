@@ -39,6 +39,7 @@ class custom_dataset:
     val_data_path: str = NotImplemented
     max_words: int = NotImplemented
     max_mel: int = NotImplemented
+    fix_length_audio: int = -1
 
 
 
@@ -63,4 +64,3 @@ class avsr_dataset:
     train_subset: str = "LRS3/train.txt"
     valid_subset: str = "LRS3/val.txt"
     test_subset: str = "LRS3/test.txt"
-    

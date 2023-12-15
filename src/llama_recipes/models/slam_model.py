@@ -22,6 +22,8 @@ from llama_recipes.utils.metric import compute_accuracy
 
 import logging
 logger = logging.getLogger(__name__)
+from llama_recipes.models.projector import EncoderProjectorConcat, EncoderProjectorCov1d, EncoderProjectorQFormer
+
 
 def setup_model(tokenizer, train_config, model_config, **kwargs):
     return slam_model(tokenizer, train_config, model_config, **kwargs)
@@ -147,48 +149,12 @@ def setup_llm(train_config, model_config, **kwargs):
 def setup_encoder_projector(train_config, model_config, **kwargs):
     if model_config.encoder_projector == "linear":
         encoder_projector = EncoderProjectorConcat(model_config)
+    elif model_config.encoder_projector == "cov1d-linear":
+        encoder_projector = EncoderProjectorCov1d(model_config)
+    elif model_config.encoder_projector == "q-former":
+        encoder_projector = EncoderProjectorQFormer(model_config)
     print_module_size(encoder_projector, model_config.encoder_projector, int(os.environ["RANK"]) if train_config.enable_fsdp else 0)
     return encoder_projector
-
-class EncoderProjectorConcat(nn.Module):
-    def __init__(self, config):
-        super().__init__()
-        self.k = config.encoder_projector_ds_rate  # 5
-        self.linear1 = nn.Linear(1280 * self.k, 2048)
-        self.relu = nn.ReLU()
-        self.linear2 = nn.Linear(2048, 4096)
-
-    def forward(self, x):
-        batch_size, seq_len, dim = x.size()
-        num_frames_to_discard = seq_len % self.k
-        if num_frames_to_discard > 0:
-            x = x[:, :-num_frames_to_discard, :]
-        seq_len = x.size(1)
-        
-        x = x.view(batch_size, seq_len // self.k, dim * self.k)
-        x = self.linear1(x)
-        x = self.relu(x)
-        x = self.linear2(x)
-        return x
-
-class EncoderProjectorCov1d(nn.Module):
-    def __init__(self, config):
-        super(self).__init__()
-        self.conv1d = nn.Conv1d(in_channels=1280, out_channels=1280, kernel_size=config.encoder_projector_ds_rate, stride=config.encoder_projector_ds_rate, padding=0)
-        self.linear1 = nn.Linear(1280, 2048)
-        self.relu1 = nn.ReLU()
-        self.linear2 = nn.Linear(2048, 4096)
-        self.relu2 = nn.ReLU()
-    
-    def forward(self, x):
-        x = x.transpose(1, 2)
-        x = self.conv1d(x)
-        x = x.transpose(1, 2)
-        x = self.relu1(x)
-        x = self.linear1(x)
-        x = self.relu2(x)
-        x = self.linear2(x)
-        return x
 
 
 class slam_model(nn.Module):
@@ -229,13 +195,17 @@ class slam_model(nn.Module):
                 return_dict: Optional[bool] = None,
                 **kwargs,
                 ):
-        speech_mel = kwargs.get("speech_mel", None)  #torch.Size([4, 1583, 80])
-        speech_mask = kwargs.get("speech_mask", None)  #torch.Size([4, 227])
+        speech_mel = kwargs.get("speech_mel", None)
+        speech_mel_post_mask = kwargs.get("speech_mel_post_mask", None)
+        speech_mask = kwargs.get("speech_mask", None)
 
         encoder_outs = None
         if speech_mel is not None:
-            encoder_outs = self.encoder.extract_variable_length_features(speech_mel.permute(0, 2, 1)) # bs*seq*dim  #torch.Size([4, 792, 1280])
-            encoder_outs = self.encoder_projector(encoder_outs) #torch.Size([4, 158, 4096])
+            encoder_outs = self.encoder.extract_variable_length_features(speech_mel.permute(0, 2, 1)) # bs*seq*dim
+            if self.model_config.encoder_projector == "q-former":
+                encoder_outs = self.encoder_projector(encoder_outs, speech_mel_post_mask)
+            else:
+                encoder_outs = self.encoder_projector(encoder_outs)
 
         if input_ids is not None: #
             input_ids[input_ids == -1] = 0
@@ -277,12 +247,16 @@ class slam_model(nn.Module):
                 **kwargs,
                 ):
         speech_mel = kwargs.get("speech_mel", None)
+        speech_mel_post_mask = kwargs.get("speech_mel_post_mask", None)
         speech_mask = kwargs.get("speech_mask", None)
 
         encoder_outs = None
         if speech_mel is not None:
             encoder_outs = self.encoder.extract_variable_length_features(speech_mel.permute(0, 2, 1)) # bs*seq*dim
-            encoder_outs = self.encoder_projector(encoder_outs)
+            if self.model_config.encoder_projector == "q-former":
+                encoder_outs = self.encoder_projector(encoder_outs, speech_mel_post_mask)
+            else:
+                encoder_outs = self.encoder_projector(encoder_outs)
 
         if input_ids is not None:
             input_ids[input_ids == -1] = 0
@@ -302,7 +276,7 @@ class slam_model(nn.Module):
         model_outputs = self.llm.generate(
             inputs_embeds=inputs_embeds,
             max_length=kwargs.get("max_length", 200),
-            num_beams=kwargs.get("num_beams", 4),
+            num_beams=kwargs.get("num_beams", 1),
             do_sample=kwargs.get("do_sample", False),
             min_length=kwargs.get("min_length", 1),
             top_p=kwargs.get("top_p", 0.9),
@@ -332,7 +306,7 @@ class slam_model(nn.Module):
         negative_prompt_ids = None,
         negative_prompt_attention_mask = None,
         **kwargs,
-    ):
+    ): # TODO: Now you need to set your customized sampling rate manually
 
         device = kwargs.get("device", "cuda")
         assert os.path.exists(wav_path)
