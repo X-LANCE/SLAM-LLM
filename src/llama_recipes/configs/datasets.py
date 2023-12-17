@@ -33,12 +33,12 @@ class custom_dataset:
     file: str = "examples/custom_dataset.py"
     train_split: str = "train"
     test_split: str = "validation"
-    data_path: str = NotImplemented
-    max_words: int = NotImplemented
-    train_data_path: str = NotImplemented
-    val_data_path: str = NotImplemented
-    max_words: int = NotImplemented
-    max_mel: int = NotImplemented
+    data_path: str = None
+    max_words: int = None
+    train_data_path: str = None
+    val_data_path: str = None
+    max_words: int = None
+    max_mel: int = None
     fix_length_audio: int = -1
 
 

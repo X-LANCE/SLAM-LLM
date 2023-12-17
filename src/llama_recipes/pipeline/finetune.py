@@ -52,6 +52,11 @@ def main(**kwargs):
     train_config, fsdp_config, model_config = TRAIN_CONFIG(), FSDP_CONFIG(), MODEL_CONFIG()
     update_config((train_config, fsdp_config, model_config), **kwargs)
 
+    # Set wandb
+    wandb_config={"train_config":vars(train_config), "fsdp_config":vars(fsdp_config), "model_config":vars(model_config)}
+    wandb.init(project="project_name",name="exp_name",config=wandb_config) #记录参数
+
+    # Set log
     logging.basicConfig(
         level=logging.INFO, 
         format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
@@ -60,41 +65,22 @@ def main(**kwargs):
     )
 
     logger = logging.getLogger()  
-    #logger = logging.getLogger("finetune")  #不知道为啥那么建完是warning
     logger.setLevel(logging.INFO)
 
-    # 修改默认的console handler
-    # logger.handlers logger.handlers[0]
     file_handler = logging.FileHandler(filename=train_config.log_file, mode='w')
     file_handler.setLevel(logging.INFO)
     file_formatter = logging.Formatter('[%(asctime)s][%(name)s][%(levelname)s] - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
     file_handler.setFormatter(file_formatter)
-
-    # console_handler = logging.StreamHandler()
-    # console_handler.setLevel(logging.INFO)
-    # console_formatter = logging.Formatter('[%(asctime)s][%(name)s][%(levelname)s] - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
-    # console_handler.setFormatter(console_formatter)    
 
     logger.handlers[0].setLevel(logging.INFO)
     console_formatter = logging.Formatter('[%(asctime)s][%(name)s][%(levelname)s] - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
     logger.handlers[0].setFormatter(console_formatter) 
 
     logger.addHandler(file_handler)
-    # logger.addHandler(console_handler)
-
-    # logger.propagate=False
-
-    # effective_level = logger.getEffectiveLevel()  # 打印有效日志级别
-    # print("Effective log level:", effective_level)
-
-    wandb_config={"train_config":vars(train_config), "fsdp_config":vars(fsdp_config), "model_config":vars(model_config)}
-    wandb.init(project="project_name",name="exp_name",config=wandb_config) #记录参数
     
     logger.info("train_config: {}".format(train_config))
     logger.info("fsdp_config: {}".format(fsdp_config))
     logger.info("model_config: {}".format(model_config))
-
-
 
 
     # Set the seeds for reproducibility
@@ -102,7 +88,7 @@ def main(**kwargs):
     torch.manual_seed(train_config.seed)
     random.seed(train_config.seed)
 
-    if train_config.enable_fsdp:  #x
+    if train_config.enable_fsdp:
         setup()
         # torchrun specific
         local_rank = int(os.environ["LOCAL_RANK"])
@@ -110,7 +96,7 @@ def main(**kwargs):
         world_size = int(os.environ["WORLD_SIZE"])
         logger.info(f"local_rank: {local_rank}, rank: {rank}, world_size: {world_size}")
 
-    if torch.distributed.is_initialized(): #x
+    if torch.distributed.is_initialized():
         torch.cuda.set_device(local_rank)
         clear_gpu_cache(local_rank)
         setup_environ_flags(rank)
@@ -121,7 +107,7 @@ def main(**kwargs):
 
     
     # Convert the model to bfloat16 if fsdp and pure_bf16 is enabled
-    if train_config.enable_fsdp and fsdp_config.pure_bf16:  #x
+    if train_config.enable_fsdp and fsdp_config.pure_bf16:
         model.to(torch.bfloat16)
 
     #setting up FSDP if enable_fsdp is enabled
@@ -147,12 +133,12 @@ def main(**kwargs):
         )
         if fsdp_config.fsdp_activation_checkpointing:
             apply_fsdp_checkpointing(model)
-    elif not train_config.quantization and not train_config.enable_fsdp:  #
+    elif not train_config.quantization and not train_config.enable_fsdp:
         model.to("cuda")
 
     dataset_config = generate_dataset_config(train_config, kwargs)
     logger.info("dataset_config: {}".format(dataset_config))
-    # wandb.config.update( {"dataset_config": vars(dataset_config)} )  数据集里有notimplemented
+    wandb.config.update( {"dataset_config": vars(dataset_config)} )
     
     # Load and preprocess the dataset for training and validation
     dataset_train = get_preprocessed_dataset(
@@ -160,16 +146,16 @@ def main(**kwargs):
         dataset_config,
         split="train",
     )
-    if not train_config.enable_fsdp or rank == 0: #
-        logger.info(f"--> Training Set Length = {len(dataset_train)}")  #60
+    if not train_config.enable_fsdp or rank == 0:
+        logger.info(f"--> Training Set Length = {len(dataset_train)}")
     dataset_val = get_preprocessed_dataset(
         tokenizer,
         dataset_config,
         split="val",
     )
     if not train_config.enable_fsdp or rank == 0:
-        logger.info(f"--> Validation Set Length = {len(dataset_val)}")  #20
-    if train_config.batching_strategy == "packing":  #x   是custom
+        logger.info(f"--> Validation Set Length = {len(dataset_val)}")
+    if train_config.batching_strategy == "packing":
         dataset_train = ConcatDataset(dataset_train, chunk_size=train_config.context_length)
 
     train_dl_kwargs = get_dataloader_kwargs(train_config, dataset_train, tokenizer, "train")
@@ -182,18 +168,9 @@ def main(**kwargs):
         **train_dl_kwargs,
     )
 
-    # for i, batch in enumerate(train_dataloader):
-    #     if batch["inputBatch0"].shape[1]<10000:
-    #         print(batch["inputBatch0"].shape)
-    #         print(batch["inputBatch2"].shape)
-    #         print(batch["targetLenBatch"])
-    #         print(i)
-    #     if i%1000==0:
-    #         print("step:%d"%i)
-
     eval_dataloader = None
     if train_config.run_validation:
-        if train_config.batching_strategy == "packing": #x
+        if train_config.batching_strategy == "packing":
             dataset_val = ConcatDataset(dataset_val, chunk_size=train_config.context_length)
 
         val_dl_kwargs = get_dataloader_kwargs(train_config, dataset_val, tokenizer, "val")
@@ -215,7 +192,7 @@ def main(**kwargs):
             use_kahan_summation=False,
             weight_decay=train_config.weight_decay,
         )
-    else: #
+    else:
         optimizer = optim.AdamW(
             model.parameters(),
             lr=train_config.lr,
@@ -231,9 +208,9 @@ def main(**kwargs):
         tokenizer,
         optimizer,
         scheduler,
-        train_config.gradient_accumulation_steps,  #1
+        train_config.gradient_accumulation_steps,
         train_config,
-        fsdp_config if train_config.enable_fsdp else None,  #false
+        fsdp_config if train_config.enable_fsdp else None,
         local_rank if train_config.enable_fsdp else None,
         rank if train_config.enable_fsdp else None,
     )

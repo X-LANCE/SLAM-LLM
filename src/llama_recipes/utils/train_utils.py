@@ -60,7 +60,7 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
     Returns: results dictionary containing average training and validation perplexity and loss
     """
     # Create a gradient scaler for fp16
-    if train_config.use_fp16 and train_config.enable_fsdp:  # 都没有
+    if train_config.use_fp16 and train_config.enable_fsdp:
         scaler = ShardedGradScaler()
     elif train_config.use_fp16 and not train_config.enable_fsdp: 
         scaler = torch.cuda.amp.GradScaler()
@@ -84,35 +84,20 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
             model.train()
             total_loss = 0.0
             total_acc = 0.0
-            total_length = len(train_dataloader)//gradient_accumulation_steps  #30  #ASR:70219
-            pbar = tqdm(colour="blue", desc=f"Training Epoch: {epoch+1}", total=total_length, dynamic_ncols=True)  #!!!
+            total_length = len(train_dataloader)//gradient_accumulation_steps
+            pbar = tqdm(colour="blue", desc=f"Training Epoch: {epoch+1}", total=total_length, dynamic_ncols=True)
             for step, batch in enumerate(train_dataloader):
                 for key in batch.keys():
                     if type(batch[key])==bool: #train的时候是true infer的时候是false
                         continue
                     if train_config.enable_fsdp:
                         batch[key] = batch[key].to(local_rank)
-                    else: #
+                    else:
                         batch[key] = batch[key].to('cuda:0')
                 with autocast():
-                    try:
-                        #loss = model(**batch).loss
-                        outputs, *rest = model(**batch)
-                    except Exception as e:
-                        logger.info(type(e))
-                        logger.info(e.args)
-                        logger.info(e)
-                        logger.info(batch["inputBatch0"].shape)
-                        logger.info(batch["inputBatch1"].shape)
-                        logger.info(batch["inputBatch2"].shape)
-                        logger.info(batch["inputBatch3"])
-                        logger.info(batch["targetoutBatch"])
-                        logger.info(batch["targetLenBatch"])
-
-                    
+                    outputs, *rest = model(**batch)
                 acc = rest[0] if rest else -1
                 loss = outputs.loss
-
 
                 loss = loss / gradient_accumulation_steps
                 acc = acc / gradient_accumulation_steps
@@ -130,7 +115,7 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                         scaler.update()
                         optimizer.zero_grad()
                         pbar.update(1)
-                else:  #
+                else:
                     # regular backpropagation when fp16 is not used
                     loss.backward()
                     if (step + 1) % gradient_accumulation_steps == 0 or step == len(train_dataloader) - 1:
@@ -144,7 +129,7 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
         epoch_end_time = time.perf_counter()-epoch_start_time
         epoch_times.append(epoch_end_time)
         # Reducing total_loss across all devices if there's more than one CUDA device
-        if torch.cuda.device_count() > 1 and train_config.enable_fsdp:  #x
+        if torch.cuda.device_count() > 1 and train_config.enable_fsdp:
             dist.all_reduce(total_loss, op=dist.ReduceOp.SUM)
             dist.all_reduce(total_acc, op=dist.ReduceOp.SUM)
         train_epoch_loss = total_loss / len(train_dataloader)
@@ -177,18 +162,18 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
         # Update the learning rate as needed
         lr_scheduler.step()
 
-        if train_config.run_validation: #
+        if train_config.run_validation:
             eval_ppl, eval_epoch_loss, *rest = evaluation(model, train_config, eval_dataloader, local_rank, tokenizer)
 
             checkpoint_start_time = time.perf_counter()
             if train_config.save_model and eval_epoch_loss < best_val_loss:
-                if train_config.enable_fsdp: #x
+                if train_config.enable_fsdp:
                     dist.barrier()
                 if train_config.use_peft:
-                    if train_config.enable_fsdp:  #x
+                    if train_config.enable_fsdp:
                         if rank==0:
                             logger.info(f"we are about to save the PEFT modules")
-                    else: #
+                    else:
                         logger.info(f"we are about to save the PEFT modules")
                     if train_config.enable_fsdp:
                         if rank==0:
@@ -243,7 +228,7 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                         )
                         logger.info(" Saving the FSDP model checkpoints and optimizer using FULL_STATE_DICT")
                         logger.info("=====================================================")
-                if train_config.enable_fsdp:  #x
+                if train_config.enable_fsdp:
                     dist.barrier()
             checkpoint_end_time = time.perf_counter() - checkpoint_start_time
             checkpoint_times.append(checkpoint_end_time)
@@ -252,7 +237,7 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                 if train_config.enable_fsdp:
                     if rank==0:
                         logger.info(f"best eval loss on epoch {epoch+1} is {best_val_loss}")
-                else: #
+                else:
                     logger.info(f"best eval loss on epoch {epoch+1} is {best_val_loss}")
             val_loss.append(eval_epoch_loss)
 
@@ -285,7 +270,7 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
         if train_config.enable_fsdp:
             if rank==0:
                 logger.info(f"Epoch {epoch+1}: train_perplexity={train_perplexity:.4f}, train_epoch_loss={train_epoch_loss:.4f}, epoch time {epoch_end_time}s")
-        else:  #
+        else:
             logger.info(f"Epoch {epoch+1}: train_perplexity={train_perplexity:.4f}, train_epoch_loss={train_epoch_loss:.4f}, epoch time {epoch_end_time}s")
     avg_epoch_time = sum(epoch_times)/ len(epoch_times)
     avg_checkpoint_time = sum(checkpoint_times)/ len(checkpoint_times) if len(checkpoint_times) > 0 else 0
@@ -308,7 +293,7 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
     results["avg_checkpoint_time"] = avg_checkpoint_time
 
     #saving the training params including fsdp setting for reference.
-    if train_config.enable_fsdp and not train_config.use_peft:  #x
+    if train_config.enable_fsdp and not train_config.use_peft:
         save_train_params(train_config, fsdp_config, rank)
 
     return results
@@ -353,20 +338,20 @@ def evaluation(model,train_config, eval_dataloader, local_rank, tokenizer):
                 eval_loss += loss.detach().float()
                 eval_acc += acc
             # Decode predictions and add to evaluation predictions list
-            preds = torch.argmax(outputs.logits, -1)   #(1,87,32000) -> (1,87)
+            preds = torch.argmax(outputs.logits, -1)
             eval_preds.extend(
                 tokenizer.batch_decode(preds.detach().cpu().numpy(), skip_special_tokens=True)
             )
 
     # If there's more than one CUDA device, reduce evaluation loss across all devices
-    if torch.cuda.device_count() > 1 and train_config.enable_fsdp: #x
+    if torch.cuda.device_count() > 1 and train_config.enable_fsdp:
         dist.all_reduce(eval_loss, op=dist.ReduceOp.SUM)
         dist.all_reduce(eval_acc, op=dist.ReduceOp.SUM)
 
     # Compute average loss and perplexity
     eval_epoch_loss = eval_loss / len(eval_dataloader)
     eval_epoch_acc = eval_acc / len(eval_dataloader)
-    if train_config.enable_fsdp: #x
+    if train_config.enable_fsdp:
         eval_epoch_loss = eval_epoch_loss/world_size
         eval_epoch_acc = eval_epoch_acc/world_size
     eval_ppl = torch.exp(eval_epoch_loss)

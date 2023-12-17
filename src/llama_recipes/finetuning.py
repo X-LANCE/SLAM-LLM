@@ -222,7 +222,7 @@ def main(**kwargs):
             lr=train_config.lr,
             weight_decay=train_config.weight_decay,
         )
-    scheduler = StepLR(optimizer, step_size=1/root/SLAM-LLM/src/llama_recipes/models, gamma=train_config.gamma)
+    scheduler = StepLR(optimizer, step_size=1, gamma=train_config.gamma)
 
     # Start the training process
     results = train(

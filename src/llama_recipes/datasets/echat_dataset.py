@@ -69,7 +69,7 @@ class EChatDataset(Dataset):
         item = self.data[index]
 
         speech_raw = whisper.load_audio(item['pre_wav'])
-        # speech_raw = whisper.pad_or_trim(speech_raw)
+        # speech_raw = whisper.@(speech_raw)
         speech_mel = whisper.log_mel_spectrogram(speech_raw).permute(1,0)  #[210, 80]  #/160倍 应该是10s
 
         prompt="""
@@ -98,7 +98,7 @@ class EChatDataset(Dataset):
         example_ids = torch.tensor(
             example_ids, dtype=torch.int64
         )
-        example_ids = torch.cat((speech_pseudo, example_ids)) # [speech,prompt,answer,eos]   #为什么要用pseudo？ 
+        example_ids = torch.cat((speech_pseudo, example_ids)) # [speech,prompt,answer,eos]
         
         labels_ids = copy.deepcopy(example_ids) # [speech,prompt,answer,eos]
         labels_ids[:speech_length + prompt_length] = -1 #[-1,-1,answer,eos];
