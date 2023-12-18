@@ -20,6 +20,8 @@ from peft import PeftModel, PeftConfig
 from torch.nn import CrossEntropyLoss
 from llama_recipes.utils.metric import compute_accuracy
 
+import logging
+logger = logging.getLogger(__name__)
 from llama_recipes.models.projector import EncoderProjectorConcat, EncoderProjectorCov1d, EncoderProjectorQFormer
 
 
@@ -119,7 +121,7 @@ def setup_llm(train_config, model_config, **kwargs):
             from optimum.bettertransformer import BetterTransformer
             model = BetterTransformer.transform(model)
         except ImportError:
-            print("Module 'optimum' not found. Please install 'optimum' it before proceeding.")
+            logger.warning("Module 'optimum' not found. Please install 'optimum' it before proceeding.")
 
     print_module_size(model, model_config.llm_name, int(os.environ["RANK"]) if train_config.enable_fsdp else 0)
 
@@ -138,7 +140,7 @@ def setup_llm(train_config, model_config, **kwargs):
         model.print_trainable_parameters()
         
         if kwargs.get("peft_ckpt", None):
-            print("loading peft_ckpt from: ", kwargs.get("peft_ckpt"))
+            logger.info("loading peft_ckpt from: ", kwargs.get("peft_ckpt"))
             model = PeftModel.from_pretrained(model, kwargs.get("peft_ckpt"))
 
     print_module_size(model, model_config.llm_name, int(os.environ["RANK"]) if train_config.enable_fsdp else 0)
