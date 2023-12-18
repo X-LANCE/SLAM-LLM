@@ -204,7 +204,6 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                                 model, optimizer, rank, train_config, epoch=epoch
                             )
 
-
                 else:
                     if not train_config.use_peft and fsdp_config.checkpoint_type == StateDictType.FULL_STATE_DICT:
 
@@ -240,7 +239,6 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                     logger.info(f"best eval loss on epoch {epoch+1} is {best_val_loss}")
             val_loss.append(eval_epoch_loss)
             val_prep.append(eval_ppl)
-            
             if rest:
                 val_acc.append(rest[0]) 
             else: 

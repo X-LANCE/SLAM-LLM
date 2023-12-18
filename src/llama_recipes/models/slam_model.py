@@ -78,7 +78,7 @@ def setup_encoder(train_config, model_config, **kwargs):
 def setup_llm(train_config, model_config, **kwargs):
     from pkg_resources import packaging
     use_cache = False if train_config.enable_fsdp else None
-    if train_config.enable_fsdp and train_config.low_cpu_fsdp: 
+    if train_config.enable_fsdp and train_config.low_cpu_fsdp:
         """
         for FSDP, we can save cpu memory by loading pretrained model on rank0 only.
         this avoids cpu oom when loading large models like llama 70B, in which case
@@ -104,11 +104,11 @@ def setup_llm(train_config, model_config, **kwargs):
             # with torch.device("meta"):
             model = LlamaForCausalLM(llama_config) #(FIX:MZY): torch 2.0.1 does not support `meta`
 
-    else:  #
+    else:
         model = LlamaForCausalLM.from_pretrained(
             model_config.llm_path,
             load_in_8bit=True if train_config.quantization else None,
-            device_map="auto" if train_config.quantization else None, 
+            device_map="auto" if train_config.quantization else None,
             use_cache=use_cache,
         )
     if train_config.enable_fsdp and train_config.use_fast_kernels:
@@ -207,7 +207,7 @@ class slam_model(nn.Module):
             else:
                 encoder_outs = self.encoder_projector(encoder_outs)
 
-        if input_ids is not None: #
+        if input_ids is not None:
             input_ids[input_ids == -1] = 0
             if hasattr(self.llm.model, "embed_tokens"):
                 inputs_embeds = self.llm.model.embed_tokens(input_ids)

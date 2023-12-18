@@ -47,7 +47,6 @@ import logging
 import wandb
 
 def main(**kwargs):
-
     # Update the configuration for the training and sharding process
     train_config, fsdp_config, model_config = TRAIN_CONFIG(), FSDP_CONFIG(), MODEL_CONFIG()
     update_config((train_config, fsdp_config, model_config), **kwargs)

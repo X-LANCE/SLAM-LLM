@@ -69,7 +69,7 @@ class EChatDataset(Dataset):
         item = self.data[index]
 
         speech_raw = whisper.load_audio(item['pre_wav'])
-        # speech_raw = whisper.@(speech_raw)
+        # speech_raw = whisper.pad_or_trim(speech_raw)
         speech_mel = whisper.log_mel_spectrogram(speech_raw).permute(1,0)
 
         prompt="""
@@ -156,9 +156,8 @@ class EChatDataset(Dataset):
 
 
     def collator(self, samples):
-        assert samples is not None  #全pad
+        assert samples is not None
         input_ids_max_length = max([s['input_ids'].shape[0] for s in samples])
-        
         input_ids = torch.stack([self.pad(s['input_ids'], input_ids_max_length, self.tokenizer.pad_token_id) 
                                 for s in samples])
         labels = torch.stack([self.pad(s['labels'], input_ids_max_length, self.IGNORE_INDEX) 
