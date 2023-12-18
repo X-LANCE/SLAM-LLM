@@ -28,9 +28,9 @@ from llama_recipes.policies import fpSixteen,bfSixteen_mixed, get_llama_wrapper
 from llama_recipes.utils.memory_utils import MemoryTrace
 from llama_recipes.utils.metric import compute_accuracy
 
+import wandb
 import logging
 logger = logging.getLogger(__name__)
-import wandb
 
 
 def set_tokenizer_params(tokenizer: LlamaTokenizer):
@@ -62,7 +62,7 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
     # Create a gradient scaler for fp16
     if train_config.use_fp16 and train_config.enable_fsdp:
         scaler = ShardedGradScaler()
-    elif train_config.use_fp16 and not train_config.enable_fsdp: 
+    elif train_config.use_fp16 and not train_config.enable_fsdp:
         scaler = torch.cuda.amp.GradScaler()
     if train_config.enable_fsdp:
         world_size = int(os.environ["WORLD_SIZE"])
@@ -164,7 +164,6 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
 
         if train_config.run_validation:
             eval_ppl, eval_epoch_loss, *rest = evaluation(model, train_config, eval_dataloader, local_rank, tokenizer)
-
             checkpoint_start_time = time.perf_counter()
             if train_config.save_model and eval_epoch_loss < best_val_loss:
                 if train_config.enable_fsdp:
@@ -240,10 +239,7 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                 else:
                     logger.info(f"best eval loss on epoch {epoch+1} is {best_val_loss}")
             val_loss.append(eval_epoch_loss)
-
             val_prep.append(eval_ppl)
-
-            
             
             if rest:
                 val_acc.append(rest[0]) 
@@ -356,7 +352,7 @@ def evaluation(model,train_config, eval_dataloader, local_rank, tokenizer):
         eval_epoch_acc = eval_epoch_acc/world_size
     eval_ppl = torch.exp(eval_epoch_loss)
 
-    # logger.info evaluation metrics
+    # Print evaluation metrics
     if train_config.enable_fsdp:
         if local_rank==0:
             logger.info(f" {eval_ppl=} {eval_epoch_loss=} {eval_epoch_acc=}")

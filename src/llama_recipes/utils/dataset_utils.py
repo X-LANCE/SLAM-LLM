@@ -33,15 +33,15 @@ def load_module_from_py_file(py_file: str) -> object:
 
 def get_custom_dataset(dataset_config, tokenizer, split: str):
     if ":" in dataset_config.file:
-        module_path, func_name = dataset_config.file.split(":")
+        module_path, func_name = dataset_config.file.split(":")   #'src/llama_recipes/datasets/speech_dataset.py', 'get_audio_dataset'
     else:
         module_path, func_name = dataset_config.file, "get_custom_dataset"
 
-    if not module_path.endswith(".py"):
+    if not module_path.endswith(".py"): #x 
         raise ValueError(f"Dataset file {module_path} is not a .py file.")
 
     module_path = Path(module_path)
-    if not module_path.is_file():
+    if not module_path.is_file(): #x
         raise FileNotFoundError(f"Dataset py file {module_path.as_posix()} does not exist or is not a file.")
 
     module = load_module_from_py_file(module_path.as_posix())
@@ -51,13 +51,12 @@ def get_custom_dataset(dataset_config, tokenizer, split: str):
         logger.info(f"It seems like the given method name ({func_name}) is not present in the dataset .py file ({module_path.as_posix()}).")
         raise e
 
-
 DATASET_PREPROC = {
     "alpaca_dataset": partial(get_alpaca_dataset),
     "grammar_dataset": get_grammar_dataset,
     "samsum_dataset": get_samsum_dataset,
     "custom_dataset": get_custom_dataset,
-    "avsr_dataset": get_avsr_dataset,
+    "avsr_dataset": get_custom_dataset,
 }
 
 

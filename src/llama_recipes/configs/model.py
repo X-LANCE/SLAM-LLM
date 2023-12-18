@@ -11,7 +11,6 @@ class model_config:
     encoder_projector: str = "linear"
     encoder_projector_ds_rate: int = 5
 
-    # name: str =  "avsr"
     DMODEL: int = 512
     FRONTEND_DMODEL: int = 1024   #这个是专门指moco的
     TX_ATTENTION_HEADS: int = 8

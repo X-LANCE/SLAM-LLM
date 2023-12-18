@@ -11,7 +11,7 @@ llm_path=/nfs/zhifu.gzf/ckpt/Llama-2-7b-hf
 output_dir=/nfs/yangguanrou.ygr/llama-2-hf-finetune
 
 # -m debugpy --listen 5678 --wait-for-client
-python -m debugpy --listen 5679 --wait-for-client src/llama_recipes/pipeline/finetune.py \
+python src/llama_recipes/pipeline/finetune.py \
 --model_name avsr \
 --freeze_llm \
 --llm_name llama-2-7b-hf \

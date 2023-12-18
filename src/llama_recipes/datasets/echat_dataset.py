@@ -70,7 +70,7 @@ class EChatDataset(Dataset):
 
         speech_raw = whisper.load_audio(item['pre_wav'])
         # speech_raw = whisper.@(speech_raw)
-        speech_mel = whisper.log_mel_spectrogram(speech_raw).permute(1,0)  #[210, 80]  #/160倍 应该是10s
+        speech_mel = whisper.log_mel_spectrogram(speech_raw).permute(1,0)
 
         prompt="""
         Please provide an emotional response based on the emotional speech you hear.
@@ -106,7 +106,7 @@ class EChatDataset(Dataset):
 
         label_mask = labels_ids.ge(0) #[False,False,True,True]
         example_ids[~example_mask] = 0 #[speech,prompt,answer,eos]
-        labels_ids[~label_mask] = self.IGNORE_INDEX #[-100,-100,answer,eos]  
+        labels_ids[~label_mask] = self.IGNORE_INDEX #[-100,answer,eos,-100]
         
         return {
             "input_ids": example_ids,
@@ -157,20 +157,20 @@ class EChatDataset(Dataset):
 
     def collator(self, samples):
         assert samples is not None  #全pad
-        input_ids_max_length = max([s['input_ids'].shape[0] for s in samples])  #210,198
+        input_ids_max_length = max([s['input_ids'].shape[0] for s in samples])
         
         input_ids = torch.stack([self.pad(s['input_ids'], input_ids_max_length, self.tokenizer.pad_token_id) 
                                 for s in samples])
         labels = torch.stack([self.pad(s['labels'], input_ids_max_length, self.IGNORE_INDEX) 
-                                for s in samples])  #前面也是ignore，尾部也是ignore 
-        attention_mask = torch.stack([self.pad(s['attention_mask'], input_ids_max_length, False)   #这里根据输入长度padding，尾部mask的地方是false
+                                for s in samples])
+        attention_mask = torch.stack([self.pad(s['attention_mask'], input_ids_max_length, False)
                                 for s in samples])
        
         speech_mel_max_length = max([s['speech_mel'].shape[0] for s in samples])
         speech_mel = torch.stack([self.pad(s['speech_mel'], speech_mel_max_length, 0) 
                                 for s in samples])
         
-        speech_mask = torch.zeros_like(attention_mask)  #186,165
+        speech_mask = torch.zeros_like(attention_mask)
         for line, sample in enumerate(samples):
             speech_mask[line, :sample['speech_length']] = 1
 

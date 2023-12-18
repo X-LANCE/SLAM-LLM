@@ -1,6 +1,6 @@
 #!/bin/bash
 #export PYTHONPATH=/root/whisper:$PYTHONPATH
-export CUDA_VISIBLE_DEVICES=0
+export CUDA_VISIBLE_DEVICES=1
 export CUDA_LAUNCH_BLOCKING=1
 export OMP_NUM_THREADS=1
 

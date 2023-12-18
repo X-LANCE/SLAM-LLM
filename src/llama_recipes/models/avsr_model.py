@@ -19,6 +19,7 @@ from .av_net import AVNet
 from .slam_model import setup_llm
 from torch.nn.utils.rnn import pad_sequence
 import copy
+from llama_recipes.utils.metric import compute_accuracy
 
 def setupavsr_model(tokenizer, train_config, model_config, **kwargs):
     return avsrllm_model(tokenizer, train_config, model_config, **kwargs)
@@ -55,6 +56,7 @@ class avsrllm_model(nn.Module):
 
         # tokenizer
         self.tokenizer = tokenizer   #tokenizer = LlamaTokenizer.from_pretrained(model_config.llm_path) 不需要保存
+        self.metric = kwargs.get("metric", "acc")
     
     def forward(self, inputBatch0,inputBatch1,inputBatch2,inputBatch3,  targetoutBatch, targetLenBatch, maskw2v, **kwargs):
         inputBatch=(inputBatch0, inputBatch1,inputBatch2,inputBatch3)   # targetinBatch是前面加
@@ -86,6 +88,7 @@ class avsrllm_model(nn.Module):
         mask2 = torch.zeros(len(input_lists),max_length,dtype=torch.bool)  #(2,166)
         for i,length in enumerate(lengths):
             mask2[i,:length]=1  #mask的地方是false，其余是true，只有maks2[1]末尾有15个false   
+        mask2=mask2.to("cuda:0")
 
 
         # labels_list=[]
@@ -98,7 +101,13 @@ class avsrllm_model(nn.Module):
 
         model_outputs = self.llm(inputs_embeds=inputs_embeds, attention_mask = mask2, labels=labels)  #self PeftModelForCausalLM 里面实现了错位
 
-        return model_outputs  #logits:[2,292,32000]  #loss:6.9475
+        acc = -1
+        if self.metric:
+            with torch.no_grad():
+                preds = torch.argmax(model_outputs.logits, -1)
+                acc = compute_accuracy(preds.detach()[:, :-1], labels.detach()[:, 1:], ignore_label=-100)
+
+        return model_outputs, acc  #logits:[2,292,32000]  #loss:6.9475
 
     def save_pretrained(self, output_dir):
         save_dir= output_dir+'/avsrmodel.pt'
