@@ -18,6 +18,8 @@ from llama_recipes.configs import datasets, lora_config, llama_adapter_config, p
 from llama_recipes.data.sampler import LengthBasedBatchSampler, DistributedLengthBasedBatchSampler
 from llama_recipes.utils.dataset_utils import DATASET_PREPROC
 
+import logging
+logger = logging.getLogger(__name__)
 
 def update_config(config, **kwargs):
     if isinstance(config, (tuple, list)):
@@ -35,9 +37,9 @@ def update_config(config, **kwargs):
                         setattr(config, param_name, v)
                     else:
                         # In case of specialized config we can warm user
-                        print(f"Warning: {config_name} does not accept parameter: {k}")
+                        logger.warning(f"Warning: {config_name} does not accept parameter: {k}")
             elif isinstance(config, train_config):
-                print(f"Warning: unknown parameter {k}")
+                logger.warning(f"Warning: unknown parameter {k}")
 
 
 def generate_peft_config(train_config, kwargs):
@@ -106,6 +108,6 @@ def get_dataloader_kwargs(train_config, dataset, tokenizer, mode):
             kwargs["batch_size"] = batch_size
             kwargs["drop_last"] = True
             kwargs["collate_fn"] = dataset.collator
-            print(f"Using batching strategy: {train_config.batching_strategy}")
+            logger.info(f"Using batching strategy: {train_config.batching_strategy}")
 
         return kwargs

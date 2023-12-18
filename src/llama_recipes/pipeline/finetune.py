@@ -42,12 +42,45 @@ from llama_recipes.utils.train_utils import (
 )
 
 from model_factory import model_factory
-
+import sys
+import logging
+import wandb
 
 def main(**kwargs):
     # Update the configuration for the training and sharding process
     train_config, fsdp_config, model_config = TRAIN_CONFIG(), FSDP_CONFIG(), MODEL_CONFIG()
     update_config((train_config, fsdp_config, model_config), **kwargs)
+
+    # Set wandb
+    wandb_config={"train_config":vars(train_config), "fsdp_config":vars(fsdp_config), "model_config":vars(model_config)}
+    wandb.init(project="project_name",name="exp_name",config=wandb_config) #记录参数
+
+    # Set log
+    logging.basicConfig(
+        level=logging.INFO, 
+        format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+        filemode='w'
+    )
+
+    logger = logging.getLogger()  
+    logger.setLevel(logging.INFO)
+
+    file_handler = logging.FileHandler(filename=train_config.log_file, mode='w')
+    file_handler.setLevel(logging.INFO)
+    file_formatter = logging.Formatter('[%(asctime)s][%(name)s][%(levelname)s] - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+    file_handler.setFormatter(file_formatter)
+
+    logger.handlers[0].setLevel(logging.INFO)
+    console_formatter = logging.Formatter('[%(asctime)s][%(name)s][%(levelname)s] - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+    logger.handlers[0].setFormatter(console_formatter) 
+
+    logger.addHandler(file_handler)
+    
+    logger.info("train_config: {}".format(train_config))
+    logger.info("fsdp_config: {}".format(fsdp_config))
+    logger.info("model_config: {}".format(model_config))
+
 
     # Set the seeds for reproducibility
     torch.cuda.manual_seed(train_config.seed)
@@ -60,7 +93,7 @@ def main(**kwargs):
         local_rank = int(os.environ["LOCAL_RANK"])
         rank = int(os.environ["RANK"])
         world_size = int(os.environ["WORLD_SIZE"])
-        print(f"local_rank: {local_rank}, rank: {rank}, world_size: {world_size}")
+        logger.info(f"local_rank: {local_rank}, rank: {rank}, world_size: {world_size}")
 
     if torch.distributed.is_initialized():
         torch.cuda.set_device(local_rank)
@@ -103,6 +136,8 @@ def main(**kwargs):
         model.to("cuda")
 
     dataset_config = generate_dataset_config(train_config, kwargs)
+    logger.info("dataset_config: {}".format(dataset_config))
+    wandb.config.update( {"dataset_config": vars(dataset_config)} )
     
     # Load and preprocess the dataset for training and validation
     dataset_train = get_preprocessed_dataset(
@@ -111,14 +146,14 @@ def main(**kwargs):
         split="train",
     )
     if not train_config.enable_fsdp or rank == 0:
-        print(f"--> Training Set Length = {len(dataset_train)}")
+        logger.info(f"--> Training Set Length = {len(dataset_train)}")
     dataset_val = get_preprocessed_dataset(
         tokenizer,
         dataset_config,
         split="val",
     )
     if not train_config.enable_fsdp or rank == 0:
-        print(f"--> Validation Set Length = {len(dataset_val)}")
+        logger.info(f"--> Validation Set Length = {len(dataset_val)}")
     if train_config.batching_strategy == "packing":
         dataset_train = ConcatDataset(dataset_train, chunk_size=train_config.context_length)
 
@@ -179,7 +214,9 @@ def main(**kwargs):
         rank if train_config.enable_fsdp else None,
     )
     if not train_config.enable_fsdp or rank==0:
-        [print(f'Key: {k}, Value: {v}') for k, v in results.items()]
+        [logger.info(f'Key: {k}, Value: {v}') for k, v in results.items()]
+
+    wandb.finish()
 
 if __name__ == "__main__":
     fire.Fire(main)
