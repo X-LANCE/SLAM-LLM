@@ -139,7 +139,7 @@ def setup_llm(train_config, model_config, **kwargs):
         
         if kwargs.get("peft_ckpt", None):
             print("loading peft_ckpt from: ", kwargs.get("peft_ckpt"))
-            model = PeftModel.from_pretrained(model, kwargs.get("peft_ckpt"))
+            model = PeftModel.from_pretrained(model=model, model_id=kwargs.get("peft_ckpt"), is_trainable=True)
 
     print_module_size(model, model_config.llm_name, int(os.environ["RANK"]) if train_config.enable_fsdp else 0)
     return model
