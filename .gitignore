@@ -1,5 +1,10 @@
 .DS_Store
 __pycache__
 .ipynb_checkpoints
+.vscode
+debug.py
 .idea/*
 transformers
+wandb/
+*.log
+log

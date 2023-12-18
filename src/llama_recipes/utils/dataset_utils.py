@@ -13,6 +13,9 @@ from llama_recipes.datasets import (
     get_samsum_dataset,
 )
 
+import logging
+logger = logging.getLogger(__name__)
+
 
 def load_module_from_py_file(py_file: str) -> object:
     """
@@ -45,15 +48,15 @@ def get_custom_dataset(dataset_config, tokenizer, split: str):
     try:
         return getattr(module, func_name)(dataset_config, tokenizer, split)
     except AttributeError as e:
-        print(f"It seems like the given method name ({func_name}) is not present in the dataset .py file ({module_path.as_posix()}).")
+        logger.info(f"It seems like the given method name ({func_name}) is not present in the dataset .py file ({module_path.as_posix()}).")
         raise e
-
 
 DATASET_PREPROC = {
     "alpaca_dataset": partial(get_alpaca_dataset),
     "grammar_dataset": get_grammar_dataset,
     "samsum_dataset": get_samsum_dataset,
     "custom_dataset": get_custom_dataset,
+    "avsr_dataset": get_custom_dataset,
 }
 
 
