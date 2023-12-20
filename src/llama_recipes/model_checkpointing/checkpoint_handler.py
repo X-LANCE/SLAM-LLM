@@ -166,7 +166,7 @@ def save_model_checkpoint(
       
 def save_model_checkpoint_peft(model, optimizer, rank, cfg, epoch=0):
     logger.info(f"--> saving model ...")
-    save_dir = os.path.join(cfg.output_dir, cfg.model_name, str(epoch))
+    save_dir = os.path.join(cfg.output_dir, cfg.model_name, str(epoch+1))
     os.makedirs(save_dir, exist_ok=True)
     if not cfg.freeze_llm:
         model.llm.save_pretrained(save_dir)
@@ -183,7 +183,7 @@ def save_model_checkpoint_peft(model, optimizer, rank, cfg, epoch=0):
             project_dict[key] = cpu_state[key]
     torch.save(project_dict, save_full_path)
 
-    logger.info(f"model checkpoint saved for epoch {epoch} at {save_full_path}\n")
+    logger.info(f"model checkpoint saved for epoch {epoch+1} at {save_full_path}\n")
     
     
 

@@ -41,7 +41,7 @@ def set_tokenizer_params(tokenizer: LlamaTokenizer):
 def byte2mb(x):
     return int(x / 2**20)
 
-def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_scheduler, gradient_accumulation_steps, train_config, fsdp_config=None, local_rank=None, rank=None):
+def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_scheduler, gradient_accumulation_steps, train_config, log_config,fsdp_config=None, local_rank=None, rank=None):
     """
     Trains the model on the given dataloader
 
@@ -54,6 +54,7 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
         num_epochs: The number of epochs to train for
         local_rank: The rank of the current node in a distributed setting
         train_config: The training configuration
+        log_config: The logging configuration
         eval_dataloader: The dataloader containing the eval data
         tokenizer: tokenizer used in the eval for decoding the predicitons
 
@@ -88,7 +89,7 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
             pbar = tqdm(colour="blue", desc=f"Training Epoch: {epoch+1}", total=total_length, dynamic_ncols=True)
             for step, batch in enumerate(train_dataloader):
                 for key in batch.keys():
-                    if type(batch[key])==bool: #train的时候是true infer的时候是false
+                    if type(batch[key])==bool:
                         continue
                     if train_config.enable_fsdp:
                         batch[key] = batch[key].to(local_rank)
@@ -102,8 +103,12 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                 loss = loss / gradient_accumulation_steps
                 acc = acc / gradient_accumulation_steps
 
-                if step % train_config.log_interval == 0:
-                    wandb.log({"train_inner/train_inner_loss":loss, "train_inner/train_inner_accuracy":acc})
+                if log_config.use_wandb and step % log_config.log_interval == 0:
+                    if train_config.enable_fsdp:
+                        if rank==0:
+                            wandb.log({"train_inner/train_inner_loss":loss, "train_inner/train_inner_accuracy":acc}, step=(epoch * total_length + step))
+                    else:
+                        wandb.log({"train_inner/train_inner_loss":loss, "train_inner/train_inner_accuracy":acc}, step=(epoch * total_length + step))
                     
                 total_loss += loss.detach().float()
                 total_acc += acc
@@ -143,7 +148,12 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
         train_loss.append(train_epoch_loss)
         train_acc.append(train_epoch_acc)
 
-        wandb.log({"train/train_perplexity":train_perplexity, "train/train_epoch_loss":train_epoch_loss, "train/train_epoch_acc":train_epoch_acc})
+        if log_config.use_wandb:
+            if train_config.enable_fsdp:
+                if rank==0:
+                    wandb.log({"train/train_perplexity":train_perplexity, "train/train_epoch_loss":train_epoch_loss, "train/train_epoch_acc":train_epoch_acc})
+            else:
+                wandb.log({"train/train_perplexity":train_perplexity, "train/train_epoch_loss":train_epoch_loss, "train/train_epoch_acc":train_epoch_acc})
 
         if train_config.enable_fsdp:
             if rank==0:
@@ -214,7 +224,7 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                         logger.info(" Saving the FSDP model checkpoints using SHARDED_STATE_DICT")
                         logger.info("=====================================================")
 
-                        j(model, rank, train_config)
+                        save_model_and_optimizer_sharded(model, rank, train_config)
                         if train_config.save_optimizer:
                             save_model_and_optimizer_sharded(model, rank, train_config, optim=optimizer)
                             logger.info(" Saving the FSDP model checkpoints and optimizer using SHARDED_STATE_DICT")
@@ -244,7 +254,12 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
             else: 
                 val_acc.append(-1)
             
-            wandb.log({"valid/val_epoch_loss":eval_epoch_loss, "valid/val_perplexity":eval_ppl, "valid/best_val_loss":best_val_loss, "valid/val_accuracy":val_acc[-1]})
+            if log_config.use_wandb:
+                if train_config.enable_fsdp:
+                    if rank==0:
+                        wandb.log({"valid/val_epoch_loss":eval_epoch_loss, "valid/val_perplexity":eval_ppl, "valid/best_val_loss":best_val_loss, "valid/val_accuracy":val_acc[-1]})
+                else:
+                    wandb.log({"valid/val_epoch_loss":eval_epoch_loss, "valid/val_perplexity":eval_ppl, "valid/best_val_loss":best_val_loss, "valid/val_accuracy":val_acc[-1]})
 
         if train_config.run_test_during_validation:
             if train_config.enable_fsdp:
@@ -315,7 +330,7 @@ def evaluation(model,train_config, eval_dataloader, local_rank, tokenizer):
     with MemoryTrace() as memtrace:
         for step, batch in enumerate(tqdm(eval_dataloader,colour="green", desc="evaluating Epoch", dynamic_ncols=True)):
             for key in batch.keys():
-                if type(batch[key])==bool: #train的时候是true infer的时候是false
+                if type(batch[key])==bool:
                     continue
                 if train_config.enable_fsdp:
                     batch[key] = batch[key].to(local_rank)
