@@ -46,10 +46,14 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
                     self.data_list.append(data_dict)
 
         # # debug
+        # with open(dataset_config.train_data_path, encoding='utf-8') as fin:
+        #         for line in fin:
+        #             data_dict = json.loads(line.strip())
+        #             self.data_list.append(data_dict)
         # if split == "train":
-        #     self.data_list = contents[:80]
+        #     self.data_list = self.data_list[:80]
         # else:
-        #     self.data_list = contents[80:100]
+        #     self.data_list = self.data_list[80:100]
 
     def get_source_len(self, data_dict):
         return data_dict["source_len"]

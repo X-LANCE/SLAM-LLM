@@ -21,6 +21,7 @@ from llama_recipes.policies import AnyPrecisionAdamW, apply_fsdp_checkpointing
 from llama_recipes.configs import fsdp_config as FSDP_CONFIG
 from llama_recipes.configs import train_config as TRAIN_CONFIG
 from llama_recipes.configs import model_config as MODEL_CONFIG
+from llama_recipes.configs import log_config as LOG_CONFIG
 from llama_recipes.data.concatenator import ConcatDataset
 
 # util
@@ -48,14 +49,12 @@ import wandb
 
 def main(**kwargs):
     # Update the configuration for the training and sharding process
-    train_config, fsdp_config, model_config = TRAIN_CONFIG(), FSDP_CONFIG(), MODEL_CONFIG()
-    update_config((train_config, fsdp_config, model_config), **kwargs)
-
-    # Set wandb
-    wandb_config={"train_config":vars(train_config), "fsdp_config":vars(fsdp_config), "model_config":vars(model_config)}
-    wandb.init(project="project_name",name="exp_name",config=wandb_config) #记录参数
+    train_config, fsdp_config, model_config, log_config = TRAIN_CONFIG(), FSDP_CONFIG(), MODEL_CONFIG(), LOG_CONFIG()
+    update_config((train_config, fsdp_config, model_config, log_config), **kwargs)
 
     # Set log
+    if not os.path.exists(os.path.dirname(log_config.log_file)):
+        os.makedirs(os.path.dirname(log_config.log_file))
     logging.basicConfig(
         level=logging.INFO, 
         format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
@@ -66,7 +65,7 @@ def main(**kwargs):
     logger = logging.getLogger()  
     logger.setLevel(logging.INFO)
 
-    file_handler = logging.FileHandler(filename=train_config.log_file, mode='w')
+    file_handler = logging.FileHandler(filename=log_config.log_file, mode='w')
     file_handler.setLevel(logging.INFO)
     file_formatter = logging.Formatter('[%(asctime)s][%(name)s][%(levelname)s] - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
     file_handler.setFormatter(file_formatter)
@@ -99,6 +98,14 @@ def main(**kwargs):
         torch.cuda.set_device(local_rank)
         clear_gpu_cache(local_rank)
         setup_environ_flags(rank)
+
+    # Set wandb
+    if not train_config.enable_fsdp or rank == 0:
+        if log_config.use_wandb:
+            if not os.path.exists(log_config.wandb_dir):
+                os.makedirs(log_config.wandb_dir)
+            wandb_config={"train_config":vars(train_config), "fsdp_config":vars(fsdp_config), "model_config":vars(model_config), "log_config":vars(log_config)}
+            wandb.init(dir=log_config.wandb_dir, entity=log_config.wandb_entity_name, project=log_config.wandb_project_name,name=log_config.wandb_exp_name ,config=wandb_config)
 
     model, tokenizer = model_factory(train_config, model_config, **kwargs)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu") # FIX(MZY): put the whole model to device.
@@ -137,7 +144,9 @@ def main(**kwargs):
 
     dataset_config = generate_dataset_config(train_config, kwargs)
     logger.info("dataset_config: {}".format(dataset_config))
-    wandb.config.update( {"dataset_config": vars(dataset_config)} )
+    if not train_config.enable_fsdp or rank == 0:
+        if log_config.use_wandb:
+            wandb.config.update( {"dataset_config": vars(dataset_config)} )
     
     # Load and preprocess the dataset for training and validation
     dataset_train = get_preprocessed_dataset(
@@ -209,6 +218,7 @@ def main(**kwargs):
         scheduler,
         train_config.gradient_accumulation_steps,
         train_config,
+        log_config,
         fsdp_config if train_config.enable_fsdp else None,
         local_rank if train_config.enable_fsdp else None,
         rank if train_config.enable_fsdp else None,
@@ -216,7 +226,9 @@ def main(**kwargs):
     if not train_config.enable_fsdp or rank==0:
         [logger.info(f'Key: {k}, Value: {v}') for k, v in results.items()]
 
-    wandb.finish()
+    if not train_config.enable_fsdp or rank == 0:
+        if log_config.use_wandb:
+            wandb.finish()
 
 if __name__ == "__main__":
     fire.Fire(main)

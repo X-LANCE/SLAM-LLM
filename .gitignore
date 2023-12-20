@@ -6,5 +6,5 @@ debug.py
 .idea/*
 transformers
 wandb/
+log/
 *.log
-log
