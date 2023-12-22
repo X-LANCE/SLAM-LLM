@@ -108,8 +108,7 @@ def main(**kwargs):
             wandb.init(dir=log_config.wandb_dir, entity=log_config.wandb_entity_name, project=log_config.wandb_project_name,name=log_config.wandb_exp_name ,config=wandb_config)
 
     model, tokenizer = model_factory(train_config, model_config, **kwargs)
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu") # FIX(MZY): put the whole model to device.
-    model.to(device)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     
     # Convert the model to bfloat16 if fsdp and pure_bf16 is enabled
@@ -140,7 +139,7 @@ def main(**kwargs):
         if fsdp_config.fsdp_activation_checkpointing:
             apply_fsdp_checkpointing(model)
     elif not train_config.quantization and not train_config.enable_fsdp:
-        model.to("cuda")
+        model.to(device)
 
     dataset_config = generate_dataset_config(train_config, kwargs)
     logger.info("dataset_config: {}".format(dataset_config))

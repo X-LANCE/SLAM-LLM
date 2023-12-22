@@ -170,22 +170,58 @@ def save_model_checkpoint_peft(model, optimizer, rank, cfg, epoch=0):
     os.makedirs(save_dir, exist_ok=True)
     if not cfg.freeze_llm:
         model.llm.save_pretrained(save_dir)
+        logger.info(f"llm saved at {save_dir}")
     
     save_full_path = os.path.join(save_dir, "model.pt")
     cpu_state = model.state_dict()
-    project_dict = {}
+    encoder_dict = {}
     if not cfg.freeze_encoder:
         for key in cpu_state.keys():
             if key.startswith("encoder."):
-                project_dict[key] = cpu_state[key]
+                encoder_dict[key] = cpu_state[key]
     for key in cpu_state.keys():
         if key.startswith("encoder_projector."):
-            project_dict[key] = cpu_state[key]
-    torch.save(project_dict, save_full_path)
+            encoder_dict[key] = cpu_state[key]
+    torch.save(encoder_dict, save_full_path)
+    logger.info(f"encoder saved at {save_full_path}")
 
-    logger.info(f"model checkpoint saved for epoch {epoch+1} at {save_full_path}\n")
+    logger.info(f"model checkpoint saved for epoch {epoch+1}\n")
     
-    
+def save_model_checkpoint_peft_full_shard(model, optimizer, rank, cfg, epoch=0):
+    with FSDP.state_dict_type(
+        model, StateDictType.FULL_STATE_DICT, fullstate_save_policy
+    ):
+        cpu_state = model.state_dict()
+        logger.info(f"saving process: rank {rank}  done w model state_dict\n")
+
+    if rank == 0:
+        logger.info(f"--> saving model ...")
+        save_dir = os.path.join(cfg.output_dir, cfg.model_name, str(epoch+1))
+        os.makedirs(save_dir, exist_ok=True)
+
+        if not cfg.freeze_llm:
+            llm_dict = {}
+            for key in cpu_state.keys():
+                if key.startswith("llm."):
+                    llm_dict[key] = cpu_state[key]
+            model.llm.save_pretrained(save_directory=save_dir, state_dict=llm_dict)
+            logger.info(f"llm saved at {save_dir}")
+
+        save_full_path = os.path.join(save_dir, "model.pt")
+        encoder_dict = {}
+        if not cfg.freeze_encoder:
+            for key in cpu_state.keys():
+                if key.startswith("encoder."):
+                    encoder_dict[key] = cpu_state[key]
+        for key in cpu_state.keys():
+            if key.startswith("encoder_projector."):
+                encoder_dict[key] = cpu_state[key]
+        torch.save(encoder_dict, save_full_path)
+        logger.info(f"encoder saved at {save_full_path}")
+
+        logger.info(f"model checkpoint saved for epoch {epoch+1}\n")
+        
+    dist.barrier()
 
 def load_model_checkpoint(model, rank, cfg):
     """load local checkpoint to rank0 cpu
