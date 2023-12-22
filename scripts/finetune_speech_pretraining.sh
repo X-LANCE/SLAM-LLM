@@ -82,12 +82,12 @@ src/llama_recipes/pipeline/finetune.py \
 --lr 1e-5 \
 --output_dir $output_dir \
 --metric acc \
+--log_file /$output_dir/test.log \
 --use_wandb \
 --wandb_dir $output_dir \
 --wandb_entity_name zym22 \
 --wandb_project_name slam-llm \
 --wandb_exp_name test \
---log_file /$output_dir/test.log \
 --log_interval 5 \
 # --ckpt_path "/nfs/maziyang.mzy/exps/llama-2-hf-finetune-asr-ds5-proj2048-lr1e-5-whisper-lora-prompt/asr/5/model.pt" \
 # --peft_ckpt "/nfs/maziyang.mzy/exps/llama-2-hf-finetune-asr-ds5-proj2048-lr1e-5-whisper-lora-prompt/asr/5" \

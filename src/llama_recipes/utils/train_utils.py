@@ -12,6 +12,7 @@ from pkg_resources import packaging
 import torch
 import torch.cuda.nccl as nccl
 import torch.distributed as dist
+from torch.distributed.fsdp import ShardingStrategy
 from torch.distributed.fsdp import StateDictType
 from torch.distributed.fsdp.sharded_grad_scaler import ShardedGradScaler
 from tqdm import tqdm
@@ -22,7 +23,8 @@ from llama_recipes.model_checkpointing import(
     save_model_checkpoint, 
     save_model_and_optimizer_sharded, 
     save_optimizer_checkpoint, 
-    save_model_checkpoint_peft
+    save_model_checkpoint_peft,
+    save_model_checkpoint_peft_full_shard
 )
 from llama_recipes.policies import fpSixteen,bfSixteen_mixed, get_llama_wrapper
 from llama_recipes.utils.memory_utils import MemoryTrace
@@ -184,12 +186,17 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                             logger.info(f"we are about to save the PEFT modules")
                     else:
                         logger.info(f"we are about to save the PEFT modules")
-                    if train_config.enable_fsdp:
-                        if rank==0:
-                            save_model_checkpoint_peft(
-                                model, optimizer, rank, train_config, epoch=epoch
-                            )
-                        dist.barrier()
+                    if train_config.enable_fsdp: #(FIX:MZY):We now only support full_shard and no_shard.
+                        if fsdp_config.sharding_strategy == ShardingStrategy.FULL_SHARD:
+                            save_model_checkpoint_peft_full_shard(
+                                    model, optimizer, rank, train_config, epoch=epoch
+                                )
+                        elif fsdp_config.sharding_strategy == ShardingStrategy.NO_SHARD:
+                            if rank==0:
+                                save_model_checkpoint_peft(
+                                    model, optimizer, rank, train_config, epoch=epoch
+                                )
+                            dist.barrier()
                     else:
                         # model.save_pretrained(train_config.output_dir)
                         save_model_checkpoint_peft(
@@ -203,12 +210,17 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                 
                 elif not train_config.use_peft and train_config.freeze_llm:
                     logger.info(f"llm is frozen, we are about to save other parts.")
-                    if train_config.enable_fsdp:
-                        if rank==0:
-                            save_model_checkpoint_peft(
-                                model, optimizer, rank, train_config, epoch=epoch
-                            )
-                        dist.barrier()
+                    if train_config.enable_fsdp: #(FIX:MZY):We now only support full_shard and no_shard.
+                        if fsdp_config.sharding_strategy == ShardingStrategy.FULL_SHARD:
+                            save_model_checkpoint_peft_full_shard(
+                                    model, optimizer, rank, train_config, epoch=epoch
+                                )
+                        elif fsdp_config.sharding_strategy == ShardingStrategy.NO_SHARD:
+                            if rank==0:
+                                save_model_checkpoint_peft(
+                                    model, optimizer, rank, train_config, epoch=epoch
+                                )
+                            dist.barrier()
                     else:
                         save_model_checkpoint_peft(
                                 model, optimizer, rank, train_config, epoch=epoch

@@ -61,7 +61,7 @@ def setup_encoder(train_config, model_config, **kwargs):
     if len(encoder_list) == 1:
         encoder_name = encoder_list[0]
         if encoder_name == "whisper" or "qwen-audio":
-            encoder = whisper.load_model(model_config.encoder_path).encoder
+            encoder = whisper.load_model(name=model_config.encoder_path, device='cpu').encoder #(FIX:MZY): put whisper encoder on cpu, which is ready for FSDP
             encoder.extract_variable_length_features = types.MethodType(extract_variable_length_features, encoder)
         if encoder_name == "audio-mae": #TODO
             pass

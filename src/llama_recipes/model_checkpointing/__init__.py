@@ -10,4 +10,5 @@ from llama_recipes.model_checkpointing.checkpoint_handler import (
     load_model_sharded,
     load_sharded_model_single_gpu,
     save_model_checkpoint_peft,
+    save_model_checkpoint_peft_full_shard
 )
