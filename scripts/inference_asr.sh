@@ -8,13 +8,15 @@ cd /root/SLAM-LLM
 speech_encoder_path=/nfs/zhifu.gzf/ckpt/Whisper/large-v2.pt
 # speech_encoder_path=/nfs/maziyang.mzy/models/Whisper/large-v2-qwen.pt
 llm_path=/nfs/zhifu.gzf/ckpt/Llama-2-7b-hf
-output_dir=/nfs/maziyang.mzy/exps/llama-2-hf-finetune-asr-ds5-proj2048
+output_dir=/nfs/maziyang.mzy/exps/llama-2-hf-finetune-asr-ds5-proj2048-lr1e-5-whisper-lora-prompt-renew5
+ckpt_path=/nfs/maziyang.mzy/exps/llama-2-hf-finetune-asr-ds5-proj2048-lr1e-5-whisper-lora-prompt-renew5/asr/0/model.pt
+peft_ckpt=/nfs/maziyang.mzy/exps/llama-2-hf-finetune-asr-ds5-proj2048-lr1e-5-whisper-lora-prompt-renew5/asr/0
 
 # -m debugpy --listen 5678 --wait-for-client
-python src/llama_recipes/pipeline/inference.py \
+python -m debugpy --listen 5678 --wait-for-client src/llama_recipes/pipeline/inference.py \
 --model_name asr \
---freeze_llm \
 --freeze_encoder \
+--use_peft --peft_method lora \
 --llm_name llama-2-7b-hf \
 --llm_path $llm_path \
 --encoder_name whisper \
@@ -23,8 +25,8 @@ python src/llama_recipes/pipeline/inference.py \
 --encoder_projector linear \
 --encoder_projector_ds_rate 5 \
 --output_dir $output_dir \
---ckpt_path "/nfs/maziyang.mzy/exps/llama-2-hf-finetune-asr-ds5-proj2048/asr/13/model.pt" \
+--ckpt_path $ckpt_path \
+--peft_ckpt $peft_ckpt \
 --wav_path "/cpfs01/shared/Group-speech/beinian.lzr/data/open_data/librispeech_audio/audio/se_librispeech_1001-134707-0032.wav" \
---prompt "<|ASR|>" \
-# --peft_ckpt "/nfs/maziyang.mzy/models/llama-2-hf-finetune/echat/1" \
-# --use_peft --peft_method lora \
+--prompt "Transcribe speech to text. Output the transcription directly without redundant content. Ensure that the output is not duplicated. " \
+# --freeze_llm \

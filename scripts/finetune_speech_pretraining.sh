@@ -47,8 +47,8 @@ python -m debugpy --listen 5678 --wait-for-client src/llama_recipes/pipeline/fin
 --wandb_entity_name zym22 \
 --wandb_project_name slam-llm \
 --wandb_exp_name test \
---log_file /$output_dir/test.log \
 --log_interval 5 \
+--log_file $output_dir/test.log \
 # --ckpt_path "/nfs/maziyang.mzy/exps/llama-2-hf-finetune-asr-ds5-proj2048-lr1e-5-whisper-lora-prompt/asr/5/model.pt" \
 # --peft_ckpt "/nfs/maziyang.mzy/exps/llama-2-hf-finetune-asr-ds5-proj2048-lr1e-5-whisper-lora-prompt/asr/5" \
 # --use_peft --peft_method lora \

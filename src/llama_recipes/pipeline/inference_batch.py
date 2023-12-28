@@ -53,8 +53,8 @@ def main(**kwargs):
 	
 
 	print("=====================================")
-	pred_path = kwargs.get('decode_log') + "_pred_other"
-	gt_path = kwargs.get('decode_log') + "_gt_other"
+	pred_path = kwargs.get('decode_log') + "_pred"
+	gt_path = kwargs.get('decode_log') + "_gt"
 	with open(pred_path, "w") as pred, open(gt_path, "w") as gt:
 		for step, batch in enumerate(test_dataloader):
 			for key in batch.keys():

@@ -70,18 +70,16 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         speech_raw = whisper.load_audio(speech_path)
         speech_mel = whisper.log_mel_spectrogram(speech_raw).permute(1, 0)
 
+        prompt = "Transcribe speech to text. Output the transcription directly without redundant content. Ensure that the output is not duplicated. "
+
+        prompt = self.prompt_template.format(prompt)
+        prompt_ids = self.tokenizer.encode(prompt)
+        prompt_length = len(prompt_ids)
         speech_length = (speech_mel.shape[0] + 1) // 2  # ad-hoc for whisper for 2x downsample from mel to feats
         speech_length = speech_length // 5 # ad-hoc for 5x cov1d downsample
         if self.fix_length_audio > 0:
             speech_length = self.fix_length_audio
-        speech_pseudo = torch.full((speech_length,), -1)
-
-        prompt = """
-        <|ASR|>
-        """
-        prompt = self.prompt_template.format(prompt)
-        prompt_ids = self.tokenizer.encode(prompt)
-        prompt_length = len(prompt_ids)
+        speech_pseudo = torch.full((speech_length,), -1) # placeholder
         prompt_ids = torch.tensor(prompt_ids, dtype=torch.int64)
 
         example_ids = torch.cat((speech_pseudo, prompt_ids))  # [speech,prompt]

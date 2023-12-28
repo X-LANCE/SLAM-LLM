@@ -103,7 +103,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
 
         label_mask = labels_ids.ge(0)  # [False,False,True,True]
         example_ids[~example_mask] = 0  # [speech,prompt,answer,eos]
-        labels_ids[~label_mask] = self.IGNORE_INDEX  # [-100,answer,eos,-100]
+        labels_ids[~label_mask] = self.IGNORE_INDEX  # [-100,-100,answer,eos]
 
         return {
             "input_ids": example_ids,
