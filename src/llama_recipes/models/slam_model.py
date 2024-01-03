@@ -280,7 +280,7 @@ class slam_model(nn.Module):
             do_sample=kwargs.get("do_sample", False),
             min_length=kwargs.get("min_length", 1),
             top_p=kwargs.get("top_p", 1.0),
-            repetition_penalty=kwargs.get("repetition_penalty", 5.0),
+            repetition_penalty=kwargs.get("repetition_penalty", 1.0),
             length_penalty=kwargs.get("length_penalty", 1.0),
             temperature=kwargs.get("temperature", 1.0),
             attention_mask=attention_mask,

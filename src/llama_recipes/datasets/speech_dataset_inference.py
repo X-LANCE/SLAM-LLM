@@ -68,6 +68,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         key = data_dict.get("key", None)
         
         speech_raw = whisper.load_audio(speech_path)
+        # speech_raw = whisper.pad_or_trim(speech_raw)
         speech_mel = whisper.log_mel_spectrogram(speech_raw).permute(1, 0)
 
         prompt = "Transcribe speech to text. Output the transcription directly without redundant content. Ensure that the output is not duplicated. "

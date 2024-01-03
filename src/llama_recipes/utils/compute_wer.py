@@ -34,19 +34,19 @@ def compute_wer(ref_file,
     cer_detail_writer = open(cer_detail_file, 'w')
     for hyp_key in hyp_dict:
         if hyp_key in ref_dict:
-           out_item = compute_wer_by_line(hyp_dict[hyp_key], ref_dict[hyp_key])
-           rst['Wrd'] += out_item['nwords']
-           rst['Corr'] += out_item['cor']
-           rst['wrong_words'] += out_item['wrong']
-           rst['Ins'] += out_item['ins']
-           rst['Del'] += out_item['del']
-           rst['Sub'] += out_item['sub']
-           rst['Snt'] += 1
-           if out_item['wrong'] > 0:
-               rst['wrong_sentences'] += 1
-           cer_detail_writer.write(hyp_key + print_cer_detail(out_item) + '\n')
-           cer_detail_writer.write("ref:" + '\t' + " ".join(list(map(lambda x: x.lower(), ref_dict[hyp_key]))) + '\n')
-           cer_detail_writer.write("hyp:" + '\t' + " ".join(list(map(lambda x: x.lower(), hyp_dict[hyp_key]))) + '\n')
+            out_item = compute_wer_by_line(hyp_dict[hyp_key], ref_dict[hyp_key])
+            rst['Wrd'] += out_item['nwords']
+            rst['Corr'] += out_item['cor']
+            rst['wrong_words'] += out_item['wrong']
+            rst['Ins'] += out_item['ins']
+            rst['Del'] += out_item['del']
+            rst['Sub'] += out_item['sub']
+            rst['Snt'] += 1
+            if out_item['wrong'] > 0:
+                rst['wrong_sentences'] += 1
+            cer_detail_writer.write(hyp_key + print_cer_detail(out_item) + '\n')
+            cer_detail_writer.write("ref:" + '\t' + " ".join(list(map(lambda x: x.lower(), ref_dict[hyp_key]))) + '\n')
+            cer_detail_writer.write("hyp:" + '\t' + " ".join(list(map(lambda x: x.lower(), hyp_dict[hyp_key]))) + '\n')
 
     if rst['Wrd'] > 0:
         rst['Err'] = round(rst['wrong_words'] * 100 / rst['Wrd'], 2)

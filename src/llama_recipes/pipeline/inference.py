@@ -34,9 +34,9 @@ def main(**kwargs):
 	while True:
 		print("=====================================")
 		wav_path = input("Your Wav Path:\n")
-		# prompt = input("Your Prompt:\n")
+		prompt = input("Your Prompt:\n")
 		# wav_path = kwargs.get('wav_path')
-		prompt = kwargs.get('prompt')
+		# prompt = kwargs.get('prompt')
 		try:
 			print(model.inference(wav_path, prompt))
 		except:
