@@ -1,7 +1,7 @@
 #cd /root/SLAM-LLM
 
-trans="/root/llama-2-hf-finetune-asr-ds5-proj2048-lr1e-5-whisper-prompt-padding30-20231228-decode_log_test_clean_bs4_beam4_repetition_penalty10_gt"
-preds="/root/llama-2-hf-finetune-asr-ds5-proj2048-lr1e-5-whisper-prompt-padding30-20231228-decode_log_test_clean_bs4_beam4_repetition_penalty10_pred"
+trans="/root/llama-2-hf-finetune-asr-ds5-proj2048-lr1e-4-whisper-lora-prompt-paddinglr-20240102-decode_log_test_clean_bs8_beam4_repetition_penalty1_gt"
+preds="/root/llama-2-hf-finetune-asr-ds5-proj2048-lr1e-4-whisper-lora-prompt-paddinglr-20240102-decode_log_test_clean_bs8_beam4_repetition_penalty1_pred"
 
 # python src/llama_recipes/utils/preprocess_text.py ${preds} ${preds}.proc
 # python src/llama_recipes/utils/compute_wer.py ${trans} ${preds}.proc ${preds}.proc.wer
