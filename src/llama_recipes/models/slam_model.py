@@ -135,10 +135,11 @@ def setup_llm(train_config, model_config, **kwargs):
         model.eval()
         
     if kwargs.get("peft_ckpt", None): # (FIX:MZY):reload will get wrong results when decoding
-        print("loading peft_ckpt from: ", kwargs.get("peft_ckpt"))
+        logger.info("loading peft_ckpt from: {}".format(kwargs.get("peft_ckpt")))
         model = PeftModel.from_pretrained(model=model, model_id=kwargs.get("peft_ckpt"), is_trainable=True)
         model.print_trainable_parameters()
     elif train_config.use_peft:
+        logger.info("setup peft...")
         peft_config = generate_peft_config(train_config, kwargs)
         model = get_peft_model(model, peft_config)
         model.print_trainable_parameters()

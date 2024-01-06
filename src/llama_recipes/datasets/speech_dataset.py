@@ -72,8 +72,8 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         task = data_dict.get("prompt", "ASR")
         
         speech_raw = whisper.load_audio(speech_path)
-        # speech_raw = whisper.pad_or_trim(speech_raw)
-        speech_raw = np.concatenate((np.zeros(random.randint(8000, 16000)), speech_raw, np.zeros(random.randint(8000, 16000)))).astype(speech_raw.dtype)[:16000*30]
+        speech_raw = whisper.pad_or_trim(speech_raw)
+        # speech_raw = np.concatenate((np.zeros(random.randint(8000, 16000)), speech_raw, np.zeros(random.randint(8000, 16000)))).astype(speech_raw.dtype)[:16000*30]
         speech_mel = whisper.log_mel_spectrogram(speech_raw).permute(1, 0)
 
         prompt = "Transcribe speech to text. Output the transcription directly without redundant content. Ensure that the output is not duplicated. "
