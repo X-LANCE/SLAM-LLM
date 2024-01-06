@@ -8,11 +8,11 @@ cd /root/SLAM-LLM
 speech_encoder_path=/nfs/zhifu.gzf/ckpt/Whisper/large-v2.pt
 # speech_encoder_path=/nfs/maziyang.mzy/models/Whisper/large-v2-qwen.pt
 llm_path=/nfs/zhifu.gzf/ckpt/Llama-2-7b-hf
-output_dir=/nfs/maziyang.mzy/exps//nfs/maziyang.mzy/exps/llama-2-hf-finetune-asr-ds5-proj2048-lr1e-4-whisper-lora-prompt-paddinglr-20240104
-ckpt_path=/nfs/maziyang.mzy/exps/llama-2-hf-finetune-asr-ds5-proj2048-lr1e-4-whisper-lora-prompt-paddinglr-20240104/asr/4/model.pt
+output_dir=/nfs/maziyang.mzy/exps//nfs/maziyang.mzy/exps/llama-2-hf-finetune-asr-ds5-proj2048-lr1e-4-whisper-prompt-paddingr-20240104
+ckpt_path=/nfs/maziyang.mzy/exps/llama-2-hf-finetune-asr-ds5-proj2048-lr1e-4-whisper-prompt-paddingr-20240104/asr/2/model.pt
 # peft_ckpt=/nfs/maziyang.mzy/exps/llama-2-hf-finetune-asr-ds5-proj2048-lr1e-4-whisper-lora-prompt-paddinglr-20240102/asr/4
 val_data_path=/nfs/maziyang.mzy/data/librispeech/librispeech_test_clean_filtered.jsonl
-decode_log=/root/llama-2-hf-finetune-asr-ds5-proj2048-lr1e-4-whisper-lora-prompt-paddinglr-20240104-decode_log_test_clean_bs8_beam4_repetition_penalty1
+decode_log=/root/llama-2-hf-finetune-asr-ds5-proj2048-lr1e-4-whisper-prompt-paddinglrfix8000-20240106-decode_log_test_clean_bs8_beam4_repetition_penalty1
 
 # -m debugpy --listen 5678 --wait-for-client
 python src/llama_recipes/pipeline/inference_batch.py \
@@ -20,9 +20,11 @@ python src/llama_recipes/pipeline/inference_batch.py \
 --freeze_encoder \
 --llm_name llama-2-7b-hf \
 --llm_path $llm_path \
+--llm_dim 4096 \
 --encoder_name whisper \
 --encoder_ds_rate 2 \
 --encoder_path $speech_encoder_path \
+--encoder_dim 1280 \
 --encoder_projector linear \
 --encoder_projector_ds_rate 5 \
 --dataset custom_dataset \
