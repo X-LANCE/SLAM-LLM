@@ -31,7 +31,7 @@ def setup_model(tokenizer, train_config, model_config, **kwargs):
 
 def setup_tokenizer(train_config, model_config, **kwargs):
     # Load the tokenizer and add special tokens
-    if model_config.llm_name=="llama-2-7b-hf":
+    if "llama" in model_config.llm_name or "vicuna" in model_config.llm_name:
         tokenizer = LlamaTokenizer.from_pretrained(model_config.llm_path)
         tokenizer.pad_token_id = tokenizer.eos_token_id
         return tokenizer
@@ -133,15 +133,16 @@ def setup_llm(train_config, model_config, **kwargs):
         for name, param in model.named_parameters(): 
             param.requires_grad = False
         model.eval()
-
-    if train_config.use_peft:
+        
+    if kwargs.get("peft_ckpt", None): # (FIX:MZY):reload will get wrong results when decoding
+        logger.info("loading peft_ckpt from: {}".format(kwargs.get("peft_ckpt")))
+        model = PeftModel.from_pretrained(model=model, model_id=kwargs.get("peft_ckpt"), is_trainable=True)
+        model.print_trainable_parameters()
+    elif train_config.use_peft:
+        logger.info("setup peft...")
         peft_config = generate_peft_config(train_config, kwargs)
         model = get_peft_model(model, peft_config)
         model.print_trainable_parameters()
-        
-        if kwargs.get("peft_ckpt", None):
-            print("loading peft_ckpt from: ", kwargs.get("peft_ckpt"))
-            model = PeftModel.from_pretrained(model=model, model_id=kwargs.get("peft_ckpt"), is_trainable=True)
 
     print_module_size(model, model_config.llm_name, int(os.environ["RANK"]) if train_config.enable_fsdp else 0)
     return model
@@ -276,10 +277,10 @@ class slam_model(nn.Module):
         model_outputs = self.llm.generate(
             inputs_embeds=inputs_embeds,
             max_length=kwargs.get("max_length", 200),
-            num_beams=kwargs.get("num_beams", 1),
+            num_beams=kwargs.get("num_beams", 4),
             do_sample=kwargs.get("do_sample", False),
             min_length=kwargs.get("min_length", 1),
-            top_p=kwargs.get("top_p", 0.9),
+            top_p=kwargs.get("top_p", 1.0),
             repetition_penalty=kwargs.get("repetition_penalty", 1.0),
             length_penalty=kwargs.get("length_penalty", 1.0),
             temperature=kwargs.get("temperature", 1.0),

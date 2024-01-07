@@ -5,9 +5,11 @@ from dataclasses import dataclass
 class model_config:
     llm_name: str =  "llama-2-7b-hf"
     llm_path: str = "PATH/to/LLAMA/7B"
+    llm_dim: int = 4096
     encoder_name: str = None
     encoder_ds_rate: int = 2
     encoder_path: str = None
+    encoder_dim: int = 1280
     encoder_projector: str = "linear"
     encoder_projector_ds_rate: int = 5
 

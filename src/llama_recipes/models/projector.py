@@ -6,9 +6,11 @@ class EncoderProjectorConcat(nn.Module):
     def __init__(self, config):
         super().__init__()
         self.k = config.encoder_projector_ds_rate
-        self.linear1 = nn.Linear(1280 * self.k, 2048)
+        self.encoder_dim = config.encoder_dim
+        self.llm_dim = config.llm_dim
+        self.linear1 = nn.Linear(self.encoder_dim * self.k, 2048)
         self.relu = nn.ReLU()
-        self.linear2 = nn.Linear(2048, 4096)
+        self.linear2 = nn.Linear(2048, config.llm_dim)
 
     def forward(self, x):
         batch_size, seq_len, dim = x.size()
@@ -26,10 +28,13 @@ class EncoderProjectorConcat(nn.Module):
 class EncoderProjectorCov1d(nn.Module):
     def __init__(self, config):
         super().__init__()
-        self.conv1d = nn.Conv1d(in_channels=1280, out_channels=1280, kernel_size=config.encoder_projector_ds_rate, stride=config.encoder_projector_ds_rate, padding=0)
-        self.linear1 = nn.Linear(1280, 2048)
+        self.k = config.encoder_projector_ds_rate
+        self.encoder_dim = config.encoder_dim
+        self.llm_dim = config.llm_dim
+        self.conv1d = nn.Conv1d(in_channels=self.encoder_dim, out_channels=self.encoder_dim, kernel_size=self.k, stride=self.k, padding=0)
+        self.linear1 = nn.Linear(self.encoder_dim, 2048)
         self.relu1 = nn.ReLU()
-        self.linear2 = nn.Linear(2048, 4096)
+        self.linear2 = nn.Linear(2048, self.llm_dim)
         self.relu2 = nn.ReLU()
     
     def forward(self, x):
@@ -45,9 +50,11 @@ class EncoderProjectorCov1d(nn.Module):
 class EncoderProjectorQFormer(nn.Module):
     def __init__(self, config):
         super().__init__()
+        self.encoder_dim = config.encoder_dim
+        self.llm_dim = config.llm_dim
         from transformers import Blip2QFormerConfig, Blip2QFormerModel
         configuration = Blip2QFormerConfig()
-        configuration.encoder_hidden_size = 1280
+        configuration.encoder_hidden_size = self.encoder_dim
         configuration.num_hidden_layers = 2
 
         self.query_len = 64
@@ -55,8 +62,8 @@ class EncoderProjectorQFormer(nn.Module):
         self.query.data.normal_(mean=0.0, std=1.0)
         self.qformer = Blip2QFormerModel(configuration)
 
-        self.linear = nn.Linear(configuration.hidden_size, 4096)
-        self.norm = nn.LayerNorm(4096, eps=1e-5)
+        self.linear = nn.Linear(configuration.hidden_size, self.llm_dim)
+        self.norm = nn.LayerNorm(self.llm_dim, eps=1e-5)
 
     def forward(self, x, atts):
         query = self.query.expand(x.shape[0], -1, -1)

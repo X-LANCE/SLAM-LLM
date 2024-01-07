@@ -7,6 +7,7 @@ from llama_recipes.models.slam_model import slam_model
 from llama_recipes.configs import fsdp_config as FSDP_CONFIG
 from llama_recipes.configs import train_config as TRAIN_CONFIG
 from llama_recipes.configs import model_config as MODEL_CONFIG
+from llama_recipes.configs import log_config as LOG_CONFIG
 from llama_recipes.utils.config_utils import (
     update_config,
     generate_peft_config,
@@ -15,12 +16,43 @@ from llama_recipes.utils.config_utils import (
 )
 from llama_recipes.pipeline.model_factory import model_factory
 from llama_recipes.utils.dataset_utils import get_preprocessed_dataset
+import os
+import logging
 
 def main(**kwargs):
 
 	# Update the configuration for the training and sharding process
-	train_config, fsdp_config, model_config = TRAIN_CONFIG(), FSDP_CONFIG(), MODEL_CONFIG()
-	update_config((train_config, fsdp_config, model_config), **kwargs)
+	train_config, fsdp_config, model_config, log_config = TRAIN_CONFIG(), FSDP_CONFIG(), MODEL_CONFIG(), LOG_CONFIG()
+	update_config((train_config, fsdp_config, model_config, log_config), **kwargs)
+
+	# Set log
+	if not os.path.exists(os.path.dirname(log_config.log_file)):
+		os.makedirs(os.path.dirname(log_config.log_file))
+	logging.basicConfig(
+		level=logging.INFO, 
+		format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+		datefmt="%Y-%m-%d %H:%M:%S",
+		filemode='w'
+	)
+
+	logger = logging.getLogger()  
+	logger.setLevel(logging.INFO)
+
+	file_handler = logging.FileHandler(filename=log_config.log_file, mode='w')
+	file_handler.setLevel(logging.INFO)
+	file_formatter = logging.Formatter('[%(asctime)s][%(name)s][%(levelname)s] - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+	file_handler.setFormatter(file_formatter)
+
+	logger.handlers[0].setLevel(logging.INFO)
+	console_formatter = logging.Formatter('[%(asctime)s][%(name)s][%(levelname)s] - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+	logger.handlers[0].setFormatter(console_formatter) 
+
+	logger.addHandler(file_handler)
+    
+	logger.info("train_config: {}".format(train_config))
+	logger.info("fsdp_config: {}".format(fsdp_config))
+	logger.info("model_config: {}".format(model_config))
+
 	
 	# Set the seeds for reproducibility
 	torch.cuda.manual_seed(train_config.seed)
@@ -33,13 +65,14 @@ def main(**kwargs):
 	model.eval()
 
 	dataset_config = generate_dataset_config(train_config, kwargs)
+	logger.info("dataset_config: {}".format(dataset_config))
 	dataset_test = get_preprocessed_dataset(
         tokenizer,
         dataset_config,
         split="test",
     )
 	if not train_config.enable_fsdp or rank == 0:
-		print(f"--> Test Set Length = {len(dataset_test)}")
+		logger.info(f"--> Training Set Length = {len(dataset_test)}")
 
 	test_dataloader = torch.utils.data.DataLoader(
             dataset_test,
@@ -52,9 +85,9 @@ def main(**kwargs):
         )
 	
 
-	print("=====================================")
-	pred_path = kwargs.get('decode_log') + "_pred_other"
-	gt_path = kwargs.get('decode_log') + "_gt_other"
+	logger.info("=====================================")
+	pred_path = kwargs.get('decode_log') + "_pred"
+	gt_path = kwargs.get('decode_log') + "_gt"
 	with open(pred_path, "w") as pred, open(gt_path, "w") as gt:
 		for step, batch in enumerate(test_dataloader):
 			for key in batch.keys():
