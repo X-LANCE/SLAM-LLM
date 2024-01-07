@@ -31,7 +31,7 @@ def setup_model(tokenizer, train_config, model_config, **kwargs):
 
 def setup_tokenizer(train_config, model_config, **kwargs):
     # Load the tokenizer and add special tokens
-    if model_config.llm_name=="llama-2-7b-hf":
+    if "llama" in model_config.llm_name or "vicuna" in model_config.llm_name:
         tokenizer = LlamaTokenizer.from_pretrained(model_config.llm_path)
         tokenizer.pad_token_id = tokenizer.eos_token_id
         return tokenizer
