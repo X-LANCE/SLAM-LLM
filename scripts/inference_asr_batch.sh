@@ -1,6 +1,6 @@
 #!/bin/bash
 #export PYTHONPATH=/root/whisper:$PYTHONPATH
-export CUDA_VISIBLE_DEVICES=1
+export CUDA_VISIBLE_DEVICES=0
 # export CUDA_LAUNCH_BLOCKING=1
 
 cd /root/SLAM-LLM
@@ -11,11 +11,11 @@ speech_encoder_path=/nfs/zhifu.gzf/ckpt/Whisper/large-v2.pt
 # llm_path=/nfs/zhifu.gzf/ckpt/Llama-2-7b-hf
 llm_path=/nfs/maziyang.mzy/models/vicuna-7b-v1.5
 
-output_dir=nfs/maziyang.mzy/exps/vicuna-7b-v1.5-finetune-asr-ds5-proj2048-lr1e-4-whisper-prompt-padding30-20240106
-ckpt_path=/nfs/maziyang.mzy/exps/vicuna-7b-v1.5-finetune-asr-ds5-proj2048-lr1e-4-whisper-prompt-padding30-20240106/asr/2
+output_dir=/nfs/maziyang.mzy/exps/vicuna-7b-v1.5-finetune-asr-ds5-proj2048-lr1e-4-whisper-prompt-padding0-20240107
+ckpt_path=$output_dir/asr/2
 # peft_ckpt=/nfs/maziyang.mzy/exps/llama-2-hf-finetune-asr-ds5-proj2048-lr1e-4-whisper-lora-prompt-paddinglr-20240102/asr/4
-val_data_path=/nfs/maziyang.mzy/data/librispeech/librispeech_test_other_filtered.jsonl
-decode_log=$ckpt_path/decode_log_test_other_bs4_beam4_repetition_penalty1
+val_data_path=/nfs/maziyang.mzy/data/librispeech/librispeech_test_clean_filtered.jsonl
+decode_log=$ckpt_path/decode_log_test_clean_bs8_beam4_repetition_penalty1
 
 # -m debugpy --listen 5678 --wait-for-client
 python src/llama_recipes/pipeline/inference_batch.py \
@@ -30,12 +30,12 @@ python src/llama_recipes/pipeline/inference_batch.py \
 --encoder_dim 1280 \
 --encoder_projector linear \
 --encoder_projector_ds_rate 5 \
---dataset custom_dataset \
---custom_dataset.file src/llama_recipes/datasets/speech_dataset_inference.py:get_audio_dataset \
---custom_dataset.val_data_path $val_data_path \
+--dataset speech_dataset \
+--speech_dataset.file src/llama_recipes/datasets/speech_dataset_inference.py:get_audio_dataset \
+--speech_dataset.val_data_path $val_data_path \
 --batching_strategy custom \
 --num_epochs 1 \
---val_batch_size 4 \
+--val_batch_size 8 \
 --num_workers_dataloader 4 \
 --output_dir $output_dir \
 --ckpt_path $ckpt_path/model.pt \

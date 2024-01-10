@@ -19,6 +19,7 @@ class EncoderProjectorConcat(nn.Module):
             x = x[:, :-num_frames_to_discard, :]
         seq_len = x.size(1)
         
+        x = x.contiguous()
         x = x.view(batch_size, seq_len // self.k, dim * self.k)
         x = self.linear1(x)
         x = self.relu(x)

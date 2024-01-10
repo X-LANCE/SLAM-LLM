@@ -27,7 +27,7 @@ def main(**kwargs):
 
 	# Set log
 	if not os.path.exists(os.path.dirname(log_config.log_file)):
-		os.makedirs(os.path.dirname(log_config.log_file))
+		os.makedirs(os.path.dirname(log_config.log_file), exist_ok=True)
 	logging.basicConfig(
 		level=logging.INFO, 
 		format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",

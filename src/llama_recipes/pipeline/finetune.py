@@ -54,7 +54,7 @@ def main(**kwargs):
 
     # Set log
     if not os.path.exists(os.path.dirname(log_config.log_file)):
-        os.makedirs(os.path.dirname(log_config.log_file))
+        os.makedirs(os.path.dirname(log_config.log_file), exist_ok=True)
     logging.basicConfig(
         level=logging.INFO, 
         format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
@@ -103,7 +103,7 @@ def main(**kwargs):
     if not train_config.enable_fsdp or rank == 0:
         if log_config.use_wandb:
             if not os.path.exists(log_config.wandb_dir):
-                os.makedirs(log_config.wandb_dir)
+                os.makedirs(log_config.wandb_dir, exist_ok=True)
             wandb_config={"train_config":vars(train_config), "fsdp_config":vars(fsdp_config), "model_config":vars(model_config), "log_config":vars(log_config)}
             wandb.init(dir=log_config.wandb_dir, entity=log_config.wandb_entity_name, project=log_config.wandb_project_name,name=log_config.wandb_exp_name ,config=wandb_config)
 

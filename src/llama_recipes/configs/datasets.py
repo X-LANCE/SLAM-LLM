@@ -27,9 +27,9 @@ class alpaca_dataset:
     
     
 @dataclass
-class custom_dataset:
-    dataset: str = "custom_dataset"
-    file: str = "examples/custom_dataset.py"
+class speech_dataset:
+    dataset: str = "speech_dataset"
+    file: str = "src/llama_recipes/datasets/speech_dataset.py:get_speech_dataset"
     train_split: str = "train"
     test_split: str = "validation"
     data_path: str = None
@@ -40,6 +40,22 @@ class custom_dataset:
     max_mel: int = None
     fix_length_audio: int = -1
 
+
+@dataclass
+class audio_dataset:
+    dataset: str = "audio_dataset"
+    file: str = "src/llama_recipes/datasets/audio_dataset.py:get_audio_dataset"
+    train_split: str = "train"
+    test_split: str = "validation"
+    data_path: str = None
+    fbank_mean: float = 15.41663
+    fbank_std: float = 6.55582
+    max_words: int = None
+    train_data_path: str = None
+    val_data_path: str = None
+    max_words: int = None
+    max_mel: int = None
+    fix_length_audio: int = -1
 
 
 @dataclass
