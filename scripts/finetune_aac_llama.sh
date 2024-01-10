@@ -1,7 +1,7 @@
 #!/bin/bash
 # export PYTHONPATH=/root/whisper:$PYTHONPATH
 export PYTHONPATH=/root/fairseq:$PYTHONPATH
-export CUDA_VISIBLE_DEVICES=0,1,2,3
+export CUDA_VISIBLE_DEVICES=0
 # export CUDA_LAUNCH_BLOCKING=1
 export OMP_NUM_THREADS=1
 
@@ -12,38 +12,38 @@ export OMP_NUM_THREADS=1
 
 cd /root/SLAM-LLM
 
-speech_encoder_path=/nfs/zhifu.gzf/ckpt/Whisper/large-v2.pt
+# speech_encoder_path=/nfs/zhifu.gzf/ckpt/Whisper/large-v2.pt
 # speech_encoder_path=/nfs/maziyang.mzy/models/Whisper/large-v2-qwen.pt
+audio_encoder_path=/nfs/maziyang.mzy/models/BEATs/BEATs_iter3_plus_AS2M.pt
 
-# llm_path=/nfs/zhifu.gzf/ckpt/Llama-2-7b-hf
+llm_path=/nfs/zhifu.gzf/ckpt/Llama-2-7b-hf
 # llm_path=/nfs/maziyang.mzy/models/vicuna-13b-v1.5/vicuna-13b-v1.5
-llm_path=/nfs/maziyang.mzy/models/vicuna-7b-v1.5
 
-output_dir=/nfs/maziyang.mzy/exps/vicuna-7b-v1.5-finetune-asr-ds5-proj2048-lr1e-4-whisper-prompt-padding0-20240107
+output_dir=/nfs/maziyang.mzy/exps/debug
 
 # -m debugpy --listen 5678 --wait-for-client
 if [[ $CUDA_VISIBLE_DEVICES != *","* ]]; then
 python -m debugpy --listen 5678 --wait-for-client src/llama_recipes/pipeline/finetune.py \
---model_name asr \
+--model_name aac \
 --freeze_encoder \
 --freeze_llm \
---llm_name vicuna-13b-v1.5 \
+--llm_name llama-2-7b-hf \
 --llm_path $llm_path \
---llm_dim 5120 \
---encoder_name whisper \
+--llm_dim 4096 \
+--encoder_name beats \
 --encoder_ds_rate 2 \
---encoder_path $speech_encoder_path \
---encoder_dim 1280 \
+--encoder_path $audio_encoder_path \
+--encoder_dim 768 \
 --encoder_projector linear \
 --encoder_projector_ds_rate 5 \
---dataset speech_dataset \
---speech_dataset.train_data_path /nfs/maziyang.mzy/data/librispeech/librispeech_train_960h.jsonl \
---speech_dataset.val_data_path /nfs/maziyang.mzy/data/librispeech/librispeech_dev_other_filtered.jsonl \
+--dataset audio_dataset \
+--audio_dataset.train_data_path /nfs/maziyang.mzy/data/librispeech/librispeech_train_960h.jsonl \
+--audio_dataset.val_data_path /nfs/maziyang.mzy/data/librispeech/librispeech_dev_other_filtered.jsonl \
 --batching_strategy custom \
 --num_epochs 100 \
 --batch_size_training 4 \
 --val_batch_size 4 \
---num_workers_dataloader 4 \
+--num_workers_dataloader 1 \
 --lr 1e-4 \
 --output_dir $output_dir \
 --metric acc \
@@ -61,29 +61,28 @@ python -m debugpy --listen 5678 --wait-for-client src/llama_recipes/pipeline/fin
 else
 torchrun \
 --nnodes 1 \
---nproc_per_node 4 \
+--nproc_per_node 2 \
 src/llama_recipes/pipeline/finetune.py \
---model_name asr \
+--model_name aac \
 --freeze_encoder \
 --freeze_llm \
---use_fp16 \
 --enable_fsdp \
---llm_name vicuna-7b-v1.5 \
+--llm_name llama-2-7b-hf \
 --llm_path $llm_path \
 --llm_dim 4096 \
---encoder_name whisper \
+--encoder_name beats \
 --encoder_ds_rate 2 \
---encoder_path $speech_encoder_path \
---encoder_dim 1280 \
+--encoder_path $audio_encoder_path \
+--encoder_dim 768 \
 --encoder_projector linear \
 --encoder_projector_ds_rate 5 \
---dataset speech_dataset \
---speech_dataset.train_data_path /nfs/maziyang.mzy/data/librispeech/librispeech_train_960h.jsonl \
---speech_dataset.val_data_path /nfs/maziyang.mzy/data/librispeech/librispeech_dev_other_filtered.jsonl \
+--dataset audio_dataset \
+--audio_dataset.train_data_path /nfs/maziyang.mzy/data/librispeech/librispeech_train_960h.jsonl \
+--audio_dataset.val_data_path /nfs/maziyang.mzy/data/librispeech/librispeech_dev_other_filtered.jsonl \
 --batching_strategy custom \
 --num_epochs 100 \
---batch_size_training 8 \
---val_batch_size 8 \
+--batch_size_training 4 \
+--val_batch_size 4 \
 --num_workers_dataloader 4 \
 --lr 1e-4 \
 --output_dir $output_dir \

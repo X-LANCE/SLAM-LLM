@@ -30,9 +30,9 @@ python src/llama_recipes/pipeline/inference_batch.py \
 --encoder_dim 1280 \
 --encoder_projector linear \
 --encoder_projector_ds_rate 5 \
---dataset custom_dataset \
---custom_dataset.file src/llama_recipes/datasets/speech_dataset_inference.py:get_audio_dataset \
---custom_dataset.val_data_path $val_data_path \
+--dataset speech_dataset \
+--speech_dataset.file src/llama_recipes/datasets/speech_dataset_inference.py:get_audio_dataset \
+--speech_dataset.val_data_path $val_data_path \
 --batching_strategy custom \
 --num_epochs 1 \
 --val_batch_size 4 \

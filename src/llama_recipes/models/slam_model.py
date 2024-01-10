@@ -12,7 +12,6 @@ from transformers import (
     LlamaTokenizer,
     LlamaConfig,
 )
-import whisper
 
 from llama_recipes.utils.config_utils import generate_peft_config
 from llama_recipes.utils.train_utils import print_module_size
@@ -22,7 +21,6 @@ from llama_recipes.utils.metric import compute_accuracy
 
 import logging
 logger = logging.getLogger(__name__)
-from llama_recipes.models.projector import EncoderProjectorConcat, EncoderProjectorCov1d, EncoderProjectorQFormer
 
 
 def setup_model(tokenizer, train_config, model_config, **kwargs):
@@ -37,34 +35,16 @@ def setup_tokenizer(train_config, model_config, **kwargs):
         return tokenizer
 
 
-def extract_variable_length_features(self, x: torch.Tensor):
-    """
-    x : torch.Tensor, shape = (batch_size, n_mels, n_ctx)
-        the mel spectrogram of the audio
-    """
-    x = F.gelu(self.conv1(x))
-    x = F.gelu(self.conv2(x))
-    x = x.permute(0, 2, 1)
-
-    # assert x.shape[1:] == self.positional_embedding.shape, "incorrect audio shape"
-    # x = (x + self.positional_embedding).to(x.dtype)
-    x = (x + self.positional_embedding[: x.shape[1]]).to(x.dtype)
-
-    for block in self.blocks:
-        x = block(x)
-
-    x = self.ln_post(x)
-    return x
-
 def setup_encoder(train_config, model_config, **kwargs):
     encoder_list = model_config.encoder_name.split(",")
     if len(encoder_list) == 1:
         encoder_name = encoder_list[0]
-        if encoder_name == "whisper" or "qwen-audio":
-            encoder = whisper.load_model(name=model_config.encoder_path, device='cpu').encoder #(FIX:MZY): put whisper encoder on cpu, which is ready for FSDP
-            encoder.extract_variable_length_features = types.MethodType(extract_variable_length_features, encoder)
-        if encoder_name == "audio-mae": #TODO
-            pass
+        if encoder_name == "whisper" or encoder_name == "qwen-audio":
+            from llama_recipes.models.encoder import WhisperWrappedEncoder
+            encoder = WhisperWrappedEncoder.load(model_config)
+        if encoder_name == "beats": 
+            from llama_recipes.models.encoder import BEATsEncoder
+            encoder = BEATsEncoder.load(model_config)
     print_module_size(encoder, encoder_name, int(os.environ["RANK"]) if train_config.enable_fsdp else 0)
 
     if train_config.freeze_encoder:
@@ -149,10 +129,13 @@ def setup_llm(train_config, model_config, **kwargs):
 
 def setup_encoder_projector(train_config, model_config, **kwargs):
     if model_config.encoder_projector == "linear":
+        from llama_recipes.models.projector import EncoderProjectorConcat
         encoder_projector = EncoderProjectorConcat(model_config)
     elif model_config.encoder_projector == "cov1d-linear":
+        from llama_recipes.models.projector import EncoderProjectorCov1d
         encoder_projector = EncoderProjectorCov1d(model_config)
     elif model_config.encoder_projector == "q-former":
+        from llama_recipes.models.projector import EncoderProjectorQFormer
         encoder_projector = EncoderProjectorQFormer(model_config)
     print_module_size(encoder_projector, model_config.encoder_projector, int(os.environ["RANK"]) if train_config.enable_fsdp else 0)
     return encoder_projector
@@ -196,16 +179,21 @@ class slam_model(nn.Module):
                 return_dict: Optional[bool] = None,
                 **kwargs,
                 ):
-        speech_mel = kwargs.get("speech_mel", None)
-        speech_mel_post_mask = kwargs.get("speech_mel_post_mask", None)
-        speech_mask = kwargs.get("speech_mask", None)
+        audio_mel = kwargs.get("audio_mel", None)
+        audio_mel_mask = kwargs.get("audio_mel_mask", None)
+        audio_mel_post_mask = kwargs.get("audio_mel_post_mask", None) # 2x downsample for whisper
+        audio_mask = kwargs.get("audio_mask", None)
 
         encoder_outs = None
-        if speech_mel is not None:
-            encoder_outs = self.encoder.extract_variable_length_features(speech_mel.permute(0, 2, 1)) # bs*seq*dim
+        if audio_mel is not None:
+            if self.model_config.encoder_name == "whisper":
+                encoder_outs = self.encoder.extract_variable_length_features(audio_mel.permute(0, 2, 1)) # bs*seq*dim
+            if self.model_config.encoder_name == "beats":
+                encoder_outs, audio_mel_post_mask = self.encoder.extract_features(audio_mel, audio_mel_mask) # bs*seq*dim
+            
             if self.model_config.encoder_projector == "q-former":
-                encoder_outs = self.encoder_projector(encoder_outs, speech_mel_post_mask)
-            else:
+                encoder_outs = self.encoder_projector(encoder_outs, audio_mel_post_mask)
+            if self.model_config.encoder_projector == "linear":
                 encoder_outs = self.encoder_projector(encoder_outs)
 
         if input_ids is not None:
@@ -217,11 +205,11 @@ class slam_model(nn.Module):
             else:
                 inputs_embeds = self.llm.model.model.model.embed_tokens(input_ids)
 
-        if speech_mask is not None:
+        if audio_mask is not None:
             batch_size, token_num, dims = inputs_embeds.shape
             _, l, _ = encoder_outs.shape
             encoder_outs_pad = F.pad(encoder_outs, (0, 0, 0, token_num-l, 0, 0), value=0.0)
-            inputs_embeds = encoder_outs_pad * speech_mask[:, :, None] + inputs_embeds * (~speech_mask[:, :, None])
+            inputs_embeds = encoder_outs_pad * audio_mask[:, :, None] + inputs_embeds * (~audio_mask[:, :, None])
         
         model_outputs = self.llm(inputs_embeds=inputs_embeds, attention_mask=attention_mask, labels=labels)
 
@@ -247,16 +235,21 @@ class slam_model(nn.Module):
                 return_dict: Optional[bool] = None,
                 **kwargs,
                 ):
-        speech_mel = kwargs.get("speech_mel", None)
-        speech_mel_post_mask = kwargs.get("speech_mel_post_mask", None)
-        speech_mask = kwargs.get("speech_mask", None)
+        audio_mel = kwargs.get("audio_mel", None)
+        audio_mel_mask = kwargs.get("audio_mel_mask", None)
+        audio_mel_post_mask = kwargs.get("audio_mel_post_mask", None) # 2x downsample for whisper
+        audio_mask = kwargs.get("audio_mask", None)
 
         encoder_outs = None
-        if speech_mel is not None:
-            encoder_outs = self.encoder.extract_variable_length_features(speech_mel.permute(0, 2, 1)) # bs*seq*dim
+        if audio_mel is not None:
+            if self.model_config.encoder_name == "whisper":
+                encoder_outs = self.encoder.extract_variable_length_features(audio_mel.permute(0, 2, 1)) # bs*seq*dim
+            if self.model_config.encoder_name == "beats":
+                encoder_outs, audio_mel_post_mask = self.encoder.extract_features(audio_mel, audio_mel_mask) # bs*seq*dim
+
             if self.model_config.encoder_projector == "q-former":
-                encoder_outs = self.encoder_projector(encoder_outs, speech_mel_post_mask)
-            else:
+                encoder_outs = self.encoder_projector(encoder_outs, audio_mel_post_mask)
+            if self.model_config.encoder_projector == "linear":
                 encoder_outs = self.encoder_projector(encoder_outs)
 
         if input_ids is not None:
@@ -268,11 +261,11 @@ class slam_model(nn.Module):
             else:
                 inputs_embeds = self.llm.model.model.model.embed_tokens(input_ids)
 
-        if speech_mask is not None:
+        if audio_mask is not None:
             batch_size, token_num, dims = inputs_embeds.shape
             _, l, _ = encoder_outs.shape
             encoder_outs_pad = F.pad(encoder_outs, (0, 0, 0, token_num-l, 0, 0), value=0.0)
-            inputs_embeds = encoder_outs_pad * speech_mask[:, :, None] + inputs_embeds * (~speech_mask[:, :, None])
+            inputs_embeds = encoder_outs_pad * audio_mask[:, :, None] + inputs_embeds * (~audio_mask[:, :, None])
 
         model_outputs = self.llm.generate(
             inputs_embeds=inputs_embeds,
@@ -311,11 +304,11 @@ class slam_model(nn.Module):
 
         device = kwargs.get("device", "cuda")
         assert os.path.exists(wav_path)
-        speech_raw = whisper.load_audio(wav_path)
-        # speech_raw = whisper.pad_or_trim(speech_raw)
-        speech_mel = whisper.log_mel_spectrogram(speech_raw).permute(1,0)[None, :, :].to(device)
+        audio_raw = whisper.load_audio(wav_path)
+        # audio_raw = whisper.pad_or_trim(audio_raw)
+        audio_mel = whisper.log_mel_spectrogram(audio_raw).permute(1,0)[None, :, :].to(device)
 
-        encoder_outs = self.encoder.extract_variable_length_features(speech_mel.permute(0, 2, 1))
+        encoder_outs = self.encoder.extract_variable_length_features(audio_mel.permute(0, 2, 1))
         encoder_outs = self.encoder_projector(encoder_outs)
 
         prompt = "USER: {}\n ASSISTANT:".format(prompt)
@@ -330,7 +323,7 @@ class slam_model(nn.Module):
         else:
             inputs_embeds = self.llm.model.model.model.embed_tokens(prompt_ids)
         
-        inputs_embeds = torch.cat((encoder_outs, inputs_embeds[None, :, :]), dim=1)  # [speech,prompt]
+        inputs_embeds = torch.cat((encoder_outs, inputs_embeds[None, :, :]), dim=1)  # [audio,prompt]
 
         attention_mask = torch.ones(inputs_embeds.size()[:-1], dtype=torch.long).to(inputs_embeds.device)
 
