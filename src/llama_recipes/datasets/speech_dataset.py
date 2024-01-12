@@ -45,15 +45,15 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
                     data_dict = json.loads(line.strip())
                     self.data_list.append(data_dict)
 
-        # debug
-        with open(dataset_config.train_data_path, encoding='utf-8') as fin:
-                for line in fin:
-                    data_dict = json.loads(line.strip())
-                    self.data_list.append(data_dict)
-        if split == "train":
-            self.data_list = self.data_list[:80]
-        else:
-            self.data_list = self.data_list[80:100]
+        # # debug
+        # with open(dataset_config.train_data_path, encoding='utf-8') as fin:
+        #         for line in fin:
+        #             data_dict = json.loads(line.strip())
+        #             self.data_list.append(data_dict)
+        # if split == "train":
+        #     self.data_list = self.data_list[:80]
+        # else:
+        #     self.data_list = self.data_list[80:100]
 
     def get_source_len(self, data_dict):
         return data_dict["source_len"]
@@ -72,8 +72,8 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         task = data_dict.get("prompt", "ASR")
         
         audio_raw = whisper.load_audio(audio_path)
-        # audio_raw = whisper.pad_or_trim(audio_raw)
-        # audio_raw = np.concatenate((np.zeros(random.randint(8000, 16000)), audio_raw, np.zeros(random.randint(8000, 16000)))).astype(audio_raw.dtype)[:16000*30]
+        audio_raw = whisper.pad_or_trim(audio_raw)
+        # audio_raw = np.concatenate((np.zeros(random.randint(0, 16000)), audio_raw, np.zeros(random.randint(0, 16000)))).astype(audio_raw.dtype)[:16000*30]
         audio_mel = whisper.log_mel_spectrogram(audio_raw).permute(1, 0)
 
         prompt = "Transcribe speech to text. Output the transcription directly without redundant content. Ensure that the output is not duplicated. "

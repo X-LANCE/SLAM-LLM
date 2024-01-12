@@ -35,6 +35,10 @@ def compute_wer(ref_file,
     for hyp_key in hyp_dict:
         if hyp_key in ref_dict:
             out_item = compute_wer_by_line(hyp_dict[hyp_key], ref_dict[hyp_key])
+            # if out_item['ins'] > 10 or out_item['del'] > 10:
+            #     print(hyp_key + print_cer_detail(out_item))
+            #     print("ref:" + '\t' + " ".join(list(map(lambda x: x.lower(), ref_dict[hyp_key]))))
+            #     print("hyp:" + '\t' + " ".join(list(map(lambda x: x.lower(), hyp_dict[hyp_key]))))
             rst['Wrd'] += out_item['nwords']
             rst['Corr'] += out_item['cor']
             rst['wrong_words'] += out_item['wrong']
