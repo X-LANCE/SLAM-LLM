@@ -45,6 +45,9 @@ def setup_encoder(train_config, model_config, **kwargs):
         if encoder_name == "beats": 
             from llama_recipes.models.encoder import BEATsEncoder
             encoder = BEATsEncoder.load(model_config)
+        if encoder_name == "moco_wav2vec2":
+            from llama_recipes.models.encoder import AVEncoder
+            encoder = AVEncoder.load(model_config)
     print_module_size(encoder, encoder_name, int(os.environ["RANK"]) if train_config.enable_fsdp else 0)
 
     if train_config.freeze_encoder:
@@ -184,13 +187,25 @@ class slam_model(nn.Module):
         audio_mel_post_mask = kwargs.get("audio_mel_post_mask", None) # 2x downsample for whisper
         audio_mask = kwargs.get("audio_mask", None)
 
+        audio = kwargs.get("audio", None)  #torch.Size([2, 96480])
+        audiomask = kwargs.get("audiomask", None)  #删 #torch.Size([2, 96480])
+        visual = kwargs.get("visual", None)  #torch.Size([2, 151, 1, 112, 112])
+        vis_len = kwargs.get("vis_len", None)  #tensor([ 77, 151], device='cuda:0', dtype=torch.int32)
+        maskw2v = kwargs.get("maskw2v", None)  #True
+        targetoutBatch =  kwargs.get("targetoutBatch", None)  #torch.Size([2, 29])
+        targetLenBatch =  kwargs.get("targetLenBatch", None)  #tensor([18, 29], device='cuda:0')
+
+
+
         encoder_outs = None
-        if audio_mel is not None:
+        if audio_mel is not None or audio is not None:
             if self.model_config.encoder_name == "whisper":
                 encoder_outs = self.encoder.extract_variable_length_features(audio_mel.permute(0, 2, 1)) # bs*seq*dim
             if self.model_config.encoder_name == "beats":
                 encoder_outs, audio_mel_post_mask = self.encoder.extract_features(audio_mel, audio_mel_mask) # bs*seq*dim
-            
+            if self.model_config.encoder_name == "moco_wav2vec2":
+                encoder_outs , inputLenBatch, audio_mel_post_mask = self.encoder((audio, audiomask, visual, vis_len) ,maskw2v) # bs*seq*dim
+
             if self.model_config.encoder_projector == "q-former":
                 encoder_outs = self.encoder_projector(encoder_outs, audio_mel_post_mask)
             if self.model_config.encoder_projector == "linear":

@@ -43,3 +43,15 @@ class BEATsEncoder:
         BEATs_model.load_state_dict(checkpoint['model'])
 
         return BEATs_model
+
+
+class AVEncoder:
+
+    @classmethod
+    def load(cls, model_config):
+        from .AV.av_net import AVNet
+        avnet = AVNet(model_config)
+        checkpoint = torch.load(model_config.TRAIN_LRS3_MODEL_FILE)
+        avnet.load_state_dict(checkpoint['state_dict'],strict=False)
+ 
+        return avnet

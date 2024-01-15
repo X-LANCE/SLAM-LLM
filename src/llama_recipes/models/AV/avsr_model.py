@@ -15,7 +15,7 @@ import whisper
 from llama_recipes.utils.config_utils import generate_peft_config
 from llama_recipes.utils.train_utils import print_model_size
 
-from .av_net import AVNet
+from .AV.av_net import AVNet
 from .slam_model import setup_llm
 from torch.nn.utils.rnn import pad_sequence
 import copy
@@ -35,15 +35,15 @@ class avsrllm_model(nn.Module):
         super().__init__()
 
         self.IGNORE_INDEX = -100 # The default setting in CrossEntropyLoss
-        
-        # audio-visual 
+         
+        # audio-visual   ↓
         self.avnet=AVNet(model_config)
         
-        # load_ckpt
+        # load_ckpt ↑
         checkpoint = torch.load(model_config.TRAIN_LRS3_MODEL_FILE)
         self.avnet.load_state_dict(checkpoint['state_dict'],strict=False)    # 最终输出ctc/attention的模块没有用到
 
-        # freeze
+        # freeze 外面都有
         for name, param in self.avnet.named_parameters(): 
             param.requires_grad = False       
         self.avnet.eval()
@@ -52,7 +52,7 @@ class avsrllm_model(nn.Module):
         self.llm = setup_llm(train_config, model_config, **kwargs)
 
         # projector
-        self.feature_projector = nn.Linear(model_config.DMODEL, self.llm.config.hidden_size)  #(512,4096)
+        self.feature_projector = nn.Linear(model_config.DMODEL, self.llm.config.hidden_size)  #(512,4096)  好像有遗留问题 TO DO
 
         # tokenizer
         self.tokenizer = tokenizer   #tokenizer = LlamaTokenizer.from_pretrained(model_config.llm_path) 不需要保存
