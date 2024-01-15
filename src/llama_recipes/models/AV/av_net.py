@@ -97,12 +97,18 @@ class AVNet(nn.Module):
     def forward(self, inputBatch, maskw2v):
         audioBatch, audMask, videoBatch, vidLen = inputBatch  #torch.Size([2, 32480]),torch.Size([2, 32480]),torch.Size([2, 52, 1, 112, 112]),[52,47]  # audMask尾部有一堆true表示mask，其余都是false
         if not self.modal == "VO":
-            result = self.wav2vecModel.extract_features(audioBatch, padding_mask=audMask, mask=maskw2v)  #new_version
-            audioBatch,audMask =result["x"],result["padding_mask"]  #torch.Size([2, 101, 1024]), torch.Size([2, 101])   #形状变了 所以还得跟形状保持一致
-            if audMask==None:
-                audMask= torch.full( (audioBatch.shape[0], audioBatch.shape[1]), False, device=audioBatch.device ) #TODO
+            try:
+                result = self.wav2vecModel.extract_features(audioBatch, padding_mask=audMask, mask=maskw2v)  #new_version  这一步/320 并向下取整 
+                audioBatch,audMask =result["x"],result["padding_mask"]  #torch.Size([2, 101, 1024]), torch.Size([2, 101])   #形状变了 所以还得跟形状保持一致
+                if audMask==None:
+                    audMask= torch.full( (audioBatch.shape[0], audioBatch.shape[1]), False, device=audioBatch.device ) #TODO
 
-            audLen = torch.sum(~audMask, dim=1)  #tensor([101,  90], device='cuda:0')
+                audLen = torch.sum(~audMask, dim=1)  #tensor([101,  90], device='cuda:0')
+            except Exception as e:
+                print(e)
+                print(audioBatch.shape)
+                print(audMask)
+
         else:
             audLen = None
 
@@ -111,8 +117,9 @@ class AVNet(nn.Module):
             videoBatch = self.visualModel(videoBatch, vidLen.long())  #torch.Size([99, 2048])
             videoBatch = list(torch.split(videoBatch, vidLen.tolist(), dim=0))  #拆成一个list [(52,2048), (47, 2048)]
 
+        #print(audioBatch.shape,audLen,videoBatch[0].shape,videoBatch[1].shape, videoBatch[2].shape,videoBatch[3].shape,vidLen)
         audioBatch, videoBatch, inputLenBatch, mask = self.makePadding(audioBatch, audLen, videoBatch, vidLen)  #[2, 160, 1024], torch.Size([2, 80, 2048]), tensor([80, 80],  (2,80) #这一步比较关键
-
+        #print( max(max(vidLen).item()*2, max(audLen).item()), audioBatch.shape, videoBatch.shape, inputLenBatch, mask.shape)
         if isinstance(self.maskedLayerNorm, MaskedLayerNorm):
             self.maskedLayerNorm.SetMaskandLength(mask, inputLenBatch)
 
@@ -142,7 +149,9 @@ class AVNet(nn.Module):
             jointBatch = self.EncoderPositionalEncoding(jointBatch)
             jointBatch = self.jointEncoder(jointBatch, src_key_padding_mask=mask) #[80, 2, 1024]
 
+        jointBatch = jointBatch.transpose(0, 1)  #(2,129,1024)  #new
         return jointBatch, inputLenBatch, mask  #[80, 2, 1024], [80,80], [2,80] mask全是false
+
 
     def makeMaskfromLength(self, maskShape, maskLength, maskDevice):
         mask = torch.zeros(maskShape, device=maskDevice)
@@ -186,28 +195,30 @@ class AVNet(nn.Module):
             mask = self.makeMaskfromLength(videoBatch.shape[:-1], inputLenBatch, videoBatch.device)
 
         else:
-            dismatch = audLen - 2 * vidLen
-            vidPadding = torch.ceil(torch.div(dismatch, 2)).int()
-            vidPadding = vidPadding * (vidPadding > 0)
-            audPadding = 2 * vidPadding - dismatch
+            dismatch = audLen - 2 * vidLen #tensor([0, 1, 0, 2], device='cuda:0')
+            vidPadding = torch.ceil(torch.div(dismatch, 2)).int()   #tensor([0.0000, 0.5000, 0.0000, 1.0000], device='cuda:0')  tensor([0, 1, 0, 1], device='cuda:0', dtype=torch.int32)
+            vidPadding = vidPadding * (vidPadding > 0)  #tensor([0, 1, 0, 1], device='cuda:0', dtype=torch.int32)
+            audPadding = 2 * vidPadding - dismatch  #tensor([0, 1, 0, 0], device='cuda:0')
 
-            mask = (vidPadding + vidLen) > self.reqInpLen
-            vidPadding = mask * vidPadding + (~mask) * (self.reqInpLen - vidLen)
-            mask = (audPadding + audLen) > 2 * self.reqInpLen
-            audPadding = mask * audPadding + (~mask) * (2 * self.reqInpLen - audLen)
+            mask = (vidPadding + vidLen) > self.reqInpLen   #80  tensor([False,  True,  True,  True], device='cuda:0')
+            vidPadding = mask * vidPadding + (~mask) * (self.reqInpLen - vidLen) #tensor([21,  1,  0,  1], device='cuda:0', dtype=torch.int32)
+            mask = (audPadding + audLen) > 2 * self.reqInpLen  #tensor([False,  True,  True,  True], device='cuda:0')
+            audPadding = mask * audPadding + (~mask) * (2 * self.reqInpLen - audLen)  #tensor([42,  1,  0,  0], device='cuda:0')
 
-            vidLeftPadding = torch.floor(torch.div(vidPadding, 2)).int()
-            vidRightPadding = torch.ceil(torch.div(vidPadding, 2)).int()
-            audLeftPadding = torch.floor(torch.div(audPadding, 2)).int()
-            audRightPadding = torch.ceil(torch.div(audPadding, 2)).int()
-
-            audioBatch = audioBatch.unsqueeze(1).unsqueeze(1)
-            audioBatch = list(audioBatch)
+            vidLeftPadding = torch.floor(torch.div(vidPadding, 2)).int() #tensor([10,  0,  0,  0], device='cuda:0', dtype=torch.int32)
+            vidRightPadding = torch.ceil(torch.div(vidPadding, 2)).int() #tensor([11,  1,  0,  1], device='cuda:0', dtype=torch.int32)
+            audLeftPadding = torch.floor(torch.div(audPadding, 2)).int() #tensor([21,  0,  0,  0], device='cuda:0', dtype=torch.int32)
+            audRightPadding = torch.ceil(torch.div(audPadding, 2)).int() #tensor([21,  1,  0,  0], device='cuda:0', dtype=torch.int32)
+            # input audioBatch, torch.Size([4, 284, 1024])
+            audioBatch = audioBatch.unsqueeze(1).unsqueeze(1) #torch.Size([4, 1, 1, 284, 1024])
+            audioBatch = list(audioBatch)  #torch.Size([1, 1, 284, 1024]) 一个list
             for i, _ in enumerate(audioBatch):
                 pad = nn.ReplicationPad2d(padding=(0, 0, audLeftPadding[i], audRightPadding[i]))
-                audioBatch[i] = pad(audioBatch[i][:, :, :audLen[i]]).squeeze(0).squeeze(0)
+                audioBatch[i] = pad(audioBatch[i][:, :, :audLen[i]]).squeeze(0).squeeze(0)  #audioBatch[i].shape, torch.Size([1, 1, 284, 1024])
+                # print(i,audioBatch[i].shape)
                 pad = nn.ReplicationPad2d(padding=(0, 0, vidLeftPadding[i], vidRightPadding[i]))
                 videoBatch[i] = pad(videoBatch[i].unsqueeze(0).unsqueeze(0)).squeeze(0).squeeze(0)
+                # print(i,videoBatch[i].shape)
 
             audioBatch = pad_sequence(audioBatch, batch_first=True)
             videoBatch = pad_sequence(videoBatch, batch_first=True)
