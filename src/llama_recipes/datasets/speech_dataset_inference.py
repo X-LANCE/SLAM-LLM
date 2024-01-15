@@ -127,9 +127,9 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         for line, sample in enumerate(samples):
             audio_mel_post_mask[line, :(sample['audio_mel'].shape[0] + 1) // 2] = 1
     
-        audio_mask = torch.zeros_like(attention_mask)
+        modality_mask = torch.zeros_like(attention_mask)
         for line, sample in enumerate(samples):
-            audio_mask[line, :sample['audio_length']] = 1
+            modality_mask[line, :sample['audio_length']] = 1
         keys = [s['key'] for s in samples]
         targets = [s['target'] for s in samples]
     
@@ -138,7 +138,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
             'attention_mask': attention_mask,
             'audio_mel': audio_mel,
             'audio_mel_post_mask': audio_mel_post_mask,
-            'audio_mask': audio_mask,
+            'modality_mask': modality_mask,
             'keys': keys,
             'targets': targets
         }
