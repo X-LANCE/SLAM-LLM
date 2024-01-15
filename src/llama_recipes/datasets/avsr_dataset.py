@@ -326,7 +326,7 @@ class AVSRDataset(Dataset):
 
             "targetoutBatch": targetoutBatch,  #torch.Size([4, 50])
             "targetLenBatch": targetLenBatch.long(), #torch.Size([4])
-            'maskw2v': True,
+            'maskw2v': False,
         }     
 
     def pad(self, sequence, max_length, padding_idx=0):

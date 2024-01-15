@@ -74,13 +74,13 @@ src/llama_recipes/pipeline/finetune.py \
 --avsr_dataset.file src/llama_recipes/datasets/avsr_dataset.py:get_audio_dataset \
 --batching_strategy custom \
 --num_epochs 20 \
---batch_size_training 2 \
+--batch_size_training 8 \
 --val_batch_size 2 \
---num_workers_dataloader 2 \
+--num_workers_dataloader 0 \
 --lr 1e-4 \
 --output_dir $output_dir \
 --metric acc \
---log_file "/root/SLAM-LLM/log/second_try.log" \
+--log_file "/root/SLAM-LLM/log/third_try.log" \
 --use_wandb \
 --wandb_dir $output_dir \
 --wandb_entity_name yanghaha \
