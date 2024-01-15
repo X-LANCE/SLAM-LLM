@@ -1,19 +1,19 @@
 #!/bin/bash
 #export PYTHONPATH=/root/whisper:$PYTHONPATH
-export CUDA_VISIBLE_DEVICES=1
+export CUDA_VISIBLE_DEVICES=7
 # export CUDA_LAUNCH_BLOCKING=1
 
 cd /root/SLAM-LLM
 
-speech_encoder_path=/nfs/zhifu.gzf/ckpt/Whisper/large-v2.pt
-# speech_encoder_path=/nfs/maziyang.mzy/models/Whisper/large-v2-qwen.pt
+# speech_encoder_path=/nfs/zhifu.gzf/ckpt/Whisper/large-v2.pt
+speech_encoder_path=/nfs/maziyang.mzy/models/Whisper/large-v2-qwen.pt
 
 # llm_path=/nfs/zhifu.gzf/ckpt/Llama-2-7b-hf
-llm_path=/nfs/maziyang.mzy/models/Llama-2-7b-chat-hf
-# llm_path=/nfs/maziyang.mzy/models/vicuna-7b-v1.5
+# llm_path=/nfs/maziyang.mzy/models/Llama-2-7b-chat-hf
+llm_path=/nfs/maziyang.mzy/models/vicuna-7b-v1.5
 
-output_dir=/nfs/maziyang.mzy/exps/llama-2-chat-hf-finetune-asr-ds5-proj2048-lr1e-4-whisper-prompt-padding30-20240111
-ckpt_path=$output_dir/asr/3
+output_dir=/nfs/maziyang.mzy/exps/vicuna-7b-v1.5-finetune-asr-ds5-proj2048-lr1e-4-qwen-prompt-padding30-20240113
+ckpt_path=$output_dir/asr/2
 # peft_ckpt=/nfs/maziyang.mzy/exps/llama-2-hf-finetune-asr-ds5-proj2048-lr1e-4-whisper-lora-prompt-paddinglr-20240102/asr/4
 val_data_path=/nfs/maziyang.mzy/data/librispeech/librispeech_test_other_filtered.jsonl
 decode_log=$ckpt_path/decode_log_test_other_beam4_repetition_penalty1
@@ -22,7 +22,7 @@ decode_log=$ckpt_path/decode_log_test_other_beam4_repetition_penalty1
 python src/llama_recipes/pipeline/inference_batch.py \
 --model_name asr \
 --freeze_encoder \
---llm_name llama-2-7b-chat-hf \
+--llm_name vicuna-7b-v1.5 \
 --llm_path $llm_path \
 --llm_dim 4096 \
 --encoder_name whisper \
