@@ -252,11 +252,6 @@ class AVSRDataset(Dataset):
         attention_mask = torch.stack([self.pad(s['attention_mask'], input_ids_max_length, False)
                                       for s in samples])
 
-        # audio_length_pre_max_length = max([s['audio_length_pre'].shape[0] for s in samples])  #这段好像不需要
-        # audio_mel_post_mask = torch.zeros(len(samples), (audio_length_pre_max_length + 1) // 2) # ad-hoc for whisper for 2x downsample from mel to feats
-        # for line, sample in enumerate(samples):
-        #     audio_mel_post_mask[line, :(sample['audio_mel'].shape[0] + 1) // 2] = 1
-
         audio_mask = torch.zeros_like(attention_mask)
         for line, sample in enumerate(samples):
             audio_mask[line, :sample['audio_length']] = 1   #downsample 再/5

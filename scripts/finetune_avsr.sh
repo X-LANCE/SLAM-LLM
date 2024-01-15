@@ -15,8 +15,8 @@ cd /root/SLAM-LLM
 # speech_encoder_path= TODO!
 
 
-# llm_path=/nfs/maziyang.mzy/models/vicuna-7b-v1.5
-llm_path=/nfs/maziyang.mzy/models/vicuna-13b-v1.5
+llm_path=/nfs/maziyang.mzy/models/vicuna-7b-v1.5
+# llm_path=/nfs/maziyang.mzy/models/vicuna-13b-v1.5
 
 output_dir=/nfs/yangguanrou.ygr/vicuna-13b-v1.5-finetune-avsr-20230115
 
@@ -28,7 +28,7 @@ python src/llama_recipes/pipeline/finetune.py \
 --freeze_llm \
 --llm_name vicuna-13b-v1.5 \
 --llm_path $llm_path \
---llm_dim 5120 \
+--llm_dim 4096 \
 --encoder_name moco_wav2vec2 \
 --encoder_ds_rate 2 \
 --encoder_dim 512 \
@@ -38,7 +38,7 @@ python src/llama_recipes/pipeline/finetune.py \
 --avsr_dataset.file src/llama_recipes/datasets/avsr_dataset.py:get_audio_dataset \
 --batching_strategy custom \
 --num_epochs 20 \
---batch_size_training 2 \
+--batch_size_training 6 \
 --val_batch_size 2 \
 --num_workers_dataloader 2 \
 --lr 1e-4 \
@@ -64,7 +64,7 @@ src/llama_recipes/pipeline/finetune.py \
 --enable_fsdp \
 --llm_name vicuna-13b-v1.5 \
 --llm_path $llm_path \
---llm_dim 5120 \
+--llm_dim 4096 \
 --encoder_name moco_wav2vec2 \
 --encoder_ds_rate 2 \
 --encoder_dim 512 \
@@ -101,3 +101,7 @@ fi
 # 没用 encoder_ds_rate
 
 # 1.15
+
+# 7b batch size 开到2 ok的
+
+#  6 2 0 可以
