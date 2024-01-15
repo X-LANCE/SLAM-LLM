@@ -207,14 +207,14 @@ class slam_model(nn.Module):
                 encoder_outs , inputLenBatch, audio_mel_post_mask = self.encoder((audio, audiomask, visual, vis_len) ,maskw2v) # bs*seq*dim
 
             if self.model_config.encoder_projector == "q-former":
-                encoder_outs = self.encoder_projector(encoder_outs, audio_mel_post_mask)  
+                encoder_outs = self.encoder_projector(encoder_outs, audio_mel_post_mask)
             if self.model_config.encoder_projector == "linear":
-                encoder_outs = self.encoder_projector(encoder_outs)  #torch.Size([2, 16, 5120])
+                encoder_outs = self.encoder_projector(encoder_outs)
 
         if input_ids is not None:
             input_ids[input_ids == -1] = 0
             if hasattr(self.llm.model, "embed_tokens"):
-                inputs_embeds = self.llm.model.embed_tokens(input_ids)  #torch.Size([2, 74, 4096])
+                inputs_embeds = self.llm.model.embed_tokens(input_ids)
             elif hasattr(self.llm.model.model, "embed_tokens"):
                 inputs_embeds = self.llm.model.model.embed_tokens(input_ids)
             else:
@@ -223,8 +223,8 @@ class slam_model(nn.Module):
         if audio_mask is not None:
             batch_size, token_num, dims = inputs_embeds.shape
             _, l, _ = encoder_outs.shape
-            encoder_outs_pad = F.pad(encoder_outs, (0, 0, 0, token_num-l, 0, 0), value=0.0)  #torch.Size([2, 74, 5120])  #len上padding
-            inputs_embeds = encoder_outs_pad * audio_mask[:, :, None] + inputs_embeds * (~audio_mask[:, :, None])  #tensor(16, device='cuda:0')
+            encoder_outs_pad = F.pad(encoder_outs, (0, 0, 0, token_num-l, 0, 0), value=0.0)
+            inputs_embeds = encoder_outs_pad * audio_mask[:, :, None] + inputs_embeds * (~audio_mask[:, :, None])
         
         model_outputs = self.llm(inputs_embeds=inputs_embeds, attention_mask=attention_mask, labels=labels)
 

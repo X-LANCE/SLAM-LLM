@@ -13,11 +13,11 @@ class EncoderProjectorConcat(nn.Module):
         self.linear2 = nn.Linear(2048, config.llm_dim)
 
     def forward(self, x):
-        batch_size, seq_len, dim = x.size()  #2,151,512
-        num_frames_to_discard = seq_len % self.k #1
+        batch_size, seq_len, dim = x.size()
+        num_frames_to_discard = seq_len % self.k
         if num_frames_to_discard > 0:
-            x = x[:, :-num_frames_to_discard, :] 
-        seq_len = x.size(1) #150
+            x = x[:, :-num_frames_to_discard, :]
+        seq_len = x.size(1)
         
         x = x.contiguous()
         x = x.view(batch_size, seq_len // self.k, dim * self.k) 
