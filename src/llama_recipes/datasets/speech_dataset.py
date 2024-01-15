@@ -68,8 +68,8 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
     def __getitem__(self, index):
         data_dict = self.data_list[index]
         audio_path = data_dict.get("source")
-        target = data_dict.get("target", None)  #'ONE AH LITTLE RECKS THE LABORER HOW NEAR HIS WORK IS HOLDING HIM TO GOD THE LOVING LABORER THROUGH SPACE AND TIME AFTER ALL NOT TO CREATE ONLY OR FOUND ONLY'
-        task = data_dict.get("prompt", "ASR") #'<ASR>'
+        target = data_dict.get("target", None)
+        task = data_dict.get("prompt", "ASR")
         
         audio_raw = whisper.load_audio(audio_path)
         audio_raw = whisper.pad_or_trim(audio_raw)
@@ -151,7 +151,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
     
         audio_mask = torch.zeros_like(attention_mask)
         for line, sample in enumerate(samples):
-            audio_mask[line, :sample['audio_length']] = 1   #downsample 再/5
+            audio_mask[line, :sample['audio_length']] = 1
     
         return {
             'input_ids': input_ids,
