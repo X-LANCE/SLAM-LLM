@@ -53,7 +53,7 @@ def main(**kwargs):
     update_config((train_config, fsdp_config, model_config, log_config), **kwargs)
 
     # Set log
-    if not os.path.exists(os.path.dirname(log_config.log_file)):
+    if not os.path.exists(os.path.dirname(log_config.log_file)): #x
         os.makedirs(os.path.dirname(log_config.log_file), exist_ok=True)
     logging.basicConfig(
         level=logging.INFO, 
@@ -86,7 +86,7 @@ def main(**kwargs):
     torch.manual_seed(train_config.seed)
     random.seed(train_config.seed)
 
-    if train_config.enable_fsdp:
+    if train_config.enable_fsdp: #x
         setup()
         # torchrun specific
         local_rank = int(os.environ["LOCAL_RANK"])
@@ -94,13 +94,13 @@ def main(**kwargs):
         world_size = int(os.environ["WORLD_SIZE"])
         logger.info(f"local_rank: {local_rank}, rank: {rank}, world_size: {world_size}")
 
-    if torch.distributed.is_initialized():
+    if torch.distributed.is_initialized(): #x
         torch.cuda.set_device(local_rank)
         clear_gpu_cache(local_rank)
         setup_environ_flags(rank)
 
     # Set wandb
-    if not train_config.enable_fsdp or rank == 0:
+    if not train_config.enable_fsdp or rank == 0: #x
         if log_config.use_wandb:
             if not os.path.exists(log_config.wandb_dir):
                 os.makedirs(log_config.wandb_dir, exist_ok=True)

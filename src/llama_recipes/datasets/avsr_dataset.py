@@ -5,12 +5,17 @@ from torchvision import transforms
 
 import random
 import torch
+import math
+import copy
 
 import cv2 as cv
 from torch.nn.utils.rnn import pad_sequence
 
 import logging
 logger = logging.getLogger(__name__)
+
+from llama_recipes.utils.compute_utils import calculate_output_length_1d
+import torch.nn as nn
 
 class AVSRDataset(Dataset):
     def __init__(self, dataset_config, tokenizer=None, split='train'):
@@ -79,6 +84,12 @@ class AVSRDataset(Dataset):
                 Normalize(mean=[0.4161], std=[0.1688])
             ])
 
+        # LLM new
+        self.IGNORE_INDEX = -100  # The default setting in CrossEntropyLoss
+        self.prompt_template = "USER: {}\n ASSISTANT:"
+        self.answer_template = "{}"
+        self.reqInpLen = dataset_config.reqInpLen
+
     def open_h5(self):
         self.h5 = h5py.File(self.h5file, "r")
 
@@ -118,17 +129,107 @@ class AVSRDataset(Dataset):
 
         if index < 118516:     #原本是96318   查过了 这个数确实是lrs2的那个行数 也就是文件数  原本应该是pretrain处理的 有一部分搞到main处理了 所以没有crop 导致超过500
             #inp, trgtin, trgtout, trgtLen, trgttext  = self.prepare_pretrain_input(index, self.modal, self.h5, targetFile, self.charToIx, self.transform, noise, self.noiseSNR, (3, 21), 160)
-            inp, trgtin, trgtout, trgtLen  = self.prepare_pretrain_input(index, self.modal, self.h5, targetFile, self.charToIx, self.transform, noise, self.noiseSNR, (3, 21), 160)
+            inp, trgtin, trgtout, trgtLen, target = self.prepare_pretrain_input(index, self.modal, self.h5, targetFile, self.charToIx, self.transform, noise, self.noiseSNR, (3, 21), 160)
             if inp==0 and trgtin ==0 and  trgtout ==0 and trgtLen==0:
                 index+=1
                 targetFile = self.datalist[index] + ".txt"
                 #inp, trgtin, trgtout, trgtLen, trgttext = self.prepare_pretrain_input(index, self.modal, self.h5, targetFile,self.charToIx, self.transform, noise, self.noiseSNR, (3, 21), 160)  #就只是往后挪了一格 很弱
-                inp, trgtin, trgtout, trgtLen = self.prepare_pretrain_input(index, self.modal, self.h5, targetFile,self.charToIx, self.transform, noise, self.noiseSNR, (3, 21), 160)  #就只是往后挪了一格 很弱
+                inp, trgtin, trgtout, trgtLen,target = self.prepare_pretrain_input(index, self.modal, self.h5, targetFile,self.charToIx, self.transform, noise, self.noiseSNR, (3, 21), 160)  #就只是往后挪了一格 很弱
         else:
             #inp, trgtin, trgtout, trgtLen, trgttext = self.prepare_main_input(index, self.modal, self.h5, targetFile, self.charToIx, self.transform, noise, self.noiseSNR)
-            inp, trgtin, trgtout, trgtLen = self.prepare_main_input(index, self.modal, self.h5, targetFile, self.charToIx, self.transform, noise, self.noiseSNR)                                                  
+            inp, trgtin, trgtout, trgtLen,target = self.prepare_main_input(index, self.modal, self.h5, targetFile, self.charToIx, self.transform, noise, self.noiseSNR)   
 
-        return inp, trgtin, trgtout, trgtLen  #, trgttext   #VO (none,(72,1,112,112) )
+
+        # new!
+        audio_raw = inp[0]  #cpu torch.Size([48800])
+        visual_raw = inp[1]  #cpu torch.Size([77, 1, 112, 112])
+
+        prompt = "Transcribe video to text. Output the transcription directly without redundant content. Ensure that the output is not duplicated. "
+
+        prompt = self.prompt_template.format(prompt)
+        answer = self.answer_template.format(target)
+
+        prompt_ids = self.tokenizer.encode(prompt)
+        prompt_length = len(prompt_ids)
+        #audio_length, visual_length,inputLen = self.calculate_output_length(audio_raw,visual_raw)
+        audio_length_pre = self.calculate_output_length(audio_raw,visual_raw)  #video  #tensor(80)
+        audio_length = audio_length_pre // 5 # ad-hoc for 5x fc downsample  #tensor(16)
+        audio_pseudo = torch.full((audio_length,), -1) # placeholder
+
+        example = prompt + answer  # FIX(MZY): avoid putting a bos token before answer.
+        example_ids = self.tokenizer.encode(example)  # [prompt,answer]
+        example_ids.append(self.tokenizer.eos_token_id)  # [prompt,answer,eos]
+        example_ids = torch.tensor(
+            example_ids, dtype=torch.int64
+        )
+        example_ids = torch.cat((audio_pseudo, example_ids))  # [audio,prompt,answer,eos]
+
+        labels_ids = copy.deepcopy(example_ids)  # [audio,prompt,answer,eos]
+        labels_ids[:audio_length + prompt_length] = -1  # [-1,-1,answer,eos];
+        example_mask = example_ids.ge(-1)  # FIX(GZF): [True,True,True,True]
+
+        label_mask = labels_ids.ge(0)  # [False,False,True,True]
+        example_ids[~example_mask] = 0  # [audio,prompt,answer,eos]
+        labels_ids[~label_mask] = self.IGNORE_INDEX  # [-100,-100,answer,eos]
+
+        return {
+            "input_ids": example_ids,
+            "labels": labels_ids,
+            "attention_mask": example_mask,
+            # 'audio_mel': audio_mel,   
+            'audio_length': audio_length,
+
+            'inp':inp,
+            'trgtin': trgtin,
+            'trgtout': trgtout,
+            'trgtLen':trgtLen,
+
+            'audio_length_pre':audio_length_pre,
+        }
+                                                  
+
+        #return inp, trgtin, trgtout, trgtLen  #, trgttext   #VO (none,(72,1,112,112) )
+
+    def calculate_output_length(self,audio_raw,visual_raw):
+        # 过wav2vec2
+        audio_len = audio_raw.shape[0]
+        audio_len = math.floor(audio_len/320)  #152
+
+        # visual 没有变
+        visual_len= visual_raw.shape[0] #77
+
+        audLen = torch.tensor(audio_len)
+        vidLen = torch.tensor(visual_len)
+
+        dismatch = audLen - 2 * vidLen #tensor([0, 1, 0, 2], device='cuda:0')
+        vidPadding = torch.ceil(torch.div(dismatch, 2)).int()   #tensor([0.0000, 0.5000, 0.0000, 1.0000], device='cuda:0')  tensor([0, 1, 0, 1], device='cuda:0', dtype=torch.int32)
+        vidPadding = vidPadding * (vidPadding > 0)  #tensor([0, 1, 0, 1], device='cuda:0', dtype=torch.int32)
+        audPadding = 2 * vidPadding - dismatch  #tensor([0, 1, 0, 0], device='cuda:0')
+
+        mask = (vidPadding + vidLen) > self.reqInpLen   #80  tensor([False,  True,  True,  True], device='cuda:0')
+        vidPadding = mask * vidPadding + (~mask) * (self.reqInpLen - vidLen) #tensor([21,  1,  0,  1], device='cuda:0', dtype=torch.int32)
+        mask = (audPadding + audLen) > 2 * self.reqInpLen  #tensor([False,  True,  True,  True], device='cuda:0')
+        audPadding = mask * audPadding + (~mask) * (2 * self.reqInpLen - audLen)  #tensor([42,  1,  0,  0], device='cuda:0')
+
+        vidLeftPadding = torch.floor(torch.div(vidPadding, 2)).int()
+        vidRightPadding = torch.ceil(torch.div(vidPadding, 2)).int()
+        audLeftPadding = torch.floor(torch.div(audPadding, 2)).int()
+        audRightPadding = torch.ceil(torch.div(audPadding, 2)).int()
+
+        audioBatch = torch.randn(audLen,1024) #.to('cuda') # pseudo audio Batch
+        videoBatch = torch.randn(vidLen,2048) #.to('cuda') # pseudo audio Batch 
+   
+        pad = nn.ReplicationPad2d(padding=(0, 0, audLeftPadding, audRightPadding))
+        audioBatch = pad(audioBatch.unsqueeze(0).unsqueeze(0)).squeeze(0).squeeze(0)
+        pad = nn.ReplicationPad2d(padding=(0, 0, vidLeftPadding, vidRightPadding))
+        videoBatch = pad(videoBatch.unsqueeze(0).unsqueeze(0)).squeeze(0).squeeze(0)
+
+        audio_length, visual_length = audioBatch.shape[0], videoBatch.shape[0]
+        inputLen = (vidLen + vidPadding).long()
+
+        #  过卷积层  其实没有变 就用inputLen
+        return inputLen
+    
 
     def __len__(self):
         """
@@ -141,10 +242,29 @@ class AVSRDataset(Dataset):
         else:
             return len(self.datalist)
 
-    def collator(self, dataBatch):
+    def collator(self, samples):
+        assert samples is not None
+        input_ids_max_length = max([s['input_ids'].shape[0] for s in samples])
+        input_ids = torch.stack([self.pad(s['input_ids'], input_ids_max_length, self.tokenizer.pad_token_id)
+                                 for s in samples])
+        labels = torch.stack([self.pad(s['labels'], input_ids_max_length, self.IGNORE_INDEX)
+                              for s in samples])
+        attention_mask = torch.stack([self.pad(s['attention_mask'], input_ids_max_length, False)
+                                      for s in samples])
+
+        # audio_length_pre_max_length = max([s['audio_length_pre'].shape[0] for s in samples])  #这段好像不需要
+        # audio_mel_post_mask = torch.zeros(len(samples), (audio_length_pre_max_length + 1) // 2) # ad-hoc for whisper for 2x downsample from mel to feats
+        # for line, sample in enumerate(samples):
+        #     audio_mel_post_mask[line, :(sample['audio_mel'].shape[0] + 1) // 2] = 1
+
+        audio_mask = torch.zeros_like(attention_mask)
+        for line, sample in enumerate(samples):
+            audio_mask[line, :sample['audio_length']] = 1   #downsample 再/5
+
         # audio & mask
         if not self.modal == "VO":
-            aud_seq_list = [data[0][0] for data in dataBatch]
+            #aud_seq_list = [data[0][0] for data in dataBatch]
+            aud_seq_list = [data['inp'][0] for data in samples]
             aud_padding_mask = torch.zeros((len(aud_seq_list), len(max(aud_seq_list, key=len))), dtype=torch.bool)
             for i, seq in enumerate(aud_seq_list):
                 aud_padding_mask[i, len(seq):] = True
@@ -154,17 +274,23 @@ class AVSRDataset(Dataset):
             aud_padding_mask = None
         # visual & len
         if not self.modal == "AO":
-            vis_seq_list = pad_sequence([data[0][1] for data in dataBatch], batch_first=True)  #(4,147,1,112,112)   #pad_sequence((none,62,1,112,112))
-            vis_len = torch.tensor([len(data[0][1]) for data in dataBatch]) #就是这四个句子每一个的长度 tensor([ 62,  62,  97, 147])   #时间帧上pad
+            #vis_seq_list = pad_sequence([data[0][1] for data in dataBatch], batch_first=True)  #(4,147,1,112,112)   #pad_sequence((none,62,1,112,112))
+            vis_seq_list = pad_sequence([data['inp'][1] for data in samples], batch_first=True)  #(4,147,1,112,112)   #pad_sequence((none,62,1,112,112))
+            #vis_len = torch.tensor([len(data[0][1]) for data in dataBatch]) #就是这四个句子每一个的长度 tensor([ 62,  62,  97, 147])   #时间帧上pad
+            vis_len = torch.tensor([len(data['inp'][1]) for data in samples]) #就是这四个句子每一个的长度 tensor([ 62,  62,  97, 147])   #时间帧上pad
+
         else:
             vis_seq_list = None
             vis_len = None
 
         inputBatch = (aud_seq_list, aud_padding_mask, vis_seq_list, vis_len)  #!!!
 
-        targetinBatch = pad_sequence([data[1] for data in dataBatch], batch_first=True)
-        targetoutBatch = pad_sequence([data[2] for data in dataBatch], batch_first=True)
-        targetLenBatch = torch.stack([data[3] for data in dataBatch])
+        # targetinBatch = pad_sequence([data[1] for data in dataBatch], batch_first=True)
+        # targetoutBatch = pad_sequence([data[2] for data in dataBatch], batch_first=True)
+        # targetLenBatch = torch.stack([data[3] for data in dataBatch])
+        targetinBatch = pad_sequence([data['trgtin'] for data in samples], batch_first=True)
+        targetoutBatch = pad_sequence([data['trgtout'] for data in samples], batch_first=True)
+        targetLenBatch = torch.stack([data['trgtLen'] for data in samples])
  
         if self.modal == "AO":
             inputBatch = (inputBatch[0].float(), inputBatch[1], None, None)
@@ -180,16 +306,50 @@ class AVSRDataset(Dataset):
         targetMask[(torch.arange(targetMask.shape[0]), targetLenBatch.long() - 1)] = 1
         targetMask = (1 - targetMask.flip([-1]).cumsum(-1).flip([-1])).bool()
 
-        return {
-            "inputBatch0": inputBatch[0],
-            "inputBatch1": inputBatch[1],
-            "inputBatch2": inputBatch[2],
-            "inputBatch3": inputBatch[3],
+        # return {
+        #     "inputBatch0": inputBatch[0],
+        #     "inputBatch1": inputBatch[1],
+        #     "inputBatch2": inputBatch[2],
+        #     "inputBatch3": inputBatch[3],
 
-            "targetoutBatch": targetoutBatch,
-            "targetLenBatch": targetLenBatch.long(),
+        #     "targetoutBatch": targetoutBatch,
+        #     "targetLenBatch": targetLenBatch.long(),
+        #     'maskw2v': True,
+        # }     
+        return {
+            'input_ids': input_ids,  #torch.Size([4, 114])
+            'labels': labels, #torch.Size([4, 114])
+            'attention_mask': attention_mask,  #torch.Size([4, 114])
+            # 'audio_mel': audio_mel,
+            # 'audio_mel_post_mask': audio_mel_post_mask,
+            'audio_mask': audio_mask,
+    
+            "audio": inputBatch[0],  #torch.Size([4, 92800])
+            "audiomask": inputBatch[1],  #torch.Size([4, 92800])
+            "visual": inputBatch[2],  #torch.Size([4, 146, 1, 112, 112])
+            "vis_len": inputBatch[3],  #torch.Size([4])
+
+            "targetoutBatch": targetoutBatch,  #torch.Size([4, 50])
+            "targetLenBatch": targetLenBatch.long(), #torch.Size([4])
             'maskw2v': True,
         }     
+
+    def pad(self, sequence, max_length, padding_idx=0):
+        if isinstance(sequence, (int, list, tuple)):
+            if len(sequence) < max_length:
+                sequence = sequence + [padding_idx] * (max_length - len(sequence))
+            else:
+                sequence = sequence[:max_length]
+        elif isinstance(sequence, torch.Tensor):
+            if len(sequence) < max_length:
+                sequence = torch.cat(
+                    (sequence, torch.full(([max_length - len(sequence)] + list(sequence.size())[1:]), padding_idx)))
+            else:
+                sequence = sequence[:max_length]
+        else:
+            raise Exception("Type mismatch during padding!")
+        return sequence
+
 
     def prepare_pretrain_input(self,index, modal, h5, targetFile, charToIx, transform, noise, noiseSNR, numWordsRange, maxLength):  #(3,21)  160
         """
@@ -340,7 +500,7 @@ class AVSRDataset(Dataset):
             else:
                 numWords -= 1
 
-        return inp, trgtin, trgtout, trgtLen  #, trgtNWord
+        return inp, trgtin, trgtout, trgtLen  , trgtNWord
 
     def prepare_main_input(self, index, modal, h5, targetFile, charToIx, transform, noise, noiseSNR):
         """
@@ -401,7 +561,7 @@ class AVSRDataset(Dataset):
         trgtout = torch.from_numpy(trgtout)
         trgtLen = torch.tensor(trgtLen)
 
-        return inp, trgtin, trgtout, trgtLen#,trgt   #'THE FIRST TIME WHEN IT TOOK ME FIVE MONTHS FROM THE DECISION OF'
+        return inp, trgtin, trgtout, trgtLen,trgt   #'THE FIRST TIME WHEN IT TOOK ME FIVE MONTHS FROM THE DECISION OF'
 
 
 def get_audio_dataset(dataset_config, tokenizer, split):
