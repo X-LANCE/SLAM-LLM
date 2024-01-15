@@ -29,7 +29,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         
         # self.data_list = contents
         self.IGNORE_INDEX = -100  # The default setting in CrossEntropyLoss
-        self.prompt_template = "{}"
+        self.prompt_template = "USER: {}\n ASSISTANT:"
         self.fix_length_audio = dataset_config.fix_length_audio
 
         self.data_list = []
@@ -72,7 +72,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         # audio_raw = np.concatenate((np.zeros(random.randint(0, 16000)), audio_raw, np.zeros(random.randint(0, 16000)))).astype(audio_raw.dtype)[:16000*30]
         audio_mel = whisper.log_mel_spectrogram(audio_raw).permute(1, 0)
 
-        prompt = ""
+        prompt = "Transcribe speech to text. Output the transcription directly without redundant content. Ensure that the output is not duplicated. "
 
         prompt = self.prompt_template.format(prompt)
         prompt_ids = self.tokenizer.encode(prompt)
