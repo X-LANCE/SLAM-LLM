@@ -252,9 +252,9 @@ class AVSRDataset(Dataset):
         attention_mask = torch.stack([self.pad(s['attention_mask'], input_ids_max_length, False)
                                       for s in samples])
 
-        audio_mask = torch.zeros_like(attention_mask)
+        modality_mask = torch.zeros_like(attention_mask)
         for line, sample in enumerate(samples):
-            audio_mask[line, :sample['audio_length']] = 1   #downsample 再/5
+            modality_mask[line, :sample['audio_length']] = 1   #downsample 再/5
 
         # audio & mask
         if not self.modal == "VO":
@@ -279,13 +279,6 @@ class AVSRDataset(Dataset):
             vis_len = None
 
         inputBatch = (aud_seq_list, aud_padding_mask, vis_seq_list, vis_len)  #!!!
-
-        # targetinBatch = pad_sequence([data[1] for data in dataBatch], batch_first=True)
-        # targetoutBatch = pad_sequence([data[2] for data in dataBatch], batch_first=True)
-        # targetLenBatch = torch.stack([data[3] for data in dataBatch])
-        targetinBatch = pad_sequence([data['trgtin'] for data in samples], batch_first=True)
-        targetoutBatch = pad_sequence([data['trgtout'] for data in samples], batch_first=True)
-        targetLenBatch = torch.stack([data['trgtLen'] for data in samples])
  
         if self.modal == "AO":
             inputBatch = (inputBatch[0].float(), inputBatch[1], None, None)
@@ -293,40 +286,19 @@ class AVSRDataset(Dataset):
             inputBatch = (None, None, inputBatch[2].float(), inputBatch[3].int())
         else:
             inputBatch = (inputBatch[0].float(), inputBatch[1], inputBatch[2].float(), inputBatch[3].int())
-
-        targetinBatch = targetinBatch.int()
-        targetoutBatch = targetoutBatch.int()
-        targetLenBatch = targetLenBatch.int()
-        targetMask = torch.zeros_like(targetoutBatch, device=targetoutBatch.device)
-        targetMask[(torch.arange(targetMask.shape[0]), targetLenBatch.long() - 1)] = 1
-        targetMask = (1 - targetMask.flip([-1]).cumsum(-1).flip([-1])).bool()
-
-        # return {
-        #     "inputBatch0": inputBatch[0],
-        #     "inputBatch1": inputBatch[1],
-        #     "inputBatch2": inputBatch[2],
-        #     "inputBatch3": inputBatch[3],
-
-        #     "targetoutBatch": targetoutBatch,
-        #     "targetLenBatch": targetLenBatch.long(),
-        #     'maskw2v': True,
-        # }     
+ 
         return {
             'input_ids': input_ids,  #torch.Size([4, 114])
             'labels': labels, #torch.Size([4, 114])
             'attention_mask': attention_mask,  #torch.Size([4, 114])
             # 'audio_mel': audio_mel,
             # 'audio_mel_post_mask': audio_mel_post_mask,
-            'audio_mask': audio_mask,
+            'modality_mask': modality_mask,
     
             "audio": inputBatch[0],  #torch.Size([4, 92800])
-            "audiomask": inputBatch[1],  #torch.Size([4, 92800])
+            "audio_mask": inputBatch[1],  #torch.Size([4, 92800])
             "visual": inputBatch[2],  #torch.Size([4, 146, 1, 112, 112])
             "vis_len": inputBatch[3],  #torch.Size([4])
-
-            "targetoutBatch": targetoutBatch,  #torch.Size([4, 50])
-            "targetLenBatch": targetLenBatch.long(), #torch.Size([4])
-            'maskw2v': False,
         }     
 
     def pad(self, sequence, max_length, padding_idx=0):

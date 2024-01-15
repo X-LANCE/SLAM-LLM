@@ -185,16 +185,13 @@ class slam_model(nn.Module):
         audio_mel = kwargs.get("audio_mel", None)
         audio_mel_mask = kwargs.get("audio_mel_mask", None)
         audio_mel_post_mask = kwargs.get("audio_mel_post_mask", None) # 2x downsample for whisper
-        audio_mask = kwargs.get("audio_mask", None)
+        modality_mask = kwargs.get("modality_mask", None)
 
-        audio = kwargs.get("audio", None)  #torch.Size([2, 96480])
-        audiomask = kwargs.get("audiomask", None)  #删 #torch.Size([2, 96480])
-        visual = kwargs.get("visual", None)  #torch.Size([2, 151, 1, 112, 112])
-        vis_len = kwargs.get("vis_len", None)  #tensor([ 77, 151], device='cuda:0', dtype=torch.int32)
-        maskw2v = kwargs.get("maskw2v", None)  #True
-        targetoutBatch =  kwargs.get("targetoutBatch", None)  #torch.Size([2, 29])
-        targetLenBatch =  kwargs.get("targetLenBatch", None)  #tensor([18, 29], device='cuda:0')
-
+        audio = kwargs.get("audio", None) #torch.Size([2, 96480])
+        audio_mask = kwargs.get("audio_mask", None) #删 #torch.Size([2, 96480])
+        visual = kwargs.get("visual", None) #torch.Size([2, 151, 1, 112, 112])
+        vis_len = kwargs.get("vis_len", None) #tensor([ 77, 151], device='cuda:0', dtype=torch.int32)
+        maskw2v = kwargs.get("maskw2v", False) #(FIX:MZY) False for supervised learning and inference
 
 
         encoder_outs = None
@@ -204,10 +201,10 @@ class slam_model(nn.Module):
             if self.model_config.encoder_name == "beats":
                 encoder_outs, audio_mel_post_mask = self.encoder.extract_features(audio_mel, audio_mel_mask) # bs*seq*dim
             if self.model_config.encoder_name == "moco_wav2vec2":
-                encoder_outs , inputLenBatch, audio_mel_post_mask = self.encoder((audio, audiomask, visual, vis_len) ,maskw2v) # bs*seq*dim
+                encoder_outs , inputLenBatch, audio_mel_post_mask = self.encoder((audio, audio_mask, visual, vis_len) ,maskw2v) # bs*seq*dim
 
             if self.model_config.encoder_projector == "q-former":
-                encoder_outs = self.encoder_projector(encoder_outs, audio_mel_post_mask)  
+                encoder_outs = self.encoder_projector(encoder_outs, audio_mel_post_mask)
             if self.model_config.encoder_projector == "linear":
                 encoder_outs = self.encoder_projector(encoder_outs)  #torch.Size([2, 16, 5120])
 
@@ -220,11 +217,11 @@ class slam_model(nn.Module):
             else:
                 inputs_embeds = self.llm.model.model.model.embed_tokens(input_ids)
 
-        if audio_mask is not None:
+        if modality_mask is not None:
             batch_size, token_num, dims = inputs_embeds.shape
             _, l, _ = encoder_outs.shape
-            encoder_outs_pad = F.pad(encoder_outs, (0, 0, 0, token_num-l, 0, 0), value=0.0)  #torch.Size([2, 74, 5120])  #len上padding
-            inputs_embeds = encoder_outs_pad * audio_mask[:, :, None] + inputs_embeds * (~audio_mask[:, :, None])  #tensor(16, device='cuda:0')
+            encoder_outs_pad = F.pad(encoder_outs, (0, 0, 0, token_num-l, 0, 0), value=0.0) #torch.Size([2, 74, 5120])  #len上padding
+            inputs_embeds = encoder_outs_pad * modality_mask[:, :, None] + inputs_embeds * (~modality_mask[:, :, None]) #tensor(16, device='cuda:0')
         
         model_outputs = self.llm(inputs_embeds=inputs_embeds, attention_mask=attention_mask, labels=labels)
 
@@ -253,7 +250,7 @@ class slam_model(nn.Module):
         audio_mel = kwargs.get("audio_mel", None)
         audio_mel_mask = kwargs.get("audio_mel_mask", None)
         audio_mel_post_mask = kwargs.get("audio_mel_post_mask", None) # 2x downsample for whisper
-        audio_mask = kwargs.get("audio_mask", None)
+        modality_mask = kwargs.get("modality_mask", None)
 
         encoder_outs = None
         if audio_mel is not None:
@@ -276,11 +273,11 @@ class slam_model(nn.Module):
             else:
                 inputs_embeds = self.llm.model.model.model.embed_tokens(input_ids)
 
-        if audio_mask is not None:
+        if modality_mask is not None:
             batch_size, token_num, dims = inputs_embeds.shape
             _, l, _ = encoder_outs.shape
             encoder_outs_pad = F.pad(encoder_outs, (0, 0, 0, token_num-l, 0, 0), value=0.0)
-            inputs_embeds = encoder_outs_pad * audio_mask[:, :, None] + inputs_embeds * (~audio_mask[:, :, None])
+            inputs_embeds = encoder_outs_pad * modality_mask[:, :, None] + inputs_embeds * (~modality_mask[:, :, None])
 
         model_outputs = self.llm.generate(
             inputs_embeds=inputs_embeds,

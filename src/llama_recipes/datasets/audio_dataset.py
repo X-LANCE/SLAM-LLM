@@ -147,9 +147,9 @@ class AudioDatasetJsonl(torch.utils.data.Dataset):
         audio_mel_mask = torch.zeros(len(samples), audio_mel_max_length)
         for line, sample in enumerate(samples):
             audio_mel_mask[line, :sample['audio_mel'].shape[0]] = 1
-        audio_mask = torch.zeros_like(attention_mask)
+        modality_mask = torch.zeros_like(attention_mask)
         for line, sample in enumerate(samples):
-            audio_mask[line, :sample['audio_length']] = 1
+            modality_mask[line, :sample['audio_length']] = 1
     
         return {
             'input_ids': input_ids,
@@ -157,7 +157,7 @@ class AudioDatasetJsonl(torch.utils.data.Dataset):
             'attention_mask': attention_mask,
             'audio_mel': audio_mel,
             'audio_mel_mask': audio_mel_mask,
-            'audio_mask': audio_mask
+            'modality_mask': modality_mask
         }
 
 
