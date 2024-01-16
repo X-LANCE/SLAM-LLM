@@ -6,12 +6,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.distributed as dist
 from typing import List, Optional, Tuple, Union
+from transformers import AutoModelForCausalLM, AutoTokenizer, AutoConfig
 from peft import LoraConfig, TaskType, get_peft_model, prepare_model_for_kbit_training
-from transformers import (
-    LlamaForCausalLM,
-    LlamaTokenizer,
-    LlamaConfig,
-)
 
 from llama_recipes.utils.config_utils import generate_peft_config
 from llama_recipes.utils.train_utils import print_module_size
@@ -30,7 +26,7 @@ def setup_model(tokenizer, train_config, model_config, **kwargs):
 def setup_tokenizer(train_config, model_config, **kwargs):
     # Load the tokenizer and add special tokens
     if "llama" in model_config.llm_name or "vicuna" in model_config.llm_name:
-        tokenizer = LlamaTokenizer.from_pretrained(model_config.llm_path)
+        tokenizer = AutoTokenizer.from_pretrained(model_config.llm_path)
         tokenizer.pad_token_id = tokenizer.eos_token_id
         return tokenizer
 
@@ -75,20 +71,20 @@ def setup_llm(train_config, model_config, **kwargs):
         #                     "please install latest nightly.")
         rank = int(os.environ["RANK"])
         if rank == 0:
-            model = LlamaForCausalLM.from_pretrained(
+            model = AutoModelForCausalLM.from_pretrained(
                 model_config.llm_path,
                 load_in_8bit=True if train_config.quantization else None,
                 device_map="auto" if train_config.quantization else None,
                 use_cache=use_cache,
             )
         else:
-            llama_config = LlamaConfig.from_pretrained(model_config.llm_path)
+            llama_config = AutoConfig.from_pretrained(model_config.llm_path)
             llama_config.use_cache = use_cache
             # with torch.device("meta"):
-            model = LlamaForCausalLM(llama_config) #(FIX:MZY): torch 2.0.1 does not support `meta`
+            model = AutoModelForCausalLM(llama_config) #(FIX:MZY): torch 2.0.1 does not support `meta`
 
     else:
-        model = LlamaForCausalLM.from_pretrained(
+        model = AutoModelForCausalLM.from_pretrained(
             model_config.llm_path,
             load_in_8bit=True if train_config.quantization else None,
             device_map="auto" if train_config.quantization else None,
@@ -282,6 +278,7 @@ class slam_model(nn.Module):
         model_outputs = self.llm.generate(
             inputs_embeds=inputs_embeds,
             max_length=kwargs.get("max_length", 200),
+            max_new_tokens=kwargs.get("max_new_tokens", 200),
             num_beams=kwargs.get("num_beams", 4),
             do_sample=kwargs.get("do_sample", False),
             min_length=kwargs.get("min_length", 1),
@@ -315,13 +312,16 @@ class slam_model(nn.Module):
     ): # TODO: Now you need to set your customized sampling rate manually
 
         device = kwargs.get("device", "cuda")
-        assert os.path.exists(wav_path)
-        audio_raw = whisper.load_audio(wav_path)
-        # audio_raw = whisper.pad_or_trim(audio_raw)
-        audio_mel = whisper.log_mel_spectrogram(audio_raw).permute(1,0)[None, :, :].to(device)
+        if os.path.exists(wav_path): # Audio-Text QA
+            import whisper
+            audio_raw = whisper.load_audio(wav_path)
+            audio_raw = whisper.pad_or_trim(audio_raw)
+            audio_mel = whisper.log_mel_spectrogram(audio_raw).permute(1,0)[None, :, :].to(device)
 
-        encoder_outs = self.encoder.extract_variable_length_features(audio_mel.permute(0, 2, 1))
-        encoder_outs = self.encoder_projector(encoder_outs)
+            encoder_outs = self.encoder.extract_variable_length_features(audio_mel.permute(0, 2, 1))
+            encoder_outs = self.encoder_projector(encoder_outs)
+        else: # Text QA
+            encoder_outs = torch.empty(1, 0, self.llm.model.embed_tokens.embedding_dim).to(device)
 
         prompt = "USER: {}\n ASSISTANT:".format(prompt)
         prompt_ids = self.tokenizer.encode(prompt)
