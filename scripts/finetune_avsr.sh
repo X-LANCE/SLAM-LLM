@@ -30,7 +30,6 @@ python src/llama_recipes/pipeline/finetune.py \
 --llm_path $llm_path \
 --llm_dim 4096 \
 --encoder_name moco_wav2vec2 \
---encoder_ds_rate 2 \
 --encoder_dim 512 \
 --encoder_projector linear \
 --encoder_projector_ds_rate 5 \
@@ -66,7 +65,6 @@ src/llama_recipes/pipeline/finetune.py \
 --llm_path $llm_path \
 --llm_dim 4096 \
 --encoder_name moco_wav2vec2 \
---encoder_ds_rate 2 \
 --encoder_dim 512 \
 --encoder_projector linear \
 --encoder_projector_ds_rate 5 \
@@ -80,13 +78,14 @@ src/llama_recipes/pipeline/finetune.py \
 --lr 1e-4 \
 --output_dir $output_dir \
 --metric acc \
---log_file "/root/SLAM-LLM/log/third_try.log" \
+--log_file "/root/SLAM-LLM/log/third_try_continue.log" \
 --use_wandb \
 --wandb_dir $output_dir \
 --wandb_entity_name yanghaha \
 --wandb_project_name slam-llm \
 --wandb_exp_name avsr \
 --log_interval 5 \
+--ckpt_path "/nfs/yangguanrou.ygr/vicuna-13b-v1.5-finetune-avsr-20230115/avsr/4/model.pt" \
 # --peft_ckpt "/nfs/maziyang.mzy/exps/llama-2-hf-finetune-asr-ds5-proj2048-lr1e-5-whisper-prompt-padding30-20231228/asr/4" \
 # --ckpt_path "/nfs/maziyang.mzy/exps/llama-2-hf-finetune-asr-ds5-proj2048-lr1e-5-whisper-prompt-padding30-20231228/asr/4/model.pt" \
 # --use_peft --peft_method lora \

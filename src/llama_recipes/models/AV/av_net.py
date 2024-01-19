@@ -34,7 +34,7 @@ class AVNet(nn.Module):
         # A & V Modal
         tx_norm = nn.LayerNorm(self.dModel)
         self.maskedLayerNorm = MaskedLayerNorm()
-        if self.modal == "AV":
+        if self.modal == "AV" or self.modal == "A_V":
             self.ModalityNormalization = nn.LayerNorm(self.dModel)
         self.EncoderPositionalEncoding = PositionalEncoding(dModel=self.dModel, maxLen=self.peMaxLen)  #512,500
 
@@ -83,6 +83,11 @@ class AVNet(nn.Module):
             self.jointConv = conv1dLayers(self.maskedLayerNorm, 2 * self.dModel, self.dModel, self.dModel)
             jointEncoderLayer = nn.TransformerEncoderLayer(d_model=self.dModel, nhead=self.nHeads, dim_feedforward=self.fcHiddenSize, dropout=self.dropout)
             self.jointEncoder = nn.TransformerEncoder(jointEncoderLayer, num_layers=self.numLayers, norm=tx_norm)
+        
+        if self.modal == "A_V": # TO DO
+            self.jointConv = conv1dLayers(self.maskedLayerNorm, self.dModel, self.dModel, self.dModel)  #inD, dModel, outD,   可惜这个没训过，没法公平比较
+            jointEncoderLayer = nn.TransformerEncoderLayer(d_model=self.dModel, nhead=self.nHeads, dim_feedforward=self.fcHiddenSize, dropout=self.dropout)
+            self.jointEncoder = nn.TransformerEncoder(jointEncoderLayer, num_layers=self.numLayers, norm=tx_norm)
 
         # self.jointOutputConv = outputConv(self.maskedLayerNorm, self.dModel, self.numClasses)
         # self.decoderPositionalEncoding = PositionalEncoding(dModel=self.dModel, maxLen=self.peMaxLen)
@@ -120,8 +125,8 @@ class AVNet(nn.Module):
         #print(audioBatch.shape,audLen,videoBatch[0].shape,videoBatch[1].shape, videoBatch[2].shape,videoBatch[3].shape,vidLen)
         audioBatch, videoBatch, inputLenBatch, mask = self.makePadding(audioBatch, audLen, videoBatch, vidLen)  #[2, 160, 1024], torch.Size([2, 80, 2048]), tensor([80, 80],  (2,80) #这一步比较关键
         #print( max(max(vidLen).item()*2, max(audLen).item()), audioBatch.shape, videoBatch.shape, inputLenBatch, mask.shape)
-        if isinstance(self.maskedLayerNorm, MaskedLayerNorm):
-            self.maskedLayerNorm.SetMaskandLength(mask, inputLenBatch)
+        if isinstance(self.maskedLayerNorm, MaskedLayerNorm):  #True
+            self.maskedLayerNorm.SetMaskandLength(mask, inputLenBatch)  #有影响 每次都会重新设置， 会影响self.jointConv
 
         if not self.modal == "VO":
             audioBatch = audioBatch.transpose(1, 2)  #? 
@@ -141,7 +146,7 @@ class AVNet(nn.Module):
             jointBatch = audioBatch
         elif self.modal == "VO":
             jointBatch = videoBatch
-        else:
+        elif self.modal == "AV":
             jointBatch = torch.cat([self.ModalityNormalization(audioBatch), self.ModalityNormalization(videoBatch)], dim=2)  #torch.Size([80, 2, 2048])
             jointBatch = jointBatch.transpose(0, 1).transpose(1, 2) #(2,2048,80)
             jointBatch = self.jointConv(jointBatch) #(2,1024,80)
@@ -149,8 +154,60 @@ class AVNet(nn.Module):
             jointBatch = self.EncoderPositionalEncoding(jointBatch)
             jointBatch = self.jointEncoder(jointBatch, src_key_padding_mask=mask) #[80, 2, 1024]
 
+        elif self.modal == "A_V":
+            jointBatch = torch.cat([self.ModalityNormalization(audioBatch), self.ModalityNormalization(videoBatch)], dim=0)  #torch.Size([80, 2, 2048])  #里面：torch.Size([128, 2, 512]) torch.Size([128, 2, 512])   -> torch.Size([256, 2, 512])
+
+            inputLenBatch = inputLenBatch *2  #[ 80, 128] -> [160, 256]
+            mask = mask.repeat_interleave(2,dim=-1) # '96,0' 没问题
+            if isinstance(self.maskedLayerNorm, MaskedLayerNorm):  #True
+                self.maskedLayerNorm.SetMaskandLength(mask, inputLenBatch)  #有影响 每次都会重新设置， 会影响self.jointConv
+
+            jointBatch = jointBatch.transpose(0, 1).transpose(1, 2) #(2,2048,80)
+            jointBatch = self.jointConv(jointBatch) #(2,1024,80)  #!!!  为了这个
+            jointBatch = jointBatch.transpose(1, 2).transpose(0, 1)
+            jointBatch = self.EncoderPositionalEncoding(jointBatch)
+            jointBatch = self.jointEncoder(jointBatch, src_key_padding_mask=mask) #[80, 2, 1024]  # 改一下这个mask
+
+
         jointBatch = jointBatch.transpose(0, 1)  #(2,129,1024)  #new
-        return jointBatch, inputLenBatch, mask  #[80, 2, 1024], [80,80], [2,80] mask全是false
+
+        return jointBatch, inputLenBatch, mask  #[80, 2, 1024], [80,80], [2,80] mask全是false  # 其实 inputLenBatch, mask, linear projector目前用不上，可以先不管
+
+        # if self.modal == "A_V":
+
+        #     # audio 特征
+        #     # 前端
+        #     try:
+        #         result = self.wav2vecModel.extract_features(audioBatch, padding_mask=audMask, mask=maskw2v)  #new_version  这一步/320 并向下取整 
+        #         audioBatch,audMask =result["x"],result["padding_mask"]  #torch.Size([2, 101, 1024]), torch.Size([2, 101])   #形状变了 所以还得跟形状保持一致
+        #         if audMask==None:
+        #             audMask= torch.full( (audioBatch.shape[0], audioBatch.shape[1]), False, device=audioBatch.device ) #TODO
+
+        #         audLen = torch.sum(~audMask, dim=1)  #tensor([101,  90], device='cuda:0')
+        #     except Exception as e:
+        #         print(e)
+        #         print(audioBatch.shape)
+        #         print(audMask)
+            
+        #     # 后端
+        #     audioBatch = audioBatch.transpose(1, 2)  #? 
+        #     audioBatch = self.audioConv(audioBatch) #[2, 1024, 80]
+        #     audioBatch = audioBatch.transpose(1, 2).transpose(0, 1)
+        #     audioBatch = self.EncoderPositionalEncoding(audioBatch)
+        #     audioBatch = self.audioEncoder(audioBatch, src_key_padding_mask=mask)  #[80,2,1024]
+
+
+        #     # video 特征
+        #     videoBatch = videoBatch.transpose(1, 2)
+        #     videoBatch = self.visualModel(videoBatch, vidLen.long())  #torch.Size([99, 2048])
+        #     videoBatch = list(torch.split(videoBatch, vidLen.tolist(), dim=0))  #拆成一个list [(52,2048), (47, 2048)]            
+            
+
+            
+
+
+
+
 
 
     def makeMaskfromLength(self, maskShape, maskLength, maskDevice):
@@ -178,7 +235,7 @@ class AVNet(nn.Module):
             mask = self.makeMaskfromLength([audioBatch.shape[0]] + [audioBatch.shape[1] // 2], inputLenBatch, audioBatch.device)
 
         elif self.modal == "VO":
-            vidPadding = torch.zeros(len(videoBatch)).long().to(vidLen.device)
+            vidPadding = torch.zeros(len(videoBatch)).long().to(vidLen.device)  #video batch 是一个list
 
             mask = (vidPadding + vidLen) > self.reqInpLen
             vidPadding = mask * vidPadding + (~mask) * (self.reqInpLen - vidLen)

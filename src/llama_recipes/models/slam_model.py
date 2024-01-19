@@ -195,7 +195,7 @@ class slam_model(nn.Module):
 
 
         encoder_outs = None
-        if audio_mel is not None or audio is not None:
+        if audio_mel is not None or audio is not None or visual is not None:
             if self.model_config.encoder_name == "whisper":
                 encoder_outs = self.encoder.extract_variable_length_features(audio_mel.permute(0, 2, 1)) # bs*seq*dim
             if self.model_config.encoder_name == "beats":
@@ -252,12 +252,20 @@ class slam_model(nn.Module):
         audio_mel_post_mask = kwargs.get("audio_mel_post_mask", None) # 2x downsample for whisper
         modality_mask = kwargs.get("modality_mask", None)
 
+        audio = kwargs.get("audio", None) #torch.Size([2, 96480])
+        audio_mask = kwargs.get("audio_mask", None) #删 #torch.Size([2, 96480])
+        visual = kwargs.get("visual", None) #torch.Size([2, 151, 1, 112, 112])
+        vis_len = kwargs.get("vis_len", None) #tensor([ 77, 151], device='cuda:0', dtype=torch.int32)
+        maskw2v = kwargs.get("maskw2v", False) #(FIX:MZY) False for supervised learning and inference
+
         encoder_outs = None
-        if audio_mel is not None:
+        if audio_mel is not None or audio is not None or visual is not None:
             if self.model_config.encoder_name == "whisper":
                 encoder_outs = self.encoder.extract_variable_length_features(audio_mel.permute(0, 2, 1)) # bs*seq*dim
             if self.model_config.encoder_name == "beats":
                 encoder_outs, audio_mel_post_mask = self.encoder.extract_features(audio_mel, audio_mel_mask) # bs*seq*dim
+            if self.model_config.encoder_name == "moco_wav2vec2":
+                encoder_outs , inputLenBatch, audio_mel_post_mask = self.encoder((audio, audio_mask, visual, vis_len) ,maskw2v) # bs*seq*dim
 
             if self.model_config.encoder_projector == "q-former":
                 encoder_outs = self.encoder_projector(encoder_outs, audio_mel_post_mask)

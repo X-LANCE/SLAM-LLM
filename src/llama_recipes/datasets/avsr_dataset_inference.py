@@ -25,7 +25,7 @@ class AVSRDataset(Dataset):
         self.modal = dataset_config.modal
         self.dataset = split                        #train|val|test
         self.data_path = dataset_config.data_path
-        self.h5file = dataset_config.h5file    
+        self.h5file = dataset_config.h5file   
         self.noiseFile = dataset_config.noiseFile
         self.noiseSNR =  dataset_config.noiseSNR
         self.noiseProb = dataset_config.noiseProb
@@ -144,34 +144,25 @@ class AVSRDataset(Dataset):
         prompt = "Transcribe video to text. Output the transcription directly without redundant content. Ensure that the output is not duplicated. "
 
         prompt = self.prompt_template.format(prompt)
-        answer = self.answer_template.format(target)
-
         prompt_ids = self.tokenizer.encode(prompt)
         prompt_length = len(prompt_ids)
         #audio_length, visual_length,inputLen = self.calculate_output_length(audio_raw,visual_raw)
         audio_length_pre = self.calculate_output_length(audio_raw,visual_raw)  #video  #tensor(80)
         audio_length = audio_length_pre // 5 # ad-hoc for 5x fc downsample  #tensor(16)
         audio_pseudo = torch.full((audio_length,), -1) # placeholder
+        prompt_ids = torch.tensor(prompt_ids, dtype=torch.int64)
 
-        example = prompt + answer  # FIX(MZY): avoid putting a bos token before answer.
-        example_ids = self.tokenizer.encode(example)  # [prompt,answer]
-        example_ids.append(self.tokenizer.eos_token_id)  # [prompt,answer,eos]
-        example_ids = torch.tensor(
-            example_ids, dtype=torch.int64
-        )
-        example_ids = torch.cat((audio_pseudo, example_ids))  # [audio,prompt,answer,eos]
+        example_ids = torch.cat((audio_pseudo, prompt_ids))  # [audio,prompt]
+        example_mask = example_ids.ge(-1)  # [True,True]
 
-        labels_ids = copy.deepcopy(example_ids)  # [audio,prompt,answer,eos]
-        labels_ids[:audio_length + prompt_length] = -1  # [-1,-1,answer,eos];
-        example_mask = example_ids.ge(-1)  # FIX(GZF): [True,True,True,True]
 
-        label_mask = labels_ids.ge(0)  # [False,False,True,True]
-        example_ids[~example_mask] = 0  # [audio,prompt,answer,eos]
-        labels_ids[~label_mask] = self.IGNORE_INDEX  # [-100,-100,answer,eos]
+        # inference new
+        key= targetFile 
+
 
         return {
             "input_ids": example_ids,
-            "labels": labels_ids,
+            # "labels": labels_ids,
             "attention_mask": example_mask,
             # 'audio_mel': audio_mel,   
             'audio_length': audio_length,
@@ -182,6 +173,9 @@ class AVSRDataset(Dataset):
             'trgtLen':trgtLen,
 
             'audio_length_pre':audio_length_pre,
+
+            'key': key,
+            'target':target
         }
                                                   
 
@@ -293,14 +287,17 @@ class AVSRDataset(Dataset):
         input_ids_max_length = max([s['input_ids'].shape[0] for s in samples])
         input_ids = torch.stack([self.pad(s['input_ids'], input_ids_max_length, self.tokenizer.pad_token_id)
                                  for s in samples])
-        labels = torch.stack([self.pad(s['labels'], input_ids_max_length, self.IGNORE_INDEX)
-                              for s in samples])
+        # labels = torch.stack([self.pad(s['labels'], input_ids_max_length, self.IGNORE_INDEX)
+        #                       for s in samples])
         attention_mask = torch.stack([self.pad(s['attention_mask'], input_ids_max_length, False)
                                       for s in samples])
 
         modality_mask = torch.zeros_like(attention_mask)
         for line, sample in enumerate(samples):
             modality_mask[line, :sample['audio_length']] = 1   #downsample 再/5
+
+        keys = [s['key'] for s in samples]
+        targets = [s['target'] for s in samples]
 
         # audio & mask
         if not self.modal == "VO":
@@ -335,11 +332,13 @@ class AVSRDataset(Dataset):
  
         return {
             'input_ids': input_ids,  #torch.Size([4, 114])
-            'labels': labels, #torch.Size([4, 114])
+            # 'labels': labels, #torch.Size([4, 114])
             'attention_mask': attention_mask,  #torch.Size([4, 114])
             # 'audio_mel': audio_mel,
             # 'audio_mel_post_mask': audio_mel_post_mask,
             'modality_mask': modality_mask,
+            'keys': keys,
+            'targets': targets,
     
             "audio": inputBatch[0],  #torch.Size([4, 92800])
             "audio_mask": inputBatch[1],  #torch.Size([4, 92800])

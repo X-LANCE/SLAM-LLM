@@ -8,3 +8,5 @@ transformers
 wandb/
 log/
 *.log
+PATH/
+scriptsmy/

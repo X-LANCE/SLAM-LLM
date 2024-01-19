@@ -92,7 +92,7 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
             pbar = tqdm(colour="blue", desc=f"Training Epoch: {epoch+1}", total=total_length, dynamic_ncols=True)
             for step, batch in enumerate(train_dataloader):
                 for key in batch.keys():
-                    if type(batch[key])==bool:
+                    if batch[key] == None:  #这里可以删了 PR
                         continue
                     if train_config.enable_fsdp:
                         batch[key] = batch[key].to(local_rank)
@@ -344,7 +344,7 @@ def evaluation(model,train_config, eval_dataloader, local_rank, tokenizer):
     with MemoryTrace() as memtrace:
         for step, batch in enumerate(tqdm(eval_dataloader,colour="green", desc="evaluating Epoch", dynamic_ncols=True)):
             for key in batch.keys():
-                if type(batch[key])==bool:
+                if batch[key] == None:
                     continue
                 if train_config.enable_fsdp:
                     batch[key] = batch[key].to(local_rank)
