@@ -7,6 +7,7 @@ from llama_recipes.models.slam_model import slam_model
 from llama_recipes.configs import fsdp_config as FSDP_CONFIG
 from llama_recipes.configs import train_config as TRAIN_CONFIG
 from llama_recipes.configs import model_config as MODEL_CONFIG
+from llama_recipes.configs import avmodel_config as AV_MODEL_CONFIG
 from llama_recipes.configs import log_config as LOG_CONFIG
 from llama_recipes.utils.config_utils import (
     update_config,
@@ -23,8 +24,8 @@ from tqdm import tqdm
 def main(**kwargs):
 
 	# Update the configuration for the training and sharding process
-	train_config, fsdp_config, model_config, log_config = TRAIN_CONFIG(), FSDP_CONFIG(), MODEL_CONFIG(), LOG_CONFIG()
-	update_config((train_config, fsdp_config, model_config, log_config), **kwargs)
+	train_config, fsdp_config, model_config, avmodel_config, log_config  = TRAIN_CONFIG(), FSDP_CONFIG(), MODEL_CONFIG(), AV_MODEL_CONFIG(), LOG_CONFIG()
+	update_config((train_config, fsdp_config, model_config, avmodel_config, log_config), **kwargs)
 
 	# Set log
 	if not os.path.exists(os.path.dirname(log_config.log_file)):
@@ -53,6 +54,7 @@ def main(**kwargs):
 	logger.info("train_config: {}".format(train_config))
 	logger.info("fsdp_config: {}".format(fsdp_config))
 	logger.info("model_config: {}".format(model_config))
+	logger.info("model_config: {}".format(avmodel_config))
 
 	
 	# Set the seeds for reproducibility
@@ -60,7 +62,7 @@ def main(**kwargs):
 	torch.manual_seed(train_config.seed)
 	random.seed(train_config.seed)
 	
-	model, tokenizer = model_factory(train_config, model_config, **kwargs)
+	model, tokenizer = model_factory(train_config, model_config, avmodel_config, **kwargs)
 	device = torch.device("cuda" if torch.cuda.is_available() else "cpu") # FIX(MZY): put the whole model to device.
 	model.to(device)
 	model.eval()

@@ -38,6 +38,10 @@ def update_config(config, **kwargs):
                     else:
                         # In case of specialized config we can warm user
                         logger.warning(f"Warning: {config_name} does not accept parameter: {k}")
+
+                # nestedconfig=k.split(".")
+                # if 
+
             elif isinstance(config, train_config):
                 logger.warning(f"Warning: unknown parameter {k}")
 

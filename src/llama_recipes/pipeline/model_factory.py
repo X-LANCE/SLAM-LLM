@@ -6,11 +6,11 @@ import os
 import logging
 logger = logging.getLogger(__name__)
 
-def model_factory(train_config, model_config, **kwargs):
+def model_factory(train_config, model_config,avmodel_config, **kwargs):
 
     tokenizer = setup_tokenizer(train_config, model_config, **kwargs)
 
-    model = setup_model(tokenizer, train_config, model_config, **kwargs)
+    model = setup_model(tokenizer, train_config, model_config, avmodel_config, **kwargs)
 
     ckpt_path = kwargs.get("ckpt_path", None) #FIX(MZY): load model ckpt(mainly projector, related to model_checkpointing/checkpoint_handler.py: save_model_checkpoint_peft)
     if ckpt_path is not None:

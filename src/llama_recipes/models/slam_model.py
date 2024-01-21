@@ -23,8 +23,8 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def setup_model(tokenizer, train_config, model_config, **kwargs):
-    return slam_model(tokenizer, train_config, model_config, **kwargs)
+def setup_model(tokenizer, train_config, model_config,avmodel_config, **kwargs):
+    return slam_model(tokenizer, train_config, model_config, avmodel_config, **kwargs)
 
 
 def setup_tokenizer(train_config, model_config, **kwargs):
@@ -35,7 +35,7 @@ def setup_tokenizer(train_config, model_config, **kwargs):
         return tokenizer
 
 
-def setup_encoder(train_config, model_config, **kwargs):
+def setup_encoder(train_config, model_config, avmodel_config, **kwargs):
     encoder_list = model_config.encoder_name.split(",")
     if len(encoder_list) == 1:
         encoder_name = encoder_list[0]
@@ -48,6 +48,9 @@ def setup_encoder(train_config, model_config, **kwargs):
         if encoder_name == "moco_wav2vec2":
             from llama_recipes.models.encoder import AVEncoder
             encoder = AVEncoder.load(model_config)
+        if encoder_name == "sota_avsr":
+            from llama_recipes.models.encoder import SOTAAVEncoder
+            encoder = SOTAAVEncoder.load(avmodel_config)
     print_module_size(encoder, encoder_name, int(os.environ["RANK"]) if train_config.enable_fsdp else 0)
 
     if train_config.freeze_encoder:
@@ -150,11 +153,12 @@ class slam_model(nn.Module):
         tokenizer, 
         train_config, 
         model_config, 
+        avmodel_config,
         **kwargs
     ):
         super().__init__()
         # modality encoder 
-        self.encoder = setup_encoder(train_config, model_config, **kwargs)
+        self.encoder = setup_encoder(train_config, model_config, avmodel_config, **kwargs)
 
         # llm
         self.llm = setup_llm(train_config, model_config, **kwargs)
@@ -202,6 +206,8 @@ class slam_model(nn.Module):
                 encoder_outs, audio_mel_post_mask = self.encoder.extract_features(audio_mel, audio_mel_mask) # bs*seq*dim
             if self.model_config.encoder_name == "moco_wav2vec2":
                 encoder_outs , inputLenBatch, audio_mel_post_mask = self.encoder((audio, audio_mask, visual, vis_len) ,maskw2v) # bs*seq*dim
+            if self.model_config.encoder_name == "sota_avsr":
+                encoder_outs , inputLenBatch, audio_mel_post_mask = self.encoder((audio, audio_mask, visual, vis_len) ) # bs*seq*dim
 
             if self.model_config.encoder_projector == "q-former":
                 encoder_outs = self.encoder_projector(encoder_outs, audio_mel_post_mask)
@@ -266,7 +272,9 @@ class slam_model(nn.Module):
                 encoder_outs, audio_mel_post_mask = self.encoder.extract_features(audio_mel, audio_mel_mask) # bs*seq*dim
             if self.model_config.encoder_name == "moco_wav2vec2":
                 encoder_outs , inputLenBatch, audio_mel_post_mask = self.encoder((audio, audio_mask, visual, vis_len) ,maskw2v) # bs*seq*dim
-
+            if self.model_config.encoder_name == "sota_avsr":
+                encoder_outs , inputLenBatch, audio_mel_post_mask = self.encoder((audio, audio_mask, visual, vis_len) ) # bs*seq*dim
+                
             if self.model_config.encoder_projector == "q-former":
                 encoder_outs = self.encoder_projector(encoder_outs, audio_mel_post_mask)
             if self.model_config.encoder_projector == "linear":

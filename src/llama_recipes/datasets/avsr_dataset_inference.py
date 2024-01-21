@@ -17,6 +17,9 @@ logger = logging.getLogger(__name__)
 from llama_recipes.utils.compute_utils import calculate_output_length_1d
 import torch.nn as nn
 
+import math
+from torch.nn.functional import pad
+
 class AVSRDataset(Dataset):
     def __init__(self, dataset_config, tokenizer=None, split='train'):
         super().__init__()
@@ -136,6 +139,15 @@ class AVSRDataset(Dataset):
         else:
             inp, trgtin, trgtout, trgtLen,target = self.prepare_main_input(index, self.modal, self.h5, targetFile, self.charToIx, self.transform, noise, self.noiseSNR)   
 
+        T_audio= inp[0].shape[0]
+        T_visual = inp[1].shape[0]
+        target_len = T_visual*640
+        padding_len = target_len - T_audio
+        if padding_len > 0:
+            # xs_pad = pad(xs_pad, (0,0,0, padding_len),"constant",0)
+            inp[0] = pad(inp[0], (0,padding_len),"constant",0)
+        elif padding_len < 0:
+            inp[0] = inp[0][:target_len]
 
         # new!
         audio_raw = inp[0]  #cpu torch.Size([48800])
@@ -147,7 +159,13 @@ class AVSRDataset(Dataset):
         prompt_ids = self.tokenizer.encode(prompt)
         prompt_length = len(prompt_ids)
         #audio_length, visual_length,inputLen = self.calculate_output_length(audio_raw,visual_raw)
-        audio_length_pre = self.calculate_output_length(audio_raw,visual_raw)  #video  #tensor(80)
+        # audio_length_pre = self.calculate_output_length(audio_raw,visual_raw)  #video  #tensor(80)
+        
+        audio_length_pre = visual_raw.shape[0]
+        
+        
+        
+        
         audio_length = audio_length_pre // 5 # ad-hoc for 5x fc downsample  #tensor(16)
         audio_pseudo = torch.full((audio_length,), -1) # placeholder
         prompt_ids = torch.tensor(prompt_ids, dtype=torch.int64)
@@ -500,7 +518,7 @@ class AVSRDataset(Dataset):
             trgtout = np.array(trgtout)
             trgtLen = len(trgtout)
 
-            inp = (audInp, vidInp)
+            inp = [audInp, vidInp]
             trgtin = torch.from_numpy(trgtin)
             trgtout = torch.from_numpy(trgtout)
             trgtLen = torch.tensor(trgtLen)
@@ -568,7 +586,7 @@ class AVSRDataset(Dataset):
         else:
             vidInp = None
 
-        inp = (audInp, vidInp)
+        inp = [audInp, vidInp]
         trgtin = torch.from_numpy(trgtin)
         trgtout = torch.from_numpy(trgtout)
         trgtLen = torch.tensor(trgtLen)

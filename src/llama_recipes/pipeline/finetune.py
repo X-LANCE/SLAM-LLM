@@ -21,6 +21,7 @@ from llama_recipes.policies import AnyPrecisionAdamW, apply_fsdp_checkpointing
 from llama_recipes.configs import fsdp_config as FSDP_CONFIG
 from llama_recipes.configs import train_config as TRAIN_CONFIG
 from llama_recipes.configs import model_config as MODEL_CONFIG
+from llama_recipes.configs import avmodel_config as AV_MODEL_CONFIG
 from llama_recipes.configs import log_config as LOG_CONFIG
 from llama_recipes.data.concatenator import ConcatDataset
 
@@ -47,10 +48,14 @@ import sys
 import logging
 import wandb
 
+import hydra
+
+# @hydra.main(version_base="1.3", config_path="/root/SLAM-LLM/configs", config_name="config")
+# def main(cfg):
 def main(**kwargs):
     # Update the configuration for the training and sharding process
-    train_config, fsdp_config, model_config, log_config = TRAIN_CONFIG(), FSDP_CONFIG(), MODEL_CONFIG(), LOG_CONFIG()
-    update_config((train_config, fsdp_config, model_config, log_config), **kwargs)
+    train_config, fsdp_config, model_config, avmodel_config, log_config,  = TRAIN_CONFIG(), FSDP_CONFIG(), MODEL_CONFIG(), AV_MODEL_CONFIG(), LOG_CONFIG()
+    update_config((train_config, fsdp_config, model_config, avmodel_config, log_config), **kwargs)
 
     # Set log
     if not os.path.exists(os.path.dirname(log_config.log_file)): #x
@@ -79,6 +84,7 @@ def main(**kwargs):
     logger.info("train_config: {}".format(train_config))
     logger.info("fsdp_config: {}".format(fsdp_config))
     logger.info("model_config: {}".format(model_config))
+    logger.info("model_config: {}".format(avmodel_config))
 
 
     # Set the seeds for reproducibility
@@ -104,10 +110,10 @@ def main(**kwargs):
         if log_config.use_wandb:
             if not os.path.exists(log_config.wandb_dir):
                 os.makedirs(log_config.wandb_dir, exist_ok=True)
-            wandb_config={"train_config":vars(train_config), "fsdp_config":vars(fsdp_config), "model_config":vars(model_config), "log_config":vars(log_config)}
+            wandb_config={"train_config":vars(train_config), "fsdp_config":vars(fsdp_config), "model_config":vars(model_config), "avmodel_config":vars(avmodel_config), "log_config":vars(log_config)}
             wandb.init(dir=log_config.wandb_dir, entity=log_config.wandb_entity_name, project=log_config.wandb_project_name,name=log_config.wandb_exp_name ,config=wandb_config)
 
-    model, tokenizer = model_factory(train_config, model_config, **kwargs)
+    model, tokenizer = model_factory(train_config, model_config, avmodel_config, **kwargs)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     

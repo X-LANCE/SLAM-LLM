@@ -2,6 +2,9 @@ import types
 import torch
 import torch.nn.functional as F
 
+import logging
+logger = logging.getLogger(__name__)
+
 class WhisperWrappedEncoder:
     
     @classmethod
@@ -55,3 +58,18 @@ class AVEncoder:
         avnet.load_state_dict(checkpoint['state_dict'],strict=False)
  
         return avnet
+
+class SOTAAVEncoder:
+
+    @classmethod
+    def load(cls, cfg):
+        if cfg.modality in ["audio", "visual"]:
+            from .SOTA_AV.lightning import ModelModule
+        elif cfg.modality == "audiovisual":
+            from .SOTA_AV.lightning_av import ModelModule
+        modelmodule = ModelModule(cfg)
+        msg = modelmodule.model.load_state_dict(torch.load(cfg.pretrained_model_path, map_location=lambda storage, loc: storage))
+        logger.info(msg)
+        # modelmodule.to(device)
+ 
+        return modelmodule

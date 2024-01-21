@@ -4,6 +4,9 @@
 trans="/nfs/yangguanrou.ygr/vicuna-7b-v1.5-finetune-vsr-20230116/avsr/20/decode_LRS3_test_beam4_repetition_penalty1_gt"
 preds="/nfs/yangguanrou.ygr/vicuna-7b-v1.5-finetune-vsr-20230116/avsr/20/decode_LRS3_test_beam4_repetition_penalty1_pred"
 
+trans="/nfs/yangguanrou.ygr/vicuna-7b-v1.5-finetune-sota-vsr-20230119/avsr/27/decode_log_test_other_beam4_repetition_penalty1_gt"
+preds="/nfs/yangguanrou.ygr/vicuna-7b-v1.5-finetune-sota-vsr-20230119/avsr/27/decode_log_test_other_beam4_repetition_penalty1_pred"
+
 
 # python src/llama_recipes/utils/preprocess_text.py ${preds} ${preds}.proc
 # python src/llama_recipes/utils/compute_wer.py ${trans} ${preds}.proc ${preds}.proc.wer
