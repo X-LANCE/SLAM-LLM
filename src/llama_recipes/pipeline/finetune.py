@@ -60,7 +60,8 @@ def main_hydra(cfg: DictConfig):
         else:
             return cfg_item
     
-    kwargs = to_plain_list(cfg)
+    # kwargs = to_plain_list(cfg)
+    kwargs = cfg
     log_level = getattr(logging, kwargs.get("log_level", "INFO").upper())
     
     logging.basicConfig(level=log_level)
@@ -69,10 +70,10 @@ def main_hydra(cfg: DictConfig):
         import pdb;
         pdb.set_trace()
         
-    main(**kwargs)
+    main(kwargs)
     
 
-def main(**kwargs):
+def main(kwargs: DictConfig):
     # Update the configuration for the training and sharding process
     # train_config, fsdp_config, model_config, log_config = TRAIN_CONFIG(), FSDP_CONFIG(), MODEL_CONFIG(), LOG_CONFIG()
     # update_config((train_config, fsdp_config, model_config, log_config), **kwargs)
@@ -82,7 +83,11 @@ def main(**kwargs):
                                                                           kwargs.model_config, \
                                                                           kwargs.log_config, \
                                                                           kwargs.dataset_config
-    
+    del kwargs.train_config
+    del kwargs.fsdp_config
+    del kwargs.model_config
+    del kwargs.log_config
+    del kwargs.dataset_config
     
     # Set log
     if not os.path.exists(os.path.dirname(log_config.log_file)):
