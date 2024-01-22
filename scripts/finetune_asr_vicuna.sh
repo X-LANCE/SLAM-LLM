@@ -23,29 +23,31 @@ output_dir=/nfs/maziyang.mzy/exps/vicuna-7b-v1.5-finetune-asr-ds5-proj2048-lr1e-
 # -m debugpy --listen 5678 --wait-for-client
 if [[ $CUDA_VISIBLE_DEVICES != *","* ]]; then
 python -m debugpy --listen 5678 --wait-for-client src/llama_recipes/pipeline/finetune.py \
---model_name asr \
---freeze_encoder \
---freeze_llm \
---llm_name vicuna-13b-v1.5 \
---llm_path $llm_path \
---llm_dim 5120 \
---encoder_name whisper \
---encoder_ds_rate 2 \
---encoder_path $speech_encoder_path \
---encoder_dim 1280 \
---encoder_projector linear \
---encoder_projector_ds_rate 5 \
---dataset speech_dataset \
---speech_dataset.train_data_path /nfs/maziyang.mzy/data/librispeech/librispeech_train_960h.jsonl \
---speech_dataset.val_data_path /nfs/maziyang.mzy/data/librispeech/librispeech_dev_other_filtered.jsonl \
---batching_strategy custom \
---num_epochs 100 \
---batch_size_training 4 \
---val_batch_size 4 \
---num_workers_dataloader 4 \
---lr 1e-4 \
---output_dir $output_dir \
---metric acc \
+--config-path "./conf" \
+--config-name "asr_vicuna.yaml"
+++train_config.model_name=asr \
+++train_config.freeze_encoder=true \
+++train_config.freeze_llm=true \
+++model_config.llm_name="vicuna-13b-v1.5" \
+++model_config.llm_path=$llm_path \
+++model_config.llm_dim=5120 \
+++model_config.encoder_name=whisper \
+++model_config.encoder_ds_rate=2 \
+++model_config.encoder_path=$speech_encoder_path \
+++model_config.encoder_dim=1280 \
+++model_config.encoder_projector=linear \
+++model_config.encoder_projector_ds_rate=5 \
+++dataset_config.dataset=speech_dataset \
+++dataset_config.train_data_path=/nfs/maziyang.mzy/data/librispeech/librispeech_train_960h.jsonl \
+++dataset_config.val_data_path=/nfs/maziyang.mzy/data/librispeech/librispeech_dev_other_filtered.jsonl \
+++train_config.batching_strategy=custom \
+++train_config.num_epochs=100 \
+++train_config.batch_size_training=4 \
+++train_config.val_batch_size=4 \
+++train_config.num_workers_dataloader=4 \
+++train_config.lr=1e-4 \
+++train_configoutput_dir=$output_dir \
+++metric=acc \
 # --log_file $output_dir/test.log \
 # --use_wandb \
 # --wandb_dir $output_dir \

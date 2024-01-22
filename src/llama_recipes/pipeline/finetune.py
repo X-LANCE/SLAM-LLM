@@ -47,11 +47,43 @@ import sys
 import logging
 import wandb
 
+import hydra
+from omegaconf import DictConfig, ListConfig, OmegaConf
+
+@hydra.main(config_name=None, version_base=None)
+def main_hydra(cfg: DictConfig):
+    def to_plain_list(cfg_item):
+        if isinstance(cfg_item, ListConfig):
+            return OmegaConf.to_container(cfg_item, resolve=True)
+        elif isinstance(cfg_item, DictConfig):
+            return {k: to_plain_list(v) for k, v in cfg_item.items()}
+        else:
+            return cfg_item
+    
+    kwargs = to_plain_list(cfg)
+    log_level = getattr(logging, kwargs.get("log_level", "INFO").upper())
+    
+    logging.basicConfig(level=log_level)
+    
+    if kwargs.get("debug", False):
+        import pdb;
+        pdb.set_trace()
+        
+    main(**kwargs)
+    
+
 def main(**kwargs):
     # Update the configuration for the training and sharding process
-    train_config, fsdp_config, model_config, log_config = TRAIN_CONFIG(), FSDP_CONFIG(), MODEL_CONFIG(), LOG_CONFIG()
-    update_config((train_config, fsdp_config, model_config, log_config), **kwargs)
+    # train_config, fsdp_config, model_config, log_config = TRAIN_CONFIG(), FSDP_CONFIG(), MODEL_CONFIG(), LOG_CONFIG()
+    # update_config((train_config, fsdp_config, model_config, log_config), **kwargs)
 
+    train_config, fsdp_config, model_config, log_config, dataset_config = kwargs.train_config, \
+                                                                          kwargs.fsdp_config, \
+                                                                          kwargs.model_config, \
+                                                                          kwargs.log_config, \
+                                                                          kwargs.dataset_config
+    
+    
     # Set log
     if not os.path.exists(os.path.dirname(log_config.log_file)):
         os.makedirs(os.path.dirname(log_config.log_file), exist_ok=True)
@@ -141,7 +173,7 @@ def main(**kwargs):
     elif not train_config.quantization and not train_config.enable_fsdp:
         model.to(device)
 
-    dataset_config = generate_dataset_config(train_config, kwargs)
+    # dataset_config = generate_dataset_config(train_config, kwargs)
     logger.info("dataset_config: {}".format(dataset_config))
     if not train_config.enable_fsdp or rank == 0:
         if log_config.use_wandb:
@@ -230,4 +262,4 @@ def main(**kwargs):
             wandb.finish()
 
 if __name__ == "__main__":
-    fire.Fire(main)
+    main_hydra()
