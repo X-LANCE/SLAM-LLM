@@ -68,10 +68,11 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
     def __getitem__(self, index):
         data_dict = self.data_list[index]
         audio_path = data_dict.get("source")
+        audio_path = "/nfs/maziyang.mzy/data/librispeech"+audio_path[audio_path.find('/audio'):]
         target = data_dict.get("target", None)
         task = data_dict.get("prompt", "ASR")
         
-        audio_raw = whisper.load_audio(audio_path)
+        audio_raw = whisper.load_audio(audio_path) #(253280,)
         audio_raw = whisper.pad_or_trim(audio_raw)
         # audio_raw = np.concatenate((np.zeros(random.randint(0, 16000)), audio_raw, np.zeros(random.randint(0, 16000)))).astype(audio_raw.dtype)[:16000*30]
         audio_mel = whisper.log_mel_spectrogram(audio_raw).permute(1, 0)
@@ -87,7 +88,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         audio_length = (audio_mel.shape[0] + 1) // 2  # ad-hoc for whisper for 2x downsample from mel to feats
         audio_length = audio_length // 5 # ad-hoc for 5x fc downsample
         # audio_length = calculate_output_length_1d(audio_length, 5, 5, 0) # ad-hoc for 5x cov1d downsample
-        if self.fix_length_audio > 0:
+        if self.fix_length_audio > 0:  #-1
             audio_length = self.fix_length_audio
         audio_pseudo = torch.full((audio_length,), -1) # placeholder
 

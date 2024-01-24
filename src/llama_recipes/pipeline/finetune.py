@@ -121,7 +121,7 @@ def main(**kwargs):
     if train_config.enable_fsdp and fsdp_config.pure_bf16:
         model.to(torch.bfloat16)
 
-    #setting up FSDP if enable_fsdp is enabled
+    #setting up   if enable_fsdp is enabled
     if train_config.enable_fsdp:
         if not train_config.use_peft and train_config.freeze_layers:
 
@@ -157,6 +157,7 @@ def main(**kwargs):
     dataset_train = get_preprocessed_dataset(
         tokenizer,
         dataset_config,
+        model_config,
         split="train",
     )
     if not train_config.enable_fsdp or rank == 0:
@@ -164,6 +165,7 @@ def main(**kwargs):
     dataset_val = get_preprocessed_dataset(
         tokenizer,
         dataset_config,
+        model_config,
         split="val",
     )
     if not train_config.enable_fsdp or rank == 0:

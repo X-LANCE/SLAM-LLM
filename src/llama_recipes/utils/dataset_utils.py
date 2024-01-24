@@ -31,7 +31,7 @@ def load_module_from_py_file(py_file: str) -> object:
     return module
 
 
-def get_custom_dataset(dataset_config, tokenizer, split: str):
+def get_custom_dataset(dataset_config, model_config, tokenizer, split: str):
     if ":" in dataset_config.file:
         module_path, func_name = dataset_config.file.split(":")
     else:
@@ -46,7 +46,7 @@ def get_custom_dataset(dataset_config, tokenizer, split: str):
 
     module = load_module_from_py_file(module_path.as_posix())
     try:
-        return getattr(module, func_name)(dataset_config, tokenizer, split)
+        return getattr(module, func_name)(dataset_config, model_config, tokenizer, split)
     except AttributeError as e:
         logger.info(f"It seems like the given method name ({func_name}) is not present in the dataset .py file ({module_path.as_posix()}).")
         raise e
@@ -63,7 +63,7 @@ DATASET_PREPROC = {
 
 
 def get_preprocessed_dataset(
-    tokenizer, dataset_config, split: str = "train"
+    tokenizer, dataset_config, model_config, split: str = "train"
 ) -> torch.utils.data.Dataset:
     if not dataset_config.dataset in DATASET_PREPROC:
         raise NotImplementedError(f"{dataset_config.dataset} is not (yet) implemented")
@@ -77,6 +77,7 @@ def get_preprocessed_dataset(
 
     return DATASET_PREPROC[dataset_config.dataset](
         dataset_config,
+        model_config,
         tokenizer,
         get_split(),
     )

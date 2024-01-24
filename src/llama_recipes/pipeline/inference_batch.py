@@ -72,6 +72,7 @@ def main(**kwargs):
 	dataset_test = get_preprocessed_dataset(
         tokenizer,
         dataset_config,
+		model_config,
         split="test",
     )
 	if not train_config.enable_fsdp or rank == 0:

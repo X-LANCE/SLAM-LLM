@@ -81,7 +81,7 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
     checkpoint_times = []
     results = {}
     best_val_loss = float("inf")
-    best_val_acc = float("inf")
+    best_val_acc = float("-inf")
     for epoch in range(train_config.num_epochs):
         epoch_start_time = time.perf_counter()
         with MemoryTrace() as memtrace:  # track the memory usage
@@ -210,14 +210,14 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                     else:
                         logger.info(f"PEFT modules are saved in {train_config.output_dir} directory")
                 
-                elif not train_config.use_peft and train_config.freeze_llm:
+                elif not train_config.use_peft and train_config.freeze_llm:  #
                     logger.info(f"llm is frozen, we are about to save other parts.")
-                    if train_config.enable_fsdp: #(FIX:MZY):We now only support full_shard and no_shard.
+                    if train_config.enable_fsdp: #(FIX:MZY):We now only support full_shard and no_shard.  #
                         if fsdp_config.sharding_strategy == ShardingStrategy.FULL_SHARD:
                             save_model_checkpoint_peft_full_shard(
                                     model, optimizer, rank, train_config, epoch=epoch
                                 )
-                        elif fsdp_config.sharding_strategy == ShardingStrategy.NO_SHARD:
+                        elif fsdp_config.sharding_strategy == ShardingStrategy.NO_SHARD:  #
                             if rank==0:
                                 save_model_checkpoint_peft(
                                     model, optimizer, rank, train_config, epoch=epoch

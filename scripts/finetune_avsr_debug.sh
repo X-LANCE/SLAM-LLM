@@ -12,13 +12,13 @@ export OMP_NUM_THREADS=1
 
 cd /root/SLAM-LLM
 
-speech_encoder_path=/nfs/zhifu.gzf/ckpt/Whisper/large-v2.pt
+# speech_encoder_path=/nfs/zhifu.gzf/ckpt/Whisper/large-v2.pt
 # speech_encoder_path=/nfs/maziyang.mzy/models/Whisper/large-v2-qwen.pt
 
 llm_path=/nfs/maziyang.mzy/models/vicuna-7b-v1.5
 # llm_path=/nfs/maziyang.mzy/models/vicuna-13b-v1.5
 
-output_dir=/nfs/maziyang.mzy/exps/vicuna-7b-v1.5-finetune-asr-ds5-proj2048-lr1e-4-whisper-prompt-paddingr-20240112
+output_dir=/nfs/yangguanrou.ygr/vicuna-7b-v1.5-finetune-avsr-debug
 
 # -m debugpy --listen 5678 --wait-for-client
 if [[ $CUDA_VISIBLE_DEVICES != *","* ]]; then

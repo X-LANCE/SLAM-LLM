@@ -10,14 +10,14 @@ class WhisperWrappedEncoder:
     @classmethod
     def load(cls, model_config):
         
-        def extract_variable_length_features(self, x: torch.Tensor):
+        def extract_variable_length_features(self, x: torch.Tensor):  #torch.Size([2, 80, 3000])
             """
             x : torch.Tensor, shape = (batch_size, n_mels, n_ctx)
                 the mel spectrogram of the audio
             """
-            x = F.gelu(self.conv1(x))
-            x = F.gelu(self.conv2(x))
-            x = x.permute(0, 2, 1)
+            x = F.gelu(self.conv1(x))  #torch.Size([2, 1280, 3000])
+            x = F.gelu(self.conv2(x)) #torch.Size([2, 1280, 1500])
+            x = x.permute(0, 2, 1) #torch.Size([2, 1500, 1280])
 
             # assert x.shape[1:] == self.positional_embedding.shape, "incorrect audio shape"
             # x = (x + self.positional_embedding).to(x.dtype)
@@ -54,9 +54,15 @@ class AVEncoder:
     def load(cls, model_config):
         from .AV.av_net import AVNet
         avnet = AVNet(model_config)
-        checkpoint = torch.load(model_config.TRAIN_LRS3_MODEL_FILE)
-        avnet.load_state_dict(checkpoint['state_dict'],strict=False)
- 
+        if model_config.modal == "AV":
+            checkpoint = torch.load(model_config.TRAIN_LRS3_MODEL_FILE)
+        elif model_config.modal == "AO":
+            checkpoint = torch.load(model_config.TRAINED_AO_FILE)  #check 了这么load没问题
+        elif model_config.modal == "VO":
+            checkpoint = torch.load(model_config.TRAINED_VO_FILE)
+        msg = avnet.load_state_dict(checkpoint['state_dict'],strict=False)
+        logger.info(msg)
+
         return avnet
 
 class SOTAAVEncoder:

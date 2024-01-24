@@ -26,7 +26,7 @@ python -m debugpy --listen 5678 --wait-for-client src/llama_recipes/pipeline/fin
 --model_name avsr \
 --freeze_encoder \
 --freeze_llm \
---llm_name vicuna-13b-v1.5 \
+--llm_name vicuna-7b-v1.5 \
 --llm_path $llm_path \
 --llm_dim 4096 \
 --encoder_name moco_wav2vec2 \

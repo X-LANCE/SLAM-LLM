@@ -66,16 +66,16 @@ class EncoderProjectorQFormer(nn.Module):
         self.linear = nn.Linear(configuration.hidden_size, self.llm_dim)
         self.norm = nn.LayerNorm(self.llm_dim, eps=1e-5)
 
-    def forward(self, x, atts):
-        query = self.query.expand(x.shape[0], -1, -1)
+    def forward(self, x, atts):  #torch.Size([2, 1500, 1280])   torch.Size([2, 1500])
+        query = self.query.expand(x.shape[0], -1, -1)  #torch.Size([2, 64, 768])
         
         query_output = self.qformer(
             query_embeds=query,
             encoder_hidden_states=x,
             encoder_attention_mask=atts,
             return_dict=True,
-        )
+        )  
         
-        query_proj = self.norm(self.linear(query_output.last_hidden_state))
+        query_proj = self.norm(self.linear(query_output.last_hidden_state))  #torch.Size([2, 64, 5120])
         
         return query_proj

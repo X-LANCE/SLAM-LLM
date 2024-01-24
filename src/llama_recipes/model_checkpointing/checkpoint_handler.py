@@ -164,7 +164,7 @@ def save_model_checkpoint(
         
         logger.info(f"model checkpoint saved for epoch {epoch} at {save_full_path}\n")
       
-def save_model_checkpoint_peft(model, optimizer, rank, cfg, epoch=0):
+def save_model_checkpoint_peft(model, optimizer, rank, cfg, epoch=0):  #
     logger.info(f"--> saving model ...")
     save_dir = os.path.join(cfg.output_dir, cfg.model_name, str(epoch+1))
     os.makedirs(save_dir, exist_ok=True)

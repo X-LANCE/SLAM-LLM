@@ -14,14 +14,13 @@ from torch.nn.utils.rnn import pad_sequence
 import logging
 logger = logging.getLogger(__name__)
 
-from llama_recipes.utils.compute_utils import calculate_output_length_1d
 import torch.nn as nn
-
-import math
 from torch.nn.functional import pad
 
+import whisper
+
 class AVSRDataset(Dataset):
-    def __init__(self, dataset_config, tokenizer=None, split='train'):
+    def __init__(self, dataset_config, model_config, tokenizer=None, split='train'):
         super().__init__()
 
         self.tokenizer = tokenizer
@@ -38,6 +37,8 @@ class AVSRDataset(Dataset):
         self.train_subset = dataset_config.train_subset
         self.valid_subset = dataset_config.valid_subset
         self.test_subset= dataset_config.test_subset
+        self.dataset_config = dataset_config
+        self.model_config = model_config
 
         if self.dataset == "train": 
             pretrain_dir = self.data_path + self.pretrain_subset  # "LRS3/pretrain.txt"
@@ -139,40 +140,52 @@ class AVSRDataset(Dataset):
         else:
             inp, trgtin, trgtout, trgtLen,target = self.prepare_main_input(index, self.modal, self.h5, targetFile, self.charToIx, self.transform, noise, self.noiseSNR)   
 
-        T_audio= inp[0].shape[0]
-        T_visual = inp[1].shape[0]
-        target_len = T_visual*640
-        padding_len = target_len - T_audio
-        if padding_len > 0:
-            # xs_pad = pad(xs_pad, (0,0,0, padding_len),"constant",0)
-            inp[0] = pad(inp[0], (0,padding_len),"constant",0)
-        elif padding_len < 0:
-            inp[0] = inp[0][:target_len]
+
+        # new!
+        if self.model_config.encoder_name == "sota_avsr":
+        # 让audio是visual的640倍
+            T_audio= inp[0].shape[0]
+            T_visual = inp[1].shape[0]
+            target_len = T_visual*640
+            padding_len = target_len - T_audio
+            if padding_len > 0:
+                # xs_pad = pad(xs_pad, (0,0,0, padding_len),"constant",0)
+                inp[0] = pad(inp[0], (0,padding_len),"constant",0)
+            elif padding_len < 0:
+                inp[0] = inp[0][:target_len]
 
         # new!
         audio_raw = inp[0]  #cpu torch.Size([48800])
         visual_raw = inp[1]  #cpu torch.Size([77, 1, 112, 112])
+        audio_mel = None
 
-        prompt = "Transcribe video to text. Output the transcription directly without redundant content. Ensure that the output is not duplicated. "
+        if self.model_config.encoder_name == "whisper":
+            audio_raw = whisper.pad_or_trim(audio_raw)  #torch.Size([480000])
+            audio_mel = whisper.log_mel_spectrogram(audio_raw).permute(1, 0)    #torch.Size([3000, 80])        
+
+        if self.model_config.modal=="AV" or self.model_config.modal=="VO":
+            prompt = "Transcribe video to text. Output the transcription directly without redundant content. Ensure that the output is not duplicated. "
+        elif self.model_config.modal=="AO":
+            prompt = "Transcribe speech to text. Output the transcription directly without redundant content. Ensure that the output is not duplicated. "
 
         prompt = self.prompt_template.format(prompt)
         prompt_ids = self.tokenizer.encode(prompt)
         prompt_length = len(prompt_ids)
-        #audio_length, visual_length,inputLen = self.calculate_output_length(audio_raw,visual_raw)
-        # audio_length_pre = self.calculate_output_length(audio_raw,visual_raw)  #video  #tensor(80)
+
+        if self.model_config.encoder_name == "moco_wav2vec2":
+            audio_length_pre = self.calculate_output_length(audio_raw,visual_raw)  #video  #tensor(80)
+        elif self.model_config.encoder_name == "sota_avsr":
+            audio_length_pre = visual_raw.shape[0]
+        elif self.model_config.encoder_name == "whisper":
+            audio_length_pre = (audio_mel.shape[0] + 1) // 2  #1500
         
-        audio_length_pre = visual_raw.shape[0]
-        
-        
-        
-        
+
         audio_length = audio_length_pre // 5 # ad-hoc for 5x fc downsample  #tensor(16)
         audio_pseudo = torch.full((audio_length,), -1) # placeholder
         prompt_ids = torch.tensor(prompt_ids, dtype=torch.int64)
 
         example_ids = torch.cat((audio_pseudo, prompt_ids))  # [audio,prompt]
         example_mask = example_ids.ge(-1)  # [True,True]
-
 
         # inference new
         key= targetFile 
@@ -182,7 +195,7 @@ class AVSRDataset(Dataset):
             "input_ids": example_ids,
             # "labels": labels_ids,
             "attention_mask": example_mask,
-            # 'audio_mel': audio_mel,   
+            'audio_mel': audio_mel,   
             'audio_length': audio_length,
 
             'inp':inp,
@@ -236,14 +249,10 @@ class AVSRDataset(Dataset):
             vidLeftPadding = torch.floor(torch.div(vidPadding, 2)).int()
             vidRightPadding = torch.ceil(torch.div(vidPadding, 2)).int()
 
-
-
             pad = nn.ReplicationPad2d(padding=(0, 0, vidLeftPadding, vidRightPadding))
             videoBatch = pad(videoBatch.unsqueeze(0).unsqueeze(0)).squeeze(0).squeeze(0)
 
             inputLenBatch = (vidLen + vidPadding).long()
-
-
 
         else:
             # 过wav2vec2
@@ -310,6 +319,17 @@ class AVSRDataset(Dataset):
         attention_mask = torch.stack([self.pad(s['attention_mask'], input_ids_max_length, False)
                                       for s in samples])
 
+        audio_mel = None
+        audio_mel_post_mask = None
+
+        if self.model_config.encoder_name == "whisper":
+            audio_mel_max_length = max([s['audio_mel'].shape[0] for s in samples])
+            audio_mel = torch.stack([self.pad(s['audio_mel'], audio_mel_max_length, 0)
+                                    for s in samples])
+            audio_mel_post_mask = torch.zeros(len(samples), (audio_mel_max_length + 1) // 2) # ad-hoc for whisper for 2x downsample from mel to feats
+            for line, sample in enumerate(samples):
+                audio_mel_post_mask[line, :(sample['audio_mel'].shape[0] + 1) // 2] = 1    
+
         modality_mask = torch.zeros_like(attention_mask)
         for line, sample in enumerate(samples):
             modality_mask[line, :sample['audio_length']] = 1   #downsample 再/5
@@ -352,8 +372,8 @@ class AVSRDataset(Dataset):
             'input_ids': input_ids,  #torch.Size([4, 114])
             # 'labels': labels, #torch.Size([4, 114])
             'attention_mask': attention_mask,  #torch.Size([4, 114])
-            # 'audio_mel': audio_mel,
-            # 'audio_mel_post_mask': audio_mel_post_mask,
+            'audio_mel': audio_mel,
+            'audio_mel_post_mask': audio_mel_post_mask,
             'modality_mask': modality_mask,
             'keys': keys,
             'targets': targets,
@@ -594,8 +614,8 @@ class AVSRDataset(Dataset):
         return inp, trgtin, trgtout, trgtLen,trgt   #'THE FIRST TIME WHEN IT TOOK ME FIVE MONTHS FROM THE DECISION OF'
 
 
-def get_audio_dataset(dataset_config, tokenizer, split):
-    dataset = AVSRDataset(dataset_config, tokenizer, split)
+def get_audio_dataset(dataset_config, model_config, tokenizer, split):
+    dataset = AVSRDataset(dataset_config, model_config, tokenizer, split)
     return dataset
 
 class ToTensor:
