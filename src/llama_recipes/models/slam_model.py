@@ -44,20 +44,20 @@ def setup_encoder(train_config, model_config, **kwargs):
         if encoder_name == "moco_wav2vec2":
             from llama_recipes.models.encoder import AVEncoder
             encoder = AVEncoder.load(model_config)
-    print_module_size(encoder, encoder_name, int(os.environ["RANK"]) if train_config.enable_fsdp else 0)
+    print_module_size(encoder, encoder_name, int(os.environ["RANK"]) if train_config.enable_fsdp or train_config.enable_ddp else 0)
 
     if train_config.freeze_encoder:
         for name, param in encoder.named_parameters(): 
             param.requires_grad = False
         encoder.eval()
-    print_module_size(encoder, encoder_name, int(os.environ["RANK"]) if train_config.enable_fsdp else 0)
+    print_module_size(encoder, encoder_name, int(os.environ["RANK"]) if train_config.enable_fsdp or train_config.enable_ddp else 0)
 
     return encoder
 
 def setup_llm(train_config, model_config, **kwargs):
     from pkg_resources import packaging
-    use_cache = False if train_config.enable_fsdp else None
-    if train_config.enable_fsdp and train_config.low_cpu_fsdp:
+    use_cache = False if train_config.enable_fsdp or train_config.enable_ddp else None
+    if (train_config.enable_fsdp or train_config.enable_ddp) and train_config.low_cpu_fsdp:
         """
         for FSDP, we can save cpu memory by loading pretrained model on rank0 only.
         this avoids cpu oom when loading large models like llama 70B, in which case
@@ -90,7 +90,7 @@ def setup_llm(train_config, model_config, **kwargs):
             device_map="auto" if train_config.quantization else None,
             use_cache=use_cache,
         )
-    if train_config.enable_fsdp and train_config.use_fast_kernels:
+    if (train_config.enable_fsdp or train_config.enable_ddp) and train_config.use_fast_kernels:
         """
         For FSDP and FSDP+PEFT, setting 'use_fast_kernels' will enable
         using of Flash Attention or Xformer memory-efficient kernels
@@ -102,7 +102,7 @@ def setup_llm(train_config, model_config, **kwargs):
         except ImportError:
             logger.warning("Module 'optimum' not found. Please install 'optimum' it before proceeding.")
 
-    print_module_size(model, model_config.llm_name, int(os.environ["RANK"]) if train_config.enable_fsdp else 0)
+    print_module_size(model, model_config.llm_name, int(os.environ["RANK"]) if train_config.enable_fsdp or train_config.enable_ddp else 0)
 
     # Prepare the model for int8 training if quantization is enabled
     if train_config.quantization:
@@ -119,11 +119,11 @@ def setup_llm(train_config, model_config, **kwargs):
         model.print_trainable_parameters()
     elif train_config.use_peft:
         logger.info("setup peft...")
-        peft_config = generate_peft_config(train_config, kwargs)
+        peft_config = generate_peft_config(train_config)
         model = get_peft_model(model, peft_config)
         model.print_trainable_parameters()
 
-    print_module_size(model, model_config.llm_name, int(os.environ["RANK"]) if train_config.enable_fsdp else 0)
+    print_module_size(model, model_config.llm_name, int(os.environ["RANK"]) if train_config.enable_fsdp or train_config.enable_ddp else 0)
     return model
 
 def setup_encoder_projector(train_config, model_config, **kwargs):
@@ -136,7 +136,7 @@ def setup_encoder_projector(train_config, model_config, **kwargs):
     elif model_config.encoder_projector == "q-former":
         from llama_recipes.models.projector import EncoderProjectorQFormer
         encoder_projector = EncoderProjectorQFormer(model_config)
-    print_module_size(encoder_projector, model_config.encoder_projector, int(os.environ["RANK"]) if train_config.enable_fsdp else 0)
+    print_module_size(encoder_projector, model_config.encoder_projector, int(os.environ["RANK"]) if train_config.enable_fsdp or train_config.enable_ddp else 0)
     return encoder_projector
 
 
