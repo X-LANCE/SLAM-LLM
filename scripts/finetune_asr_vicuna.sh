@@ -22,9 +22,9 @@ output_dir=/nfs/maziyang.mzy/exps/vicuna-7b-v1.5-finetune-asr-ds5-proj2048-lr1e-
 
 # -m debugpy --listen 5678 --wait-for-client
 if [[ $CUDA_VISIBLE_DEVICES != *","* ]]; then
-python -m debugpy --listen 5678 --wait-for-client src/llama_recipes/pipeline/finetune.py \
---config-path "./conf" \
---config-name "asr_vicuna.yaml"
+python src/llama_recipes/pipeline/finetune.py \
+--config-path "scripts/conf" \
+--config-name "asr_vicuna_lora.yaml" \
 ++train_config.model_name=asr \
 ++train_config.freeze_encoder=true \
 ++train_config.freeze_llm=true \
