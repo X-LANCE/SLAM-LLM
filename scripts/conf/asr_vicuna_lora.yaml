@@ -50,8 +50,17 @@ train_config:
   use_fp16: False
   mixed_precision: true
   val_batch_size: 1
-  peft_method: "lora" # None , llama_adapter, prefix
+
   use_peft: false
+  peft_config:
+    peft_method: "lora" # None , llama_adapter, prefix
+    r: 8
+    lora_alpha: 32
+    target_modules: [ "q_proj", "v_proj" ]
+    bias: null
+    task_type: "CAUSAL_LM"
+    lora_dropout: 0.05
+    inference_mode: false
   output_dir: "PATH/to/save/PEFT/model"
   freeze_layers: false
   num_freeze_layers: 1
@@ -70,9 +79,9 @@ train_config:
 
 dataset_config:
   dataset: "samsum_dataset"
+  file: "src/llama_recipes/datasets/speech_dataset.py:get_speech_dataset"
   train_data_path: null
   val_data_path: null
-  file: "src/llama_recipes/datasets/speech_dataset.py:get_speech_dataset"
   train_split: "train"
   test_split: "validation"
   data_path: null

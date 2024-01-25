@@ -46,7 +46,8 @@ python -m debugpy --listen 5678 --wait-for-client src/llama_recipes/pipeline/fin
 ++train_config.val_batch_size=4 \
 ++train_config.num_workers_dataloader=4 \
 ++train_config.lr=1e-4 \
-++train_configoutput_dir=$output_dir \
+++train_config.output_dir=$output_dir \
+++train_config.peft_config.peft_method=lora \
 ++metric=acc \
 # --log_file $output_dir/test.log \
 # --use_wandb \

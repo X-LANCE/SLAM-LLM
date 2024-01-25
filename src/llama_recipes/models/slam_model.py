@@ -119,7 +119,7 @@ def setup_llm(train_config, model_config, **kwargs):
         model.print_trainable_parameters()
     elif train_config.use_peft:
         logger.info("setup peft...")
-        peft_config = generate_peft_config(train_config, kwargs)
+        peft_config = generate_peft_config(train_config)
         model = get_peft_model(model, peft_config)
         model.print_trainable_parameters()
 

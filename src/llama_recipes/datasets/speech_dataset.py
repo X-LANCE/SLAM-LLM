@@ -31,7 +31,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         self.IGNORE_INDEX = -100  # The default setting in CrossEntropyLoss
         self.prompt_template = "USER: {}\n ASSISTANT:"
         self.answer_template = "{}"
-        self.fix_length_audio = dataset_config.fix_length_audio
+        self.fix_length_audio = dataset_config.get("fix_length_audio", -1)
 
         self.data_list = []
         if split == "train":
@@ -45,15 +45,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
                     data_dict = json.loads(line.strip())
                     self.data_list.append(data_dict)
 
-        # # debug
-        # with open(dataset_config.train_data_path, encoding='utf-8') as fin:
-        #         for line in fin:
-        #             data_dict = json.loads(line.strip())
-        #             self.data_list.append(data_dict)
-        # if split == "train":
-        #     self.data_list = self.data_list[:80]
-        # else:
-        #     self.data_list = self.data_list[80:100]
+
 
     def get_source_len(self, data_dict):
         return data_dict["source_len"]

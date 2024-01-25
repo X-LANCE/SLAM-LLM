@@ -1,25 +1,52 @@
-import fire
+# import fire
+import logging
 import random
 import torch
 # import argparse
 from llama_recipes.models.slam_model import slam_model
 # config
-from llama_recipes.configs import fsdp_config as FSDP_CONFIG
-from llama_recipes.configs import train_config as TRAIN_CONFIG
-from llama_recipes.configs import model_config as MODEL_CONFIG
-from llama_recipes.utils.config_utils import (
-    update_config,
-    generate_peft_config,
-    generate_dataset_config,
-    get_dataloader_kwargs,
-)
+# from llama_recipes.configs import fsdp_config as FSDP_CONFIG
+# from llama_recipes.configs import train_config as TRAIN_CONFIG
+# from llama_recipes.configs import model_config as MODEL_CONFIG
+
 from llama_recipes.pipeline.model_factory import model_factory
 
-def main(**kwargs):
+import hydra
+from omegaconf import DictConfig, ListConfig, OmegaConf
+
+
+@hydra.main(config_name=None, version_base=None)
+def main_hydra(cfg: DictConfig):
+	def to_plain_list(cfg_item):
+		if isinstance(cfg_item, ListConfig):
+			return OmegaConf.to_container(cfg_item, resolve=True)
+		elif isinstance(cfg_item, DictConfig):
+			return {k: to_plain_list(v) for k, v in cfg_item.items()}
+		else:
+			return cfg_item
+	
+	# kwargs = to_plain_list(cfg)
+	kwargs = cfg
+	log_level = getattr(logging, kwargs.get("log_level", "INFO").upper())
+	
+	logging.basicConfig(level=log_level)
+	
+	if kwargs.get("debug", False):
+		import pdb;
+		pdb.set_trace()
+	
+	main(kwargs)
+
+def main(kwargs: DictConfig):
 
 	# Update the configuration for the training and sharding process
-	train_config, fsdp_config, model_config = TRAIN_CONFIG(), FSDP_CONFIG(), MODEL_CONFIG()
-	update_config((train_config, fsdp_config, model_config), **kwargs)
+	# train_config, fsdp_config, model_config = TRAIN_CONFIG(), FSDP_CONFIG(), MODEL_CONFIG()
+	# update_config((train_config, fsdp_config, model_config), **kwargs)
+	train_config, fsdp_config, model_config, log_config, dataset_config = kwargs.train_config, \
+	                                                                      kwargs.fsdp_config, \
+	                                                                      kwargs.model_config, \
+	                                                                      kwargs.log_config, \
+	                                                                      kwargs.dataset_config
 	
 	# Set the seeds for reproducibility
 	torch.cuda.manual_seed(train_config.seed)
@@ -45,4 +72,4 @@ def main(**kwargs):
 
 
 if __name__ == "__main__":
-	fire.Fire(main)
+	main_hydra()
