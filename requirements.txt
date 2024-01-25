@@ -13,3 +13,5 @@ sentencepiece
 py7zr
 scipy
 optimum
+wandb
+hydra-core>=1.3.2

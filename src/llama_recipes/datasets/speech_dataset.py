@@ -29,7 +29,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         
         # self.data_list = contents
         self.IGNORE_INDEX = -100  # The default setting in CrossEntropyLoss
-        self.prompt = dataset_config.prompt
+        self.prompt = dataset_config.get("prompt", None)
         # self.prompt_library = [
         #     "Begin by converting the spoken words into written text. ",
         #     "Can you transcribe the speech into a written format? ",
@@ -44,7 +44,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         # ]
         self.prompt_template = "USER: {}\n ASSISTANT:"
         self.answer_template = "{}"
-        self.fix_length_audio = dataset_config.fix_length_audio
+        self.fix_length_audio = dataset_config.get("fix_length_audio", -1)
 
         self.data_list = []
         if split == "train":
@@ -92,10 +92,10 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         prompt = self.prompt
         if prompt is None:
             # prompt = random.choice(self.prompt_library)
-            prompt = "Transcribe speech to text. "
-            # prompt = "Transcribe speech to text. Output the transcription directly without redundant content. Ensure that the output is not duplicated. "
+            # prompt = "Transcribe speech to text. "
+            prompt = "Transcribe speech to text. Output the transcription directly without redundant content. Ensure that the output is not duplicated. "
         prompt = self.prompt_template.format(prompt)
-        answer = self.answer_template.format(target.lower())
+        answer = self.answer_template.format(target)
 
         prompt_ids = self.tokenizer.encode(prompt)
 

@@ -20,88 +20,109 @@ cd /root/SLAM-LLM
 speech_encoder_path=/nfs/maziyang.mzy/models/Whisper/large-v2.pt
 # speech_encoder_path=/nfs/maziyang.mzy/models/Whisper/large-v2-qwen.pt
 
+# llm_path=/nfs/maziyang.mzy/models/TinyLlama-1.1B-intermediate-step-1431k-3T
+# lm_path=/nfs/maziyang.mzy/models/TinyLlama-1.1B-Chat-v0.4
+# llm_path=/nfs/zhifu.gzf/ckpt/Llama-2-7b-hf
+# llm_path=/nfs/maziyang.mzy/models/Llama-2-7b-chat-hf
 llm_path=/nfs/maziyang.mzy/models/vicuna-7b-v1.5
 # llm_path=/nfs/maziyang.mzy/models/vicuna-13b-v1.5
 
-output_dir=/nfs/maziyang.mzy/exps/vicuna-7b-v1.5-finetune-asr-ds5-proj2048-lr1e-4-whisper-base-prompt-padding30-20240117
+output_dir=/nfs/maziyang.mzy/exps/vicuna-7b-v1.5-finetune-asr-qformer64-steplrwarmupkeep1e-4-whisper-largev2-prompt-padding30-20240125-test
 
 # -m debugpy --listen 5678 --wait-for-client
 if [[ $CUDA_VISIBLE_DEVICES != *","* ]]; then
-python -m debugpy --listen 5678 --wait-for-client src/llama_recipes/pipeline/finetune.py \
---model_name asr \
---freeze_encoder \
---freeze_llm \
---llm_name vicuna-13b-v1.5 \
---llm_path $llm_path \
---llm_dim 4096 \
---encoder_name whisper \
---encoder_ds_rate 2 \
---encoder_path $speech_encoder_path \
---encoder_dim 1280 \
---encoder_projector linear \
---encoder_projector_ds_rate 5 \
---dataset speech_dataset \
---speech_dataset.train_data_path /nfs/maziyang.mzy/data/librispeech/librispeech_train_960h.jsonl \
---speech_dataset.val_data_path /nfs/maziyang.mzy/data/librispeech/librispeech_dev_other_filtered.jsonl \
---batching_strategy custom \
---num_epochs 100 \
---batch_size_training 4 \
---val_batch_size 4 \
---num_workers_dataloader 4 \
---lr 1e-4 \
---output_dir $output_dir \
---metric acc \
-# --log_file $output_dir/test.log \
-# --use_wandb \
-# --wandb_dir $output_dir \
-# --wandb_entity_name zym22 \
-# --wandb_project_name slam-llm \
-# --wandb_exp_name test \
-# --log_interval 5 \
+python src/llama_recipes/pipeline/finetune.py \
+--config-path "/root/SLAM-LLM/scripts/conf" \
+--config-name "asr_vicuna_lora.yaml" \
+hydra.run.dir=$output_dir \
+++model_config.llm_name="vicuna-7b-v1.5" \
+++model_config.llm_path=$llm_path \
+++model_config.llm_dim=4096 \
+++model_config.encoder_name=whisper \
+++model_config.encoder_ds_rate=2 \
+++model_config.encoder_path=$speech_encoder_path \
+++model_config.encoder_dim=1280 \
+++model_config.encoder_projector=linear \
+++model_config.encoder_projector_ds_rate=5 \
+++dataset_config.dataset=speech_dataset \
+++dataset_config.train_data_path=/nfs/maziyang.mzy/data/librispeech/librispeech_train_960h.jsonl \
+++dataset_config.val_data_path=/nfs/maziyang.mzy/data/librispeech/librispeech_dev_other_filtered.jsonl \
+++train_config.model_name=asr \
+++train_config.freeze_encoder=true \
+++train_config.freeze_llm=true \
+++train_config.batching_strategy=custom \
+++train_config.warmup_steps=1000 \
+++train_config.total_steps=100000 \
+++train_config.lr=1e-4 \
+++train_config.validation_interval=1000 \
+++train_config.batch_size_training=4 \
+++train_config.val_batch_size=4 \
+++train_config.num_workers_dataloader=4 \
+++train_config.lr=1e-4 \
+++train_config.output_dir=$output_dir \
+++train_config.use_peft=true \
+++train_config.peft_config.peft_method=lora \
+++metric=acc \
+#++log_config.log_file=/$output_dir/train.log \
+#++log_config.use_wandb=true \
+#++log_config.wandb_dir=$output_dir \
+#++log_config.wandb_entity_name=zym22 \
+#++log_config.wandb_project_name=slam-llm \
+#++log_config.wandb_exp_name=test \
+#++log_config.log_interval 5 \
 # --ckpt_path "/nfs/maziyang.mzy/exps/llama-2-hf-finetune-asr-ds5-proj2048-lr1e-5-whisper-lora-prompt/asr/5/model.pt" \
 # --peft_ckpt "/nfs/maziyang.mzy/exps/llama-2-hf-finetune-asr-ds5-proj2048-lr1e-5-whisper-lora-prompt/asr/5" \
 # --use_peft --peft_method lora \
 
+##vicuna-7b-v1.5
 else
 torchrun \
 --nnodes 1 \
 --nproc_per_node 2 \
 src/llama_recipes/pipeline/finetune.py \
---model_name asr \
---freeze_encoder \
---freeze_llm \
---use_fp16 \
---enable_fsdp \
---llm_name vicuna-7b-v1.5 \
---llm_path $llm_path \
---llm_dim 4096 \
---encoder_name whisper \
---encoder_ds_rate 2 \
---encoder_path $speech_encoder_path \
---encoder_dim 1280 \
---encoder_projector linear \
---encoder_projector_ds_rate 5 \
---dataset speech_dataset \
---speech_dataset.train_data_path /nfs/maziyang.mzy/data/librispeech/librispeech_train_960h.jsonl \
---speech_dataset.val_data_path /nfs/maziyang.mzy/data/librispeech/librispeech_dev_other_filtered.jsonl \
---batching_strategy custom \
---num_epochs 100 \
---batch_size_training 4 \
---val_batch_size 4 \
---num_workers_dataloader 4 \
---lr 1e-4 \
---output_dir $output_dir \
---metric acc \
---log_file /$output_dir/train.log \
---use_wandb \
---wandb_dir $output_dir \
---wandb_entity_name zym22 \
---wandb_project_name slam-llm \
---wandb_exp_name test \
---log_interval 5 \
+--config-path "/root/SLAM-LLM/scripts/conf" \
+--config-name "asr_vicuna_lora.yaml" \
+hydra.run.dir=$output_dir \
+++model_config.llm_name="vicuna-7b-v1.5" \
+++model_config.llm_path=$llm_path \
+++model_config.llm_dim=4096 \
+++model_config.encoder_name=whisper \
+++model_config.encoder_ds_rate=2 \
+++model_config.encoder_path=$speech_encoder_path \
+++model_config.encoder_dim=1280 \
+++model_config.encoder_projector=q-former \
+++model_config.encoder_projector_ds_rate=5 \
+++dataset_config.dataset=speech_dataset \
+++dataset_config.train_data_path=/nfs/maziyang.mzy/data/librispeech/librispeech_train_960h.jsonl \
+++dataset_config.val_data_path=/nfs/maziyang.mzy/data/librispeech/librispeech_dev_other_filtered.jsonl \
+++dataset_config.fix_length_audio=64 \
+++train_config.model_name=asr \
+++train_config.freeze_encoder=true \
+++train_config.freeze_llm=true \
+++train_config.batching_strategy=custom \
+++train_config.warmup_steps=1000 \
+++train_config.total_steps=100000 \
+++train_config.lr=1e-4 \
+++train_config.validation_interval=1000 \
+++train_config.batch_size_training=4 \
+++train_config.val_batch_size=4 \
+++train_config.num_workers_dataloader=4 \
+++train_config.output_dir=$output_dir \
+++train_config.enable_fsdp=false \
+++train_config.enable_ddp=true \
+++train_config.use_fp16=true \
+++metric=acc \
+++log_config.log_file=/$output_dir/train.log \
+++log_config.use_wandb=true \
+++log_config.wandb_dir=$output_dir \
+++log_config.wandb_entity_name=zym22 \
+++log_config.wandb_project_name=slam-llm \
+++log_config.wandb_exp_name=${0##*/%.*} \
+++log_config.log_interval=5 \
+# ++train_config.use_peft=true \
+# ++train_config.peft_config.peft_method=lora \
 # --peft_ckpt "/nfs/maziyang.mzy/exps/llama-2-hf-finetune-asr-ds5-proj2048-lr1e-5-whisper-prompt-padding30-20231228/asr/4" \
 # --ckpt_path "/nfs/maziyang.mzy/exps/llama-2-hf-finetune-asr-ds5-proj2048-lr1e-5-whisper-prompt-padding30-20231228/asr/4/model.pt" \
-# --use_peft --peft_method lora \
 # --master_port=29501 \
 fi
 

@@ -1,31 +1,58 @@
-import fire
+# import fire
 import random
 import torch
+import logging
 # import argparse
 from llama_recipes.models.slam_model import slam_model
 # config
-from llama_recipes.configs import fsdp_config as FSDP_CONFIG
-from llama_recipes.configs import train_config as TRAIN_CONFIG
-from llama_recipes.configs import model_config as MODEL_CONFIG
-from llama_recipes.configs import log_config as LOG_CONFIG
-from llama_recipes.utils.config_utils import (
-    update_config,
-    generate_peft_config,
-    generate_dataset_config,
-    get_dataloader_kwargs,
-)
+# from llama_recipes.configs import fsdp_config as FSDP_CONFIG
+# from llama_recipes.configs import train_config as TRAIN_CONFIG
+# from llama_recipes.configs import model_config as MODEL_CONFIG
+# from llama_recipes.configs import log_config as LOG_CONFIG
+from llama_recipes.utils.config_utils import generate_dataset_config
 from llama_recipes.pipeline.model_factory import model_factory
 from llama_recipes.utils.dataset_utils import get_preprocessed_dataset
 import os
 import logging
 from tqdm import tqdm
 
-def main(**kwargs):
+import hydra
+from omegaconf import DictConfig, ListConfig, OmegaConf
+
+
+@hydra.main(config_name=None, version_base=None)
+def main_hydra(cfg: DictConfig):
+	def to_plain_list(cfg_item):
+		if isinstance(cfg_item, ListConfig):
+			return OmegaConf.to_container(cfg_item, resolve=True)
+		elif isinstance(cfg_item, DictConfig):
+			return {k: to_plain_list(v) for k, v in cfg_item.items()}
+		else:
+			return cfg_item
+	
+	# kwargs = to_plain_list(cfg)
+	kwargs = cfg
+	log_level = getattr(logging, kwargs.get("log_level", "INFO").upper())
+	
+	logging.basicConfig(level=log_level)
+	
+	if kwargs.get("debug", False):
+		import pdb;
+		pdb.set_trace()
+	
+	main(kwargs)
+
+
+def main(kwargs: DictConfig):
 
 	# Update the configuration for the training and sharding process
-	train_config, fsdp_config, model_config, log_config = TRAIN_CONFIG(), FSDP_CONFIG(), MODEL_CONFIG(), LOG_CONFIG()
-	update_config((train_config, fsdp_config, model_config, log_config), **kwargs)
-
+	# train_config, fsdp_config, model_config, log_config = TRAIN_CONFIG(), FSDP_CONFIG(), MODEL_CONFIG(), LOG_CONFIG()
+	# update_config((train_config, fsdp_config, model_config, log_config), **kwargs)
+	train_config, fsdp_config, model_config, log_config, dataset_config = kwargs.train_config, \
+	                                                                      kwargs.fsdp_config, \
+	                                                                      kwargs.model_config, \
+	                                                                      kwargs.log_config, \
+	                                                                      kwargs.dataset_config
 	# Set log
 	if not os.path.exists(os.path.dirname(log_config.log_file)):
 		os.makedirs(os.path.dirname(log_config.log_file), exist_ok=True)
@@ -72,7 +99,7 @@ def main(**kwargs):
         dataset_config,
         split="test",
     )
-	if not train_config.enable_fsdp or rank == 0:
+	if not (train_config.enable_fsdp or train_config.enable_ddp) or rank == 0:
 		logger.info(f"--> Training Set Length = {len(dataset_test)}")
 
 	test_dataloader = torch.utils.data.DataLoader(
@@ -101,4 +128,4 @@ def main(**kwargs):
 
 
 if __name__ == "__main__":
-	fire.Fire(main)
+	main_hydra()

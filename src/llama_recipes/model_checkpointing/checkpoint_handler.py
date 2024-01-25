@@ -169,7 +169,10 @@ def save_model_checkpoint_peft(model, optimizer, rank, cfg, epoch=0):
     save_dir = os.path.join(cfg.output_dir, cfg.model_name, str(epoch+1))
     os.makedirs(save_dir, exist_ok=True)
     if not cfg.freeze_llm:
-        model.llm.save_pretrained(save_dir)
+        if hasattr(model, "module"): #(FIX:MZY): a hack to deal with the model wrapped in DDP
+            model.module.llm.save_pretrained(save_dir)
+        else:
+            model.llm.save_pretrained(save_dir)
         logger.info(f"llm saved at {save_dir}")
     
     save_full_path = os.path.join(save_dir, "model.pt")
