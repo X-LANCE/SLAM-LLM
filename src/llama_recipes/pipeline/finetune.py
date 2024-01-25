@@ -111,10 +111,6 @@ def main(kwargs: DictConfig):
     logger.handlers[0].setFormatter(console_formatter) 
 
     logger.addHandler(file_handler)
-    
-    logger.info("train_config: {}".format(train_config))
-    logger.info("fsdp_config: {}".format(fsdp_config))
-    logger.info("model_config: {}".format(model_config))
 
 
     # Set the seeds for reproducibility
@@ -135,12 +131,18 @@ def main(kwargs: DictConfig):
         clear_gpu_cache(local_rank)
         setup_environ_flags(rank)
 
+    if (train_config.enable_fsdp or train_config.enable_ddp) or rank == 0:
+        logger.info("train_config: {}".format(train_config))
+        logger.info("fsdp_config: {}".format(fsdp_config))
+        logger.info("model_config: {}".format(model_config))
+        logger.info("log_config: {}".format(log_config))
+
     # Set wandb
     if not (train_config.enable_fsdp or train_config.enable_ddp) or rank == 0:
         if log_config.use_wandb:
             if not os.path.exists(log_config.wandb_dir):
                 os.makedirs(log_config.wandb_dir, exist_ok=True)
-            wandb_config={"train_config":vars(train_config), "fsdp_config":vars(fsdp_config), "model_config":vars(model_config), "log_config":vars(log_config)}
+            wandb_config={"train_config": train_config, "fsdp_config": fsdp_config, "model_config": model_config, "log_config": log_config}
             wandb.init(dir=log_config.wandb_dir, entity=log_config.wandb_entity_name, project=log_config.wandb_project_name,name=log_config.wandb_exp_name ,config=wandb_config)
 
     model, tokenizer = model_factory(train_config, model_config, **kwargs)
@@ -186,7 +188,7 @@ def main(kwargs: DictConfig):
     logger.info("dataset_config: {}".format(dataset_config))
     if not (train_config.enable_fsdp or train_config.enable_ddp) or rank == 0:
         if log_config.use_wandb:
-            wandb.config.update( {"dataset_config": vars(dataset_config)} )
+            wandb.config.update({"dataset_config": dataset_config})
     
     # Load and preprocess the dataset for training and validation
     dataset_train = get_preprocessed_dataset(
@@ -246,7 +248,15 @@ def main(kwargs: DictConfig):
             lr=train_config.lr,
             weight_decay=train_config.weight_decay,
         )
-    scheduler = StepLR(optimizer, step_size=1, gamma=train_config.gamma)
+    # scheduler = StepLR(optimizer, step_size=1, gamma=train_config.gamma)
+    scheduler = torch.optim.lr_scheduler.LambdaLR(
+        optimizer, 
+        lr_lambda=lambda step: (
+            min(step / train_config.warmup_steps, 1) if step < train_config.warmup_steps
+            else 1
+            # else  max(0.0, 1 - (step - train_config.warmup_steps) / (train_config.total_steps - train_config.warmup_steps))
+        )
+    )
 
     # Start the training process
     results = train(

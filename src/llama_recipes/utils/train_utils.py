@@ -43,7 +43,7 @@ def set_tokenizer_params(tokenizer: LlamaTokenizer):
 def byte2mb(x):
     return int(x / 2**20)
 
-def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_scheduler, gradient_accumulation_steps, train_config, log_config,fsdp_config=None, local_rank=None, rank=None):
+def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_scheduler, gradient_accumulation_steps, train_config, log_config, fsdp_config=None, local_rank=None, rank=None):
     """
     Trains the model on the given dataloader
 
@@ -85,7 +85,7 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
     checkpoint_times = []
     results = {}
     best_val_loss = float("inf")
-    best_val_acc = float("inf")
+    best_val_acc = 0.0
     for epoch in range(train_config.num_epochs):
         epoch_start_time = time.perf_counter()
         with MemoryTrace() as memtrace:  # track the memory usage
@@ -125,6 +125,19 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                     if (step + 1) % gradient_accumulation_steps == 0 or step == len(train_dataloader) - 1:
                         scaler.step(optimizer)
                         scaler.update()
+                        if lr_scheduler is not None:
+                            lr_scheduler.step()
+                            current_lr = lr_scheduler.get_last_lr()[0]
+                        else:
+                            current_lr = optimizer.param_groups[0]["lr"]
+                        if current_lr == 0:
+                            break
+                        if log_config.use_wandb and step % log_config.log_interval == 0:
+                            if train_config.enable_fsdp or train_config.enable_ddp:
+                                if rank==0:
+                                    wandb.log({"train_inner/lr":current_lr}, step=(epoch * total_length + step))
+                            else:
+                                wandb.log({"train_inner/lr":current_lr}, step=(epoch * total_length + step))
                         optimizer.zero_grad()
                         pbar.update(1)
                 else:
@@ -132,10 +145,158 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                     loss.backward()
                     if (step + 1) % gradient_accumulation_steps == 0 or step == len(train_dataloader) - 1:
                         optimizer.step()
+                        if lr_scheduler is not None:
+                            lr_scheduler.step()
+                            current_lr = lr_scheduler.get_last_lr()[0]
+                        else:
+                            current_lr = optimizer.param_groups[0]["lr"]
+                        if current_lr == 0:
+                            break
+                        if log_config.use_wandb and step % log_config.log_interval == 0:
+                            if train_config.enable_fsdp or train_config.enable_ddp:
+                                if rank==0:
+                                    wandb.log({"train_inner/lr":current_lr}, step=(epoch * total_length + step))
+                            else:
+                                wandb.log({"train_inner/lr":current_lr}, step=(epoch * total_length + step))
                         optimizer.zero_grad()
                         pbar.update(1)
 
                 pbar.set_description(f"Training Epoch: {epoch+1}/{train_config.num_epochs}, step {step}/{len(train_dataloader)} completed (loss: {loss.detach().float()}, acc: {acc})")
+
+                dist.barrier()
+                if (epoch * total_length + step + 1) % train_config.validation_interval == 0 and train_config.run_validation:
+                    eval_ppl, eval_epoch_loss, *rest = evaluation(model, train_config, eval_dataloader, local_rank, tokenizer)
+                    eval_epoch_acc = rest[0] if rest else -1
+                    checkpoint_start_time = time.perf_counter()
+                    if train_config.save_model and (eval_epoch_loss < best_val_loss):
+                        if train_config.enable_fsdp or train_config.enable_ddp:
+                            dist.barrier()
+                        if train_config.use_peft:
+                            if train_config.enable_fsdp or train_config.enable_ddp:
+                                if rank==0:
+                                    logger.info(f"we are about to save the PEFT modules")
+                            else:
+                                logger.info(f"we are about to save the PEFT modules")
+                            if train_config.enable_fsdp:
+                                if getattr(ShardingStrategy, fsdp_config.sharding_strategy) == ShardingStrategy.FULL_SHARD:
+                                    save_model_checkpoint_peft_full_shard(
+                                            model, optimizer, rank, train_config, epoch=epoch
+                                        )
+                                elif getattr(ShardingStrategy, fsdp_config.sharding_strategy) == ShardingStrategy.NO_SHARD:
+                                    if rank==0:
+                                        save_model_checkpoint_peft(
+                                            model, optimizer, rank, train_config, epoch=epoch
+                                        )
+                                    dist.barrier()
+                            elif train_config.enable_ddp:
+                                if rank==0:
+                                    save_model_checkpoint_peft(
+                                            model, optimizer, rank, train_config, epoch=epoch
+                                        )
+                                dist.barrier()
+                            else:
+                                # model.save_pretrained(train_config.output_dir)
+                                save_model_checkpoint_peft(
+                                        model, optimizer, rank, train_config, epoch=epoch
+                                    )
+                            if train_config.enable_fsdp or train_config.enable_ddp:
+                                if rank==0:
+                                    logger.info(f"PEFT modules are saved in {train_config.output_dir} directory")
+                            else:
+                                logger.info(f"PEFT modules are saved in {train_config.output_dir} directory")
+                        
+                        elif not train_config.use_peft and train_config.freeze_llm:
+                            logger.info(f"llm is frozen, we are about to save other parts.")
+                            if train_config.enable_fsdp:
+                                if getattr(ShardingStrategy, fsdp_config.sharding_strategy) == ShardingStrategy.FULL_SHARD:
+                                    save_model_checkpoint_peft_full_shard(
+                                            model, optimizer, rank, train_config, epoch=epoch
+                                        )
+                                elif getattr(ShardingStrategy, fsdp_config.sharding_strategy) == ShardingStrategy.NO_SHARD:
+                                    if rank==0:
+                                        save_model_checkpoint_peft(
+                                            model, optimizer, rank, train_config, epoch=epoch
+                                        )
+                                    dist.barrier()
+                            elif train_config.enable_ddp:
+                                if rank==0:
+                                    save_model_checkpoint_peft(
+                                            model, optimizer, rank, train_config, epoch=epoch
+                                        )
+                                dist.barrier()
+                            else:
+                                save_model_checkpoint_peft(
+                                        model, optimizer, rank, train_config, epoch=epoch
+                                    )
+
+                        else:
+                            if not train_config.use_peft and getattr(StateDictType, fsdp_config.checkpoint_type) == StateDictType.FULL_STATE_DICT:
+                                save_model_checkpoint(
+                                    model, optimizer, rank, train_config, epoch=epoch
+                                )
+                            elif not train_config.use_peft and getattr(StateDictType, fsdp_config.checkpoint_type) == StateDictType.SHARDED_STATE_DICT:
+                                logger.info(" Saving the FSDP model checkpoints using SHARDED_STATE_DICT")
+                                logger.info("=====================================================")
+
+                                save_model_and_optimizer_sharded(model, rank, train_config)
+                                if train_config.save_optimizer:
+                                    save_model_and_optimizer_sharded(model, rank, train_config, optim=optimizer)
+                                    logger.info(" Saving the FSDP model checkpoints and optimizer using SHARDED_STATE_DICT")
+                                    logger.info("=====================================================")
+
+                            if not train_config.use_peft and  train_config.save_optimizer:
+                                save_optimizer_checkpoint(
+                                    model, optimizer, rank, train_config, epoch=epoch
+                                )
+                                logger.info(" Saving the FSDP model checkpoints and optimizer using FULL_STATE_DICT")
+                                logger.info("=====================================================")
+                        if train_config.enable_fsdp or train_config.enable_ddp:
+                            dist.barrier()
+                    checkpoint_end_time = time.perf_counter() - checkpoint_start_time
+                    checkpoint_times.append(checkpoint_end_time)
+                    if eval_epoch_loss < best_val_loss:
+                        best_val_loss = eval_epoch_loss
+                        if train_config.enable_fsdp or train_config.enable_ddp:
+                            if rank==0:
+                                logger.info(f"best eval loss on epoch {epoch+1} is {best_val_loss}")
+                        else:
+                            logger.info(f"best eval loss on epoch {epoch+1} is {best_val_loss}")
+                    val_loss.append(eval_epoch_loss)
+                    val_prep.append(eval_ppl)
+                    if rest:
+                        if eval_epoch_acc > best_val_acc:
+                            best_val_acc = eval_epoch_acc
+                            if train_config.enable_fsdp or train_config.enable_ddp:
+                                if rank==0:
+                                    logger.info(f"best eval acc on epoch {epoch+1} is {best_val_acc}")
+                            else:
+                                logger.info(f"best eval acc on epoch {epoch+1} is {best_val_acc}")
+                        val_acc.append(rest[0]) 
+                    else: 
+                        val_acc.append(-1)
+                    
+                    if log_config.use_wandb:
+                        if train_config.enable_fsdp or train_config.enable_ddp:
+                            if rank==0:
+                                wandb.log({"valid/val_epoch_loss":eval_epoch_loss, "valid/val_perplexity":eval_ppl, "valid/best_val_loss":best_val_loss, "valid/val_accuracy":val_acc[-1], "valid/val_best_accuracy":best_val_acc})
+                        else:
+                            wandb.log({"valid/val_epoch_loss":eval_epoch_loss, "valid/val_perplexity":eval_ppl, "valid/best_val_loss":best_val_loss, "valid/val_accuracy":val_acc[-1], "valid/val_best_accuracy":best_val_acc})
+
+                if train_config.run_test_during_validation:
+                    if train_config.enable_fsdp or train_config.enable_ddp:
+                        if rank==0:
+                            logger.info("=====================================")
+                            logger.info(f"Test the file {train_config.run_test_during_validation_file} during validation:")
+                            with autocast():
+                                logger.info(model.inference(train_config.run_test_during_validation_file, train_config.run_test_during_validation_prompt))
+                            logger.info("=====================================")
+                        dist.barrier()
+                    else:
+                        logger.info("=====================================")
+                        logger.info(f"Test the file {train_config.run_test_during_validation_file} during validation:")
+                        with autocast():
+                            logger.info(model.inference(train_config.run_test_during_validation_file, train_config.run_test_during_validation_prompt))
+                        logger.info("=====================================")
             pbar.close()
 
         epoch_end_time = time.perf_counter()-epoch_start_time
@@ -164,6 +325,12 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
 
         if train_config.enable_fsdp or train_config.enable_ddp:
             if rank==0:
+                logger.info(f"Epoch {epoch+1}: train_perplexity={train_perplexity:.4f}, train_epoch_loss={train_epoch_loss:.4f}, epoch time {epoch_end_time}s")
+        else:
+            logger.info(f"Epoch {epoch+1}: train_perplexity={train_perplexity:.4f}, train_epoch_loss={train_epoch_loss:.4f}, epoch time {epoch_end_time}s")
+
+        if train_config.enable_fsdp:
+            if rank==0:
                 logger.info(f"Max CUDA memory allocated was {memtrace.peak} GB")
                 logger.info(f"Max CUDA memory reserved was {memtrace.max_reserved} GB")
                 logger.info(f"Peak active CUDA memory was {memtrace.peak_active_gb} GB")
@@ -177,128 +344,8 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
             logger.info(f"CPU Total Peak Memory consumed during the train (max): {memtrace.cpu_peaked + memtrace.cpu_begin} GB")
 
         # Update the learning rate as needed
-        lr_scheduler.step()
+        # lr_scheduler.step()
 
-        if train_config.run_validation:
-            eval_ppl, eval_epoch_loss, *rest = evaluation(model, train_config, eval_dataloader, local_rank, tokenizer)
-            eval_epoch_acc = rest[0] if rest else -1
-            checkpoint_start_time = time.perf_counter()
-            if train_config.save_model and (eval_epoch_loss < best_val_loss or eval_epoch_acc > best_val_acc):
-                if train_config.enable_fsdp or train_config.enable_ddp:
-                    dist.barrier()
-                if train_config.use_peft:
-                    if train_config.enable_fsdp or train_config.enable_ddp:
-                        if rank==0:
-                            logger.info(f"we are about to save the PEFT modules")
-                    else:
-                        logger.info(f"we are about to save the PEFT modules")
-                    if train_config.enable_fsdp or train_config.enable_ddp: #(FIX:MZY):We now only support full_shard and no_shard.
-                        if fsdp_config.sharding_strategy == ShardingStrategy.FULL_SHARD:
-                            save_model_checkpoint_peft_full_shard(
-                                    model, optimizer, rank, train_config, epoch=epoch
-                                )
-                        elif fsdp_config.sharding_strategy == ShardingStrategy.NO_SHARD:
-                            if rank==0:
-                                save_model_checkpoint_peft(
-                                    model, optimizer, rank, train_config, epoch=epoch
-                                )
-                            dist.barrier()
-                    else:
-                        # model.save_pretrained(train_config.output_dir)
-                        save_model_checkpoint_peft(
-                                model, optimizer, rank, train_config, epoch=epoch
-                            )
-                    if train_config.enable_fsdp or train_config.enable_ddp:
-                        if rank==0:
-                            logger.info(f"PEFT modules are saved in {train_config.output_dir} directory")
-                    else:
-                        logger.info(f"PEFT modules are saved in {train_config.output_dir} directory")
-                
-                elif not train_config.use_peft and train_config.freeze_llm:
-                    logger.info(f"llm is frozen, we are about to save other parts.")
-                    if train_config.enable_fsdp or train_config.enable_ddp: #(FIX:MZY):We now only support full_shard and no_shard.
-                        if fsdp_config.sharding_strategy == ShardingStrategy.FULL_SHARD:
-                            save_model_checkpoint_peft_full_shard(
-                                    model, optimizer, rank, train_config, epoch=epoch
-                                )
-                        elif fsdp_config.sharding_strategy == ShardingStrategy.NO_SHARD:
-                            if rank==0:
-                                save_model_checkpoint_peft(
-                                    model, optimizer, rank, train_config, epoch=epoch
-                                )
-                            dist.barrier()
-                    else:
-                        save_model_checkpoint_peft(
-                                model, optimizer, rank, train_config, epoch=epoch
-                            )
-
-                else:
-                    if not train_config.use_peft and fsdp_config.checkpoint_type == "StateDictType.FULL_STATE_DICT":
-
-                        save_model_checkpoint(
-                            model, optimizer, rank, train_config, epoch=epoch
-                        )
-                    elif not train_config.use_peft and fsdp_config.checkpoint_type == "StateDictType.SHARDED_STATE_DICT":
-                        logger.info(" Saving the FSDP model checkpoints using SHARDED_STATE_DICT")
-                        logger.info("=====================================================")
-
-                        save_model_and_optimizer_sharded(model, rank, train_config)
-                        if train_config.save_optimizer:
-                            save_model_and_optimizer_sharded(model, rank, train_config, optim=optimizer)
-                            logger.info(" Saving the FSDP model checkpoints and optimizer using SHARDED_STATE_DICT")
-                            logger.info("=====================================================")
-
-                    if not train_config.use_peft and  train_config.save_optimizer:
-                        save_optimizer_checkpoint(
-                            model, optimizer, rank, train_config, epoch=epoch
-                        )
-                        logger.info(" Saving the FSDP model checkpoints and optimizer using FULL_STATE_DICT")
-                        logger.info("=====================================================")
-                if train_config.enable_fsdp or train_config.enable_ddp:
-                    dist.barrier()
-            checkpoint_end_time = time.perf_counter() - checkpoint_start_time
-            checkpoint_times.append(checkpoint_end_time)
-            if eval_epoch_loss < best_val_loss:
-                best_val_loss = eval_epoch_loss
-                if train_config.enable_fsdp or train_config.enable_ddp:
-                    if rank==0:
-                        logger.info(f"best eval loss on epoch {epoch+1} is {best_val_loss}")
-                else:
-                    logger.info(f"best eval loss on epoch {epoch+1} is {best_val_loss}")
-            val_loss.append(eval_epoch_loss)
-            val_prep.append(eval_ppl)
-            if rest:
-                val_acc.append(rest[0]) 
-            else: 
-                val_acc.append(-1)
-            
-            if log_config.use_wandb:
-                if train_config.enable_fsdp or train_config.enable_ddp:
-                    if rank==0:
-                        wandb.log({"valid/val_epoch_loss":eval_epoch_loss, "valid/val_perplexity":eval_ppl, "valid/best_val_loss":best_val_loss, "valid/val_accuracy":val_acc[-1]})
-                else:
-                    wandb.log({"valid/val_epoch_loss":eval_epoch_loss, "valid/val_perplexity":eval_ppl, "valid/best_val_loss":best_val_loss, "valid/val_accuracy":val_acc[-1]})
-
-        if train_config.run_test_during_validation:
-            if train_config.enable_fsdp or train_config.enable_ddp:
-                if rank==0:
-                    logger.info("=====================================")
-                    logger.info(f"Test the file {train_config.run_test_during_validation_file} during validation:")
-                    with autocast():
-                        logger.info(model.inference(train_config.run_test_during_validation_file, train_config.run_test_during_validation_prompt))
-                    logger.info("=====================================")
-                dist.barrier()
-            else:
-                logger.info("=====================================")
-                logger.info(f"Test the file {train_config.run_test_during_validation_file} during validation:")
-                with autocast():
-                    logger.info(model.inference(train_config.run_test_during_validation_file, train_config.run_test_during_validation_prompt))
-                logger.info("=====================================")
-        if train_config.enable_fsdp or train_config.enable_ddp:
-            if rank==0:
-                logger.info(f"Epoch {epoch+1}: train_perplexity={train_perplexity:.4f}, train_epoch_loss={train_epoch_loss:.4f}, epoch time {epoch_end_time}s")
-        else:
-            logger.info(f"Epoch {epoch+1}: train_perplexity={train_perplexity:.4f}, train_epoch_loss={train_epoch_loss:.4f}, epoch time {epoch_end_time}s")
     avg_epoch_time = sum(epoch_times)/ len(epoch_times)
     avg_checkpoint_time = sum(checkpoint_times)/ len(checkpoint_times) if len(checkpoint_times) > 0 else 0
     avg_train_prep = sum(train_prep)/len(train_prep)
@@ -346,7 +393,9 @@ def evaluation(model,train_config, eval_dataloader, local_rank, tokenizer):
     autocast = torch.cuda.amp.autocast if train_config.use_fp16 else nullcontext # (Fix:MZY): fix expected scalar type mismatch in norm 
 
     with MemoryTrace() as memtrace:
-        for step, batch in enumerate(tqdm(eval_dataloader,colour="green", desc="evaluating Epoch", dynamic_ncols=True)):
+        total_length = len(eval_dataloader)
+        pbar = tqdm(colour="green", desc=f"Evaluating Epoch", total=total_length, dynamic_ncols=True)
+        for step, batch in enumerate(eval_dataloader):
             for key in batch.keys():
                 if type(batch[key])==bool:
                     continue
@@ -369,6 +418,8 @@ def evaluation(model,train_config, eval_dataloader, local_rank, tokenizer):
             eval_preds.extend(
                 tokenizer.batch_decode(preds.detach().cpu().numpy(), skip_special_tokens=True)
             )
+            pbar.update(1)
+            pbar.set_description(f"step: {step+1}/{total_length}, eval_loss: {eval_loss/(step+1):.4f}, eval_acc: {eval_acc/(step+1):.4f}")
 
     # If there's more than one CUDA device, reduce evaluation loss across all devices
     if torch.cuda.device_count() > 1 and train_config.enable_fsdp or train_config.enable_ddp:

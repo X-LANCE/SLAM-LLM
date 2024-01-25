@@ -7,7 +7,7 @@ MODEL_PATH = "/nfs/maziyang.mzy/models/vicuna-7b-v1.5"
 tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
 model = AutoModelForCausalLM.from_pretrained(MODEL_PATH)
 
-device = 'cuda:6'
+device = 'cuda:0'
 model.to(device)
 model.eval()
 
@@ -25,7 +25,8 @@ for sentence in tqdm(corpus):
     inputs = tokenizer(sentence, return_tensors="pt").to(device)
 
     input_ids = inputs["input_ids"]
-    input_len = input_ids.size(1)
+    # input_len = input_ids.size(1)
+    input_len = len(sentence.split(" "))
     total_tokens += input_len
 
     with torch.no_grad():

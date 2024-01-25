@@ -44,7 +44,7 @@ logger = logging.getLogger(__name__)
 #                 logger.warning(f"Warning: unknown parameter {k}")
 
 
-def generate_peft_config(train_config, kwargs):
+def generate_peft_config(train_config):
     # configs = (lora_config, llama_adapter_config, prefix_config)
     # peft_configs = (LoraConfig, AdaptionPromptConfig, PrefixTuningConfig)
     peft_configs = {"lora": LoraConfig,
@@ -60,6 +60,7 @@ def generate_peft_config(train_config, kwargs):
 
     params = OmegaConf.to_container(config, resolve=True)
     # peft_config = peft_configs[names.index(train_config.peft_method)](**params)
+    params.pop("peft_method", None) #(FIX:MZY): remove peft_method from params to avoid error
     peft_config = peft_configs[config.get("peft_method", "lora")](**params)
 
     return peft_config
