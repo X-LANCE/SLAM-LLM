@@ -25,14 +25,15 @@ def setup_model(tokenizer, train_config, model_config, **kwargs):
 
 def setup_tokenizer(train_config, model_config, **kwargs):
     # Load the tokenizer and add special tokens
-    if "llama" in model_config.llm_name or "vicuna" in model_config.llm_name:
-        tokenizer = AutoTokenizer.from_pretrained(model_config.llm_path)
-        tokenizer.pad_token_id = tokenizer.eos_token_id
-        return tokenizer
+    tokenizer = AutoTokenizer.from_pretrained(model_config.llm_path)
+    tokenizer.pad_token_id = tokenizer.eos_token_id
+    return tokenizer
 
 
 def setup_encoder(train_config, model_config, **kwargs):
-    encoder_list = model_config.encoder_name.split(",")
+    encoder_list = model_config.encoder_name.split(",") if model_config.encoder_name else []
+    if len(encoder_list) == 0:
+        return None
     if len(encoder_list) == 1:
         encoder_name = encoder_list[0]
         if encoder_name == "whisper" or encoder_name == "qwen-audio":
@@ -198,6 +199,8 @@ class slam_model(nn.Module):
                 encoder_outs, audio_mel_post_mask = self.encoder.extract_features(audio_mel, audio_mel_mask) # bs*seq*dim
             if self.model_config.encoder_name == "moco_wav2vec2":
                 encoder_outs , inputLenBatch, audio_mel_post_mask = self.encoder((audio, audio_mask, visual, vis_len) ,maskw2v) # bs*seq*dim
+            if self.encoder is None:
+                encoder_outs = audio_mel if audio_mel is not None else audio
 
             if self.model_config.encoder_projector == "q-former":
                 encoder_outs = self.encoder_projector(encoder_outs, audio_mel_post_mask)
@@ -309,7 +312,7 @@ class slam_model(nn.Module):
         negative_prompt_ids = None,
         negative_prompt_attention_mask = None,
         **kwargs,
-    ): # TODO: Now you need to set your customized sampling rate manually
+    ):
 
         device = kwargs.get("device", "cuda")
         if os.path.exists(wav_path): # Audio-Text QA

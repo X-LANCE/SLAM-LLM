@@ -10,12 +10,15 @@ class train_config:
     enable_fsdp: bool=False
     low_cpu_fsdp: bool=False
     run_validation: bool=True
+    validation_interval: int=1000
     batch_size_training: int=4
     batching_strategy: str="packing" #alternative: padding
     context_length: int=4096
     gradient_accumulation_steps: int=1
     num_epochs: int=3
     num_workers_dataloader: int=1
+    warmup_steps: int=1000
+    total_steps: int=50000
     lr: float=1e-4
     weight_decay: float=0.0
     gamma: float= 0.85

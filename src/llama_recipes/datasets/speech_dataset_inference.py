@@ -29,6 +29,19 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         
         # self.data_list = contents
         self.IGNORE_INDEX = -100  # The default setting in CrossEntropyLoss
+        self.prompt = dataset_config.prompt
+        # self.prompt_library = [
+        #     "Begin by converting the spoken words into written text. ",
+        #     "Can you transcribe the speech into a written format? ",
+        #     "Focus on translating the audible content into text. ",
+        #     "Transcribe the speech by carefully listening to it. ",
+        #     "Would you kindly write down the content of the speech? ",
+        #     "Analyze the speech and create a written transcription. ",
+        #     "Engage with the speech to produce a text-based version. ",
+        #     "Can you document the speech in written form? ",
+        #     "Transform the spoken words into text accurately. ",
+        #     "How about putting the speech's content into writing? "
+        # ]
         self.prompt_template = "USER: {}\n ASSISTANT:"
         self.fix_length_audio = dataset_config.fix_length_audio
 
@@ -72,7 +85,10 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         # audio_raw = np.concatenate((np.zeros(random.randint(0, 16000)), audio_raw, np.zeros(random.randint(0, 16000)))).astype(audio_raw.dtype)[:16000*30]
         audio_mel = whisper.log_mel_spectrogram(audio_raw).permute(1, 0)
 
-        prompt = "Transcribe speech to text. Output the transcription directly without redundant content. Ensure that the output is not duplicated. "
+        prompt = self.prompt
+        if prompt is None:
+            # prompt = random.choice(self.prompt_library)
+            prompt = "Transcribe speech to text. Output the transcription directly without redundant content. Ensure that the output is not duplicated. "
 
         prompt = self.prompt_template.format(prompt)
         prompt_ids = self.tokenizer.encode(prompt)

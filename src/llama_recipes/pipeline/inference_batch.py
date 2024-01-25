@@ -18,6 +18,7 @@ from llama_recipes.pipeline.model_factory import model_factory
 from llama_recipes.utils.dataset_utils import get_preprocessed_dataset
 import os
 import logging
+from tqdm import tqdm
 
 def main(**kwargs):
 
@@ -89,7 +90,7 @@ def main(**kwargs):
 	pred_path = kwargs.get('decode_log') + "_pred"
 	gt_path = kwargs.get('decode_log') + "_gt"
 	with open(pred_path, "w") as pred, open(gt_path, "w") as gt:
-		for step, batch in enumerate(test_dataloader):
+		for step, batch in tqdm(enumerate(test_dataloader), total=len(test_dataloader)):
 			for key in batch.keys():
 				batch[key] = batch[key].to(device) if key not in ["keys", "targets"] else batch[key]
 			model_outputs = model.generate(**batch)

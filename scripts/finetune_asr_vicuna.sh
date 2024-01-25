@@ -1,7 +1,8 @@
 #!/bin/bash
 # export PYTHONPATH=/root/whisper:$PYTHONPATH
 export PYTHONPATH=/root/fairseq:$PYTHONPATH
-export CUDA_VISIBLE_DEVICES=2,3,4,5
+export CUDA_VISIBLE_DEVICES=0,1
+export TOKENIZERS_PARALLELISM=false
 # export CUDA_LAUNCH_BLOCKING=1
 export OMP_NUM_THREADS=1
 
@@ -12,13 +13,17 @@ export OMP_NUM_THREADS=1
 
 cd /root/SLAM-LLM
 
-# speech_encoder_path=/nfs/zhifu.gzf/ckpt/Whisper/large-v2.pt
-speech_encoder_path=/nfs/maziyang.mzy/models/Whisper/large-v2-qwen.pt
+# speech_encoder_path=/nfs/maziyang.mzy/models/Whisper/tiny.pt
+# speech_encoder_path=/nfs/maziyang.mzy/models/Whisper/base.pt
+# speech_encoder_path=//nfs/maziyang.mzy/models/Whisper/small.pt
+# speech_encoder_path=/nfs/maziyang.mzy/models/Whisper/medium.pt
+speech_encoder_path=/nfs/maziyang.mzy/models/Whisper/large-v2.pt
+# speech_encoder_path=/nfs/maziyang.mzy/models/Whisper/large-v2-qwen.pt
 
 llm_path=/nfs/maziyang.mzy/models/vicuna-7b-v1.5
 # llm_path=/nfs/maziyang.mzy/models/vicuna-13b-v1.5
 
-output_dir=/nfs/maziyang.mzy/exps/vicuna-7b-v1.5-finetune-asr-ds5-proj2048-lr1e-4-qwen-prompt-padding30-20240113
+output_dir=/nfs/maziyang.mzy/exps/vicuna-7b-v1.5-finetune-asr-ds5-proj2048-lr1e-4-whisper-base-prompt-padding30-20240117
 
 # -m debugpy --listen 5678 --wait-for-client
 if [[ $CUDA_VISIBLE_DEVICES != *","* ]]; then
@@ -28,7 +33,7 @@ python -m debugpy --listen 5678 --wait-for-client src/llama_recipes/pipeline/fin
 --freeze_llm \
 --llm_name vicuna-13b-v1.5 \
 --llm_path $llm_path \
---llm_dim 5120 \
+--llm_dim 4096 \
 --encoder_name whisper \
 --encoder_ds_rate 2 \
 --encoder_path $speech_encoder_path \
@@ -60,8 +65,7 @@ python -m debugpy --listen 5678 --wait-for-client src/llama_recipes/pipeline/fin
 else
 torchrun \
 --nnodes 1 \
---nproc_per_node 4 \
---master_port=29502 \
+--nproc_per_node 2 \
 src/llama_recipes/pipeline/finetune.py \
 --model_name asr \
 --freeze_encoder \
@@ -98,6 +102,7 @@ src/llama_recipes/pipeline/finetune.py \
 # --peft_ckpt "/nfs/maziyang.mzy/exps/llama-2-hf-finetune-asr-ds5-proj2048-lr1e-5-whisper-prompt-padding30-20231228/asr/4" \
 # --ckpt_path "/nfs/maziyang.mzy/exps/llama-2-hf-finetune-asr-ds5-proj2048-lr1e-5-whisper-prompt-padding30-20231228/asr/4/model.pt" \
 # --use_peft --peft_method lora \
+# --master_port=29501 \
 fi
 
 # {"key": "1001-134707-0000_ASR", "prompt": "<ASR>", "source": "/cpfs01/shared/Group-speech/beinian.lzr/data/open_data/librispeech_audio/audio/se_librispeech_1001-134707-0000.wav", "target": "1 little recks the laborer. How near his work is holding him to God, The loving laborer through space and time, after all, not to create, only or found only.", "target_len": 157, "source_len": 1581, "text-type": "Transcribe", "audio_language": "en", "text_language": "en", "task-type": "<ASR>"}

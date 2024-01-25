@@ -39,6 +39,7 @@ class speech_dataset:
     max_words: int = None
     max_mel: int = None
     fix_length_audio: int = -1
+    prompt: str = None
 
 
 @dataclass
