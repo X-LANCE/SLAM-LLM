@@ -81,6 +81,7 @@ def main(kwargs: DictConfig):
                                                                           kwargs.model_config, \
                                                                           kwargs.log_config, \
                                                                           kwargs.dataset_config
+    fsdp_config.use_fp16 = train_config.use_fp16
     del kwargs.train_config
     del kwargs.fsdp_config
     del kwargs.model_config
