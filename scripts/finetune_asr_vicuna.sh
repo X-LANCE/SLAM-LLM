@@ -25,7 +25,7 @@ if [[ $CUDA_VISIBLE_DEVICES != *","* ]]; then
 python src/llama_recipes/pipeline/finetune.py \
 --config-path "scripts/conf" \
 --config-name "asr_vicuna_lora.yaml" \
-++model_config.llm_name="vicuna-13b-v1.5" \
+++model_config.llm_name="vicuna-7b-v1.5" \
 ++model_config.llm_path=$llm_path \
 ++model_config.llm_dim=4096 \
 ++model_config.encoder_name=whisper \
