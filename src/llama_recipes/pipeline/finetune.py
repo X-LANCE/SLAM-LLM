@@ -14,6 +14,8 @@ from torch.optim.lr_scheduler import StepLR
 from torch.distributed.fsdp import (
     FullyShardedDataParallel as FSDP,
 )
+from torch.nn.parallel import DistributedDataParallel as DDP
+
 from torch.distributed.fsdp.fully_sharded_data_parallel import CPUOffload
 from llama_recipes.policies import AnyPrecisionAdamW, apply_fsdp_checkpointing
 
@@ -119,7 +121,7 @@ def main(kwargs: DictConfig):
     torch.manual_seed(train_config.seed)
     random.seed(train_config.seed)
 
-    if train_config.enable_fsdp:
+    if train_config.enable_fsdp or train_config.enable_ddp:
         setup()
         # torchrun specific
         local_rank = int(os.environ["LOCAL_RANK"])
@@ -133,7 +135,7 @@ def main(kwargs: DictConfig):
         setup_environ_flags(rank)
 
     # Set wandb
-    if not train_config.enable_fsdp or rank == 0:
+    if not (train_config.enable_fsdp or train_config.enable_ddp) or rank == 0:
         if log_config.use_wandb:
             if not os.path.exists(log_config.wandb_dir):
                 os.makedirs(log_config.wandb_dir, exist_ok=True)
@@ -145,7 +147,7 @@ def main(kwargs: DictConfig):
 
     
     # Convert the model to bfloat16 if fsdp and pure_bf16 is enabled
-    if train_config.enable_fsdp and fsdp_config.pure_bf16:
+    if (train_config.enable_fsdp or train_config.enable_ddp) and fsdp_config.pure_bf16:
         model.to(torch.bfloat16)
 
     #setting up FSDP if enable_fsdp is enabled
@@ -171,12 +173,16 @@ def main(kwargs: DictConfig):
         )
         if fsdp_config.fsdp_activation_checkpointing:
             apply_fsdp_checkpointing(model)
-    elif not train_config.quantization and not train_config.enable_fsdp:
+    elif train_config.enable_ddp:
+        model = model.cuda(local_rank)
+        model = DDP(model, device_ids=[local_rank],
+                    find_unused_parameters=kwargs.get("train_conf", {}).get("find_unused_parameters", False))
+    elif not train_config.quantization:
         model.to(device)
 
     # dataset_config = generate_dataset_config(train_config, kwargs)
     logger.info("dataset_config: {}".format(dataset_config))
-    if not train_config.enable_fsdp or rank == 0:
+    if not (train_config.enable_fsdp or train_config.enable_ddp) or rank == 0:
         if log_config.use_wandb:
             wandb.config.update( {"dataset_config": vars(dataset_config)} )
     
@@ -186,14 +192,14 @@ def main(kwargs: DictConfig):
         dataset_config,
         split="train",
     )
-    if not train_config.enable_fsdp or rank == 0:
+    if not (train_config.enable_fsdp or train_config.enable_ddp) or rank == 0:
         logger.info(f"--> Training Set Length = {len(dataset_train)}")
     dataset_val = get_preprocessed_dataset(
         tokenizer,
         dataset_config,
         split="val",
     )
-    if not train_config.enable_fsdp or rank == 0:
+    if not (train_config.enable_fsdp or train_config.enable_ddp) or rank == 0:
         logger.info(f"--> Validation Set Length = {len(dataset_val)}")
     if train_config.batching_strategy == "packing":
         dataset_train = ConcatDataset(dataset_train, chunk_size=train_config.context_length)
@@ -252,13 +258,13 @@ def main(kwargs: DictConfig):
         train_config,
         log_config,
         fsdp_config if train_config.enable_fsdp else None,
-        local_rank if train_config.enable_fsdp else None,
-        rank if train_config.enable_fsdp else None,
+        local_rank if train_config.enable_fsdp or train_config.enable_ddp else None,
+        rank if train_config.enable_fsdp or train_config.enable_ddp else None,
     )
-    if not train_config.enable_fsdp or rank==0:
+    if not (train_config.enable_fsdp or train_config.enable_ddp) or rank==0:
         [logger.info(f'Key: {k}, Value: {v}') for k, v in results.items()]
 
-    if not train_config.enable_fsdp or rank == 0:
+    if not (train_config.enable_fsdp or  train_config.enable_ddp) or rank == 0:
         if log_config.use_wandb:
             wandb.finish()
 

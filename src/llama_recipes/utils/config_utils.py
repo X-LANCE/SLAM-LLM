@@ -81,7 +81,7 @@ def get_dataloader_kwargs(train_config, dataset, tokenizer, mode):
         kwargs = {}
         batch_size = train_config.batch_size_training if mode=="train" else train_config.val_batch_size
         if train_config.batching_strategy == "padding":
-            if train_config.enable_fsdp:
+            if train_config.enable_fsdp or train_config.enable_ddp:
                 kwargs["batch_sampler"] = DistributedLengthBasedBatchSampler(
                     dataset,
                     batch_size=batch_size,
@@ -93,7 +93,7 @@ def get_dataloader_kwargs(train_config, dataset, tokenizer, mode):
                 kwargs["batch_sampler"] = LengthBasedBatchSampler(dataset, batch_size, drop_last=True, shuffle=mode=="train")
             kwargs["collate_fn"] = DataCollatorForSeq2Seq(tokenizer)
         elif train_config.batching_strategy == "packing":
-            if train_config.enable_fsdp:
+            if train_config.enable_fsdp or train_config.enable_ddp:
                 kwargs["sampler"] = DistributedSampler(
                 dataset,
                 rank=dist.get_rank(),
@@ -105,7 +105,7 @@ def get_dataloader_kwargs(train_config, dataset, tokenizer, mode):
             kwargs["collate_fn"] = default_data_collator
         else:
             # raise ValueError(f"Unknown batching strategy: {train_config.batching_strategy}")
-            if train_config.enable_fsdp:
+            if train_config.enable_fsdp or train_config.enable_ddp:
                 kwargs["sampler"] = DistributedSampler(
                 dataset,
                 rank=dist.get_rank(),

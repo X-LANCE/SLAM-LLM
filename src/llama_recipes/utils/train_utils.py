@@ -63,11 +63,15 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
     Returns: results dictionary containing average training and validation perplexity and loss
     """
     # Create a gradient scaler for fp16
-    if train_config.use_fp16 and train_config.enable_fsdp:
-        scaler = ShardedGradScaler()
-    elif train_config.use_fp16 and not train_config.enable_fsdp:
+    # if train_config.use_fp16 and train_config.enable_fsdp:
+    #     scaler = ShardedGradScaler()
+    # elif train_config.use_fp16 and not train_config.enable_fsdp:
+    #     scaler = torch.cuda.amp.GradScaler()
+    if train_config.use_fp16:
         scaler = torch.cuda.amp.GradScaler()
-    if train_config.enable_fsdp:
+        if train_config.enable_fsdp:
+            scaler = ShardedGradScaler()
+    if train_config.enable_fsdp or train_config.enable_ddp:
         world_size = int(os.environ["WORLD_SIZE"])
     autocast = torch.cuda.amp.autocast if train_config.use_fp16 else nullcontext
     
@@ -94,7 +98,7 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                 for key in batch.keys():
                     if type(batch[key])==bool:
                         continue
-                    if train_config.enable_fsdp:
+                    if train_config.enable_fsdp or train_config.enable_ddp:
                         batch[key] = batch[key].to(local_rank)
                     else:
                         batch[key] = batch[key].to('cuda:0')
@@ -107,7 +111,7 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                 acc = acc / gradient_accumulation_steps
 
                 if log_config.use_wandb and step % log_config.log_interval == 0:
-                    if train_config.enable_fsdp:
+                    if train_config.enable_fsdp or train_config.enable_ddp:
                         if rank==0:
                             wandb.log({"train_inner/train_inner_loss":loss, "train_inner/train_inner_accuracy":acc}, step=(epoch * total_length + step))
                     else:
@@ -137,12 +141,12 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
         epoch_end_time = time.perf_counter()-epoch_start_time
         epoch_times.append(epoch_end_time)
         # Reducing total_loss across all devices if there's more than one CUDA device
-        if torch.cuda.device_count() > 1 and train_config.enable_fsdp:
+        if torch.cuda.device_count() > 1 and (train_config.enable_fsdp or train_config.enable_ddp):
             dist.all_reduce(total_loss, op=dist.ReduceOp.SUM)
             dist.all_reduce(total_acc, op=dist.ReduceOp.SUM)
         train_epoch_loss = total_loss / len(train_dataloader)
         train_epoch_acc = total_acc / len(train_dataloader)
-        if train_config.enable_fsdp:
+        if train_config.enable_fsdp or train_config.enable_ddp:
             train_epoch_loss = train_epoch_loss/world_size
             train_epoch_acc = train_epoch_acc/world_size
         train_perplexity = torch.exp(train_epoch_loss)
@@ -152,13 +156,13 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
         train_acc.append(train_epoch_acc)
 
         if log_config.use_wandb:
-            if train_config.enable_fsdp:
+            if train_config.enable_fsdp or train_config.enable_ddp:
                 if rank==0:
                     wandb.log({"train/train_perplexity":train_perplexity, "train/train_epoch_loss":train_epoch_loss, "train/train_epoch_acc":train_epoch_acc})
             else:
                 wandb.log({"train/train_perplexity":train_perplexity, "train/train_epoch_loss":train_epoch_loss, "train/train_epoch_acc":train_epoch_acc})
 
-        if train_config.enable_fsdp:
+        if train_config.enable_fsdp or train_config.enable_ddp:
             if rank==0:
                 logger.info(f"Max CUDA memory allocated was {memtrace.peak} GB")
                 logger.info(f"Max CUDA memory reserved was {memtrace.max_reserved} GB")
@@ -180,15 +184,15 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
             eval_epoch_acc = rest[0] if rest else -1
             checkpoint_start_time = time.perf_counter()
             if train_config.save_model and (eval_epoch_loss < best_val_loss or eval_epoch_acc > best_val_acc):
-                if train_config.enable_fsdp:
+                if train_config.enable_fsdp or train_config.enable_ddp:
                     dist.barrier()
                 if train_config.use_peft:
-                    if train_config.enable_fsdp:
+                    if train_config.enable_fsdp or train_config.enable_ddp:
                         if rank==0:
                             logger.info(f"we are about to save the PEFT modules")
                     else:
                         logger.info(f"we are about to save the PEFT modules")
-                    if train_config.enable_fsdp: #(FIX:MZY):We now only support full_shard and no_shard.
+                    if train_config.enable_fsdp or train_config.enable_ddp: #(FIX:MZY):We now only support full_shard and no_shard.
                         if fsdp_config.sharding_strategy == ShardingStrategy.FULL_SHARD:
                             save_model_checkpoint_peft_full_shard(
                                     model, optimizer, rank, train_config, epoch=epoch
@@ -204,7 +208,7 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                         save_model_checkpoint_peft(
                                 model, optimizer, rank, train_config, epoch=epoch
                             )
-                    if train_config.enable_fsdp:
+                    if train_config.enable_fsdp or train_config.enable_ddp:
                         if rank==0:
                             logger.info(f"PEFT modules are saved in {train_config.output_dir} directory")
                     else:
@@ -212,7 +216,7 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                 
                 elif not train_config.use_peft and train_config.freeze_llm:
                     logger.info(f"llm is frozen, we are about to save other parts.")
-                    if train_config.enable_fsdp: #(FIX:MZY):We now only support full_shard and no_shard.
+                    if train_config.enable_fsdp or train_config.enable_ddp: #(FIX:MZY):We now only support full_shard and no_shard.
                         if fsdp_config.sharding_strategy == ShardingStrategy.FULL_SHARD:
                             save_model_checkpoint_peft_full_shard(
                                     model, optimizer, rank, train_config, epoch=epoch
@@ -250,13 +254,13 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                         )
                         logger.info(" Saving the FSDP model checkpoints and optimizer using FULL_STATE_DICT")
                         logger.info("=====================================================")
-                if train_config.enable_fsdp:
+                if train_config.enable_fsdp or train_config.enable_ddp:
                     dist.barrier()
             checkpoint_end_time = time.perf_counter() - checkpoint_start_time
             checkpoint_times.append(checkpoint_end_time)
             if eval_epoch_loss < best_val_loss:
                 best_val_loss = eval_epoch_loss
-                if train_config.enable_fsdp:
+                if train_config.enable_fsdp or train_config.enable_ddp:
                     if rank==0:
                         logger.info(f"best eval loss on epoch {epoch+1} is {best_val_loss}")
                 else:
@@ -269,14 +273,14 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                 val_acc.append(-1)
             
             if log_config.use_wandb:
-                if train_config.enable_fsdp:
+                if train_config.enable_fsdp or train_config.enable_ddp:
                     if rank==0:
                         wandb.log({"valid/val_epoch_loss":eval_epoch_loss, "valid/val_perplexity":eval_ppl, "valid/best_val_loss":best_val_loss, "valid/val_accuracy":val_acc[-1]})
                 else:
                     wandb.log({"valid/val_epoch_loss":eval_epoch_loss, "valid/val_perplexity":eval_ppl, "valid/best_val_loss":best_val_loss, "valid/val_accuracy":val_acc[-1]})
 
         if train_config.run_test_during_validation:
-            if train_config.enable_fsdp:
+            if train_config.enable_fsdp or train_config.enable_ddp:
                 if rank==0:
                     logger.info("=====================================")
                     logger.info(f"Test the file {train_config.run_test_during_validation_file} during validation:")
@@ -290,7 +294,7 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                 with autocast():
                     logger.info(model.inference(train_config.run_test_during_validation_file, train_config.run_test_during_validation_prompt))
                 logger.info("=====================================")
-        if train_config.enable_fsdp:
+        if train_config.enable_fsdp or train_config.enable_ddp:
             if rank==0:
                 logger.info(f"Epoch {epoch+1}: train_perplexity={train_perplexity:.4f}, train_epoch_loss={train_epoch_loss:.4f}, epoch time {epoch_end_time}s")
         else:
@@ -316,7 +320,7 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
     results["avg_checkpoint_time"] = avg_checkpoint_time
 
     #saving the training params including fsdp setting for reference.
-    if train_config.enable_fsdp and not train_config.use_peft:
+    if (train_config.enable_fsdp or train_config.enable_ddp)and not train_config.use_peft:
         save_train_params(train_config, fsdp_config, rank)
 
     return results
@@ -333,7 +337,7 @@ def evaluation(model,train_config, eval_dataloader, local_rank, tokenizer):
 
     Returns: eval_ppl, eval_epoch_loss
     """
-    if train_config.enable_fsdp:
+    if train_config.enable_fsdp or train_config.enable_ddp:
         world_size = int(os.environ["WORLD_SIZE"])
     model.eval()
     eval_preds = []
@@ -346,7 +350,7 @@ def evaluation(model,train_config, eval_dataloader, local_rank, tokenizer):
             for key in batch.keys():
                 if type(batch[key])==bool:
                     continue
-                if train_config.enable_fsdp:
+                if train_config.enable_fsdp or train_config.enable_ddp:
                     batch[key] = batch[key].to(local_rank)
                 else:
                     batch[key] = batch[key].to('cuda:0')
@@ -367,20 +371,20 @@ def evaluation(model,train_config, eval_dataloader, local_rank, tokenizer):
             )
 
     # If there's more than one CUDA device, reduce evaluation loss across all devices
-    if torch.cuda.device_count() > 1 and train_config.enable_fsdp:
+    if torch.cuda.device_count() > 1 and train_config.enable_fsdp or train_config.enable_ddp:
         dist.all_reduce(eval_loss, op=dist.ReduceOp.SUM)
         dist.all_reduce(eval_acc, op=dist.ReduceOp.SUM)
 
     # Compute average loss and perplexity
     eval_epoch_loss = eval_loss / len(eval_dataloader)
     eval_epoch_acc = eval_acc / len(eval_dataloader)
-    if train_config.enable_fsdp:
+    if train_config.enable_fsdp or train_config.enable_ddp:
         eval_epoch_loss = eval_epoch_loss/world_size
         eval_epoch_acc = eval_epoch_acc/world_size
     eval_ppl = torch.exp(eval_epoch_loss)
 
     # Print evaluation metrics
-    if train_config.enable_fsdp:
+    if train_config.enable_fsdp or train_config.enable_ddp:
         if local_rank==0:
             logger.info(f" {eval_ppl=} {eval_epoch_loss=} {eval_epoch_acc=}")
     else:
