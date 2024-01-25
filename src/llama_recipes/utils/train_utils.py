@@ -233,12 +233,12 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                             )
 
                 else:
-                    if not train_config.use_peft and fsdp_config.checkpoint_type == StateDictType.FULL_STATE_DICT:
+                    if not train_config.use_peft and fsdp_config.checkpoint_type == "StateDictType.FULL_STATE_DICT":
 
                         save_model_checkpoint(
                             model, optimizer, rank, train_config, epoch=epoch
                         )
-                    elif not train_config.use_peft and fsdp_config.checkpoint_type == StateDictType.SHARDED_STATE_DICT:
+                    elif not train_config.use_peft and fsdp_config.checkpoint_type == "StateDictType.SHARDED_STATE_DICT":
                         logger.info(" Saving the FSDP model checkpoints using SHARDED_STATE_DICT")
                         logger.info("=====================================================")
 

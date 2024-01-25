@@ -23,7 +23,7 @@ output_dir=/nfs/maziyang.mzy/exps/vicuna-7b-v1.5-finetune-asr-ds5-proj2048-lr1e-
 # -m debugpy --listen 5678 --wait-for-client
 if [[ $CUDA_VISIBLE_DEVICES != *","* ]]; then
 python src/llama_recipes/pipeline/finetune.py \
---config-path "scripts/conf" \
+--config-path "/root/SLAM-LLM/scripts/conf" \
 --config-name "asr_vicuna_lora.yaml" \
 ++model_config.llm_name="vicuna-7b-v1.5" \
 ++model_config.llm_path=$llm_path \
@@ -67,9 +67,9 @@ torchrun \
 --nproc_per_node 4 \
 --master_port=29502 \
 src/llama_recipes/pipeline/finetune.py \
---config-path "scripts/conf" \
+--config-path "/root/SLAM-LLM/scripts/conf" \
 --config-name "asr_vicuna_lora.yaml" \
-++model_config.llm_name="vicuna-13b-v1.5" \
+++model_config.llm_name="vicuna-7b-v1.5" \
 ++model_config.llm_path=$llm_path \
 ++model_config.llm_dim=4096 \
 ++model_config.encoder_name=whisper \
@@ -93,7 +93,8 @@ src/llama_recipes/pipeline/finetune.py \
 ++train_config.output_dir=$output_dir \
 ++train_config.peft_config.peft_method=lora \
 ++train_config.enable_fsdp=true \
-++train_config.use_fp16 \
+++train_config.enable_ddp=false \
+++train_config.use_fp16=true \
 ++metric=acc \
 #++log_config.log_file=/$output_dir/train.log \
 #++log_config.use_wandb=true \
