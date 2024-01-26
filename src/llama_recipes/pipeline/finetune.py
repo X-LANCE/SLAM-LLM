@@ -131,7 +131,7 @@ def main(kwargs: DictConfig):
         clear_gpu_cache(local_rank)
         setup_environ_flags(rank)
 
-    if (train_config.enable_fsdp or train_config.enable_ddp) or rank == 0:
+    if not (train_config.enable_fsdp or train_config.enable_ddp) or rank == 0:
         logger.info("train_config: {}".format(train_config))
         logger.info("fsdp_config: {}".format(fsdp_config))
         logger.info("model_config: {}".format(model_config))
