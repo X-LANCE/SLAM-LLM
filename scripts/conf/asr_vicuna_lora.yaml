@@ -82,7 +82,7 @@ train_config:
   freeze_encoder: false
 
 dataset_config:
-  dataset: "samsum_dataset"
+  dataset: "speech_dataset"
   file: "src/llama_recipes/datasets/speech_dataset.py:get_speech_dataset"
   train_data_path: null
   val_data_path: null
@@ -92,6 +92,7 @@ dataset_config:
   max_words: null
   max_mel: null
   fix_length_audio: -1
+  inference_mode: false
 
 fsdp_config:
     mixed_precision: true

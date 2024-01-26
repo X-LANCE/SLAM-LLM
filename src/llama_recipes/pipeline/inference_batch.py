@@ -9,7 +9,7 @@ from llama_recipes.models.slam_model import slam_model
 # from llama_recipes.configs import train_config as TRAIN_CONFIG
 # from llama_recipes.configs import model_config as MODEL_CONFIG
 # from llama_recipes.configs import log_config as LOG_CONFIG
-from llama_recipes.utils.config_utils import generate_dataset_config
+
 from llama_recipes.pipeline.model_factory import model_factory
 from llama_recipes.utils.dataset_utils import get_preprocessed_dataset
 import os
@@ -53,6 +53,13 @@ def main(kwargs: DictConfig):
 	                                                                      kwargs.model_config, \
 	                                                                      kwargs.log_config, \
 	                                                                      kwargs.dataset_config
+	
+	del kwargs.train_config
+	del kwargs.fsdp_config
+	del kwargs.model_config
+	del kwargs.log_config
+	del kwargs.dataset_config
+
 	# Set log
 	if not os.path.exists(os.path.dirname(log_config.log_file)):
 		os.makedirs(os.path.dirname(log_config.log_file), exist_ok=True)
@@ -92,7 +99,7 @@ def main(kwargs: DictConfig):
 	model.to(device)
 	model.eval()
 
-	dataset_config = generate_dataset_config(train_config, kwargs)
+	# dataset_config = generate_dataset_config(train_config, kwargs)
 	logger.info("dataset_config: {}".format(dataset_config))
 	dataset_test = get_preprocessed_dataset(
         tokenizer,
@@ -119,7 +126,7 @@ def main(kwargs: DictConfig):
 	with open(pred_path, "w") as pred, open(gt_path, "w") as gt:
 		for step, batch in tqdm(enumerate(test_dataloader), total=len(test_dataloader)):
 			for key in batch.keys():
-				batch[key] = batch[key].to(device) if key not in ["keys", "targets"] else batch[key]
+				batch[key] = batch[key].to(device) if isinstance(batch[key], torch.Tensor) else batch[key]
 			model_outputs = model.generate(**batch)
 			output_text = model.tokenizer.batch_decode(model_outputs, add_special_tokens=False, skip_special_tokens=True)
 			for key, text, target in zip(batch["keys"], output_text, batch["targets"]):
