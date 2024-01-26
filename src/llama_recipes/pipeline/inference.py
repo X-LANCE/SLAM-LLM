@@ -48,6 +48,12 @@ def main(kwargs: DictConfig):
 	                                                                      kwargs.log_config, \
 	                                                                      kwargs.dataset_config
 	
+	del kwargs.train_config
+	del kwargs.fsdp_config
+	del kwargs.model_config
+	del kwargs.log_config
+	del kwargs.dataset_config
+	
 	# Set the seeds for reproducibility
 	torch.cuda.manual_seed(train_config.seed)
 	torch.manual_seed(train_config.seed)

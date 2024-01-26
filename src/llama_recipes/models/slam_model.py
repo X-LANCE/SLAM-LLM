@@ -322,7 +322,12 @@ class slam_model(nn.Module):
             audio_mel = whisper.log_mel_spectrogram(audio_raw).permute(1,0)[None, :, :].to(device)
 
             encoder_outs = self.encoder.extract_variable_length_features(audio_mel.permute(0, 2, 1))
-            encoder_outs = self.encoder_projector(encoder_outs)
+            
+            if self.model_config.encoder_projector == "q-former":
+                audio_mel_post_mask = torch.ones(encoder_outs.size()[:-1], dtype=torch.long).to(encoder_outs.device)
+                encoder_outs = self.encoder_projector(encoder_outs, audio_mel_post_mask)
+            if self.model_config.encoder_projector == "linear":
+                encoder_outs = self.encoder_projector(encoder_outs)
         else: # Text QA
             encoder_outs = torch.empty(1, 0, self.llm.model.embed_tokens.embedding_dim).to(device)
 

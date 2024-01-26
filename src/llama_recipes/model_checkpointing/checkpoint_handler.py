@@ -176,7 +176,10 @@ def save_model_checkpoint_peft(model, optimizer, rank, cfg, epoch=0):
         logger.info(f"llm saved at {save_dir}")
     
     save_full_path = os.path.join(save_dir, "model.pt")
-    cpu_state = model.state_dict()
+    if hasattr(model, "module"): #(FIX:MZY): a hack to deal with the model wrapped in DDP
+        cpu_state = model.module.state_dict()
+    else:
+        cpu_state = model.state_dict()
     encoder_dict = {}
     if not cfg.freeze_encoder:
         for key in cpu_state.keys():
