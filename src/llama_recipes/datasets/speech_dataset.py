@@ -18,6 +18,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
     
     def __init__(self,
                  dataset_config,
+                 model_config,
                  tokenizer=None,
                  split='train',
                  ):
@@ -165,7 +166,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
 
 
 
-def get_speech_dataset(dataset_config, tokenizer, split):
-    dataset = SpeechDatasetJsonl(dataset_config, tokenizer, split)
+def get_speech_dataset(dataset_config, model_config, tokenizer, split):
+    dataset = SpeechDatasetJsonl(dataset_config, model_config, tokenizer, split)
 
     return dataset

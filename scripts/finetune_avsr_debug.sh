@@ -12,7 +12,7 @@ export OMP_NUM_THREADS=1
 
 cd /root/SLAM-LLM
 
-# speech_encoder_path=/nfs/zhifu.gzf/ckpt/Whisper/large-v2.pt
+speech_encoder_path=/nfs/zhifu.gzf/ckpt/Whisper/large-v2.pt
 # speech_encoder_path=/nfs/maziyang.mzy/models/Whisper/large-v2-qwen.pt
 
 llm_path=/nfs/maziyang.mzy/models/vicuna-7b-v1.5
@@ -40,7 +40,7 @@ python -m debugpy --listen 5678 --wait-for-client src/llama_recipes/pipeline/fin
 --speech_dataset.val_data_path /nfs/maziyang.mzy/data/librispeech/librispeech_dev_other_filtered.jsonl \
 --batching_strategy custom \
 --num_epochs 100 \
---batch_size_training 4 \
+--batch_size_training 2 \
 --val_batch_size 4 \
 --num_workers_dataloader 4 \
 --lr 1e-4 \

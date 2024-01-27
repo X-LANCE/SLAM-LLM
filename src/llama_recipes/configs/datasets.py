@@ -77,3 +77,14 @@ class avsr_dataset:
     valid_subset: str = "LRS3/val.txt"
     test_subset: str = "LRS3/test.txt"
     reqInpLen: str = 80
+
+@dataclass
+class slides_dataset:
+    dataset: str = "slides_dataset"
+    file: str = "src/llama_recipes/datasets/slides_dataset.py:get_audio_dataset"
+    train_split: str = "train"
+    test_split: str = "val"
+    train_scp_file_path: str = "/nfs/yangguanrou.ygr/slidespeech/train_L_95/"
+    dev_scp_file_path: str= "/nfs/yangguanrou.ygr/slidespeech/dev_oracle_v1/"
+    test_scp_file_path: str= "/nfs/yangguanrou.ygr/slidespeech/test_oracle_v1/"
+    use_ocr: bool = True

@@ -14,6 +14,10 @@ preds="/nfs/yangguanrou.ygr/vicuna-7b-v1.5-finetune-sotaavsr-20230119/avsr/27/de
 trans="/nfs/yangguanrou.ygr/vicuna-7b-v1.5-finetune-sota-avsr-lr5e-4-20230121/avsr/34/decode_log_test_other_beam4_repetition_penalty1_gt"
 preds="/nfs/yangguanrou.ygr/vicuna-7b-v1.5-finetune-sota-avsr-lr5e-4-20230121/avsr/34/decode_log_test_other_beam4_repetition_penalty1_pred"
 
+trans="/nfs/yangguanrou.ygr/vicuna-7b-v1.5-finetune-avsr-lr5e-4-20230121/avsr/60/decode_log_test_other_beam4_repetition_penalty1_gt"
+preds="/nfs/yangguanrou.ygr/vicuna-7b-v1.5-finetune-avsr-lr5e-4-20230121/avsr/60/decode_log_test_other_beam4_repetition_penalty1_pred_1"
+
+
 # python src/llama_recipes/utils/preprocess_text.py ${preds} ${preds}.proc
 # python src/llama_recipes/utils/compute_wer.py ${trans} ${preds}.proc ${preds}.proc.wer
 #-m debugpy --listen 5678 --wait-for-client 

@@ -201,7 +201,7 @@ class slam_model(nn.Module):
         encoder_outs = None
         if audio_mel is not None or audio is not None or visual is not None:
             if self.model_config.encoder_name == "whisper":
-                encoder_outs = self.encoder.extract_variable_length_features(audio_mel.permute(0, 2, 1)) # bs*seq*dim  #torch.Size([2, 300, 4096])
+                encoder_outs = self.encoder.extract_variable_length_features(audio_mel.permute(0, 2, 1)) # bs*seq*dim  #torch.Size([2, 300, 80])
             if self.model_config.encoder_name == "beats":
                 encoder_outs, audio_mel_post_mask = self.encoder.extract_features(audio_mel, audio_mel_mask) # bs*seq*dim  
             if self.model_config.encoder_name == "moco_wav2vec2":
@@ -212,7 +212,7 @@ class slam_model(nn.Module):
             if self.model_config.encoder_projector == "q-former":
                 encoder_outs = self.encoder_projector(encoder_outs, audio_mel_post_mask) #torch.Size([2, 1500, 1280])  -> torch.Size([2, 64, 5120])
             if self.model_config.encoder_projector == "linear":
-                encoder_outs = self.encoder_projector(encoder_outs)  #torch.Size([2, 16, 5120])
+                encoder_outs = self.encoder_projector(encoder_outs)  #torch.Size([2, 16, 5120])  torch.Size([2, 300, 4096])
 
         if input_ids is not None:
             input_ids[input_ids == -1] = 0
@@ -229,6 +229,10 @@ class slam_model(nn.Module):
             encoder_outs_pad = F.pad(encoder_outs, (0, 0, 0, token_num-l, 0, 0), value=0.0) #torch.Size([2, 74, 5120])  #len上padding
             inputs_embeds = encoder_outs_pad * modality_mask[:, :, None] + inputs_embeds * (~modality_mask[:, :, None]) #tensor(16, device='cuda:0')
         
+        if inputs_embeds.shape[1]>4096:
+
+            logger.info(inputs_embeds.shape)
+            logger.info(encoder_outs.shape)
         model_outputs = self.llm(inputs_embeds=inputs_embeds, attention_mask=attention_mask, labels=labels)
 
         acc = -1
