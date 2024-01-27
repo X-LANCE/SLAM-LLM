@@ -48,7 +48,10 @@ import wandb
 import hydra
 from omegaconf import DictConfig, ListConfig, OmegaConf
 
-@hydra.main(config_name=None, version_base=None)
+
+
+# @hydra.main(config_name=None, version_base=None)
+@hydra.main(config_name=None)#, version_base=None)
 def main_hydra(cfg: DictConfig):
     def to_plain_list(cfg_item):
         if isinstance(cfg_item, ListConfig):
@@ -118,7 +121,7 @@ def main(kwargs: DictConfig):
     torch.manual_seed(train_config.seed)
     random.seed(train_config.seed)
 
-    if train_config.enable_fsdp or train_config.enable_ddp:
+    if train_config.enable_fsdp or train_config.enable_ddp:  #单卡都false
         setup()
         # torchrun specific
         local_rank = int(os.environ["LOCAL_RANK"])
@@ -131,21 +134,21 @@ def main(kwargs: DictConfig):
         clear_gpu_cache(local_rank)
         setup_environ_flags(rank)
 
-    if not (train_config.enable_fsdp or train_config.enable_ddp) or rank == 0:
+    if not (train_config.enable_fsdp or train_config.enable_ddp) or rank == 0: #
         logger.info("train_config: {}".format(train_config))
         logger.info("fsdp_config: {}".format(fsdp_config))
         logger.info("model_config: {}".format(model_config))
         logger.info("log_config: {}".format(log_config))
 
     # Set wandb
-    if not (train_config.enable_fsdp or train_config.enable_ddp) or rank == 0:
+    if not (train_config.enable_fsdp or train_config.enable_ddp) or rank == 0: #
         if log_config.use_wandb:
             if not os.path.exists(log_config.wandb_dir):
                 os.makedirs(log_config.wandb_dir, exist_ok=True)
             wandb_config={"train_config": train_config, "fsdp_config": fsdp_config, "model_config": model_config, "log_config": log_config}
             wandb.init(dir=log_config.wandb_dir, entity=log_config.wandb_entity_name, project=log_config.wandb_project_name,name=log_config.wandb_exp_name ,config=wandb_config)
 
-    model, tokenizer = model_factory(train_config, model_config, avmodel_config, **kwargs)
+    model, tokenizer = model_factory(train_config, model_config, **kwargs)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     
@@ -181,7 +184,7 @@ def main(kwargs: DictConfig):
         model = model.cuda(local_rank)
         model = DDP(model, device_ids=[local_rank],
                     find_unused_parameters=kwargs.get("train_conf", {}).get("find_unused_parameters", False))
-    elif not train_config.quantization:
+    elif not train_config.quantization: #
         model.to(device)
 
     # dataset_config = generate_dataset_config(train_config, kwargs)

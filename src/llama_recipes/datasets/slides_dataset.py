@@ -12,13 +12,11 @@ logger = logging.getLogger(__name__)
 class SlidesDataset(Dataset):
     def __init__(self, dataset_config, model_config, tokenizer=None, split='train',):
         super().__init__()
-        self.dataset_config = dataset_config
-
         self.data_list = []
         self.num_samples_list = []
         self.label_list = []
         self.ocr_list = []
-        self.name_list=[] # for debug
+        self.key_list=[] # for debug
 
         if split == "train":
             # 一次性load 全部数据
@@ -33,7 +31,7 @@ class SlidesDataset(Dataset):
                 for line in f:
                     line = line.strip().split()
                     self.data_list.append(line[1])
-                    self.name_list.append(line[0])
+                    self.key_list.append(line[0])
 
             with open(dataset_config.train_scp_file_path + "utt2num_samples",'r') as f:
                 for line in f:
@@ -81,7 +79,7 @@ class SlidesDataset(Dataset):
                 for line in f:
                     line = line.strip().split()
                     self.data_list.append(line[1])
-                    self.name_list.append(line[0])
+                    self.key_list.append(line[0])
             
 
             with open(dataset_config.dev_scp_file_path + "utt2num_samples",'r') as f:
@@ -150,7 +148,8 @@ class SlidesDataset(Dataset):
         self.prompt_template1 = "USER: {}\n ASSISTANT:"
         self.prompt_template2 = "USER: Transcribe speech to text. The speech is related to a slide, which contains key information. The text from the slide is \"{}\". Please use the text to enhance the accuracy of the ASR task.\n ASSISTANT:"
         self.answer_template = "{}"
-        
+        self.fix_length_audio = dataset_config.get("fix_length_audio", -1)
+        self.inference_mode = dataset_config.get("inference_mode", False)
 
 
     def __getitem__(self, index):
@@ -160,29 +159,25 @@ class SlidesDataset(Dataset):
         #audio_raw = self.data_list[index]
         # audio_raw = torch.from_numpy(audio_raw).float()
 
-        # num_samples = self.num_samples_list[index]  #12320
-        # assert(audio_raw.shape[0] == num_samples)
+        num_samples = self.num_samples_list[index]  #12320
+        assert(audio_raw.shape[0] == num_samples)
         
-        target = self.label_list[index]
         ocr = self.ocr_list[index]
-        name = self.name_list[index]
+        target = self.label_list[index]
+        key = self.key_list[index]
 
         if self.model_config.encoder_name == "whisper":
             audio_raw = whisper.pad_or_trim(audio_raw)  #torch.Size([480000])
             audio_mel = whisper.log_mel_spectrogram(audio_raw).permute(1, 0)    #torch.Size([3000, 80])   torch.Size([648, 80])
 
-        # if ocr == None:
+
         if self.dataset_config.use_ocr == True and ocr != None:
             prompt = self.prompt_template2.format(ocr)
         else:
             prompt = "Transcribe speech to text."
             prompt = self.prompt_template1.format(prompt)
 
-        # 下面都一样
-        answer = self.answer_template.format(target)
-
         prompt_ids = self.tokenizer.encode(prompt)
-
         prompt_length = len(prompt_ids)
         audio_length = (audio_mel.shape[0] + 1) // 2  # ad-hoc for whisper for 2x downsample from mel to feats
         audio_length = audio_length // 5 # ad-hoc for 5x fc downsample
@@ -191,18 +186,30 @@ class SlidesDataset(Dataset):
         #     audio_length = self.fix_length_audio
         audio_pseudo = torch.full((audio_length,), -1) # placeholder
 
+        if self.inference_mode:
+            prompt_ids = torch.tensor(prompt_ids, dtype=torch.int64)
+            example_ids = torch.cat((audio_pseudo, prompt_ids))  # [audio,prompt]
+            example_mask = example_ids.ge(-1)  # [True,True]
+
+            return {
+                "input_ids": example_ids,
+                "attention_mask": example_mask,
+                'audio_mel': audio_mel,
+                'audio_length': audio_length,
+                'key': key,
+                'target': target,
+            }
+
+        answer = self.answer_template.format(target)
         example = prompt + answer  # FIX(MZY): avoid putting a bos token before answer.
         example_ids = self.tokenizer.encode(example)  # [prompt,answer]
         example_ids.append(self.tokenizer.eos_token_id)  # [prompt,answer,eos]
-
-
-
         example_ids = torch.tensor(
             example_ids, dtype=torch.int64
         )
         example_ids = torch.cat((audio_pseudo, example_ids))  # [audio,prompt,answer,eos]
 
-        if len(example_ids)>1000:  #一维
+        if len(example_ids)>1000:  #一维 debug
             logger.info(name) 
             logger.info(audio_mel.shape)
             logger.info(audio_length)
@@ -232,8 +239,6 @@ class SlidesDataset(Dataset):
         input_ids_max_length = max([s['input_ids'].shape[0] for s in samples])
         input_ids = torch.stack([self.pad(s['input_ids'], input_ids_max_length, self.tokenizer.pad_token_id)
                                  for s in samples])
-        labels = torch.stack([self.pad(s['labels'], input_ids_max_length, self.IGNORE_INDEX)
-                              for s in samples])
         attention_mask = torch.stack([self.pad(s['attention_mask'], input_ids_max_length, False)
                                       for s in samples])
     
@@ -247,7 +252,23 @@ class SlidesDataset(Dataset):
         modality_mask = torch.zeros_like(attention_mask)
         for line, sample in enumerate(samples):
             modality_mask[line, :sample['audio_length']] = 1
-    
+
+        if self.inference_mode:
+            keys = [s['key'] for s in samples]
+            targets = [s['target'] for s in samples]
+
+            return {
+                'input_ids': input_ids,
+                'attention_mask': attention_mask,
+                'audio_mel': audio_mel,
+                'audio_mel_post_mask': audio_mel_post_mask,
+                'modality_mask': modality_mask,
+                'keys': keys,
+                'targets': targets
+            }
+
+        labels = torch.stack([self.pad(s['labels'], input_ids_max_length, self.IGNORE_INDEX)
+                              for s in samples])
         return {
             'input_ids': input_ids,
             'labels': labels,

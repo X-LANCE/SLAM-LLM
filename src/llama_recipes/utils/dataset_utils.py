@@ -40,7 +40,7 @@ def get_custom_dataset(dataset_config, model_config, tokenizer, split: str):
     if not module_path.endswith(".py"):
         raise ValueError(f"Dataset file {module_path} is not a .py file.")
 
-    module_path = Path(module_path)
+    module_path = Path("/root/SLAM-LLM/"+module_path)  #相对路径找不到？？？
     if not module_path.is_file():
         raise FileNotFoundError(f"Dataset py file {module_path.as_posix()} does not exist or is not a file.")
 
@@ -60,6 +60,7 @@ DATASET_PREPROC = {
     "audio_dataset": get_custom_dataset,
     "avsr_dataset": get_custom_dataset,
     "slides_dataset": get_custom_dataset,
+    "hubert_dataset": get_custom_dataset,
 }
 
 

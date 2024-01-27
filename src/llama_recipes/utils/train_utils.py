@@ -220,7 +220,7 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                             elif train_config.enable_ddp:
                                 if rank==0:
                                     save_model_checkpoint_peft(
-                                            model, optimizer, rank, train_config, epoch=epoch
+                                            model, optimizer, rank, train_config, epoch=epoch, step=step
                                         )
                                 dist.barrier()
                             else:

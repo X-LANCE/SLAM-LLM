@@ -87,7 +87,6 @@ def main(kwargs: DictConfig):
 	logger.info("train_config: {}".format(train_config))
 	logger.info("fsdp_config: {}".format(fsdp_config))
 	logger.info("model_config: {}".format(model_config))
-	logger.info("model_config: {}".format(avmodel_config))
 
 	
 	# Set the seeds for reproducibility
@@ -95,7 +94,7 @@ def main(kwargs: DictConfig):
 	torch.manual_seed(train_config.seed)
 	random.seed(train_config.seed)
 	
-	model, tokenizer = model_factory(train_config, model_config, avmodel_config, **kwargs)
+	model, tokenizer = model_factory(train_config, model_config, **kwargs)
 	device = torch.device("cuda" if torch.cuda.is_available() else "cpu") # FIX(MZY): put the whole model to device.
 	model.to(device)
 	model.eval()

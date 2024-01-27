@@ -19,8 +19,8 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def setup_model(tokenizer, train_config, model_config,avmodel_config, **kwargs):
-    return slam_model(tokenizer, train_config, model_config, avmodel_config, **kwargs)
+def setup_model(tokenizer, train_config, model_config, **kwargs):
+    return slam_model(tokenizer, train_config, model_config, **kwargs)
 
 
 def setup_tokenizer(train_config, model_config, **kwargs):
@@ -42,6 +42,9 @@ def setup_encoder(train_config, model_config, **kwargs):
         if encoder_name == "beats": 
             from llama_recipes.models.encoder import BEATsEncoder
             encoder = BEATsEncoder.load(model_config)
+        if encoder_name == "hubert":
+            from llama_recipes.models.encoder import HubertEncoder
+            encoder = HubertEncoder.load(model_config)
         if encoder_name == "moco_wav2vec2":
             from llama_recipes.models.encoder import AVEncoder
             encoder = AVEncoder.load(model_config)
@@ -150,12 +153,11 @@ class slam_model(nn.Module):
         tokenizer, 
         train_config, 
         model_config, 
-        avmodel_config,
         **kwargs
     ):
         super().__init__()
         # modality encoder 
-        self.encoder = setup_encoder(train_config, model_config, avmodel_config, **kwargs)
+        self.encoder = setup_encoder(train_config, model_config, **kwargs)
 
         # llm
         self.llm = setup_llm(train_config, model_config, **kwargs)
@@ -188,7 +190,7 @@ class slam_model(nn.Module):
         audio_mel_post_mask = kwargs.get("audio_mel_post_mask", None) # 2x downsample for whisper
         modality_mask = kwargs.get("modality_mask", None)
 
-        audio = kwargs.get("audio", None) #torch.Size([2, 96480])
+        audio = kwargs.get("audio", None) #torch.Size([2, 96480])  torch.Size([4, 253280])
         audio_mask = kwargs.get("audio_mask", None) #删 #torch.Size([2, 96480])
         visual = kwargs.get("visual", None) #torch.Size([2, 151, 1, 112, 112])
         vis_len = kwargs.get("vis_len", None) #tensor([ 77, 151], device='cuda:0', dtype=torch.int32)
@@ -203,6 +205,12 @@ class slam_model(nn.Module):
                 encoder_outs, audio_mel_post_mask = self.encoder.extract_features(audio_mel, audio_mel_mask) # bs*seq*dim  
             if self.model_config.encoder_name == "moco_wav2vec2":
                 encoder_outs , inputLenBatch, audio_mel_post_mask = self.encoder((audio, audio_mask, visual, vis_len) ,maskw2v) # bs*seq*dim
+            if self.model_config.encoder_name == "hubert":
+                results = self.encoder(source = audio, padding_mask = audio_mask)   #关键字参数传参！！！
+                encoder_outs, audio_mel_post_mask = results["encoder_out"], results["encoder_padding_mask"]
+                encoder_outs = encoder_outs.transpose(0, 1) #torch.Size([4, 791, 768])
+                audio_mel_post_mask = (~audio_mel_post_mask).float()
+                # encoder_outs = self.encoder()
             if self.model_config.encoder_name == "sota_avsr":
                 encoder_outs , inputLenBatch, audio_mel_post_mask = self.encoder((audio, audio_mask, visual, vis_len) ) # bs*seq*dim
             if self.encoder is None:
@@ -228,10 +236,9 @@ class slam_model(nn.Module):
             encoder_outs_pad = F.pad(encoder_outs, (0, 0, 0, token_num-l, 0, 0), value=0.0) #torch.Size([2, 74, 5120])  #len上padding
             inputs_embeds = encoder_outs_pad * modality_mask[:, :, None] + inputs_embeds * (~modality_mask[:, :, None]) #tensor(16, device='cuda:0')
         
-        if inputs_embeds.shape[1]>4096:
-
-            logger.info(inputs_embeds.shape)
-            logger.info(encoder_outs.shape)
+        # if inputs_embeds.shape[1]>4096:
+        #     logger.info(inputs_embeds.shape)
+        #     logger.info(encoder_outs.shape)
         model_outputs = self.llm(inputs_embeds=inputs_embeds, attention_mask=attention_mask, labels=labels)
 
         acc = -1
