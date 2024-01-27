@@ -18,5 +18,5 @@ def model_factory(train_config, model_config,avmodel_config, **kwargs):
             ckpt_dict = torch.load(ckpt_path, map_location="cpu")
             model.load_state_dict(ckpt_dict, strict=False)
 
-    print_model_size(model, train_config, int(os.environ["RANK"]) if train_config.enable_fsdp else 0)
+    print_model_size(model, train_config, int(os.environ["RANK"]) if train_config.enable_fsdp or train_config.enable_ddp else 0)
     return model, tokenizer

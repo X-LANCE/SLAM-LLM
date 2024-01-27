@@ -6,12 +6,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.distributed as dist
 from typing import List, Optional, Tuple, Union
+from transformers import AutoModelForCausalLM, AutoTokenizer, AutoConfig
 from peft import LoraConfig, TaskType, get_peft_model, prepare_model_for_kbit_training
-from transformers import (
-    LlamaForCausalLM,
-    LlamaTokenizer,
-    LlamaConfig,
-)
 
 from llama_recipes.utils.config_utils import generate_peft_config
 from llama_recipes.utils.train_utils import print_module_size
@@ -29,14 +25,15 @@ def setup_model(tokenizer, train_config, model_config,avmodel_config, **kwargs):
 
 def setup_tokenizer(train_config, model_config, **kwargs):
     # Load the tokenizer and add special tokens
-    if "llama" in model_config.llm_name or "vicuna" in model_config.llm_name:
-        tokenizer = LlamaTokenizer.from_pretrained(model_config.llm_path)
-        tokenizer.pad_token_id = tokenizer.eos_token_id
-        return tokenizer
+    tokenizer = AutoTokenizer.from_pretrained(model_config.llm_path)
+    tokenizer.pad_token_id = tokenizer.eos_token_id
+    return tokenizer
 
 
-def setup_encoder(train_config, model_config, avmodel_config, **kwargs):
-    encoder_list = model_config.encoder_name.split(",")
+def setup_encoder(train_config, model_config, **kwargs):
+    encoder_list = model_config.encoder_name.split(",") if model_config.encoder_name else []
+    if len(encoder_list) == 0:
+        return None
     if len(encoder_list) == 1:
         encoder_name = encoder_list[0]
         if encoder_name == "whisper" or encoder_name == "qwen-audio":
@@ -48,23 +45,23 @@ def setup_encoder(train_config, model_config, avmodel_config, **kwargs):
         if encoder_name == "moco_wav2vec2":
             from llama_recipes.models.encoder import AVEncoder
             encoder = AVEncoder.load(model_config)
-        if encoder_name == "sota_avsr":
-            from llama_recipes.models.encoder import SOTAAVEncoder
-            encoder = SOTAAVEncoder.load(avmodel_config)
-    print_module_size(encoder, encoder_name, int(os.environ["RANK"]) if train_config.enable_fsdp else 0)
+        # if encoder_name == "sota_avsr":
+        #     from llama_recipes.models.encoder import SOTAAVEncoder
+        #     encoder = SOTAAVEncoder.load(avmodel_config)
+    print_module_size(encoder, encoder_name, int(os.environ["RANK"]) if train_config.enable_fsdp or train_config.enable_ddp else 0)
 
     if train_config.freeze_encoder:
         for name, param in encoder.named_parameters(): 
             param.requires_grad = False
         encoder.eval()
-    print_module_size(encoder, encoder_name, int(os.environ["RANK"]) if train_config.enable_fsdp else 0)
+    print_module_size(encoder, encoder_name, int(os.environ["RANK"]) if train_config.enable_fsdp or train_config.enable_ddp else 0)
 
     return encoder
 
 def setup_llm(train_config, model_config, **kwargs):
     from pkg_resources import packaging
-    use_cache = False if train_config.enable_fsdp else None
-    if train_config.enable_fsdp and train_config.low_cpu_fsdp:
+    use_cache = False if train_config.enable_fsdp or train_config.enable_ddp else None
+    if (train_config.enable_fsdp or train_config.enable_ddp) and train_config.low_cpu_fsdp:
         """
         for FSDP, we can save cpu memory by loading pretrained model on rank0 only.
         this avoids cpu oom when loading large models like llama 70B, in which case
@@ -78,26 +75,26 @@ def setup_llm(train_config, model_config, **kwargs):
         #                     "please install latest nightly.")
         rank = int(os.environ["RANK"])
         if rank == 0:
-            model = LlamaForCausalLM.from_pretrained(
+            model = AutoModelForCausalLM.from_pretrained(
                 model_config.llm_path,
                 load_in_8bit=True if train_config.quantization else None,
                 device_map="auto" if train_config.quantization else None,
                 use_cache=use_cache,
             )
         else:
-            llama_config = LlamaConfig.from_pretrained(model_config.llm_path)
+            llama_config = AutoConfig.from_pretrained(model_config.llm_path)
             llama_config.use_cache = use_cache
             # with torch.device("meta"):
-            model = LlamaForCausalLM(llama_config) #(FIX:MZY): torch 2.0.1 does not support `meta`
+            model = AutoModelForCausalLM(llama_config) #(FIX:MZY): torch 2.0.1 does not support `meta`
 
     else:
-        model = LlamaForCausalLM.from_pretrained(
+        model = AutoModelForCausalLM.from_pretrained(
             model_config.llm_path,
             load_in_8bit=True if train_config.quantization else None,
             device_map="auto" if train_config.quantization else None,
             use_cache=use_cache,
         )
-    if train_config.enable_fsdp and train_config.use_fast_kernels:
+    if (train_config.enable_fsdp or train_config.enable_ddp) and train_config.use_fast_kernels:
         """
         For FSDP and FSDP+PEFT, setting 'use_fast_kernels' will enable
         using of Flash Attention or Xformer memory-efficient kernels
@@ -109,7 +106,7 @@ def setup_llm(train_config, model_config, **kwargs):
         except ImportError:
             logger.warning("Module 'optimum' not found. Please install 'optimum' it before proceeding.")
 
-    print_module_size(model, model_config.llm_name, int(os.environ["RANK"]) if train_config.enable_fsdp else 0)
+    print_module_size(model, model_config.llm_name, int(os.environ["RANK"]) if train_config.enable_fsdp or train_config.enable_ddp else 0)
 
     # Prepare the model for int8 training if quantization is enabled
     if train_config.quantization:
@@ -126,11 +123,11 @@ def setup_llm(train_config, model_config, **kwargs):
         model.print_trainable_parameters()
     elif train_config.use_peft:
         logger.info("setup peft...")
-        peft_config = generate_peft_config(train_config, kwargs)
+        peft_config = generate_peft_config(train_config)
         model = get_peft_model(model, peft_config)
         model.print_trainable_parameters()
 
-    print_module_size(model, model_config.llm_name, int(os.environ["RANK"]) if train_config.enable_fsdp else 0)
+    print_module_size(model, model_config.llm_name, int(os.environ["RANK"]) if train_config.enable_fsdp or train_config.enable_ddp else 0)
     return model
 
 def setup_encoder_projector(train_config, model_config, **kwargs):
@@ -143,7 +140,7 @@ def setup_encoder_projector(train_config, model_config, **kwargs):
     elif model_config.encoder_projector == "q-former":
         from llama_recipes.models.projector import EncoderProjectorQFormer
         encoder_projector = EncoderProjectorQFormer(model_config)
-    print_module_size(encoder_projector, model_config.encoder_projector, int(os.environ["RANK"]) if train_config.enable_fsdp else 0)
+    print_module_size(encoder_projector, model_config.encoder_projector, int(os.environ["RANK"]) if train_config.enable_fsdp or train_config.enable_ddp else 0)
     return encoder_projector
 
 
@@ -208,6 +205,8 @@ class slam_model(nn.Module):
                 encoder_outs , inputLenBatch, audio_mel_post_mask = self.encoder((audio, audio_mask, visual, vis_len) ,maskw2v) # bs*seq*dim
             if self.model_config.encoder_name == "sota_avsr":
                 encoder_outs , inputLenBatch, audio_mel_post_mask = self.encoder((audio, audio_mask, visual, vis_len) ) # bs*seq*dim
+            if self.encoder is None:
+                encoder_outs = audio_mel if audio_mel is not None else audio
 
             if self.model_config.encoder_projector == "q-former":
                 encoder_outs = self.encoder_projector(encoder_outs, audio_mel_post_mask) #torch.Size([2, 1500, 1280])  -> torch.Size([2, 64, 5120])
@@ -302,6 +301,7 @@ class slam_model(nn.Module):
         model_outputs = self.llm.generate(
             inputs_embeds=inputs_embeds,
             max_length=kwargs.get("max_length", 200),
+            max_new_tokens=kwargs.get("max_new_tokens", 200),
             num_beams=kwargs.get("num_beams", 4),
             do_sample=kwargs.get("do_sample", False),
             min_length=kwargs.get("min_length", 1),
@@ -332,16 +332,24 @@ class slam_model(nn.Module):
         negative_prompt_ids = None,
         negative_prompt_attention_mask = None,
         **kwargs,
-    ): # TODO: Now you need to set your customized sampling rate manually
+    ):
 
         device = kwargs.get("device", "cuda")
-        assert os.path.exists(wav_path)
-        audio_raw = whisper.load_audio(wav_path)
-        # audio_raw = whisper.pad_or_trim(audio_raw)
-        audio_mel = whisper.log_mel_spectrogram(audio_raw).permute(1,0)[None, :, :].to(device)
+        if os.path.exists(wav_path): # Audio-Text QA
+            import whisper
+            audio_raw = whisper.load_audio(wav_path)
+            audio_raw = whisper.pad_or_trim(audio_raw)
+            audio_mel = whisper.log_mel_spectrogram(audio_raw).permute(1,0)[None, :, :].to(device)
 
-        encoder_outs = self.encoder.extract_variable_length_features(audio_mel.permute(0, 2, 1))
-        encoder_outs = self.encoder_projector(encoder_outs)
+            encoder_outs = self.encoder.extract_variable_length_features(audio_mel.permute(0, 2, 1))
+            
+            if self.model_config.encoder_projector == "q-former":
+                audio_mel_post_mask = torch.ones(encoder_outs.size()[:-1], dtype=torch.long).to(encoder_outs.device)
+                encoder_outs = self.encoder_projector(encoder_outs, audio_mel_post_mask)
+            if self.model_config.encoder_projector == "linear":
+                encoder_outs = self.encoder_projector(encoder_outs)
+        else: # Text QA
+            encoder_outs = torch.empty(1, 0, self.llm.model.embed_tokens.embedding_dim).to(device)
 
         prompt = "USER: {}\n ASSISTANT:".format(prompt)
         prompt_ids = self.tokenizer.encode(prompt)

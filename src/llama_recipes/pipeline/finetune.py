@@ -14,25 +14,22 @@ from torch.optim.lr_scheduler import StepLR
 from torch.distributed.fsdp import (
     FullyShardedDataParallel as FSDP,
 )
+from torch.nn.parallel import DistributedDataParallel as DDP
+
 from torch.distributed.fsdp.fully_sharded_data_parallel import CPUOffload
 from llama_recipes.policies import AnyPrecisionAdamW, apply_fsdp_checkpointing
 
 # config
-from llama_recipes.configs import fsdp_config as FSDP_CONFIG
-from llama_recipes.configs import train_config as TRAIN_CONFIG
-from llama_recipes.configs import model_config as MODEL_CONFIG
-from llama_recipes.configs import avmodel_config as AV_MODEL_CONFIG
-from llama_recipes.configs import log_config as LOG_CONFIG
+# from llama_recipes.configs import fsdp_config as FSDP_CONFIG
+# from llama_recipes.configs import train_config as TRAIN_CONFIG
+# from llama_recipes.configs import model_config as MODEL_CONFIG
+# from llama_recipes.configs import log_config as LOG_CONFIG
 from llama_recipes.data.concatenator import ConcatDataset
 
 # util
 from llama_recipes.utils import fsdp_auto_wrap_policy
-from llama_recipes.utils.config_utils import (
-    update_config,
-    generate_peft_config,
-    generate_dataset_config,
-    get_dataloader_kwargs,
-)
+from llama_recipes.utils.config_utils import get_dataloader_kwargs
+
 from llama_recipes.utils.dataset_utils import get_preprocessed_dataset
 from llama_recipes.utils.train_utils import (
     train,
@@ -49,14 +46,48 @@ import logging
 import wandb
 
 import hydra
+from omegaconf import DictConfig, ListConfig, OmegaConf
 
-# @hydra.main(version_base="1.3", config_path="/root/SLAM-LLM/configs", config_name="config")
-# def main(cfg):
-def main(**kwargs):
+@hydra.main(config_name=None, version_base=None)
+def main_hydra(cfg: DictConfig):
+    def to_plain_list(cfg_item):
+        if isinstance(cfg_item, ListConfig):
+            return OmegaConf.to_container(cfg_item, resolve=True)
+        elif isinstance(cfg_item, DictConfig):
+            return {k: to_plain_list(v) for k, v in cfg_item.items()}
+        else:
+            return cfg_item
+    
+    # kwargs = to_plain_list(cfg)
+    kwargs = cfg
+    log_level = getattr(logging, kwargs.get("log_level", "INFO").upper())
+    
+    logging.basicConfig(level=log_level)
+    
+    if kwargs.get("debug", False):
+        import pdb;
+        pdb.set_trace()
+        
+    main(kwargs)
+    
+
+def main(kwargs: DictConfig):
     # Update the configuration for the training and sharding process
-    train_config, fsdp_config, model_config, avmodel_config, log_config,  = TRAIN_CONFIG(), FSDP_CONFIG(), MODEL_CONFIG(), AV_MODEL_CONFIG(), LOG_CONFIG()
-    update_config((train_config, fsdp_config, model_config, avmodel_config, log_config), **kwargs)
+    # train_config, fsdp_config, model_config, log_config = TRAIN_CONFIG(), FSDP_CONFIG(), MODEL_CONFIG(), LOG_CONFIG()
+    # update_config((train_config, fsdp_config, model_config, log_config), **kwargs)
 
+    train_config, fsdp_config, model_config, log_config, dataset_config = kwargs.train_config, \
+                                                                          kwargs.fsdp_config, \
+                                                                          kwargs.model_config, \
+                                                                          kwargs.log_config, \
+                                                                          kwargs.dataset_config
+    fsdp_config.use_fp16 = train_config.use_fp16
+    del kwargs.train_config
+    del kwargs.fsdp_config
+    del kwargs.model_config
+    del kwargs.log_config
+    del kwargs.dataset_config
+    
     # Set log
     if not os.path.exists(os.path.dirname(log_config.log_file)): #x
         os.makedirs(os.path.dirname(log_config.log_file), exist_ok=True)
@@ -80,11 +111,6 @@ def main(**kwargs):
     logger.handlers[0].setFormatter(console_formatter) 
 
     logger.addHandler(file_handler)
-    
-    logger.info("train_config: {}".format(train_config))
-    logger.info("fsdp_config: {}".format(fsdp_config))
-    logger.info("model_config: {}".format(model_config))
-    logger.info("model_config: {}".format(avmodel_config))
 
 
     # Set the seeds for reproducibility
@@ -92,7 +118,7 @@ def main(**kwargs):
     torch.manual_seed(train_config.seed)
     random.seed(train_config.seed)
 
-    if train_config.enable_fsdp: #x
+    if train_config.enable_fsdp or train_config.enable_ddp:
         setup()
         # torchrun specific
         local_rank = int(os.environ["LOCAL_RANK"])
@@ -105,12 +131,18 @@ def main(**kwargs):
         clear_gpu_cache(local_rank)
         setup_environ_flags(rank)
 
+    if not (train_config.enable_fsdp or train_config.enable_ddp) or rank == 0:
+        logger.info("train_config: {}".format(train_config))
+        logger.info("fsdp_config: {}".format(fsdp_config))
+        logger.info("model_config: {}".format(model_config))
+        logger.info("log_config: {}".format(log_config))
+
     # Set wandb
-    if not train_config.enable_fsdp or rank == 0: #x
+    if not (train_config.enable_fsdp or train_config.enable_ddp) or rank == 0:
         if log_config.use_wandb:
             if not os.path.exists(log_config.wandb_dir):
                 os.makedirs(log_config.wandb_dir, exist_ok=True)
-            wandb_config={"train_config":vars(train_config), "fsdp_config":vars(fsdp_config), "model_config":vars(model_config), "avmodel_config":vars(avmodel_config), "log_config":vars(log_config)}
+            wandb_config={"train_config": train_config, "fsdp_config": fsdp_config, "model_config": model_config, "log_config": log_config}
             wandb.init(dir=log_config.wandb_dir, entity=log_config.wandb_entity_name, project=log_config.wandb_project_name,name=log_config.wandb_exp_name ,config=wandb_config)
 
     model, tokenizer = model_factory(train_config, model_config, avmodel_config, **kwargs)
@@ -118,7 +150,7 @@ def main(**kwargs):
 
     
     # Convert the model to bfloat16 if fsdp and pure_bf16 is enabled
-    if train_config.enable_fsdp and fsdp_config.pure_bf16:
+    if (train_config.enable_fsdp or train_config.enable_ddp) and fsdp_config.pure_bf16:
         model.to(torch.bfloat16)
 
     #setting up   if enable_fsdp is enabled
@@ -126,7 +158,8 @@ def main(**kwargs):
         if not train_config.use_peft and train_config.freeze_layers:
 
             freeze_transformer_layers(train_config.num_freeze_layers)
-
+        from torch.distributed.fsdp import ShardingStrategy
+        fsdp_config.sharding_strategy = getattr(ShardingStrategy, fsdp_config.sharding_strategy)
         mixed_precision_policy, wrapping_policy = get_policies(fsdp_config, rank)
         my_auto_wrapping_policy = fsdp_auto_wrap_policy(model, LlamaDecoderLayer)
 
@@ -144,14 +177,18 @@ def main(**kwargs):
         )
         if fsdp_config.fsdp_activation_checkpointing:
             apply_fsdp_checkpointing(model)
-    elif not train_config.quantization and not train_config.enable_fsdp:
+    elif train_config.enable_ddp:
+        model = model.cuda(local_rank)
+        model = DDP(model, device_ids=[local_rank],
+                    find_unused_parameters=kwargs.get("train_conf", {}).get("find_unused_parameters", False))
+    elif not train_config.quantization:
         model.to(device)
 
-    dataset_config = generate_dataset_config(train_config, kwargs)
+    # dataset_config = generate_dataset_config(train_config, kwargs)
     logger.info("dataset_config: {}".format(dataset_config))
-    if not train_config.enable_fsdp or rank == 0:
+    if not (train_config.enable_fsdp or train_config.enable_ddp) or rank == 0:
         if log_config.use_wandb:
-            wandb.config.update( {"dataset_config": vars(dataset_config)} )
+            wandb.config.update({"dataset_config": dataset_config})
     
     # Load and preprocess the dataset for training and validation
     dataset_train = get_preprocessed_dataset(
@@ -160,7 +197,7 @@ def main(**kwargs):
         model_config,
         split="train",
     )
-    if not train_config.enable_fsdp or rank == 0:
+    if not (train_config.enable_fsdp or train_config.enable_ddp) or rank == 0:
         logger.info(f"--> Training Set Length = {len(dataset_train)}")
     dataset_val = get_preprocessed_dataset(
         tokenizer,
@@ -168,7 +205,7 @@ def main(**kwargs):
         model_config,
         split="val",
     )
-    if not train_config.enable_fsdp or rank == 0:
+    if not (train_config.enable_fsdp or train_config.enable_ddp) or rank == 0:
         logger.info(f"--> Validation Set Length = {len(dataset_val)}")
     if train_config.batching_strategy == "packing":
         dataset_train = ConcatDataset(dataset_train, chunk_size=train_config.context_length)
@@ -213,7 +250,15 @@ def main(**kwargs):
             lr=train_config.lr,
             weight_decay=train_config.weight_decay,
         )
-    scheduler = StepLR(optimizer, step_size=1, gamma=train_config.gamma)
+    # scheduler = StepLR(optimizer, step_size=1, gamma=train_config.gamma)
+    scheduler = torch.optim.lr_scheduler.LambdaLR(
+        optimizer, 
+        lr_lambda=lambda step: (
+            min(step / train_config.warmup_steps, 1) if step < train_config.warmup_steps
+            else 1
+            # else  max(0.0, 1 - (step - train_config.warmup_steps) / (train_config.total_steps - train_config.warmup_steps))
+        )
+    )
 
     # Start the training process
     results = train(
@@ -227,15 +272,15 @@ def main(**kwargs):
         train_config,
         log_config,
         fsdp_config if train_config.enable_fsdp else None,
-        local_rank if train_config.enable_fsdp else None,
-        rank if train_config.enable_fsdp else None,
+        local_rank if train_config.enable_fsdp or train_config.enable_ddp else None,
+        rank if train_config.enable_fsdp or train_config.enable_ddp else None,
     )
-    if not train_config.enable_fsdp or rank==0:
+    if not (train_config.enable_fsdp or train_config.enable_ddp) or rank==0:
         [logger.info(f'Key: {k}, Value: {v}') for k, v in results.items()]
 
-    if not train_config.enable_fsdp or rank == 0:
+    if not (train_config.enable_fsdp or  train_config.enable_ddp) or rank == 0:
         if log_config.use_wandb:
             wandb.finish()
 
 if __name__ == "__main__":
-    fire.Fire(main)
+    main_hydra()
