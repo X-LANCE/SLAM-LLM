@@ -96,12 +96,10 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
             pbar = tqdm(colour="blue", desc=f"Training Epoch: {epoch+1}", total=total_length, dynamic_ncols=True)
             for step, batch in enumerate(train_dataloader):
                 for key in batch.keys():
-                    if type(batch[key])==bool:
-                        continue
                     if train_config.enable_fsdp or train_config.enable_ddp:
-                        batch[key] = batch[key].to(local_rank)
+                        batch[key] = batch[key].to(local_rank) if isinstance(batch[key], torch.Tensor) else batch[key]
                     else:
-                        batch[key] = batch[key].to('cuda:0')
+                        batch[key] = batch[key].to('cuda:0') if isinstance(batch[key], torch.Tensor) else batch[key]
                 with autocast():
                     outputs, *rest = model(**batch)
                 acc = rest[0] if rest else -1
@@ -396,12 +394,10 @@ def evaluation(model,train_config, eval_dataloader, local_rank, tokenizer):
         pbar = tqdm(colour="green", desc=f"Evaluating Epoch", total=total_length, dynamic_ncols=True)
         for step, batch in enumerate(eval_dataloader):
             for key in batch.keys():
-                if type(batch[key])==bool:
-                    continue
                 if train_config.enable_fsdp or train_config.enable_ddp:
-                    batch[key] = batch[key].to(local_rank)
+                    batch[key] = batch[key].to(local_rank) if isinstance(batch[key], torch.Tensor) else batch[key]
                 else:
-                    batch[key] = batch[key].to('cuda:0')
+                    batch[key] = batch[key].to('cuda:0') if isinstance(batch[key], torch.Tensor) else batch[key]
             # Ensure no gradients are computed for this scope to save memory
             with torch.no_grad():
                 # Forward pass and compute loss

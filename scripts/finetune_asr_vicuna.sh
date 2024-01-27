@@ -95,6 +95,7 @@ hydra.run.dir=$output_dir \
 ++dataset_config.dataset=speech_dataset \
 ++dataset_config.train_data_path=/nfs/maziyang.mzy/data/librispeech/librispeech_train_960h.jsonl \
 ++dataset_config.val_data_path=/nfs/maziyang.mzy/data/librispeech/librispeech_dev_other_filtered.jsonl \
+++dataset_config.input_type=raw \
 ++train_config.model_name=asr \
 ++train_config.freeze_encoder=true \
 ++train_config.freeze_llm=true \
