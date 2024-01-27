@@ -99,7 +99,7 @@ class HubertDatasetJsonl(torch.utils.data.Dataset):
         if prompt is None:
             # prompt = random.choice(self.prompt_library)
             # prompt = "Transcribe speech to text. "
-            prompt = "Transcribe speech to text. Output the transcription directly without redundant content. Ensure that the output is not duplicated. "
+            prompt = "Transcribe speech to text. "
         
         prompt = self.prompt_template.format(prompt)
         prompt_ids = self.tokenizer.encode(prompt)

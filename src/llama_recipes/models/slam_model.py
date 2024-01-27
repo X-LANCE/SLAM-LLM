@@ -206,9 +206,12 @@ class slam_model(nn.Module):
             if self.model_config.encoder_name == "moco_wav2vec2":
                 encoder_outs , inputLenBatch, audio_mel_post_mask = self.encoder((audio, audio_mask, visual, vis_len) ,maskw2v) # bs*seq*dim
             if self.model_config.encoder_name == "hubert":
-                results = self.encoder(source = audio, padding_mask = audio_mask)   #关键字参数传参！！！
-                encoder_outs, audio_mel_post_mask = results["encoder_out"], results["encoder_padding_mask"]
-                encoder_outs = encoder_outs.transpose(0, 1) #torch.Size([4, 791, 768])
+                results = self.encoder(source = audio, padding_mask = audio_mask, mask=False, features_only=True)   #关键字参数传参！！！
+                if self.model_config.encoder_type == "pretrain":
+                    encoder_outs, audio_mel_post_mask = results["x"], results["padding_mask"] #torch.Size([4, 791, 1024]) torch.Size([4, 791])
+                if self.model_config.encoder_type == "finetune":
+                    encoder_outs, audio_mel_post_mask = results["encoder_out"], results["padding_mask"]
+                    encoder_outs = encoder_outs.transpose(0, 1) #torch.Size([4, 791, 768])
                 audio_mel_post_mask = (~audio_mel_post_mask).float()
                 # encoder_outs = self.encoder()
             if self.model_config.encoder_name == "sota_avsr":

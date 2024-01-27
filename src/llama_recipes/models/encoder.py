@@ -87,7 +87,11 @@ class HubertEncoder:
         import fairseq
         models, cfg, task = fairseq.checkpoint_utils.load_model_ensemble_and_task([model_config.encoder_path])
         model = models[0]
-        model.w2v_encoder.proj = None
+
+        if model_config.encoder_type == "pretrain":
+            pass
         
- 
+        else:
+            model.w2v_encoder.proj = None
+            model.w2v_encoder.apply_mask = False
         return model
