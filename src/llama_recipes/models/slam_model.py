@@ -226,7 +226,10 @@ class slam_model(nn.Module):
             _, l, _ = encoder_outs.shape
             encoder_outs_pad = F.pad(encoder_outs, (0, 0, 0, token_num-l, 0, 0), value=0.0)
             inputs_embeds = encoder_outs_pad * modality_mask[:, :, None] + inputs_embeds * (~modality_mask[:, :, None])
-        
+
+        if kwargs.get("inference_mode", False):
+            return inputs_embeds, attention_mask
+    
         model_outputs = self.llm(inputs_embeds=inputs_embeds, attention_mask=attention_mask, labels=labels)
 
         acc = -1
@@ -251,37 +254,21 @@ class slam_model(nn.Module):
                 return_dict: Optional[bool] = None,
                 **kwargs,
                 ):
-        audio_mel = kwargs.get("audio_mel", None)
-        audio_mel_mask = kwargs.get("audio_mel_mask", None)
-        audio_mel_post_mask = kwargs.get("audio_mel_post_mask", None) # 2x downsample for whisper
-        modality_mask = kwargs.get("modality_mask", None)
+        kwargs["inference_mode"] = True
 
-        encoder_outs = None
-        if audio_mel is not None:
-            if self.model_config.encoder_name == "whisper":
-                encoder_outs = self.encoder.extract_variable_length_features(audio_mel.permute(0, 2, 1)) # bs*seq*dim
-            if self.model_config.encoder_name == "beats":
-                encoder_outs, audio_mel_post_mask = self.encoder.extract_features(audio_mel, audio_mel_mask) # bs*seq*dim
-
-            if self.model_config.encoder_projector == "q-former":
-                encoder_outs = self.encoder_projector(encoder_outs, audio_mel_post_mask)
-            if self.model_config.encoder_projector == "linear":
-                encoder_outs = self.encoder_projector(encoder_outs)
-
-        if input_ids is not None:
-            input_ids[input_ids == -1] = 0
-            if hasattr(self.llm.model, "embed_tokens"):
-                inputs_embeds = self.llm.model.embed_tokens(input_ids)
-            elif hasattr(self.llm.model.model, "embed_tokens"):
-                inputs_embeds = self.llm.model.model.embed_tokens(input_ids)
-            else:
-                inputs_embeds = self.llm.model.model.model.embed_tokens(input_ids)
-
-        if modality_mask is not None:
-            batch_size, token_num, dims = inputs_embeds.shape
-            _, l, _ = encoder_outs.shape
-            encoder_outs_pad = F.pad(encoder_outs, (0, 0, 0, token_num-l, 0, 0), value=0.0)
-            inputs_embeds = encoder_outs_pad * modality_mask[:, :, None] + inputs_embeds * (~modality_mask[:, :, None])
+        inputs_embeds, attention_mask = self.forward(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            position_ids=position_ids,
+            past_key_values=past_key_values,
+            inputs_embeds=inputs_embeds,
+            labels=labels,
+            use_cache=use_cache,
+            output_attentions=output_attentions,
+            output_hidden_states=output_hidden_states,
+            return_dict=return_dict,
+            **kwargs,
+        )
 
         model_outputs = self.llm.generate(
             inputs_embeds=inputs_embeds,
@@ -359,6 +346,4 @@ class slam_model(nn.Module):
             **kwargs
         )
 
-        output_text = self.tokenizer.batch_decode(model_outputs, add_special_tokens=False, skip_special_tokens=True)
-
-        return output_text
+        return model_outputs
