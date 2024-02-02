@@ -92,6 +92,8 @@ class HubertDatasetJsonl(torch.utils.data.Dataset):
         
         audio_raw = whisper.load_audio(audio_path) #(253280,)  (204640,)
         audio_raw = torch.from_numpy(audio_raw).float()
+        if self.dataset_config.normalize:
+            audio_raw = torch.nn.functional.layer_norm(audio_raw, audio_raw.shape)
         # audio_raw = whisper.pad_or_trim(audio_raw)
         # audio_mel = whisper.log_mel_spectrogram(audio_raw).permute(1, 0)
 

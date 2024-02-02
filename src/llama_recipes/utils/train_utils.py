@@ -328,19 +328,19 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
         else:
             logger.info(f"Epoch {epoch+1}: train_perplexity={train_perplexity:.4f}, train_epoch_loss={train_epoch_loss:.4f}, epoch time {epoch_end_time}s")
 
-        if train_config.enable_fsdp:
-            if rank==0:
-                logger.info(f"Max CUDA memory allocated was {memtrace.peak} GB")
-                logger.info(f"Max CUDA memory reserved was {memtrace.max_reserved} GB")
-                logger.info(f"Peak active CUDA memory was {memtrace.peak_active_gb} GB")
-                logger.info(f"Cuda Malloc retires : {memtrace.cuda_malloc_retires}")
-                logger.info(f"CPU Total Peak Memory consumed during the train (max): {memtrace.cpu_peaked + memtrace.cpu_begin} GB")
-        else:
-            logger.info(f"Max CUDA memory allocated was {memtrace.peak} GB")
-            logger.info(f"Max CUDA memory reserved was {memtrace.max_reserved} GB")
-            logger.info(f"Peak active CUDA memory was {memtrace.peak_active_gb} GB")
-            logger.info(f"Cuda Malloc retires : {memtrace.cuda_malloc_retires}")
-            logger.info(f"CPU Total Peak Memory consumed during the train (max): {memtrace.cpu_peaked + memtrace.cpu_begin} GB")
+        # if train_config.enable_fsdp:
+        #     if rank==0:
+        #         logger.info(f"Max CUDA memory allocated was {memtrace.peak} GB")
+        #         logger.info(f"Max CUDA memory reserved was {memtrace.max_reserved} GB")
+        #         logger.info(f"Peak active CUDA memory was {memtrace.peak_active_gb} GB")
+        #         logger.info(f"Cuda Malloc retires : {memtrace.cuda_malloc_retires}")
+        #         logger.info(f"CPU Total Peak Memory consumed during the train (max): {memtrace.cpu_peaked + memtrace.cpu_begin} GB")
+        # else:
+        #     logger.info(f"Max CUDA memory allocated was {memtrace.peak} GB")
+        #     logger.info(f"Max CUDA memory reserved was {memtrace.max_reserved} GB")
+        #     logger.info(f"Peak active CUDA memory was {memtrace.peak_active_gb} GB")
+        #     logger.info(f"Cuda Malloc retires : {memtrace.cuda_malloc_retires}")
+        #     logger.info(f"CPU Total Peak Memory consumed during the train (max): {memtrace.cpu_peaked + memtrace.cpu_begin} GB")
 
         # Update the learning rate as needed
         # lr_scheduler.step()

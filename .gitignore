@@ -15,4 +15,6 @@ configs/
 scripts_finish/
 scripts_general/
 slides_script/
-script_hubert/
+scripts_avhubert/
+scripts_hubert/
+scripts_hubert_remake/

@@ -48,6 +48,9 @@ def setup_encoder(train_config, model_config, **kwargs):
         if encoder_name == "moco_wav2vec2":
             from llama_recipes.models.encoder import AVEncoder
             encoder = AVEncoder.load(model_config)
+        if encoder_name == "av_hubert":
+            from llama_recipes.models.encoder import AVHubertEncoder
+            encoder = AVHubertEncoder.load(model_config)
         # if encoder_name == "sota_avsr":
         #     from llama_recipes.models.encoder import SOTAAVEncoder
         #     encoder = SOTAAVEncoder.load(avmodel_config)
@@ -195,6 +198,7 @@ class slam_model(nn.Module):
         visual = kwargs.get("visual", None) #torch.Size([2, 151, 1, 112, 112])
         vis_len = kwargs.get("vis_len", None) #tensor([ 77, 151], device='cuda:0', dtype=torch.int32)
         maskw2v = kwargs.get("maskw2v", False) #(FIX:MZY) False for supervised learning and inference
+        visual_mask = kwargs.get("visual_mask", None)
 
 
         encoder_outs = None
@@ -216,8 +220,17 @@ class slam_model(nn.Module):
                 # encoder_outs = self.encoder()
             if self.model_config.encoder_name == "sota_avsr":
                 encoder_outs , inputLenBatch, audio_mel_post_mask = self.encoder((audio, audio_mask, visual, vis_len) ) # bs*seq*dim
+            
+            if self.model_config.encoder_name == "av_hubert":  #输入格式 B, C, T, H, W 
+                visual = torch.transpose(visual,1,2)  #torch.Size([4, 1, 49, 112, 112])
+                results = self.encoder(source={'video':visual, 'audio':None}, padding_mask=visual_mask) # bs*seq*dim  
+                encoder_outs, audio_mel_post_mask = results["encoder_out"], results["padding_mask"]
+                encoder_outs = encoder_outs.transpose(0, 1)  #torch.Size([4, 151, 1024])
+
             if self.encoder is None:
                 encoder_outs = audio_mel if audio_mel is not None else audio
+
+
 
             if self.model_config.encoder_projector == "q-former":
                 encoder_outs = self.encoder_projector(encoder_outs, audio_mel_post_mask) #torch.Size([2, 1500, 1280])  -> torch.Size([2, 64, 5120])
@@ -276,6 +289,8 @@ class slam_model(nn.Module):
         visual = kwargs.get("visual", None) #torch.Size([2, 151, 1, 112, 112])
         vis_len = kwargs.get("vis_len", None) #tensor([ 77, 151], device='cuda:0', dtype=torch.int32)
         maskw2v = kwargs.get("maskw2v", False) #(FIX:MZY) False for supervised learning and inference
+        visual_mask = kwargs.get("visual_mask", None)
+
 
         encoder_outs = None
         if audio_mel is not None or audio is not None or visual is not None:
@@ -287,7 +302,27 @@ class slam_model(nn.Module):
                 encoder_outs , inputLenBatch, audio_mel_post_mask = self.encoder((audio, audio_mask, visual, vis_len) ,maskw2v) # bs*seq*dim
             if self.model_config.encoder_name == "sota_avsr":
                 encoder_outs , inputLenBatch, audio_mel_post_mask = self.encoder((audio, audio_mask, visual, vis_len) ) # bs*seq*dim
-                
+            if self.model_config.encoder_name == "hubert":
+                results = self.encoder(source = audio, padding_mask = audio_mask, mask=False, features_only=True)   #关键字参数传参！！！
+                if self.model_config.encoder_type == "pretrain":
+                    encoder_outs, audio_mel_post_mask = results["x"], results["padding_mask"] #torch.Size([4, 791, 1024]) torch.Size([4, 791])
+                if self.model_config.encoder_type == "finetune":
+                    encoder_outs, audio_mel_post_mask = results["encoder_out"], results["padding_mask"]
+                    encoder_outs = encoder_outs.transpose(0, 1) #torch.Size([4, 791, 768])
+                audio_mel_post_mask = (~audio_mel_post_mask).float()
+                # encoder_outs = self.encoder()
+            if self.model_config.encoder_name == "sota_avsr":
+                encoder_outs , inputLenBatch, audio_mel_post_mask = self.encoder((audio, audio_mask, visual, vis_len) ) # bs*seq*dim
+            
+            if self.model_config.encoder_name == "av_hubert":  #输入格式 B, C, T, H, W 
+                visual = torch.transpose(visual,1,2)  #torch.Size([4, 1, 49, 112, 112])
+                results = self.encoder(source={'video':visual, 'audio':None}, padding_mask=visual_mask) # bs*seq*dim  
+                encoder_outs, audio_mel_post_mask = results["encoder_out"], results["padding_mask"]
+                encoder_outs = encoder_outs.transpose(0, 1)  #torch.Size([4, 151, 1024])                  
+            if self.encoder is None:
+                encoder_outs = audio_mel if audio_mel is not None else audio
+
+
             if self.model_config.encoder_projector == "q-former":
                 encoder_outs = self.encoder_projector(encoder_outs, audio_mel_post_mask)
             if self.model_config.encoder_projector == "linear":
@@ -310,7 +345,7 @@ class slam_model(nn.Module):
 
         model_outputs = self.llm.generate(
             inputs_embeds=inputs_embeds,
-            max_length=kwargs.get("max_length", 200),
+            # max_length=kwargs.get("max_length", 200),
             max_new_tokens=kwargs.get("max_new_tokens", 200),
             num_beams=kwargs.get("num_beams", 4),
             do_sample=kwargs.get("do_sample", False),

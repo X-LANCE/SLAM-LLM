@@ -93,6 +93,8 @@ class AVSRDataset(Dataset):
         self.prompt_template = "USER: {}\n ASSISTANT:"
         self.answer_template = "{}"
         self.reqInpLen = dataset_config.reqInpLen
+        self.fix_length_audio = dataset_config.get("fix_length_audio", -1)
+        self.inference_mode = dataset_config.get("inference_mode", False)
 
     def open_h5(self):
         self.h5 = h5py.File(self.h5file, "r")
@@ -162,32 +164,49 @@ class AVSRDataset(Dataset):
             audio_raw = whisper.pad_or_trim(audio_raw)  #torch.Size([480000])
             audio_mel = whisper.log_mel_spectrogram(audio_raw).permute(1, 0)    #torch.Size([3000, 80])        
 
-        if self.model_config.modal=="AV" or self.model_config.modal=="VO":
-            prompt = "Transcribe video to text. Output the transcription directly without redundant content. Ensure that the output is not duplicated. "
+        if self.model_config.modal=="AV":
+            prompt = "Transcribe video to text. "
         elif self.model_config.modal=="AO":
-            prompt = "Transcribe speech to text. Output the transcription directly without redundant content. Ensure that the output is not duplicated. "
+            prompt = "Transcribe speech to text. "
+        elif self.model_config.modal=="VO":
+            prompt = self.dataset_config.prompt #"Transcribe video to text. " #"Transcribe the silent speech in this video to text by lip-reading the speaker's clear and visible lip movements."
+            #prompt="Transcribe the silent speech in this video to text by lip-reading the speaker's clear and visible lip movements."
 
         prompt = self.prompt_template.format(prompt)
-        answer = self.answer_template.format(target)
-
         prompt_ids = self.tokenizer.encode(prompt)
         prompt_length = len(prompt_ids)
 
         if self.model_config.encoder_name == "moco_wav2vec2":
-            audio_length_pre = self.calculate_output_length(audio_raw,visual_raw)  #video  #tensor(80)
-        elif self.model_config.encoder_name == "sota_avsr":
-            audio_length_pre = visual_raw.shape[0]
+            audio_length = self.calculate_output_length(audio_raw,visual_raw)  #video  #tensor(80)
+        elif self.model_config.encoder_name == "sota_avsr" or self.model_config.encoder_name =="av_hubert":
+            audio_length = visual_raw.shape[0]
         elif self.model_config.encoder_name == "whisper":
-            audio_length_pre = (audio_mel.shape[0] + 1) // 2  #1500
+            audio_length = (audio_mel.shape[0] + 1) // 2  #1500
             
 
         if self.model_config.encoder_projector == "q-former":
-            audio_length = 64
+            audio_length = self.fix_length_audio
         else:
-            audio_length = audio_length_pre // 5 # ad-hoc for 5x fc downsample  #tensor(16)
-
+            audio_length = audio_length // 5 # ad-hoc for 5x fc downsample  #tensor(16)  #有用的是audio_length
         audio_pseudo = torch.full((audio_length,), -1) # placeholder
 
+        if self.inference_mode:  #TODO
+            prompt_ids = torch.tensor(prompt_ids, dtype=torch.int64)
+            example_ids = torch.cat((audio_pseudo, prompt_ids))  # [audio,prompt]
+            example_mask = example_ids.ge(-1)  # [True,True]
+
+            return {
+                "input_ids": example_ids,
+                "attention_mask": example_mask,
+                'audio_mel': audio_mel,
+                'audio_length': audio_length,
+                'key': targetFile,
+                'target': target,
+
+                'inp':inp,
+            }    
+
+        answer = self.answer_template.format(target)
         example = prompt + answer  # FIX(MZY): avoid putting a bos token before answer.
         example_ids = self.tokenizer.encode(example)  # [prompt,answer]
         example_ids.append(self.tokenizer.eos_token_id)  # [prompt,answer,eos]
@@ -212,11 +231,6 @@ class AVSRDataset(Dataset):
             'audio_length': audio_length,
 
             'inp':inp,
-            'trgtin': trgtin,
-            'trgtout': trgtout,
-            'trgtLen':trgtLen,
-
-            'audio_length_pre':audio_length_pre,
         }
                                                 
 
@@ -322,14 +336,11 @@ class AVSRDataset(Dataset):
         input_ids_max_length = max([s['input_ids'].shape[0] for s in samples])
         input_ids = torch.stack([self.pad(s['input_ids'], input_ids_max_length, self.tokenizer.pad_token_id)
                                  for s in samples])
-        labels = torch.stack([self.pad(s['labels'], input_ids_max_length, self.IGNORE_INDEX)
-                              for s in samples])
         attention_mask = torch.stack([self.pad(s['attention_mask'], input_ids_max_length, False)
                                       for s in samples])
 
         audio_mel = None
         audio_mel_post_mask = None
-
         if self.model_config.encoder_name == "whisper":
             audio_mel_max_length = max([s['audio_mel'].shape[0] for s in samples])
             audio_mel = torch.stack([self.pad(s['audio_mel'], audio_mel_max_length, 0)
@@ -337,7 +348,6 @@ class AVSRDataset(Dataset):
             audio_mel_post_mask = torch.zeros(len(samples), (audio_mel_max_length + 1) // 2) # ad-hoc for whisper for 2x downsample from mel to feats
             for line, sample in enumerate(samples):
                 audio_mel_post_mask[line, :(sample['audio_mel'].shape[0] + 1) // 2] = 1            
-
 
         modality_mask = torch.zeros_like(attention_mask)
         for line, sample in enumerate(samples):
@@ -360,10 +370,13 @@ class AVSRDataset(Dataset):
             vis_seq_list = pad_sequence([data['inp'][1] for data in samples], batch_first=True)  #(4,147,1,112,112)   #pad_sequence((none,62,1,112,112))
             #vis_len = torch.tensor([len(data[0][1]) for data in dataBatch]) #就是这四个句子每一个的长度 tensor([ 62,  62,  97, 147])   #时间帧上pad
             vis_len = torch.tensor([len(data['inp'][1]) for data in samples]) #就是这四个句子每一个的长度 tensor([ 62,  62,  97, 147])   #时间帧上pad
-
+            vis_padding_mask = torch.zeros((len(vis_seq_list), len(max(vis_seq_list, key=len))), dtype=torch.bool)
+            for i, seq in enumerate(vis_seq_list):
+                vis_padding_mask[i, vis_len[i]:] = True
         else:
             vis_seq_list = None
             vis_len = None
+            vis_padding_mask = None
 
         inputBatch = (aud_seq_list, aud_padding_mask, vis_seq_list, vis_len)  #!!!
  
@@ -373,7 +386,31 @@ class AVSRDataset(Dataset):
             inputBatch = (None, None, inputBatch[2].float(), inputBatch[3].int())
         else:
             inputBatch = (inputBatch[0].float(), inputBatch[1], inputBatch[2].float(), inputBatch[3].int())
- 
+
+
+        if self.inference_mode:
+            keys = [s['key'] for s in samples]
+            targets = [s['target'] for s in samples]
+
+            return {
+                'input_ids': input_ids,
+                'attention_mask': attention_mask,
+                'audio_mel': audio_mel,
+                'audio_mel_post_mask': audio_mel_post_mask,
+                'modality_mask': modality_mask,
+                'keys': keys,
+                'targets': targets,
+
+                "audio": inputBatch[0],  #torch.Size([4, 92800])
+                "audio_mask": inputBatch[1],  #torch.Size([4, 92800])
+                "visual": inputBatch[2],  #torch.Size([4, 146, 1, 112, 112])
+                "vis_len": inputBatch[3],  #torch.Size([4])
+                "visual_mask": vis_padding_mask,
+            }
+            
+        labels = torch.stack([self.pad(s['labels'], input_ids_max_length, self.IGNORE_INDEX)
+                              for s in samples])
+
         return {
             'input_ids': input_ids,  #torch.Size([4, 114])
             'labels': labels, #torch.Size([4, 114])
@@ -386,6 +423,7 @@ class AVSRDataset(Dataset):
             "audio_mask": inputBatch[1],  #torch.Size([4, 92800])
             "visual": inputBatch[2],  #torch.Size([4, 146, 1, 112, 112])
             "vis_len": inputBatch[3],  #torch.Size([4])
+            "visual_mask": vis_padding_mask,
         }     
 
     def pad(self, sequence, max_length, padding_idx=0):

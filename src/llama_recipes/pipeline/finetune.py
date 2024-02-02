@@ -84,13 +84,23 @@ def main(kwargs: DictConfig):
                                                                           kwargs.model_config, \
                                                                           kwargs.log_config, \
                                                                           kwargs.dataset_config
+
     fsdp_config.use_fp16 = train_config.use_fp16
-    del kwargs.train_config
-    del kwargs.fsdp_config
-    del kwargs.model_config
-    del kwargs.log_config
-    del kwargs.dataset_config
-    
+    if model_config.encoder_name=="av_hubert":
+        OmegaConf.set_struct(kwargs,False)
+        del kwargs["train_config"]
+        del kwargs["fsdp_config"]
+        del kwargs["model_config"]
+        del kwargs["log_config"]
+        del kwargs["dataset_config"]
+        OmegaConf.set_struct(kwargs,True)
+    else:
+        del kwargs.train_config
+        del kwargs.fsdp_config
+        del kwargs.model_config
+        del kwargs.log_config
+        del kwargs.dataset_config
+
     # Set log
     if not os.path.exists(os.path.dirname(log_config.log_file)): #x
         os.makedirs(os.path.dirname(log_config.log_file), exist_ok=True)
@@ -258,8 +268,8 @@ def main(kwargs: DictConfig):
         optimizer, 
         lr_lambda=lambda step: (
             min(step / train_config.warmup_steps, 1) if step < train_config.warmup_steps
-            else 1
-            # else  max(0.0, 1 - (step - train_config.warmup_steps) / (train_config.total_steps - train_config.warmup_steps))
+            # else 1
+            else  max(0.0, 1 - (step - train_config.warmup_steps) / (train_config.total_steps - train_config.warmup_steps))
         )
     )
 

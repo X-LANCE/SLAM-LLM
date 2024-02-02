@@ -95,3 +95,14 @@ class HubertEncoder:
             model.w2v_encoder.proj = None
             model.w2v_encoder.apply_mask = False
         return model
+
+class AVHubertEncoder:
+
+    @classmethod
+    def load(cls, model_config):
+        import fairseq
+        from .avhubert import hubert_pretraining, hubert, hubert_asr
+        models, cfg, task = fairseq.checkpoint_utils.load_model_ensemble_and_task([model_config.encoder_path])
+        model = models[0]
+
+        return model

@@ -114,7 +114,7 @@ class SlidesDataset(Dataset):
                         line = " ".join(line)
                         self.ocr_list.append(line)
 
-        elif split == "test":
+        elif split == "test":  # 3188
             with open(dataset_config.test_scp_file_path + "my_wav.scp",'r') as f:
                 for line in f:
                     line = line.strip().split()
@@ -146,7 +146,9 @@ class SlidesDataset(Dataset):
         self.tokenizer = tokenizer
         self.IGNORE_INDEX = -100  # The default setting in CrossEntropyLoss
         self.prompt_template1 = "USER: {}\n ASSISTANT:"
-        self.prompt_template2 = "USER: Transcribe speech to text. The speech is related to a slide, which contains key information. The text from the slide is \"{}\". Please use the text to enhance the accuracy of the ASR task.\n ASSISTANT:"
+        #self.prompt_template2 = "USER: Transcribe speech to text. The speech is related to a slide, which contains key information. The text from the slide is \"{}\". Please use the text to enhance the accuracy of the ASR task.\n ASSISTANT:"
+        self.prompt_template2 = "USER: Transcribe speech to text. Some hotwords on the slide might help. The hotwords are \"{}\". \n ASSISTANT:"
+        #self.prompt_template2= self.dataset_config.prompt
         self.answer_template = "{}"
         self.fix_length_audio = dataset_config.get("fix_length_audio", -1)
         self.inference_mode = dataset_config.get("inference_mode", False)
