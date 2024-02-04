@@ -186,7 +186,8 @@ class slam_model(nn.Module):
         audio_mel_mask = kwargs.get("audio_mel_mask", None)
         audio_mel_post_mask = kwargs.get("audio_mel_post_mask", None) # 2x downsample for whisper
         modality_mask = kwargs.get("modality_mask", None)
-
+        audio_length = kwargs.get("audio_length", None)
+        
         audio = kwargs.get("audio", None)
         audio_mask = kwargs.get("audio_mask", None)
         visual = kwargs.get("visual", None)
@@ -211,6 +212,9 @@ class slam_model(nn.Module):
                 encoder_outs = self.encoder_projector(encoder_outs, audio_mel_post_mask)
             if self.model_config.encoder_projector == "linear":
                 encoder_outs = self.encoder_projector(encoder_outs)
+                
+            if self.model_config.encoder_name == "paraformer":
+                encoder_outs, encoder_outs_lens = self.encoder(audio_mel.permute(0, 2, 1), audio_mask, audio_length, device=self.encoder_projector.device) # bs*seq*dim
 
         if input_ids is not None:
             input_ids[input_ids == -1] = 0
