@@ -48,6 +48,9 @@ def setup_encoder(train_config, model_config, **kwargs):
         if encoder_name == "moco_wav2vec2":
             from llama_recipes.models.encoder import AVEncoder
             encoder = AVEncoder.load(model_config)
+        if encoder_name == "iic/speech_paraformer-large_asr_nat-zh-cn-16k-common-vocab8404-pytorch":
+            from llama_recipes.models.encoder import ParaformerWrappedEncoder
+            encoder = ParaformerWrappedEncoder(model_config)
     print_module_size(encoder, encoder_name, int(os.environ["RANK"]) if train_config.enable_fsdp or train_config.enable_ddp else 0)
 
     if train_config.freeze_encoder:
