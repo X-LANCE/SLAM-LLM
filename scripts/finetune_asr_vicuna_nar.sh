@@ -31,7 +31,7 @@ output_dir=/nfs/maziyang.mzy/exps/vicuna-7b-v1.5-finetune-asr-qformer64-steplrwa
 
 # -m debugpy --listen 5678 --wait-for-client
 if [[ $CUDA_VISIBLE_DEVICES != *","* ]]; then
-python -m debugpy --listen 5678 --wait-for-client src/llama_recipes/pipeline/finetune.py \
+python src/llama_recipes/pipeline/finetune.py \
 --config-path "/root/SLAM-LLM/scripts/conf" \
 --config-name "asr_vicuna_lora.yaml" \
 hydra.run.dir=$output_dir \
@@ -60,6 +60,7 @@ hydra.run.dir=$output_dir \
 ++train_config.num_workers_dataloader=4 \
 ++train_config.output_dir=$output_dir \
 ++metric=acc \
+++debug=true \
 # ++model_config.encoder_projector=linear \
 # ++model_config.encoder_projector_ds_rate=5 \
 # ++train_config.use_peft=true \
