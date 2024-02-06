@@ -78,34 +78,34 @@ class AVEncoder:
         return avnet
     
     
-class ParaformerWrappedEncoder:
+class ParaformerWrappedEncoder(nn.Module):
     
-    def __init__(self):
+    def __init__(self, **kwargs):
+        super().__init__()
         from funasr import AutoModel
         from funasr.models.scama.utils import sequence_mask
-        model = AutoModel(model="damo/speech_paraformer-large_asr_nat-zh-cn-16k-common-vocab8404-pytorch", model_revision="v2.0.4")
+        model_name = kwargs.get("encoder_name", "damo/speech_paraformer-large_asr_nat-zh-cn-16k-common-vocab8404-pytorch")
+        model = AutoModel(model=model_name, model_revision="v2.0.4")
         
         frontend = model.kwargs.get("frontend")
-        self.model = model
+        model.model.decoder = None
+        self.model = model.model
         self.frontend = frontend
         self.mask_fn = sequence_mask
+
+
+    def forward(self, audio_samples, audio_samples_mask, audio_token_lengths, **kwargs):
         
-    def __call__(self, audio_samples, audio_samples_mask, audio_token_lengths, **kwargs):
-        
-        device = kwargs.get("device", "cuda")
+        device = audio_samples.device
         audio_samples_lengths = audio_samples_mask.sum(-1)
         fbanks, fbanks_lens = self.frontend(audio_samples, audio_samples_lengths)
         fbanks, fbanks_lens = fbanks.to(device), fbanks_lens.to(device)
         
         batch = {"speech": fbanks, "speech_lengths": fbanks_lens}
         enc, enc_lens = self.model.encode(**batch)
-        enc_mask = self.mask_fn(enc_lens, enc.size(1), device=device)
+        enc_mask = self.mask_fn(enc_lens, enc.size(1), device=device)[:, None, :]
         pre_acoustic_embeds, pre_token_length, _, _ = self.model.predictor(enc,
-                                                                           enc_mask,
+                                                                           mask=enc_mask,
                                                                            target_label_length=audio_token_lengths,
                                                                            )
         return pre_acoustic_embeds, pre_token_length
-        
-    
-    
-    

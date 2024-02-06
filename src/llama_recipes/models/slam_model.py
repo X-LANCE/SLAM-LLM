@@ -50,7 +50,7 @@ def setup_encoder(train_config, model_config, **kwargs):
             encoder = AVEncoder.load(model_config)
         if encoder_name == "iic/speech_paraformer-large_asr_nat-zh-cn-16k-common-vocab8404-pytorch":
             from llama_recipes.models.encoder import ParaformerWrappedEncoder
-            encoder = ParaformerWrappedEncoder(model_config)
+            encoder = ParaformerWrappedEncoder(**model_config)
     print_module_size(encoder, encoder_name, int(os.environ["RANK"]) if train_config.enable_fsdp or train_config.enable_ddp else 0)
 
     if train_config.freeze_encoder:
@@ -142,7 +142,7 @@ def setup_encoder_projector(train_config, model_config, **kwargs):
         encoder_projector = EncoderProjectorCov1d(model_config)
     elif model_config.encoder_projector == "q-former":
         from llama_recipes.models.projector import EncoderProjectorQFormer
-        encoder_projector = EncoderProjectorQFormer(model_config)
+        encoder_projector = EncoderProjectorQFormer(**model_config)
     print_module_size(encoder_projector, model_config.encoder_projector, int(os.environ["RANK"]) if train_config.enable_fsdp or train_config.enable_ddp else 0)
     return encoder_projector
 
@@ -207,17 +207,19 @@ class slam_model(nn.Module):
             if self.model_config.encoder_name == "wavlm":
                 encoder_outs = self.encoder.extract_features(audio, 1 - audio_mask) #(FIX:MZY): 1-audio_mask is needed for wavlm as the padding mask
             if self.model_config.encoder_name == "moco_wav2vec2":
-                encoder_outs , inputLenBatch, audio_mel_post_mask = self.encoder((audio, audio_mask, visual, vis_len) ,maskw2v) # bs*seq*dim
+                encoder_outs, inputLenBatch, audio_mel_post_mask = self.encoder((audio, audio_mask, visual, vis_len) ,maskw2v) # bs*seq*dim
             if self.encoder is None:
                 encoder_outs = audio_mel if audio_mel is not None else audio
+
+            if self.model_config.encoder_name == "iic/speech_paraformer-large_asr_nat-zh-cn-16k-common-vocab8404-pytorch":
+                encoder_outs, encoder_outs_lens = self.encoder(audio, audio_mask, audio_length) # bs*seq*dim
+
 
             if self.model_config.encoder_projector == "q-former":
                 encoder_outs = self.encoder_projector(encoder_outs, audio_mel_post_mask)
             if self.model_config.encoder_projector == "linear":
                 encoder_outs = self.encoder_projector(encoder_outs)
                 
-            if self.model_config.encoder_name == "paraformer":
-                encoder_outs, encoder_outs_lens = self.encoder(audio_mel.permute(0, 2, 1), audio_mask, audio_length, device=self.encoder_projector.device) # bs*seq*dim
 
         if input_ids is not None:
             input_ids[input_ids == -1] = 0
@@ -231,19 +233,35 @@ class slam_model(nn.Module):
         if modality_mask is not None:
             batch_size, token_num, dims = inputs_embeds.shape
             _, l, _ = encoder_outs.shape
-            encoder_outs_pad = F.pad(encoder_outs, (0, 0, 0, token_num-l, 0, 0), value=0.0)
+            encoder_outs_pad = F.pad(encoder_outs, (0, 0, token_num-l-1, 1, 0, 0), value=0.0)
             inputs_embeds = encoder_outs_pad * modality_mask[:, :, None] + inputs_embeds * (~modality_mask[:, :, None])
+            inputs_embeds = F.pad(inputs_embeds[:, 1:, :], (0, 0, 0, 1, 0, 0), value=0.0)
 
         if kwargs.get("inference_mode", False):
             return inputs_embeds, attention_mask
     
         model_outputs = self.llm(inputs_embeds=inputs_embeds, attention_mask=attention_mask, labels=labels)
 
+        # loss = None
+        # if labels is not None:
+        #     logits = model_outputs.logits
+        #     # Shift so that tokens < n predict n
+        #     shift_logits = logits[..., :, :].contiguous()
+        #     shift_labels = labels[..., :].contiguous()
+        #     # Flatten the tokens
+        #     loss_fct = CrossEntropyLoss()
+        #     shift_logits = shift_logits.view(-1, self.config.vocab_size)
+        #     shift_labels = shift_labels.view(-1)
+        #     # Enable model parallelism
+        #     shift_labels = shift_labels.to(shift_logits.device)
+        #     loss = loss_fct(shift_logits, shift_labels)
+        #     model_outputs.loss = loss
+
         acc = -1
         if self.metric:
             with torch.no_grad():
                 preds = torch.argmax(model_outputs.logits, -1)
-                acc = compute_accuracy(preds.detach()[:, :-1], labels.detach()[:, 1:], ignore_label=-100)
+                acc = compute_accuracy(preds.detach()[:, :], labels.detach()[:, :], ignore_label=-100)
 
         return model_outputs, acc
     
