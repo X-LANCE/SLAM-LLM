@@ -136,7 +136,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         if audio_length is not None:
             audio_pseudo = torch.full((audio_length,), -1) # placeholder
 
-        prompt_pre = "USER: \nINSTRUCTION: {}".format(self.prompt) # "USER: \nINSTRUCTION: {}\nnINPUT: {}\nASSISTANT: "
+        prompt_pre = "USER: \nINSTRUCTION: {}\nINPUT: ".format(self.prompt) # "USER: \nINSTRUCTION: {}\nnINPUT: {}\nASSISTANT: "
 
         # prompt = self.prompt_template.format(prompt)
         prompt_ids_pre = self.tokenizer.encode(prompt_pre) # [bos,prompt]
@@ -159,19 +159,19 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
 
         
         # answer = self.answer_template.format(target.lower())
-        prompt_input = "{}\nnINPUT: {}".format(prompt_pre, target)
+        prompt_input = "{}{}".format(prompt_pre, target)
         prompt_input_ids = self.tokenizer.encode(prompt_input)
         audio_length = len(prompt_input_ids) - prompt_pre_length
         # prompt_input_ids = prompt_input_ids[1:] # remove bos
-        example_ids = prompt_input_ids + self.tokenizer.pad_token_id
+        example_ids = prompt_input_ids + [self.tokenizer.pad_token_id]
         example_ids = torch.tensor(example_ids, dtype=torch.int64) #[bos, prompt, input, pad]
         example_ids[prompt_pre_length:] = -1  # [bos, prompt,-1,-1]
         example_mask = example_ids.ge(-1) # [true, true, true, true], length mask
         
-        prompt_answer = "{}\nnINPUT: {}".format(prompt_pre, target)
+        prompt_answer = "{}{}".format(prompt_pre, target)
         prompt_answer_ids = self.tokenizer.encode(prompt_answer)
         answer_length = len(prompt_answer_ids) - prompt_pre_length
-        labels_ids = copy.deepcopy(prompt_input_ids) + self.tokenizer.eos_token_id
+        labels_ids = copy.deepcopy(prompt_input_ids) + [self.tokenizer.eos_token_id]
         labels_ids = torch.tensor(labels_ids, dtype=torch.int64)  # [bos, prompt, input, eos]
         labels_ids[:prompt_pre_length] = -1  # [-1, -1, input, eos]
         label_mask = labels_ids.ge(0)  # [False,False,True,True]

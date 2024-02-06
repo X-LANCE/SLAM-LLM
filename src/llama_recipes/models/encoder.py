@@ -97,7 +97,7 @@ class ParaformerWrappedEncoder(nn.Module):
     def forward(self, audio_samples, audio_samples_mask, audio_token_lengths, **kwargs):
         
         device = audio_samples.device
-        audio_samples_lengths = audio_samples_mask.sum(-1)
+        audio_samples_lengths = audio_samples_mask.sum(-1).to(torch.int32)
         fbanks, fbanks_lens = self.frontend(audio_samples, audio_samples_lengths)
         fbanks, fbanks_lens = fbanks.to(device), fbanks_lens.to(device)
         

@@ -261,7 +261,7 @@ class slam_model(nn.Module):
         if self.metric:
             with torch.no_grad():
                 preds = torch.argmax(model_outputs.logits, -1)
-                acc = compute_accuracy(preds.detach()[:, :], labels.detach()[:, :], ignore_label=-100)
+                acc = compute_accuracy(preds.detach()[:, :-1], labels.detach()[:, 1:], ignore_label=-100)
 
         return model_outputs, acc
     
