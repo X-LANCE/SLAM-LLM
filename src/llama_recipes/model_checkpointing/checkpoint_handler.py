@@ -171,7 +171,7 @@ def save_model_checkpoint_peft(model, optimizer, rank, cfg, epoch=0, step=0):  #
     os.makedirs(save_dir, exist_ok=True)
     if not cfg.freeze_llm:
         if hasattr(model, "module"): #(FIX:MZY): a hack to deal with the model wrapped in DDP
-            model.module.llm.save_pretrained(save_dir)
+            model.module.llm.save_pretrained(save_dir)  #关键是要把这个下下来 #!!!!!!
         else:
             model.llm.save_pretrained(save_dir)
         logger.info(f"llm saved at {save_dir}")
@@ -187,7 +187,7 @@ def save_model_checkpoint_peft(model, optimizer, rank, cfg, epoch=0, step=0):  #
             if key.startswith("encoder."):
                 encoder_dict[key] = cpu_state[key]
     for key in cpu_state.keys():
-        if key.startswith("encoder_projector."):
+        if key.startswith("encoder_projector."):   #只存了projector
             encoder_dict[key] = cpu_state[key]
     torch.save(encoder_dict, save_full_path)
     logger.info(f"encoder saved at {save_full_path}")

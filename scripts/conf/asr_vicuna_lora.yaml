@@ -80,6 +80,7 @@ train_config:
   run_test_during_validation_prompt: "<|ASR|>"
   freeze_llm: false
   freeze_encoder: false
+  scheduler: constant
 
 dataset_config:
   dataset: "speech_dataset"

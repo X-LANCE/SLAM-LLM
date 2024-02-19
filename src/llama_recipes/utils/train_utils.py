@@ -74,7 +74,10 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
     if train_config.enable_fsdp or train_config.enable_ddp:
         world_size = int(os.environ["WORLD_SIZE"])
     autocast = torch.cuda.amp.autocast if train_config.use_fp16 else nullcontext
-    
+
+    if train_config.use_amp!=True:
+        autocast = nullcontext
+
     train_prep = []
     train_loss = []
     train_acc = []
@@ -167,10 +170,11 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                     eval_ppl, eval_epoch_loss, *rest = evaluation(model, train_config, eval_dataloader, local_rank, tokenizer)
                     eval_epoch_acc = rest[0] if rest else -1
                     checkpoint_start_time = time.perf_counter()
-                    if train_config.save_model and (eval_epoch_loss < best_val_loss):
+                    #if train_config.save_model and (eval_epoch_loss < best_val_loss):
+                    if train_config.save_model and (eval_epoch_loss < best_val_loss or eval_epoch_acc > best_val_acc):
                         if train_config.enable_fsdp or train_config.enable_ddp:
                             dist.barrier()
-                        if train_config.use_peft:
+                        if train_config.use_peft: #
                             if train_config.enable_fsdp or train_config.enable_ddp:
                                 if rank==0:
                                     logger.info(f"we are about to save the PEFT modules")
@@ -187,10 +191,10 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                                             model, optimizer, rank, train_config, epoch=epoch
                                         )
                                     dist.barrier()
-                            elif train_config.enable_ddp:
+                            elif train_config.enable_ddp: #
                                 if rank==0:
                                     save_model_checkpoint_peft(
-                                            model, optimizer, rank, train_config, epoch=epoch
+                                            model, optimizer, rank, train_config, epoch=epoch,step=step
                                         )
                                 dist.barrier()
                             else:
@@ -390,6 +394,9 @@ def evaluation(model,train_config, eval_dataloader, local_rank, tokenizer):
     eval_loss = 0.0  # Initialize evaluation loss
     eval_acc = 0.0
     autocast = torch.cuda.amp.autocast if train_config.use_fp16 else nullcontext # (Fix:MZY): fix expected scalar type mismatch in norm 
+
+    if train_config.use_amp!=True:
+        autocast = nullcontext
 
     with MemoryTrace() as memtrace:
         total_length = len(eval_dataloader)

@@ -79,7 +79,8 @@ train_config:
   run_test_during_validation_prompt: "<|ASR|>"
   freeze_llm: false
   freeze_encoder: false
-
+  scheduler: constant
+  use_amp: true
 
 dataset_config:
   dataset: "avsr_dataset"
@@ -102,6 +103,38 @@ dataset_config:
   inference_mode: false
   charToIx: "x"
   prompt: "Transcribe the silent speech in this video to text by lip-reading the speaker's clear and visible lip movements."
+
+  data: /nfs/yangguanrou.ygr/LRS_new/433h_data/
+  labels: ["wrd"]
+  label_dir: /nfs/yangguanrou.ygr/LRS_new/433h_data/
+  label_rate: -1
+  is_s2s: true
+  noise_wav:
+  noise_snr: "0.0"
+  noise_num: 1
+  sample_rate: 16000
+  normalize: true
+  enable_padding: false
+  max_sample_size: 500
+  min_sample_size:
+  max_trim_sample_size: 500
+  single_target: true
+  random_crop: false
+  pad_audio: true
+  pdb: false
+  stack_order_audio: 1
+  skip_verify: false
+  # image_aug: true
+  image_crop_size: 88
+  image_mean: 0.421
+  image_std: 0.165
+  noise_prob: 0.0
+  fine_tuning: true
+  modalities: ['video']
+  shuffle: true
+
+
+
 
 fsdp_config:
     mixed_precision: true

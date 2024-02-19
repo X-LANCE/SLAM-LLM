@@ -56,24 +56,17 @@ train_config:
   val_batch_size: 1
 
   use_peft: false
-  # peft_config:
-  #   peft_method: "lora" # None , llama_adapter, prefix
-  #   r: 8
-  #   lora_alpha: 32
-  #   target_modules: [ "q_proj", "v_proj" ]
-  #   bias: "none"
-  #   task_type: "CAUSAL_LM"
-  #   lora_dropout: 0.05
-  #   inference_mode: false
   peft_config:
-    peft_method: "lora" # None , llama_adapter, prefix
-    r: 32
-    lora_alpha: 32
-    target_modules: [ "q_proj", "v_proj","k_proj","o_proj" ]
-    bias: "none"
+    peft_method: "prefix" # None , llama_adapter, prefix
     task_type: "CAUSAL_LM"
-    lora_dropout: 0.05
     inference_mode: false
+    num_virtual_tokens: 20   #延长时间维度！的token 这个自由 例子是20
+    token_dim: 4096   # 32* 128 = 4096 得跟llm一样
+    num_transformer_submodules: 1
+    num_attention_heads: 32  # 得跟llm一样
+    num_layers: 36
+    encoder_hidden_size: 1280
+    prefix_projection: false
   output_dir: "PATH/to/save/PEFT/model"
   freeze_layers: false
   num_freeze_layers: 1
@@ -90,8 +83,7 @@ train_config:
   freeze_llm: false
   freeze_encoder: false
   scheduler: constant
-  # find_unused_parameters: true
-  use_amp: true
+  find_unused_parameters: true
 
 dataset_config:
   dataset: "slides_dataset"
@@ -104,7 +96,6 @@ dataset_config:
   use_ocr: true
   inference_mode: false  #!!!
   prompt: "USER: Transcribe speech to text. Use hotwords in ppt to improve speech recognition accuracy. But if the hotwords are irrelevant, just ignore them. The hotwords are \"{}\". \n ASSISTANT:"
-  lower: false
 
 fsdp_config:
     mixed_precision: true

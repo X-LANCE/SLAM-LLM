@@ -46,11 +46,15 @@ trans= "/nfs/yangguanrou.ygr/vicuna-7b-v1.5-hubert_large_ll60k-0127/asr/3594/dec
 # python src/llama_recipes/utils/compute_wer.py ${trans} ${preds}.proc ${preds}.proc.wer
 #-m debugpy --listen 5678 --wait-for-client 
 
+trans=/nfs/yangguanrou.ygr/vicuna-7b-v1.5-large_vox_433h-qformer1/asr/384/decode_log_test_clean_beam4_repetition_penalty1_gt
+presd=/nfs/yangguanrou.ygr/vicuna-7b-v1.5-large_vox_433h-qformer1/asr/384/decode_log_test_clean_beam4_repetition_penalty1_pred
+
+
 # 我觉得还是不要前两个了 没什么用
-# python src/llama_recipes/utils/whisper_tn.py ${trans} ${trans}.proc
-# python src/llama_recipes/utils/llm_tn.py ${preds} ${preds}.proc
-# python src/llama_recipes/utils/compute_wer.py ${trans}.proc ${preds}.proc ${preds}.proc.wer
-python src/llama_recipes/utils/compute_wer.py ${trans} ${preds} ${preds}.proc.wer
+python src/llama_recipes/utils/whisper_tn.py ${trans} ${trans}.proc
+python src/llama_recipes/utils/llm_tn.py ${preds} ${preds}.proc
+python src/llama_recipes/utils/compute_wer.py ${trans}.proc ${preds}.proc ${preds}.proc.wer
+# python src/llama_recipes/utils/compute_wer.py ${trans} ${preds} ${preds}.proc.wer
 
 tail -3 ${preds}.proc.wer
 

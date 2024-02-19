@@ -38,7 +38,7 @@ class EncoderProjectorCov1d(nn.Module):
         self.linear2 = nn.Linear(2048, self.llm_dim)
         self.relu2 = nn.ReLU()
     
-    def forward(self, x):
+    def forward(self, x):  #torch.Size([6, 258, 1280])
         x = x.transpose(1, 2)
         x = self.conv1d(x)
         x = x.transpose(1, 2)
@@ -46,13 +46,13 @@ class EncoderProjectorCov1d(nn.Module):
         x = self.linear1(x)
         x = self.relu2(x)
         x = self.linear2(x)
-        return x
+        return x  #torch.Size([6, 51, 4096])
 
 class EncoderProjectorQFormer(nn.Module):
     def __init__(self, config):
         super().__init__()
-        self.encoder_dim = config.encoder_dim
-        self.llm_dim = config.llm_dim
+        self.encoder_dim = config.encoder_dim #1024
+        self.llm_dim = config.llm_dim #4096
         from transformers import Blip2QFormerConfig, Blip2QFormerModel
 
         configuration = Blip2QFormerConfig() #
@@ -60,11 +60,11 @@ class EncoderProjectorQFormer(nn.Module):
         configuration.num_hidden_layers = 2
 
         self.query_len = 88
-        self.query = nn.Parameter(torch.zeros(1, self.query_len, configuration.hidden_size))
+        self.query = nn.Parameter(torch.zeros(1, self.query_len, configuration.hidden_size)) #torch.Size([1, 88, 768]) 没问题
         self.query.data.normal_(mean=0.0, std=1.0)
         self.qformer = Blip2QFormerModel(configuration)  #
 
-        self.linear = nn.Linear(configuration.hidden_size, self.llm_dim)
+        self.linear = nn.Linear(configuration.hidden_size, self.llm_dim)  #Linear(in_features=768, out_features=4096, bias=True)
         self.norm = nn.LayerNorm(self.llm_dim, eps=1e-5)
 
     def forward(self, x, atts):  #torch.Size([2, 1500, 1280])   torch.Size([2, 1500])

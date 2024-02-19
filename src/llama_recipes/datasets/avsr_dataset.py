@@ -24,7 +24,7 @@ class AVSRDataset(Dataset):
         super().__init__()
 
         self.tokenizer = tokenizer
-        self.modal = dataset_config.modal
+        self.modal = dataset_config.modal #
         self.dataset = split                        #train|val|test
         self.data_path = dataset_config.data_path
         self.h5file = dataset_config.h5file    
@@ -190,7 +190,7 @@ class AVSRDataset(Dataset):
             audio_length = audio_length // 5 # ad-hoc for 5x fc downsample  #tensor(16)  #有用的是audio_length
         audio_pseudo = torch.full((audio_length,), -1) # placeholder
 
-        if self.inference_mode:  #TODO
+        if self.inference_mode:
             prompt_ids = torch.tensor(prompt_ids, dtype=torch.int64)
             example_ids = torch.cat((audio_pseudo, prompt_ids))  # [audio,prompt]
             example_mask = example_ids.ge(-1)  # [True,True]

@@ -193,7 +193,7 @@ def main(kwargs: DictConfig):
     elif train_config.enable_ddp:
         model = model.cuda(local_rank)
         model = DDP(model, device_ids=[local_rank],
-                    find_unused_parameters=kwargs.get("train_conf", {}).get("find_unused_parameters", False))
+                    find_unused_parameters=kwargs.get("train_conf", {}).get("find_unused_parameters", False)) # True 传参传不急哪里
     elif not train_config.quantization: #
         model.to(device)
 
@@ -264,14 +264,24 @@ def main(kwargs: DictConfig):
             weight_decay=train_config.weight_decay,
         )
     # scheduler = StepLR(optimizer, step_size=1, gamma=train_config.gamma)
-    scheduler = torch.optim.lr_scheduler.LambdaLR(
-        optimizer, 
-        lr_lambda=lambda step: (
-            min(step / train_config.warmup_steps, 1) if step < train_config.warmup_steps
-            # else 1
-            else  max(0.0, 1 - (step - train_config.warmup_steps) / (train_config.total_steps - train_config.warmup_steps))
+    if train_config.scheduler=="tri":
+        scheduler = torch.optim.lr_scheduler.LambdaLR(
+            optimizer, 
+            lr_lambda=lambda step: (
+                min(step / train_config.warmup_steps, 1) if step < train_config.warmup_steps
+                #else 1
+                else  max(0.0, 1 - (step - train_config.warmup_steps) / (train_config.total_steps - train_config.warmup_steps))
+            )
         )
-    )
+    else:
+        scheduler = torch.optim.lr_scheduler.LambdaLR(
+            optimizer, 
+            lr_lambda=lambda step: (
+                min(step / train_config.warmup_steps, 1) if step < train_config.warmup_steps
+                else 1
+                #else  max(0.0, 1 - (step - train_config.warmup_steps) / (train_config.total_steps - train_config.warmup_steps))
+            )
+        )        
 
     # Start the training process
     results = train(

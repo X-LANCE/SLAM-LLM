@@ -44,7 +44,10 @@ class SlidesDataset(Dataset):
                     if len(line) == 1:
                         self.label_list.append(None)
                     else:
-                        self.label_list.append(line[1])
+                        if dataset_config.lower:
+                            self.label_list.append(line[1].lower())
+                        else:
+                            self.label_list.append(line[1])
 
             # with open(dataset_config.train_scp_file_path + "my_ocr_text_type2",'r') as f:
             #     for line in f:
@@ -63,7 +66,11 @@ class SlidesDataset(Dataset):
                         line = line[1]
                         line = line.split('$')
                         line = " ".join(line)
-                        self.ocr_list.append(line)
+
+                        if dataset_config.lower:
+                             self.ocr_list.append(line.lower())
+                        else:
+                            self.ocr_list.append(line)
 
 
         elif split == "val":
@@ -93,7 +100,10 @@ class SlidesDataset(Dataset):
                     if len(line) == 1:
                         self.label_list.append(None)
                     else:
-                        self.label_list.append(line[1])
+                        if dataset_config.lower:
+                            self.label_list.append(line[1].lower())
+                        else:
+                            self.label_list.append(line[1])
 
             # with open(dataset_config.dev_scp_file_path + "ocr_text_type2",'r') as f:
             #     for line in f:
@@ -112,7 +122,11 @@ class SlidesDataset(Dataset):
                         line = line[1]
                         line = line.split('$')
                         line = " ".join(line)
-                        self.ocr_list.append(line)
+
+                        if dataset_config.lower:
+                            self.ocr_list.append(line.lower())
+                        else:
+                            self.ocr_list.append(line)
 
         elif split == "test":  # 3188
             with open(dataset_config.test_scp_file_path + "my_wav.scp",'r') as f:
@@ -148,7 +162,7 @@ class SlidesDataset(Dataset):
         self.prompt_template1 = "USER: {}\n ASSISTANT:"
         #self.prompt_template2 = "USER: Transcribe speech to text. The speech is related to a slide, which contains key information. The text from the slide is \"{}\". Please use the text to enhance the accuracy of the ASR task.\n ASSISTANT:"
         self.prompt_template2 = "USER: Transcribe speech to text. Some hotwords on the slide might help. The hotwords are \"{}\". \n ASSISTANT:"
-        #self.prompt_template2= self.dataset_config.prompt
+        self.prompt_template2= self.dataset_config.prompt
         self.answer_template = "{}"
         self.fix_length_audio = dataset_config.get("fix_length_audio", -1)
         self.inference_mode = dataset_config.get("inference_mode", False)
@@ -168,7 +182,11 @@ class SlidesDataset(Dataset):
         target = self.label_list[index]
         key = self.key_list[index]
 
-        if self.model_config.encoder_name == "whisper":
+        if self.model_config.encoder_name == "hubert":
+            audio_raw = torch.from_numpy(audio_raw).float()
+            audio_raw = torch.nn.functional.layer_norm(audio_raw, audio_raw.shape)
+            audio_mel = None
+        elif self.model_config.encoder_name == "whisper":
             audio_raw = whisper.pad_or_trim(audio_raw)  #torch.Size([480000])
             audio_mel = whisper.log_mel_spectrogram(audio_raw).permute(1, 0)    #torch.Size([3000, 80])   torch.Size([648, 80])
 
@@ -181,11 +199,15 @@ class SlidesDataset(Dataset):
 
         prompt_ids = self.tokenizer.encode(prompt)
         prompt_length = len(prompt_ids)
-        audio_length = (audio_mel.shape[0] + 1) // 2  # ad-hoc for whisper for 2x downsample from mel to feats
+
+        if self.model_config.encoder_name == "hubert":
+            audio_length = audio_raw.shape[0] // 320  # ad-hoc for hubert
+        elif self.model_config.encoder_name == "whisper":
+            audio_length = (audio_mel.shape[0] + 1) // 2  # ad-hoc for whisper for 2x downsample from mel to feats
+        
         audio_length = audio_length // 5 # ad-hoc for 5x fc downsample
-        # audio_length = calculate_output_length_1d(audio_length, 5, 5, 0) # ad-hoc for 5x cov1d downsample
-        # if self.fix_length_audio > 0:  #-1
-        #     audio_length = self.fix_length_audio
+        if self.fix_length_audio > 0:  #-1
+            audio_length = self.fix_length_audio  # q-former
         audio_pseudo = torch.full((audio_length,), -1) # placeholder
 
         if self.inference_mode:
@@ -197,6 +219,7 @@ class SlidesDataset(Dataset):
                 "input_ids": example_ids,
                 "attention_mask": example_mask,
                 'audio_mel': audio_mel,
+                "audio": audio_raw,
                 'audio_length': audio_length,
                 'key': key,
                 'target': target,
@@ -211,13 +234,13 @@ class SlidesDataset(Dataset):
         )
         example_ids = torch.cat((audio_pseudo, example_ids))  # [audio,prompt,answer,eos]
 
-        if len(example_ids)>1000:  #一维 debug
-            logger.info(name) 
-            logger.info(audio_mel.shape)
-            logger.info(audio_length)
-            logger.info(prompt)
-            logger.info(answer)
-            logger.info(example_ids.shape)
+        # if len(example_ids)>1000:  #一维 debug
+        #     logger.info(name) 
+        #     logger.info(audio_mel.shape)
+        #     logger.info(audio_length)
+        #     logger.info(prompt)
+        #     logger.info(answer)
+        #     logger.info(example_ids.shape)
 
         labels_ids = copy.deepcopy(example_ids)  # [audio,prompt,answer,eos]
         labels_ids[:audio_length + prompt_length] = -1  # [-1,-1,answer,eos];
@@ -232,6 +255,7 @@ class SlidesDataset(Dataset):
             "labels": labels_ids,
             "attention_mask": example_mask,
             'audio_mel': audio_mel,
+            "audio": audio_raw,
             'audio_length': audio_length,
         }             
 
@@ -244,13 +268,29 @@ class SlidesDataset(Dataset):
         attention_mask = torch.stack([self.pad(s['attention_mask'], input_ids_max_length, False)
                                       for s in samples])
     
-        audio_mel_max_length = max([s['audio_mel'].shape[0] for s in samples])
-        audio_mel = torch.stack([self.pad(s['audio_mel'], audio_mel_max_length, 0)
-                                  for s in samples])
-        audio_mel_post_mask = torch.zeros(len(samples), (audio_mel_max_length + 1) // 2) # ad-hoc for whisper for 2x downsample from mel to feats
-        for line, sample in enumerate(samples):
-            audio_mel_post_mask[line, :(sample['audio_mel'].shape[0] + 1) // 2] = 1
+        if self.model_config.encoder_name == "whisper":
+            audio_mel_max_length = max([s['audio_mel'].shape[0] for s in samples])
+            audio_mel = torch.stack([self.pad(s['audio_mel'], audio_mel_max_length, 0)
+                                    for s in samples])
+            audio_mel_post_mask = torch.zeros(len(samples), (audio_mel_max_length + 1) // 2) # ad-hoc for whisper for 2x downsample from mel to feats
+            for line, sample in enumerate(samples):
+                audio_mel_post_mask[line, :(sample['audio_mel'].shape[0] + 1) // 2] = 1
+            
+            audio = None
+            audio_mask = None
+
+        elif self.model_config.encoder_name == "hubert":
+            audio_max_length = max([s['audio'].shape[0] for s in samples])
+            audio = torch.stack([self.pad(s['audio'], audio_max_length, 0)
+                                    for s in samples])
+            audio_mask = torch.ones(len(samples), audio_max_length) # hubert 的 padding_mask 前面是0 后面是1 !!!
+            for line, sample in enumerate(samples):
+                audio_mask[line, :sample['audio'].shape[0]] = 0
+            
+            audio_mel = None
+            audio_mel_post_mask = None
     
+
         modality_mask = torch.zeros_like(attention_mask)
         for line, sample in enumerate(samples):
             modality_mask[line, :sample['audio_length']] = 1
@@ -264,6 +304,8 @@ class SlidesDataset(Dataset):
                 'attention_mask': attention_mask,
                 'audio_mel': audio_mel,
                 'audio_mel_post_mask': audio_mel_post_mask,
+                "audio": audio,
+                "audio_mask": audio_mask,
                 'modality_mask': modality_mask,
                 'keys': keys,
                 'targets': targets
@@ -277,6 +319,8 @@ class SlidesDataset(Dataset):
             'attention_mask': attention_mask,
             'audio_mel': audio_mel,
             'audio_mel_post_mask': audio_mel_post_mask,
+            "audio": audio,
+            "audio_mask": audio_mask,
             'modality_mask': modality_mask
         }
 

@@ -100,7 +100,7 @@ def setup_llm(train_config, model_config, **kwargs):
             device_map="auto" if train_config.quantization else None,
             use_cache=use_cache,
         )
-    if (train_config.enable_fsdp or train_config.enable_ddp) and train_config.use_fast_kernels:
+    if (train_config.enable_fsdp or train_config.enable_ddp) and train_config.use_fast_kernels: #x
         """
         For FSDP and FSDP+PEFT, setting 'use_fast_kernels' will enable
         using of Flash Attention or Xformer memory-efficient kernels
@@ -125,9 +125,10 @@ def setup_llm(train_config, model_config, **kwargs):
         
     if kwargs.get("peft_ckpt", None): # (FIX:MZY):reload will get wrong results when decoding
         logger.info("loading peft_ckpt from: {}".format(kwargs.get("peft_ckpt")))
-        model = PeftModel.from_pretrained(model=model, model_id=kwargs.get("peft_ckpt"), is_trainable=True)
+        # model = PeftModel.from_pretrained(model=model, model_id=kwargs.get("peft_ckpt"), is_trainable=True)
+        model = PeftModel.from_pretrained(model=model, model_id=kwargs.get("peft_ckpt"), is_trainable=False)
         model.print_trainable_parameters()
-    elif train_config.use_peft:
+    elif train_config.use_peft: #
         logger.info("setup peft...")
         peft_config = generate_peft_config(train_config)
         model = get_peft_model(model, peft_config)
@@ -222,11 +223,11 @@ class slam_model(nn.Module):
                 encoder_outs , inputLenBatch, audio_mel_post_mask = self.encoder((audio, audio_mask, visual, vis_len) ) # bs*seq*dim
             
             if self.model_config.encoder_name == "av_hubert":  #输入格式 B, C, T, H, W 
-                visual = torch.transpose(visual,1,2)  #torch.Size([4, 1, 49, 112, 112])
+                # visual = torch.transpose(visual,1,2)  #torch.Size([4, 1, 49, 112, 112])  #torch.Size([8, 1, 466, 88, 88])
                 results = self.encoder(source={'video':visual, 'audio':None}, padding_mask=visual_mask) # bs*seq*dim  
                 encoder_outs, audio_mel_post_mask = results["encoder_out"], results["padding_mask"]
                 encoder_outs = encoder_outs.transpose(0, 1)  #torch.Size([4, 151, 1024])
-
+                audio_mel_post_mask = (~audio_mel_post_mask).float() #!!!
             if self.encoder is None:
                 encoder_outs = audio_mel if audio_mel is not None else audio
 
@@ -236,6 +237,8 @@ class slam_model(nn.Module):
                 encoder_outs = self.encoder_projector(encoder_outs, audio_mel_post_mask) #torch.Size([2, 1500, 1280])  -> torch.Size([2, 64, 5120])
             if self.model_config.encoder_projector == "linear":
                 encoder_outs = self.encoder_projector(encoder_outs)  #torch.Size([2, 16, 5120])  torch.Size([2, 300, 4096])
+            if self.model_config.encoder_projector == "cov1d-linear": 
+                encoder_outs = self.encoder_projector(encoder_outs) 
 
         if input_ids is not None:
             input_ids[input_ids == -1] = 0
@@ -315,10 +318,11 @@ class slam_model(nn.Module):
                 encoder_outs , inputLenBatch, audio_mel_post_mask = self.encoder((audio, audio_mask, visual, vis_len) ) # bs*seq*dim
             
             if self.model_config.encoder_name == "av_hubert":  #输入格式 B, C, T, H, W 
-                visual = torch.transpose(visual,1,2)  #torch.Size([4, 1, 49, 112, 112])
+                # visual = torch.transpose(visual,1,2)  #torch.Size([4, 1, 49, 112, 112])
                 results = self.encoder(source={'video':visual, 'audio':None}, padding_mask=visual_mask) # bs*seq*dim  
                 encoder_outs, audio_mel_post_mask = results["encoder_out"], results["padding_mask"]
-                encoder_outs = encoder_outs.transpose(0, 1)  #torch.Size([4, 151, 1024])                  
+                encoder_outs = encoder_outs.transpose(0, 1)  #torch.Size([4, 151, 1024])
+                audio_mel_post_mask = (~audio_mel_post_mask).float() #!!!           
             if self.encoder is None:
                 encoder_outs = audio_mel if audio_mel is not None else audio
 
@@ -327,7 +331,10 @@ class slam_model(nn.Module):
                 encoder_outs = self.encoder_projector(encoder_outs, audio_mel_post_mask)
             if self.model_config.encoder_projector == "linear":
                 encoder_outs = self.encoder_projector(encoder_outs)
+            if self.model_config.encoder_projector == "cov1d-linear": 
+                encoder_outs = self.encoder_projector(encoder_outs) 
 
+                
         if input_ids is not None:
             input_ids[input_ids == -1] = 0
             if hasattr(self.llm.model, "embed_tokens"):
@@ -359,6 +366,41 @@ class slam_model(nn.Module):
             eos_token_id=self.tokenizer.eos_token_id,
             pad_token_id=self.tokenizer.pad_token_id
         )
+        # model_outputs = self.llm.generate(
+        #     inputs_embeds=inputs_embeds,
+        #     # max_length=kwargs.get("max_length", 200),
+        #     max_new_tokens=kwargs.get("max_new_tokens", 200),
+        #     num_beams=kwargs.get("num_beams", 4),
+        #     # do_sample=kwargs.get("do_sample", False),
+        #     do_sample=True,
+        #     min_length=kwargs.get("min_length", 1),
+        #     # top_p=kwargs.get("top_p", 1.0),
+        #     top_p=1.0,
+        #     repetition_penalty=kwargs.get("repetition_penalty", 1.0),
+        #     length_penalty=kwargs.get("length_penalty", 1.0),
+        #     # temperature=kwargs.get("temperature", 1.0),
+        #     temperature=1.0,
+        #     attention_mask=attention_mask,
+        #     bos_token_id=self.tokenizer.bos_token_id,      
+        #     eos_token_id=self.tokenizer.eos_token_id,
+        #     pad_token_id=self.tokenizer.pad_token_id,
+        #     # bos_token_id=151643,
+        #     # bos_token_id=1,
+        #     # eos_token_id=2,
+        #     # pad_token_id=0,
+        # )
+        
+        # model_outputs = self.llm.generate(
+        #     inputs_embeds=inputs_embeds,
+        #     attention_mask=attention_mask,
+        #     max_length=4096,
+        #     do_sample=True,
+        #     top_p=0.6,
+        #     temperature=0.9,
+        #     bos_token_id=1,
+        #     eos_token_id=2,
+        #     pad_token_id=0,
+        # )
 
         return model_outputs
 
