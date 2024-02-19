@@ -231,6 +231,20 @@ preds=/nfs/yangguanrou.ygr/slides-finetune-hubert-tri-5e-5-notext/asr/1600/decod
 trans=/nfs/yangguanrou.ygr/slides-finetune-hubert-tri-5e-5-linearconv/asr/1600/decode_log_test_clean_beam4_repetition_penalty1_sample_gt
 preds=/nfs/yangguanrou.ygr/slides-finetune-hubert-tri-5e-5-linearconv/asr/1600/decode_log_test_clean_beam4_repetition_penalty1_sample_pred
 
+
+trans=/nfs/yangguanrou.ygr/slides-finetune-hubert-tri-lora/asr/3760/decode_log_val_clean_beam4_repetition_penalty1_gt
+preds=/nfs/yangguanrou.ygr/slides-finetune-hubert-tri-lora/asr/3760/decode_log_val_clean_beam4_repetition_penalty1_pred
+
+trans=/nfs/yangguanrou.ygr/slides-finetune-hubert-tri-lora/asr/3760/decode_log_test_clean_beam4_repetition_penalty1_gt
+preds=/nfs/yangguanrou.ygr/slides-finetune-hubert-tri-lora/asr/3760/decode_log_test_clean_beam4_repetition_penalty1_pred
+
+
+trans=/nfs/yangguanrou.ygr/slides-finetune-hubert-tri-lora/asr/1640/decode_log_dev_clean_beam4_repetition_penalty1_gt
+preds=/nfs/yangguanrou.ygr/slides-finetune-hubert-tri-lora/asr/1640/decode_log_dev_clean_beam4_repetition_penalty1_pred
+
+trans=/nfs/yangguanrou.ygr/slides-finetune-hubert-tri-lora/asr/1640/decode_log_test_clean_beam4_repetition_penalty1_gt
+preds=/nfs/yangguanrou.ygr/slides-finetune-hubert-tri-lora/asr/1640/decode_log_test_clean_beam4_repetition_penalty1_pred
+
 python src/llama_recipes/utils/whisper_tn.py ${trans} ${trans}.proc
 python src/llama_recipes/utils/llm_tn.py ${preds} ${preds}.proc
 python src/llama_recipes/utils/compute_wer.py ${trans}.proc ${preds}.proc ${preds}.proc.wer
