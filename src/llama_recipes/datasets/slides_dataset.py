@@ -182,7 +182,7 @@ class SlidesDataset(Dataset):
         target = self.label_list[index]
         key = self.key_list[index]
 
-        if self.model_config.encoder_name == "hubert":
+        if self.model_config.encoder_name == "hubert" or self.model_config.encoder_name == "wavlm":
             audio_raw = torch.from_numpy(audio_raw).float()
             audio_raw = torch.nn.functional.layer_norm(audio_raw, audio_raw.shape)
             audio_mel = None
@@ -193,7 +193,6 @@ class SlidesDataset(Dataset):
             audio_raw = whisper.pad_or_trim(audio_raw)  #torch.Size([480000])
             audio_mel = whisper.log_mel_spectrogram(audio_raw).permute(1, 0)    #torch.Size([3000, 80])   torch.Size([648, 80])
 
-
         if self.dataset_config.use_ocr == True and ocr != None:
             prompt = self.prompt_template2.format(ocr)
         else:
@@ -203,7 +202,7 @@ class SlidesDataset(Dataset):
         prompt_ids = self.tokenizer.encode(prompt)
         prompt_length = len(prompt_ids)
 
-        if self.model_config.encoder_name == "hubert":
+        if self.model_config.encoder_name == "hubert" or self.model_config.encoder_name == "wavlm":
             audio_length = audio_raw.shape[0] // 320  # ad-hoc for hubert
         elif self.model_config.encoder_name == "whisper":
             audio_length = (audio_mel.shape[0] + 1) // 2  # ad-hoc for whisper for 2x downsample from mel to feats
@@ -282,7 +281,7 @@ class SlidesDataset(Dataset):
             audio = None
             audio_mask = None
 
-        elif self.model_config.encoder_name == "hubert":
+        elif self.model_config.encoder_name == "hubert" or self.model_config.encoder_name == "wavlm":
             audio_max_length = max([s['audio'].shape[0] for s in samples])
             audio = torch.stack([self.pad(s['audio'], audio_max_length, 0)
                                     for s in samples])

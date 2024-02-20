@@ -106,3 +106,23 @@ class AVHubertEncoder:
         model = models[0]
 
         return model
+
+class WavLMEncoder(torch.nn.Module):
+    def __init__(self, config, model):
+        super().__init__()
+        self.config = config
+        self.model = model
+
+    @classmethod
+    def load(cls, model_config):
+        from .wavlm.WavLM import WavLM, WavLMConfig
+        checkpoint = torch.load(model_config.encoder_path)
+        cfg = WavLMConfig(checkpoint['cfg'])
+        WavLM_model = WavLM(cfg)
+        WavLM_model.load_state_dict(checkpoint['model'])
+        # assert model_config.normalize == cfg.normalize, "normalize flag in config and model checkpoint do not match"  cfg.normalize:True
+
+        return cls(cfg, WavLM_model)
+
+    def extract_features(self, source, padding_mask):
+        return self.model.extract_features(source, padding_mask)[0]
