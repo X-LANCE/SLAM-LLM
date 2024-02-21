@@ -245,6 +245,56 @@ preds=/nfs/yangguanrou.ygr/slides-finetune-hubert-tri-lora/asr/1640/decode_log_d
 trans=/nfs/yangguanrou.ygr/slides-finetune-hubert-tri-lora/asr/1640/decode_log_test_clean_beam4_repetition_penalty1_gt
 preds=/nfs/yangguanrou.ygr/slides-finetune-hubert-tri-lora/asr/1640/decode_log_test_clean_beam4_repetition_penalty1_pred
 
+
+trans=/nfs/yangguanrou.ygr/slides-finetune-hubert-tri-5e-5-13b/asr/45759/decode_log_dev_clean_beam4_repetition_penalty1_gt
+preds=/nfs/yangguanrou.ygr/slides-finetune-hubert-tri-5e-5-13b/asr/45759/decode_log_dev_clean_beam4_repetition_penalty1_pred
+
+
+trans=/nfs/yangguanrou.ygr/slides-finetune-hubert-tri-5e-5-13b/asr/45759/decode_log_test_clean_beam4_repetition_penalty1_gt
+preds=/nfs/yangguanrou.ygr/slides-finetune-hubert-tri-5e-5-13b/asr/45759/decode_log_test_clean_beam4_repetition_penalty1_pred
+
+trans=/nfs/yangguanrou.ygr/slides-finetune-hubert-tri-5e-5-linearconv/asr/1600/decode_log_dev_clean_beam4_repetition_penalty1_bs1_gt
+preds=/nfs/yangguanrou.ygr/slides-finetune-hubert-tri-5e-5-linearconv/asr/1600/decode_log_dev_clean_beam4_repetition_penalty1_bs1_pred
+
+trans=/nfs/yangguanrou.ygr/slides-finetune-hubert-tri-5e-5-linearconv-warmup/asr/1600/decode_log_dev_clean_beam4_repetition_penalty1_gt
+preds=/nfs/yangguanrou.ygr/slides-finetune-hubert-tri-5e-5-linearconv-warmup/asr/1600/decode_log_dev_clean_beam4_repetition_penalty1_pred
+
+trans=/nfs/yangguanrou.ygr/slides-finetune-hubert-tri-5e-5-linearconv/asr/1600/decode_log_dev_clean_beam4_repetition_penalty1_gt
+preds=/nfs/yangguanrou.ygr/slides-finetune-hubert-tri-5e-5-linearconv/asr/1600/decode_log_dev_clean_beam4_repetition_penalty1_pred
+
+trans=/nfs/yangguanrou.ygr/slides-finetune-hubert-tri-5e-5-13b/asr/45759/decode_log_test_clean_beam4_repetition_penalty1_bs1_gt
+preds=/nfs/yangguanrou.ygr/slides-finetune-hubert-tri-5e-5-13b/asr/45759/decode_log_test_clean_beam4_repetition_penalty1_bs1_pred
+
+trans=/nfs/yangguanrou.ygr/slides-finetune-hubert-tri-5e-5-linearconv-warmup/asr/1600/decode_log_test_clean_beam4_repetition_penalty1_gt
+preds=/nfs/yangguanrou.ygr/slides-finetune-hubert-tri-5e-5-linearconv-warmup/asr/1600/decode_log_test_clean_beam4_repetition_penalty1_pred
+
+trans=/nfs/yangguanrou.ygr/slides-finetune-hubert-tri-5e-5-linearconv/asr/1600/wanggaiming/decode_log_dev_clean_beam4_repetition_penalty1_gt
+preds=/nfs/yangguanrou.ygr/slides-finetune-hubert-tri-5e-5-linearconv/asr/1600/wanggaiming/decode_log_dev_clean_beam4_repetition_penalty1_pred
+
+
+trans=/nfs/yangguanrou.ygr/slides-finetune-hubert-tri-lora/asr/1640/decode_log_dev_clean_beam4_repetition_penalty1_bs1_gt
+preds=/nfs/yangguanrou.ygr/slides-finetune-hubert-tri-lora/asr/1640/decode_log_dev_clean_beam4_repetition_penalty1_bs1_pred
+
+trans=/nfs/yangguanrou.ygr/slides-finetune-whisperv3/asr/9760/decode_log_dev_clean_beam4_repetition_penalty1_gt
+preds=/nfs/yangguanrou.ygr/slides-finetune-whisperv3/asr/9760/decode_log_dev_clean_beam4_repetition_penalty1_pred
+
+trans=/nfs/yangguanrou.ygr/slides-finetune-whisperv3/asr/9760/decode_log_test_clean_beam4_repetition_penalty1_gt
+preds=/nfs/yangguanrou.ygr/slides-finetune-whisperv3/asr/9760/decode_log_test_clean_beam4_repetition_penalty1_pred
+
+trans=/nfs/yangguanrou.ygr/slides-finetune-hubert-tri-5e-5-linearconv/asr/1600/decode_log_test_clean_beam4_repetition_penalty1_gt
+preds=/nfs/yangguanrou.ygr/slides-finetune-hubert-tri-5e-5-linearconv/asr/1600/decode_log_test_clean_beam4_repetition_penalty1_pred
+
+
+trans=/nfs/yangguanrou.ygr/slides-finetune-hubert-tri-lora/asr/1640/decode_log_test_clean_beam4_repetition_penalty1_bs1_gt
+preds=/nfs/yangguanrou.ygr/slides-finetune-hubert-tri-lora/asr/1640/decode_log_test_clean_beam4_repetition_penalty1_bs1_pred
+
+
+trans=/root/SLAM-LLM/slides_script/3.1/decode_log_dev_clean_beam4_repetition_penalty1_bs2_debug_gt
+preds=/root/SLAM-LLM/slides_script/3.1/decode_log_dev_clean_beam4_repetition_penalty1_bs2_debug_pred
+
+
+
+
 python src/llama_recipes/utils/whisper_tn.py ${trans} ${trans}.proc
 python src/llama_recipes/utils/llm_tn.py ${preds} ${preds}.proc
 python src/llama_recipes/utils/compute_wer.py ${trans}.proc ${preds}.proc ${preds}.proc.wer

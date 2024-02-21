@@ -323,11 +323,11 @@ class slam_model(nn.Module):
                 encoder_outs , inputLenBatch, audio_mel_post_mask = self.encoder((audio, audio_mask, visual, vis_len) ) # bs*seq*dim
             
             if self.model_config.encoder_name == "av_hubert":  #输入格式 B, C, T, H, W 
-                # visual = torch.transpose(visual,1,2)  #torch.Size([4, 1, 49, 112, 112])
+                # visual = torch.transpose(visual,1,2)  #torch.Size([4, 1, 49, 112, 112])  #torch.Size([8, 1, 466, 88, 88])
                 results = self.encoder(source={'video':visual, 'audio':None}, padding_mask=visual_mask) # bs*seq*dim  
                 encoder_outs, audio_mel_post_mask = results["encoder_out"], results["padding_mask"]
                 encoder_outs = encoder_outs.transpose(0, 1)  #torch.Size([4, 151, 1024])
-                audio_mel_post_mask = (~audio_mel_post_mask).float() #!!!           
+                audio_mel_post_mask = (~audio_mel_post_mask).float() #!!!         
             if self.encoder is None:
                 encoder_outs = audio_mel if audio_mel is not None else audio
 
@@ -342,7 +342,7 @@ class slam_model(nn.Module):
                 
         if input_ids is not None:
             input_ids[input_ids == -1] = 0
-            if hasattr(self.llm.model, "embed_tokens"):
+            if hasattr(self.llm.model, "embed_tokens"): #
                 inputs_embeds = self.llm.model.embed_tokens(input_ids)
             elif hasattr(self.llm.model.model, "embed_tokens"):
                 inputs_embeds = self.llm.model.model.embed_tokens(input_ids)

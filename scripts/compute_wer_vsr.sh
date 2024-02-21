@@ -19,6 +19,10 @@ preds="/nfs/yangguanrou.ygr/vicuna-7b-v1.5-finetune-vsr-20230122/avsr/40/decode_
 # python src/llama_recipes/utils/whisper_tn.py ${trans} ${trans}.proc
 # python src/llama_recipes/utils/llm_tn.py ${preds} ${preds}.proc
 # python src/llama_recipes/utils/compute_wer.py ${trans}.proc ${preds}.proc ${preds}.proc.wer
+
+trans=/nfs/yangguanrou.ygr/vicuna-7b-v1.5-large_vox_433h-tri-dataset-remake/asr/1156/decode_log_test_clean_beam4_repetition_penalty1_gt_p
+preds=/nfs/yangguanrou.ygr/vicuna-7b-v1.5-large_vox_433h-tri-dataset-remake/asr/1156/decode_log_test_clean_beam4_repetition_penalty1_pred
+
 python src/llama_recipes/utils/compute_wer.py ${trans} ${preds} ${preds}.proc.wer
 
 tail -3 ${preds}.proc.wer

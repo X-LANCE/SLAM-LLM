@@ -343,7 +343,7 @@ class AVHubertdataset(torch.utils.data.Dataset):
             with torch.no_grad():
                 audio_feats = F.layer_norm(audio_feats, audio_feats.shape[1:])
         labels = self.get_labels(index)
-        target = labels[0] 
+        target = labels[0].replace("\n", "") # ！！！
         fid = self.names[index][1].split(':')[1]
         #return {"id": index, 'fid': fid, "video_source": video_feats, 'audio_source': audio_feats, "label_list": labels}
 

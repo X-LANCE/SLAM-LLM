@@ -167,6 +167,8 @@ class SlidesDataset(Dataset):
         self.fix_length_audio = dataset_config.get("fix_length_audio", -1)
         self.inference_mode = dataset_config.get("inference_mode", False)
 
+        self.prev_prompt_template = "USER: Transcribe speech to text. Its previous sentence is \"{}\". \n ASSISTANT:"
+
 
     def __getitem__(self, index):
         ark_path = self.data_list[index]
@@ -193,11 +195,31 @@ class SlidesDataset(Dataset):
             audio_raw = whisper.pad_or_trim(audio_raw)  #torch.Size([480000])
             audio_mel = whisper.log_mel_spectrogram(audio_raw).permute(1, 0)    #torch.Size([3000, 80])   torch.Size([648, 80])
 
-        if self.dataset_config.use_ocr == True and ocr != None:
-            prompt = self.prompt_template2.format(ocr)
-        else:
-            prompt = "Transcribe speech to text."
-            prompt = self.prompt_template1.format(prompt)
+        # 上下文task
+        if self.dataset_config.task=="context":
+            has_previous=False
+            if index!=0:
+                prev_key = self.key_list[index-1]
+                prev_prefix = prev_key.rsplit('+',1)[0]
+                prefix = key.rsplit('+',1)[0]
+                if prev_prefix == prefix:
+                    prev_number = int(prev_key.rsplit('+',1)[1])
+                    number = int(key.rsplit('+',1)[1])
+                    if number-prev_number<=6:
+                        has_previous=True
+                        previous_sentence = self.label_list[index-1]
+                        prompt=self.prev_prompt_template.format(previous_sentence)
+
+            if not has_previous:
+                prompt = "Transcribe speech to text."
+                prompt = self.prompt_template1.format(prompt)                
+                    
+        if self.dataset_config.task=="keyword":
+            if self.dataset_config.use_ocr == True and ocr != None:
+                prompt = self.prompt_template2.format(ocr)
+            else:
+                prompt = "Transcribe speech to text."
+                prompt = self.prompt_template1.format(prompt)
 
         prompt_ids = self.tokenizer.encode(prompt)
         prompt_length = len(prompt_ids)
