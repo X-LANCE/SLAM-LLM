@@ -205,7 +205,8 @@ class SlidesDataset(Dataset):
                 if prev_prefix == prefix:
                     prev_number = int(prev_key.rsplit('+',1)[1])
                     number = int(key.rsplit('+',1)[1])
-                    if number-prev_number<=6:
+                    #if number-prev_number<=6:
+                    if number-prev_number <= self.dataset_config.prev_bar:
                         has_previous=True
                         previous_sentence = self.label_list[index-1]
                         prompt=self.prev_prompt_template.format(previous_sentence)

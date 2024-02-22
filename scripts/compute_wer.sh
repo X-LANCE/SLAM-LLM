@@ -293,7 +293,15 @@ trans=/root/SLAM-LLM/slides_script/3.1/decode_log_dev_clean_beam4_repetition_pen
 preds=/root/SLAM-LLM/slides_script/3.1/decode_log_dev_clean_beam4_repetition_penalty1_bs2_debug_pred
 
 
+trans=/root/SLAM-LLM/slides_script/3.1/decode_log_dev_clean_beam4_repetition_penalty1_gt
+preds=/root/SLAM-LLM/slides_script/3.1/decode_log_dev_clean_beam4_repetition_penalty1_pred
 
+trans=/nfs/yangguanrou.ygr/experiments_hubert/vicuna-7b-v1.5-hubert_xtralarge_ll60k_finetune_ls960/asr/1188/decode_log_test_other_beam4_repetition_penalty1_bs1_gt
+preds=/nfs/yangguanrou.ygr/experiments_hubert/vicuna-7b-v1.5-hubert_xtralarge_ll60k_finetune_ls960/asr/1188/decode_log_test_other_beam4_repetition_penalty1_bs1_pred
+
+
+trans=/nfs/yangguanrou.ygr/experiments_hubert/vicuna-7b-v1.5-hubert_xtralarge_ll60k_finetune_ls960/asr/1188/decode_log_test_clean_beam4_repetition_penalty1_bs1_gt
+preds=/nfs/yangguanrou.ygr/experiments_hubert/vicuna-7b-v1.5-hubert_xtralarge_ll60k_finetune_ls960/asr/1188/decode_log_test_clean_beam4_repetition_penalty1_bs1_pred
 
 python src/llama_recipes/utils/whisper_tn.py ${trans} ${trans}.proc
 python src/llama_recipes/utils/llm_tn.py ${preds} ${preds}.proc
