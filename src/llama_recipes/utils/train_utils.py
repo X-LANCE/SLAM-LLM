@@ -175,11 +175,11 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                             else:
                                 logger.info(f"we are about to save the PEFT modules")
                             if train_config.enable_fsdp:
-                                if getattr(ShardingStrategy, fsdp_config.sharding_strategy) == ShardingStrategy.FULL_SHARD:
+                                if fsdp_config.sharding_strategy == ShardingStrategy.FULL_SHARD:
                                     save_model_checkpoint_peft_full_shard(
                                             model, optimizer, rank, train_config, epoch=epoch
                                         )
-                                elif getattr(ShardingStrategy, fsdp_config.sharding_strategy) == ShardingStrategy.NO_SHARD:
+                                elif fsdp_config.sharding_strategy == ShardingStrategy.NO_SHARD:
                                     if rank==0:
                                         save_model_checkpoint_peft(
                                             model, optimizer, rank, train_config, epoch=epoch
@@ -205,11 +205,11 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                         elif not train_config.use_peft and train_config.freeze_llm:
                             logger.info(f"llm is frozen, we are about to save other parts.")
                             if train_config.enable_fsdp:
-                                if getattr(ShardingStrategy, fsdp_config.sharding_strategy) == ShardingStrategy.FULL_SHARD:
+                                if fsdp_config.sharding_strategy == ShardingStrategy.FULL_SHARD:
                                     save_model_checkpoint_peft_full_shard(
                                             model, optimizer, rank, train_config, epoch=epoch
                                         )
-                                elif getattr(ShardingStrategy, fsdp_config.sharding_strategy) == ShardingStrategy.NO_SHARD:
+                                elif fsdp_config.sharding_strategy == ShardingStrategy.NO_SHARD:
                                     if rank==0:
                                         save_model_checkpoint_peft(
                                             model, optimizer, rank, train_config, epoch=epoch
