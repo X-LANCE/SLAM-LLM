@@ -76,3 +76,11 @@ class AVEncoder:
         avnet.load_state_dict(checkpoint['state_dict'],strict=False)
  
         return avnet
+
+class HfTextEncoder:
+
+    @classmethod
+    def load(cls, model_config):
+        from transformers import AutoModel
+        model = AutoModel.from_pretrained(model_config.encoder_path)
+        return model

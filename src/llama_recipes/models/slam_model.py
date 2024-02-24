@@ -6,7 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.distributed as dist
 from typing import List, Optional, Tuple, Union
-from transformers import AutoModelForCausalLM, AutoTokenizer, AutoConfig
+from transformers import AutoModelForCausalLM, AutoTokenizer, AutoConfig, AutoModel
 from peft import LoraConfig, TaskType, get_peft_model, prepare_model_for_kbit_training
 
 from llama_recipes.utils.config_utils import generate_peft_config
@@ -25,8 +25,13 @@ def setup_model(tokenizer, train_config, model_config, **kwargs):
 
 def setup_tokenizer(train_config, model_config, **kwargs):
     # Load the tokenizer and add special tokens
-    tokenizer = AutoTokenizer.from_pretrained(model_config.llm_path)
-    tokenizer.pad_token_id = tokenizer.eos_token_id
+    if "mupt" in model_config.llm_name.lower():
+        tokenizer = AutoTokenizer.from_pretrained(model_config.llm_path,
+                                            trust_remote_code=True,
+                                            use_fast=False)
+    else:
+        tokenizer = AutoTokenizer.from_pretrained(model_config.llm_path)
+        tokenizer.pad_token_id = tokenizer.eos_token_id
     return tokenizer
 
 
@@ -48,6 +53,9 @@ def setup_encoder(train_config, model_config, **kwargs):
         if encoder_name == "moco_wav2vec2":
             from llama_recipes.models.encoder import AVEncoder
             encoder = AVEncoder.load(model_config)
+        if "llama" in encoder_name.lower():
+            from llama_recipes.models.encoder import HfTextEncoder
+            encoder = HfTextEncoder.load(model_config)
     print_module_size(encoder, encoder_name, int(os.environ["RANK"]) if train_config.enable_fsdp or train_config.enable_ddp else 0)
 
     if train_config.freeze_encoder:
@@ -185,7 +193,6 @@ class slam_model(nn.Module):
         audio_mel = kwargs.get("audio_mel", None)
         audio_mel_mask = kwargs.get("audio_mel_mask", None)
         audio_mel_post_mask = kwargs.get("audio_mel_post_mask", None) # 2x downsample for whisper
-        modality_mask = kwargs.get("modality_mask", None)
 
         audio = kwargs.get("audio", None)
         audio_mask = kwargs.get("audio_mask", None)
@@ -193,6 +200,11 @@ class slam_model(nn.Module):
         vis_len = kwargs.get("vis_len", None)
         maskw2v = kwargs.get("maskw2v", False) #(FIX:MZY) False for supervised learning and inference
 
+        # for text encoder
+        instruct_ids = kwargs.get("instruct_ids", None)
+        instruct_mask = kwargs.get("instruct_mask", None)
+
+        modality_mask = kwargs.get("modality_mask", None)
 
         encoder_outs = None
         if audio_mel is not None or audio is not None:
@@ -211,6 +223,16 @@ class slam_model(nn.Module):
                 encoder_outs = self.encoder_projector(encoder_outs, audio_mel_post_mask)
             if self.model_config.encoder_projector == "linear":
                 encoder_outs = self.encoder_projector(encoder_outs)
+
+        if instruct_ids is not None:
+            if self.encoder is not None:
+                encoder_outs = self.encoder(input_ids=instruct_ids, attention_mask=instruct_mask).last_hidden_state
+
+            if self.model_config.encoder_projector == "q-former":
+                encoder_outs = self.encoder_projector(encoder_outs, instruct_mask)
+            if self.model_config.encoder_projector == "linear":
+                encoder_outs = self.encoder_projector(encoder_outs)
+
 
         if input_ids is not None:
             input_ids[input_ids == -1] = 0
