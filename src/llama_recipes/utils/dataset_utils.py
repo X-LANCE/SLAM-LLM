@@ -58,6 +58,7 @@ DATASET_PREPROC = {
     "custom_dataset": get_custom_dataset,
     "speech_dataset": get_custom_dataset,
     "audio_dataset": get_custom_dataset,
+    "text_dataset": get_custom_dataset,
     "avsr_dataset": get_custom_dataset,
 }
 
