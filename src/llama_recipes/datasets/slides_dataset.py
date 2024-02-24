@@ -68,7 +68,7 @@ class SlidesDataset(Dataset):
                         line = " ".join(line)
 
                         if dataset_config.lower:
-                             self.ocr_list.append(line.lower())
+                            self.ocr_list.append(line.lower())
                         else:
                             self.ocr_list.append(line)
 
@@ -128,7 +128,7 @@ class SlidesDataset(Dataset):
                         else:
                             self.ocr_list.append(line)
 
-        elif split == "test":  # 3188
+        elif split == "test":  # 3188  只有prev用这个 不用ground truth 用解码
             with open(dataset_config.test_scp_file_path + "my_wav.scp",'r') as f:
                 for line in f:
                     line = line.strip().split()
@@ -168,7 +168,7 @@ class SlidesDataset(Dataset):
         self.inference_mode = dataset_config.get("inference_mode", False)
 
         self.prev_prompt_template = "USER: Transcribe speech to text. Its previous sentence is \"{}\". \n ASSISTANT:"
-
+        self.prev_keywords_prompt_template="USER: Transcribe speech to text. Its previous sentence is \"{}\". Use hotwords in ppt to improve speech recognition accuracy. But if the hotwords are irrelevant, just ignore them. The hotwords are \"{}\". \n ASSISTANT:"
 
     def __getitem__(self, index):
         ark_path = self.data_list[index]
@@ -215,12 +215,43 @@ class SlidesDataset(Dataset):
                 prompt = "Transcribe speech to text."
                 prompt = self.prompt_template1.format(prompt)                
                     
+
         if self.dataset_config.task=="keyword":
             if self.dataset_config.use_ocr == True and ocr != None:
                 prompt = self.prompt_template2.format(ocr)
             else:
                 prompt = "Transcribe speech to text."
                 prompt = self.prompt_template1.format(prompt)
+
+
+        if self.dataset_config.task=="context+keyword":
+            has_previous=False
+            if index!=0:
+                prev_key = self.key_list[index-1]
+                prev_prefix = prev_key.rsplit('+',1)[0]
+                prefix = key.rsplit('+',1)[0]
+                if prev_prefix == prefix:
+                    prev_number = int(prev_key.rsplit('+',1)[1])
+                    number = int(key.rsplit('+',1)[1])
+                    #if number-prev_number<=6:
+                    if number-prev_number <= self.dataset_config.prev_bar:
+                        has_previous=True
+                        previous_sentence = self.label_list[index-1]
+            
+            if has_previous==True and ocr!=None:
+                prompt=self.prev_keywords_prompt_template.format(previous_sentence, ocr) #
+
+            elif not has_previous and ocr!=None:
+                prompt = self.prompt_template2.format(ocr)
+            
+            elif has_previous and ocr==None:
+                prompt=self.prev_prompt_template.format(previous_sentence)   
+
+            else:
+                prompt = "Transcribe speech to text."
+                prompt = self.prompt_template1.format(prompt)   
+            
+
 
         prompt_ids = self.tokenizer.encode(prompt)
         prompt_length = len(prompt_ids)
