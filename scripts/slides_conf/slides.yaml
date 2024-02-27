@@ -107,7 +107,8 @@ dataset_config:
   lower: false
   task: keyword
   prev_bar: 6
-
+  prev_prompt_template: "USER: Transcribe speech to text. Use the transcription of the previous speech to improve speech recognition accuracy. The transcription is \"{}\". \n ASSISTANT:"
+  #prev_prompt_template: "USER: Transcribe speech to text. \n ASSISTANT: {} "
 fsdp_config:
     mixed_precision: true
     use_fp16: false

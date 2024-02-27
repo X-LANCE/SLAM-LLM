@@ -19,6 +19,8 @@ from tqdm import tqdm
 import hydra
 from omegaconf import DictConfig, ListConfig, OmegaConf
 
+import whisper
+from whisper.tokenizer import get_tokenizer
 
 # @hydra.main(config_name=None, version_base="1.1")
 @hydra.main(config_name=None)
@@ -110,7 +112,8 @@ def main(kwargs: DictConfig):
 	torch.manual_seed(train_config.seed)
 	random.seed(train_config.seed)
 	
-	model, tokenizer = model_factory(train_config, model_config, **kwargs)
+	# model, tokenizer = model_factory(train_config, model_config, **kwargs)
+	model = whisper.load_model(model_config.encoder_path)
 	device = torch.device("cuda" if torch.cuda.is_available() else "cpu") # FIX(MZY): put the whole model to device.
 	model.to(device)
 	model.eval()
@@ -118,7 +121,7 @@ def main(kwargs: DictConfig):
 	# dataset_config = generate_dataset_config(train_config, kwargs)
 	logger.info("dataset_config: {}".format(dataset_config))
 	dataset_test = get_preprocessed_dataset(
-        tokenizer,
+        None,
         dataset_config,
 		model_config,
         split="test",
@@ -136,6 +139,7 @@ def main(kwargs: DictConfig):
 			collate_fn=dataset_test.collator
         )
 	
+	# tokenizer = get_tokenizer(multilingual=False)
 
 	logger.info("=====================================")
 	pred_path = kwargs.get('decode_log') + "_pred"
@@ -144,16 +148,19 @@ def main(kwargs: DictConfig):
 		for step, batch in tqdm(enumerate(test_dataloader), total=len(test_dataloader)):
 			for key in batch.keys():
 				batch[key] = batch[key].to(device) if isinstance(batch[key], torch.Tensor) else batch[key]
-			model_outputs = model.generate(**batch)
-			output_text = model.tokenizer.batch_decode(model_outputs, add_special_tokens=False, skip_special_tokens=True)
+
+			ocr = batch["ocrs"][0]
+			if ocr == None:
+				options = whisper.DecodingOptions(language="en", without_timestamps=True)
+			else:
+				options = whisper.DecodingOptions(language="en", without_timestamps=True, prompt=ocr)
+
+			mel = batch["audio_mel"].transpose(1,2) #torch.Size([1, 128, 3000])
+			result = whisper.decode(model, mel, options)
+			output_text = [one_result.text for one_result in result]
 			for key, text, target in zip(batch["keys"], output_text, batch["targets"]):
 				pred.write(key + "\t" + text.replace("\n", " ") + "\n")
 				gt.write(key + "\t" + target + "\n")
-
-				if dataset_config.test_split=="test":
-					with open(dataset_config.last_pred_path,'w') as last_pred:
-						last_pred.write(text.replace("\n", " "))
-
 
 
 

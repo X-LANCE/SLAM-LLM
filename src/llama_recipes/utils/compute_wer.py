@@ -39,6 +39,10 @@ def compute_wer(ref_file,
             #     print(hyp_key + print_cer_detail(out_item))
             #     print("ref:" + '\t' + " ".join(list(map(lambda x: x.lower(), ref_dict[hyp_key]))))
             #     print("hyp:" + '\t' + " ".join(list(map(lambda x: x.lower(), hyp_dict[hyp_key]))))
+
+            if out_item['nwords']==0:
+                continue
+            
             rst['Wrd'] += out_item['nwords']
             rst['Corr'] += out_item['cor']
             rst['wrong_words'] += out_item['wrong']

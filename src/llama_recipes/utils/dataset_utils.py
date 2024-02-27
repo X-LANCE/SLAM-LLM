@@ -62,6 +62,7 @@ DATASET_PREPROC = {
     "slides_dataset": get_custom_dataset,
     "hubert_dataset": get_custom_dataset,
     "avhubert_dataset": get_custom_dataset,
+    "whisper_dataset": get_custom_dataset,
 }
 
 

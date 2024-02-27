@@ -17,6 +17,7 @@ class SlidesDataset(Dataset):
         self.label_list = []
         self.ocr_list = []
         self.key_list=[] # for debug
+        self.asr_list=[] # not gt
 
         if split == "train":
             # 一次性load 全部数据
@@ -132,9 +133,10 @@ class SlidesDataset(Dataset):
             with open(dataset_config.test_scp_file_path + "my_wav.scp",'r') as f:
                 for line in f:
                     line = line.strip().split()
-                    self.data_list.append(line[1])      
+                    self.data_list.append(line[1])
+                    self.key_list.append(line[0])
 
-            with open(dataset_config.test_scp_file_path + "my_wav.scp",'r') as f:
+            with open(dataset_config.test_scp_file_path + "utt2num_samples",'r') as f:
                 for line in f:
                     line = line.strip().split()
                     self.num_samples_list.append(int(line[1]))
@@ -145,15 +147,35 @@ class SlidesDataset(Dataset):
                     if len(line) == 1:
                         self.label_list.append(None)
                     else:
-                        self.label_list.append(line[1])
+                        if dataset_config.lower:
+                            self.label_list.append(line[1].lower())
+                        else:
+                            self.label_list.append(line[1])
 
-            with open(dataset_config.test_scp_file_path + "ocr_text_type2",'r') as f:
+            with open(dataset_config.test_scp_file_path + "hot_related/ocr_1gram_top50_mmr070_hotwords_list",'r') as f:
                 for line in f:
-                    line = line.strip().split(' ',1)
+                    line = line.strip().split()
                     if len(line) == 1:
                         self.ocr_list.append(None)
                     else:
-                        self.ocr_list.append(line[1])
+                        line = line[1]
+                        line = line.split('$')
+                        line = " ".join(line)
+
+                        if dataset_config.lower:
+                            self.ocr_list.append(line.lower())
+                        else:
+                            self.ocr_list.append(line)
+
+
+            # with open(dataset_config.test_asr_path, 'r') as f:
+            #     for line in f:
+            #         line = line.strip().split('\t',1)
+            #         if len(line) == 1:
+            #             self.asr_list.append(None)
+            #         else:
+            #             self.asr_list.append(line[1])
+
 
         self.model_config = model_config
         self.dataset_config = dataset_config
@@ -167,8 +189,10 @@ class SlidesDataset(Dataset):
         self.fix_length_audio = dataset_config.get("fix_length_audio", -1)
         self.inference_mode = dataset_config.get("inference_mode", False)
 
-        self.prev_prompt_template = "USER: Transcribe speech to text. Its previous sentence is \"{}\". \n ASSISTANT:"
+        #self.prev_prompt_template = "USER: Transcribe speech to text. Its previous sentence is \"{}\". \n ASSISTANT:"
+        self.prev_prompt_template = self.dataset_config.prev_prompt_template
         self.prev_keywords_prompt_template="USER: Transcribe speech to text. Its previous sentence is \"{}\". Use hotwords in ppt to improve speech recognition accuracy. But if the hotwords are irrelevant, just ignore them. The hotwords are \"{}\". \n ASSISTANT:"
+        self.split = split
 
     def __getitem__(self, index):
         ark_path = self.data_list[index]
@@ -208,7 +232,13 @@ class SlidesDataset(Dataset):
                     #if number-prev_number<=6:
                     if number-prev_number <= self.dataset_config.prev_bar:
                         has_previous=True
-                        previous_sentence = self.label_list[index-1]
+                        if self.split == "test":
+                            # previous_sentence = self.asr_list[index-1]
+                            with open(self.dataset_config.last_pred_path,'r') as last_pred_read:
+                                for line in last_pred_read:
+                                    previous_sentence=line
+                        else:
+                            previous_sentence = self.label_list[index-1]
                         prompt=self.prev_prompt_template.format(previous_sentence)
 
             if not has_previous:
@@ -236,7 +266,13 @@ class SlidesDataset(Dataset):
                     #if number-prev_number<=6:
                     if number-prev_number <= self.dataset_config.prev_bar:
                         has_previous=True
-                        previous_sentence = self.label_list[index-1]
+                        if self.split == "test":
+                            # previous_sentence = self.asr_list[index-1]
+                            with open(self.dataset_config.last_pred_path,'r') as last_pred_read:
+                                for line in last_pred_read:
+                                    previous_sentence=line
+                        else:
+                            previous_sentence = self.label_list[index-1]
             
             if has_previous==True and ocr!=None:
                 prompt=self.prev_keywords_prompt_template.format(previous_sentence, ocr) #
