@@ -168,13 +168,13 @@ class SlidesDataset(Dataset):
                             self.ocr_list.append(line)
 
 
-            # with open(dataset_config.test_asr_path, 'r') as f:
-            #     for line in f:
-            #         line = line.strip().split('\t',1)
-            #         if len(line) == 1:
-            #             self.asr_list.append(None)
-            #         else:
-            #             self.asr_list.append(line[1])
+            with open(dataset_config.test_asr_path, 'r') as f:
+                for line in f:
+                    line = line.strip().split('\t',1)
+                    if len(line) == 1:
+                        self.asr_list.append(None)
+                    else:
+                        self.asr_list.append(line[1])
 
 
         self.model_config = model_config
@@ -208,19 +208,8 @@ class SlidesDataset(Dataset):
         target = self.label_list[index]
         key = self.key_list[index]
 
-        if self.model_config.encoder_name == "hubert" or self.model_config.encoder_name == "wavlm":
-            audio_raw = torch.from_numpy(audio_raw).float()
-            audio_raw = torch.nn.functional.layer_norm(audio_raw, audio_raw.shape)
-            audio_mel = None
-        elif self.model_config.encoder_name == "whisper" and self.model_config.encoder_path == "/nfs/maziyang.mzy/models/Whisper/large-v3.pt":
-            audio_raw = whisper.pad_or_trim(audio_raw)  #torch.Size([480000])
-            audio_mel = whisper.log_mel_spectrogram(audio_raw,128).permute(1, 0)   # 128
-        elif self.model_config.encoder_name == "whisper":
-            audio_raw = whisper.pad_or_trim(audio_raw)  #torch.Size([480000])
-            audio_mel = whisper.log_mel_spectrogram(audio_raw).permute(1, 0)    #torch.Size([3000, 80])   torch.Size([648, 80])
-
         # 上下文task
-        if self.dataset_config.task=="context":
+        if self.dataset_config.task=="context" or self.dataset_config.task=="context_concat":
             has_previous=False
             if index!=0:
                 prev_key = self.key_list[index-1]
@@ -232,11 +221,12 @@ class SlidesDataset(Dataset):
                     #if number-prev_number<=6:
                     if number-prev_number <= self.dataset_config.prev_bar:
                         has_previous=True
+                        previous_sentence=""
                         if self.split == "test":
-                            # previous_sentence = self.asr_list[index-1]
-                            with open(self.dataset_config.last_pred_path,'r') as last_pred_read:
-                                for line in last_pred_read:
-                                    previous_sentence=line
+                            previous_sentence = self.asr_list[index-1]
+                            # with open(self.dataset_config.last_pred_path,'r') as last_pred_read:
+                            #     for line in last_pred_read:
+                            #         previous_sentence=line
                         else:
                             previous_sentence = self.label_list[index-1]
                         prompt=self.prev_prompt_template.format(previous_sentence)
@@ -287,6 +277,30 @@ class SlidesDataset(Dataset):
                 prompt = "Transcribe speech to text."
                 prompt = self.prompt_template1.format(prompt)   
             
+
+        if self.model_config.encoder_name == "hubert" or self.model_config.encoder_name == "wavlm":
+
+            if self.dataset_config.task=="context_concat" and has_previous:
+                ark_path_last = self.data_list[index-1]
+                numpy_array_last = kaldiio.load_mat(ark_path_last)
+                audio_raw_last = numpy_array_last[1].astype(np.float32)
+                audio_raw = np.concatenate((audio_raw_last, audio_raw),axis=0)  #(88160,)
+
+                audio_raw = torch.from_numpy(audio_raw).float() #torch.Size([46080])
+                audio_raw = torch.nn.functional.layer_norm(audio_raw, audio_raw.shape)
+                audio_mel = None
+
+            else:
+                audio_raw = torch.from_numpy(audio_raw).float()
+                audio_raw = torch.nn.functional.layer_norm(audio_raw, audio_raw.shape)
+                audio_mel = None
+                
+        elif self.model_config.encoder_name == "whisper" and self.model_config.encoder_path == "/nfs/maziyang.mzy/models/Whisper/large-v3.pt":
+            audio_raw = whisper.pad_or_trim(audio_raw)  #torch.Size([480000])
+            audio_mel = whisper.log_mel_spectrogram(audio_raw,128).permute(1, 0)   # 128
+        elif self.model_config.encoder_name == "whisper":
+            audio_raw = whisper.pad_or_trim(audio_raw)  #torch.Size([480000])
+            audio_mel = whisper.log_mel_spectrogram(audio_raw).permute(1, 0)    #torch.Size([3000, 80])   torch.Size([648, 80])
 
 
         prompt_ids = self.tokenizer.encode(prompt)

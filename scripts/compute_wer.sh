@@ -564,6 +564,13 @@ preds=/nfs/yangguanrou.ygr/slides-finetune-wavlm_prevkey/asr/3840/decode_log_dev
 trans=/nfs/yangguanrou.ygr/slides-finetune-wavlm_prevkey/asr/3840/decode_log_test_clean_beam4_repetition_penalty1_online_gt
 preds=/nfs/yangguanrou.ygr/slides-finetune-wavlm_prevkey/asr/3840/decode_log_test_clean_beam4_repetition_penalty1_online_pred
 
+
+trans=/nfs/yangguanrou.ygr/slides-finetune-wavlm_prev_prompt1/asr/5680/decode_log_dev_clean_beam4_repetition_penalty1_online_gt
+preds=/nfs/yangguanrou.ygr/slides-finetune-wavlm_prev_prompt1/asr/5680/decode_log_dev_clean_beam4_repetition_penalty1_online_pred
+
+trans=/nfs/yangguanrou.ygr/slides-finetune-wavlm_prev_prompt1/asr/5680/decode_log_test_clean_beam4_repetition_penalty1_online_gt
+preds=/nfs/yangguanrou.ygr/slides-finetune-wavlm_prev_prompt1/asr/5680/decode_log_test_clean_beam4_repetition_penalty1_online_pred
+
 python src/llama_recipes/utils/whisper_tn.py ${trans} ${trans}.proc
 python src/llama_recipes/utils/llm_tn.py ${preds} ${preds}.proc
 python src/llama_recipes/utils/compute_wer.py ${trans}.proc ${preds}.proc ${preds}.proc.wer
