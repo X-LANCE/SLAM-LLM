@@ -168,13 +168,13 @@ class SlidesDataset(Dataset):
                             self.ocr_list.append(line)
 
 
-            with open(dataset_config.test_asr_path, 'r') as f:
-                for line in f:
-                    line = line.strip().split('\t',1)
-                    if len(line) == 1:
-                        self.asr_list.append(None)
-                    else:
-                        self.asr_list.append(line[1])
+            # with open(dataset_config.test_asr_path, 'r') as f:
+            #     for line in f:
+            #         line = line.strip().split('\t',1)
+            #         if len(line) == 1:
+            #             self.asr_list.append(None)
+            #         else:
+            #             self.asr_list.append(line[1])
 
 
         self.model_config = model_config
@@ -223,10 +223,10 @@ class SlidesDataset(Dataset):
                         has_previous=True
                         previous_sentence=""
                         if self.split == "test":
-                            previous_sentence = self.asr_list[index-1]
-                            # with open(self.dataset_config.last_pred_path,'r') as last_pred_read:
-                            #     for line in last_pred_read:
-                            #         previous_sentence=line
+                            # previous_sentence = self.asr_list[index-1]
+                            with open(self.dataset_config.last_pred_path,'r') as last_pred_read:
+                                for line in last_pred_read:
+                                    previous_sentence=line
                         else:
                             previous_sentence = self.label_list[index-1]
                         prompt=self.prev_prompt_template.format(previous_sentence)

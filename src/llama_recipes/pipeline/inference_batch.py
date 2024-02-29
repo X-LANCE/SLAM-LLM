@@ -150,9 +150,9 @@ def main(kwargs: DictConfig):
 				pred.write(key + "\t" + text.replace("\n", " ") + "\n")
 				gt.write(key + "\t" + target + "\n")
 
-				# if dataset_config.test_split=="test":
-				# 	with open(dataset_config.last_pred_path,'w') as last_pred:
-				# 		last_pred.write(text.replace("\n", " "))
+				if dataset_config.test_split=="test":
+					with open(dataset_config.last_pred_path,'w') as last_pred:
+						last_pred.write(text.replace("\n", " "))
 
 
 
