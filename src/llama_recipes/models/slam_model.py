@@ -333,7 +333,8 @@ class slam_model(nn.Module):
             import whisper
             audio_raw = whisper.load_audio(wav_path)
             audio_raw = whisper.pad_or_trim(audio_raw)
-            audio_mel = whisper.log_mel_spectrogram(audio_raw).permute(1,0)[None, :, :].to(device)
+            mel_size = self.dataset_config.get("mel_size", 80) # 80 for large v1 and v2, 128 for large v3
+            audio_mel = whisper.log_mel_spectrogram(audio_raw, n_mels=mel_size).permute(1,0)[None, :, :].to(device)
 
             encoder_outs = self.encoder.extract_variable_length_features(audio_mel.permute(0, 2, 1))
             

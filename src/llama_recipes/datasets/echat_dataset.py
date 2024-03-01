@@ -30,6 +30,8 @@ class EChatDataset(Dataset):
         self.IGNORE_INDEX = -100 # The default setting in CrossEntropyLoss
         self.prompt_template = "USER: {}\n ASSISTANT:"
         self.answer_template = "<|{}|><|{}|>"
+        self.mel_size = dataset_config.get("mel_size", 80) # 80 for whisper large v1 and v2, 128 for large v3
+
 
         with open(dataset_config.data_path, 'r') as file:
             data = file.readlines()
@@ -70,7 +72,8 @@ class EChatDataset(Dataset):
 
         speech_raw = whisper.load_audio(item['pre_wav'])
         # speech_raw = whisper.pad_or_trim(speech_raw)
-        speech_mel = whisper.log_mel_spectrogram(speech_raw).permute(1,0)
+
+        speech_mel = whisper.log_mel_spectrogram(speech_raw, n_mels=self.mel_size).permute(1, 0)
 
         prompt="""
         Please provide an emotional response based on the emotional speech you hear.
