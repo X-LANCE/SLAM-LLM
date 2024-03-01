@@ -243,7 +243,37 @@ class SlidesDataset(Dataset):
 
             if not has_previous:
                 prompt = "Transcribe speech to text."
-                prompt = self.prompt_template1.format(prompt)                
+                prompt = self.prompt_template1.format(prompt)
+
+
+        if self.dataset_config.task=="context_fix":
+            has_previous=False
+            previous_words_list=[]
+            i=1
+            prefix = key.rsplit('+',1)[0]   
+
+            while len(previous_words_list) < 10:
+                if index-i >=0:
+                    prev_key = self.key_list[index-i]
+                    prev_prefix = prev_key.rsplit('+',1)[0]
+                    if prev_prefix == prefix:
+                        pwl = self.label_list[index-i].split()
+                        previous_words_list = pwl + previous_words_list
+                        i+=1            
+                    else:
+                        break
+                else:
+                    break
+
+            if len(previous_words_list)>= 10:
+                previous_words_list = previous_words_list[-10:]
+                previous_sentence = " ".join(previous_words_list)
+                has_previous=True
+                prompt=self.prev_prompt_template.format(previous_sentence)
+
+            if not has_previous:
+                prompt = "Transcribe speech to text."
+                prompt = self.prompt_template1.format(prompt)            
                     
 
         if self.dataset_config.task=="keyword":
@@ -288,7 +318,7 @@ class SlidesDataset(Dataset):
 
             else:
                 prompt = "Transcribe speech to text."
-                prompt = self.prompt_template1.format(prompt)   
+                prompt = self.prompt_template1.format(prompt)
             
 
         if self.model_config.encoder_name == "hubert" or self.model_config.encoder_name == "wavlm":
