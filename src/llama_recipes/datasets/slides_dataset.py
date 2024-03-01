@@ -5,6 +5,8 @@ import kaldiio
 import copy
 import numpy as np
 from tqdm import tqdm
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
 
 import logging
 logger = logging.getLogger(__name__)
@@ -168,13 +170,14 @@ class SlidesDataset(Dataset):
                             self.ocr_list.append(line)
 
 
-            # with open(dataset_config.test_asr_path, 'r') as f:
-            #     for line in f:
-            #         line = line.strip().split('\t',1)
-            #         if len(line) == 1:
-            #             self.asr_list.append(None)
-            #         else:
-            #             self.asr_list.append(line[1])
+            if dataset_config.context_mode=="asr":
+                with open(dataset_config.test_asr_path, 'r') as f:
+                    for line in f:
+                        line = line.strip().split('\t',1)
+                        if len(line) == 1:
+                            self.asr_list.append(None)
+                        else:
+                            self.asr_list.append(line[1])
 
 
         self.model_config = model_config
@@ -193,6 +196,7 @@ class SlidesDataset(Dataset):
         self.prev_prompt_template = self.dataset_config.prev_prompt_template
         self.prev_keywords_prompt_template="USER: Transcribe speech to text. Its previous sentence is \"{}\". Use hotwords in ppt to improve speech recognition accuracy. But if the hotwords are irrelevant, just ignore them. The hotwords are \"{}\". \n ASSISTANT:"
         self.split = split
+        self.stop_words = set(stopwords.words('english'))
 
     def __getitem__(self, index):
         ark_path = self.data_list[index]
@@ -223,12 +227,18 @@ class SlidesDataset(Dataset):
                         has_previous=True
                         previous_sentence=""
                         if self.split == "test":
-                            # previous_sentence = self.asr_list[index-1]
-                            with open(self.dataset_config.last_pred_path,'r') as last_pred_read:
-                                for line in last_pred_read:
-                                    previous_sentence=line
+                            if self.dataset_config.context_mode=="asr":
+                                previous_sentence = self.asr_list[index-1]
+                            else:
+                                with open(self.dataset_config.last_pred_path,'r') as last_pred_read:
+                                    for line in last_pred_read:
+                                        previous_sentence=line
                         else:
                             previous_sentence = self.label_list[index-1]
+                            if self.dataset_config.use_stopwords:
+                                words=previous_sentence.split()
+                                filtered_sentence = [word for word in words if not word.lower() in self.stop_words]
+                                previous_sentence = " ".join(filtered_sentence)
                         prompt=self.prev_prompt_template.format(previous_sentence)
 
             if not has_previous:
@@ -257,12 +267,15 @@ class SlidesDataset(Dataset):
                     if number-prev_number <= self.dataset_config.prev_bar:
                         has_previous=True
                         if self.split == "test":
-                            # previous_sentence = self.asr_list[index-1]
-                            with open(self.dataset_config.last_pred_path,'r') as last_pred_read:
-                                for line in last_pred_read:
-                                    previous_sentence=line
+                            if self.dataset_config.context_mode=="asr":
+                                previous_sentence = self.asr_list[index-1]
+                            else:
+                                with open(self.dataset_config.last_pred_path,'r') as last_pred_read:
+                                    for line in last_pred_read:
+                                        previous_sentence=line
                         else:
                             previous_sentence = self.label_list[index-1]
+
             
             if has_previous==True and ocr!=None:
                 prompt=self.prev_keywords_prompt_template.format(previous_sentence, ocr) #

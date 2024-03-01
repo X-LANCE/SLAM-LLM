@@ -614,6 +614,27 @@ preds=/nfs/yangguanrou.ygr/vicuna-7b-v1.5-large_vox_433h-tri-dataset-remake/asr/
 trans=/nfs/yangguanrou.ygr/vicuna-7b-v1.5-large_vox_433h-tri-dataset-remake/asr/1156/decode_log_test_clean_beam4_repetition_penalty1_gt_p
 preds=/nfs/yangguanrou.ygr/vicuna-7b-v1.5-large_vox_433h-tri-dataset-remake/asr/1156/decode_log_test_clean_beam4_repetition_penalty1_pred
 
+trans=/nfs/yangguanrou.ygr/slides-finetune-wavlm_prev_concat/asr/7680/decode_log_test_clean_beam4_repetition_penalty1_online_gt
+preds=/nfs/yangguanrou.ygr/slides-finetune-wavlm_prev_concat/asr/7680/decode_log_test_clean_beam4_repetition_penalty1_online_pred
+
+
+trans=/nfs/yangguanrou.ygr/slides-finetune-wavlm_prev_prompt5/asr/17760/decode_log_dev_clean_beam4_repetition_penalty1_online_gt
+preds=/nfs/yangguanrou.ygr/slides-finetune-wavlm_prev_prompt5/asr/17760/decode_log_dev_clean_beam4_repetition_penalty1_online_pred
+
+trans=/nfs/yangguanrou.ygr/slides-finetune-wavlm_prev_prompt4/asr/15840/decode_log_dev_clean_beam4_repetition_penalty1_online_gt
+preds=/nfs/yangguanrou.ygr/slides-finetune-wavlm_prev_prompt4/asr/15840/decode_log_dev_clean_beam4_repetition_penalty1_online_pred
+
+trans=/nfs/yangguanrou.ygr/slides-finetune-wavlm_prev_prompt5/asr/17760/decode_log_test_clean_beam4_repetition_penalty1_online_gt
+preds=/nfs/yangguanrou.ygr/slides-finetune-wavlm_prev_prompt5/asr/17760/decode_log_test_clean_beam4_repetition_penalty1_online_pred
+
+
+trans=/nfs/yangguanrou.ygr/slides-finetune-wavlm_prev_prompt4/asr/15840/decode_log_test_clean_beam4_repetition_penalty1_online_gt
+preds=/nfs/yangguanrou.ygr/slides-finetune-wavlm_prev_prompt4/asr/15840/decode_log_test_clean_beam4_repetition_penalty1_online_pred
+
+
+trans=/nfs/yangguanrou.ygr/slides-finetune-wavlm-prev_lora/asr/9640/decode_log_dev_clean_beam4_repetition_penalty1_online_a_gt
+preds=/nfs/yangguanrou.ygr/slides-finetune-wavlm-prev_lora/asr/9640/decode_log_dev_clean_beam4_repetition_penalty1_online_a_pred
+
 python src/llama_recipes/utils/whisper_tn.py ${trans} ${trans}.proc
 python src/llama_recipes/utils/llm_tn.py ${preds} ${preds}.proc
 python src/llama_recipes/utils/compute_wer.py ${trans}.proc ${preds}.proc ${preds}.proc.wer

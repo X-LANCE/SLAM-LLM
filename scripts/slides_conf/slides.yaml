@@ -42,7 +42,7 @@ train_config:
   batching_strategy: "packing" #alternative: padding
   context_length: 4096
   gradient_accumulation_steps: 1
-  num_epochs: 100
+  num_epochs: 10
   num_workers_dataloader: 1
   warmup_steps: 1000
   total_steps: 100000
@@ -109,9 +109,17 @@ dataset_config:
   prev_bar: 6
   #prev_prompt_template: "USER: Transcribe speech to text. Use the transcription of the previous speech to improve speech recognition accuracy. The transcription is \"{}\". \n ASSISTANT:"
   #prev_prompt_template: "USER: Transcribe speech to text. \n ASSISTANT: {} "
-  prev_prompt_template: "Using previous context: \"{}\", improve speech recognition for this audio. Apply relevant details from the previous context. \n ASSISTANT:"
+  #prev_prompt_template: "Using previous context: \"{}\", improve speech recognition for this audio. Apply relevant details from the previous context. \n ASSISTANT:"
+  prev_prompt_template: "USER: Using previous context: \"{}\", improve speech recognition for this audio. Apply relevant details from the previous context. \n ASSISTANT:"
   #prev_prompt_template: "USER: Transcribe speech to text. \n ASSISTANT: {}"
   #prev_prompt_template: "USER: Transcribe speech to text. Its previous sentence is \"{}\". \n ASSISTANT:"
+  #prev_prompt_template: "USER: Transcribe speech to text. Use previous context to improve speech recognition accuracy. But if the context is irrelevant, just ignore it. The previous context is \"{}\". \n ASSISTANT:"
+  #prev_prompt_template: "USER: Contextualize this audio with \"{}\" to refine speech recognition. Leverage prior details effectively. \n ASSISTANT:"
+  #prev_prompt_template: "USER: Given the context from the previous speech transcript: \"{}\", enhance the accuracy of speech recognition for the current speech input. Consider any relevant context, terms, or topics from the previous transcript that may apply. \n ASSISTANT:"
+  context_mode: online
+  use_stopwords: false
+  fix_length: 0
+
 fsdp_config:
     mixed_precision: true
     use_fp16: false

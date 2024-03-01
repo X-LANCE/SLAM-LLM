@@ -41,7 +41,7 @@ train_config:
   batching_strategy: "packing" #alternative: padding
   context_length: 4096
   gradient_accumulation_steps: 1
-  num_epochs: 100
+  num_epochs: 10
   num_workers_dataloader: 1
   warmup_steps: 1000
   total_steps: 100000
