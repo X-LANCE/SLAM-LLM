@@ -146,13 +146,16 @@ def main(kwargs: DictConfig):
 				batch[key] = batch[key].to(device) if isinstance(batch[key], torch.Tensor) else batch[key]
 			model_outputs = model.generate(**batch)
 			output_text = model.tokenizer.batch_decode(model_outputs, add_special_tokens=False, skip_special_tokens=True)
+			if dataset_config.task == "context_fix":
+				dataset_test.asr_list.append(output_text[0])
+			
 			for key, text, target in zip(batch["keys"], output_text, batch["targets"]):
 				pred.write(key + "\t" + text.replace("\n", " ") + "\n")
 				gt.write(key + "\t" + target + "\n")
 
-				if dataset_config.test_split=="test" and dataset_config.context_mode=="online":
-					with open(dataset_config.last_pred_path,'w') as last_pred:
-						last_pred.write(text.replace("\n", " "))
+				# if dataset_config.test_split=="test" and dataset_config.context_mode=="online":
+				# 	with open(dataset_config.last_pred_path,'w') as last_pred:
+				# 		last_pred.write(text.replace("\n", " "))
 
 
 

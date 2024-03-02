@@ -235,10 +235,12 @@ class SlidesDataset(Dataset):
                                         previous_sentence=line
                         else:
                             previous_sentence = self.label_list[index-1]
-                            if self.dataset_config.use_stopwords:
-                                words=previous_sentence.split()
-                                filtered_sentence = [word for word in words if not word.lower() in self.stop_words]
-                                previous_sentence = " ".join(filtered_sentence)
+
+                        if self.dataset_config.use_stopwords:
+                            words=previous_sentence.split()
+                            filtered_sentence = [word for word in words if not word.lower() in self.stop_words]
+                            previous_sentence = " ".join(filtered_sentence)
+                            
                         prompt=self.prev_prompt_template.format(previous_sentence)
 
             if not has_previous:
@@ -252,28 +254,48 @@ class SlidesDataset(Dataset):
             i=1
             prefix = key.rsplit('+',1)[0]   
 
-            while len(previous_words_list) < 10:
+            #while len(previous_words_list) < 10:
+            while len(previous_words_list) < self.dataset_config.fix_length:
                 if index-i >=0:
                     prev_key = self.key_list[index-i]
                     prev_prefix = prev_key.rsplit('+',1)[0]
                     if prev_prefix == prefix:
-                        pwl = self.label_list[index-i].split()
+                        if self.split == "test":
+                            pwl = self.asr_list[index-i].split()
+                        else:
+                            pwl = self.label_list[index-i].split()
                         previous_words_list = pwl + previous_words_list
                         i+=1            
                     else:
                         break
                 else:
                     break
+            
+            if self.dataset_config.fix_mode=="max":
+                if len(previous_words_list)==0:
+                    prompt = "Transcribe speech to text."
+                    prompt = self.prompt_template1.format(prompt)  
 
-            if len(previous_words_list)>= 10:
-                previous_words_list = previous_words_list[-10:]
-                previous_sentence = " ".join(previous_words_list)
-                has_previous=True
-                prompt=self.prev_prompt_template.format(previous_sentence)
+                else:     
+                    has_previous=True     
+                    if len(previous_words_list)>= self.dataset_config.fix_length:
+                        previous_words_list = previous_words_list[-self.dataset_config.fix_length:]
+                    
+                    previous_sentence = " ".join(previous_words_list)
+                    prompt=self.prev_prompt_template.format(previous_sentence)
 
-            if not has_previous:
-                prompt = "Transcribe speech to text."
-                prompt = self.prompt_template1.format(prompt)            
+            else:
+                if len(previous_words_list)>= self.dataset_config.fix_length:
+                    previous_words_list = previous_words_list[-self.dataset_config.fix_length:]
+                    previous_sentence = " ".join(previous_words_list)
+                    has_previous=True
+                    prompt=self.prev_prompt_template.format(previous_sentence)
+
+                if not has_previous:
+                    prompt = "Transcribe speech to text."
+                    prompt = self.prompt_template1.format(prompt)                       
+
+         
                     
 
         if self.dataset_config.task=="keyword":
@@ -347,6 +369,9 @@ class SlidesDataset(Dataset):
 
 
         prompt_ids = self.tokenizer.encode(prompt)
+        # new
+        # if has_previous and self.prev_prompt_template=="USER: Transcribe speech to text. \n ASSISTANT: {}":
+        #     prompt_ids.append(self.tokenizer.bos_token_id)
         prompt_length = len(prompt_ids)
 
         if self.model_config.encoder_name == "hubert" or self.model_config.encoder_name == "wavlm":
