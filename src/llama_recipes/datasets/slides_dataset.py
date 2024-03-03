@@ -373,6 +373,8 @@ class SlidesDataset(Dataset):
         # new
         # if has_previous and self.prev_prompt_template=="USER: Transcribe speech to text. \n ASSISTANT: {}":
         #     prompt_ids.append(self.tokenizer.bos_token_id)
+        if prompt!="":
+            prompt_ids.append(self.tokenizer.bos_token_id)
         prompt_length = len(prompt_ids)
 
         if self.model_config.encoder_name == "hubert" or self.model_config.encoder_name == "wavlm":
@@ -405,6 +407,7 @@ class SlidesDataset(Dataset):
         # example_ids = self.tokenizer.encode(example)  # [prompt,answer]
         # new
         answer_ids=self.tokenizer.encode(answer)
+        answer_ids=answer_ids[1:]
         example_ids=prompt_ids+answer_ids
 
         example_ids.append(self.tokenizer.eos_token_id)  # [prompt,answer,eos]
