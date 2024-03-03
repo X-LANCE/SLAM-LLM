@@ -132,7 +132,8 @@ dataset_config:
   fine_tuning: true
   modalities: ['video']
   shuffle: true
-
+  task: none
+  context_mode: none
 
 
 

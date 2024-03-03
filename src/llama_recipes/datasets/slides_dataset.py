@@ -247,8 +247,8 @@ class SlidesDataset(Dataset):
                 prompt = "Transcribe speech to text."
                 prompt = self.prompt_template1.format(prompt)
 
-
-        if self.dataset_config.task=="context_fix":
+        prompt=""
+        if self.dataset_config.task=="context_fix": #
             has_previous=False
             previous_words_list=[]
             i=1
@@ -284,17 +284,18 @@ class SlidesDataset(Dataset):
                     previous_sentence = " ".join(previous_words_list)
                     prompt=self.prev_prompt_template.format(previous_sentence)
 
-            else:
+            else:#
                 if len(previous_words_list)>= self.dataset_config.fix_length:
                     previous_words_list = previous_words_list[-self.dataset_config.fix_length:]
                     previous_sentence = " ".join(previous_words_list)
-                    has_previous=True
-                    prompt=self.prev_prompt_template.format(previous_sentence)
+                    prompt = previous_sentence
+                #     has_previous=True
+                #     prompt=self.prev_prompt_template.format(previous_sentence)
 
-                if not has_previous:
-                    prompt = "Transcribe speech to text."
-                    prompt = self.prompt_template1.format(prompt)                       
-
+                # if not has_previous:
+                #     prompt = "Transcribe speech to text."
+                #     prompt = self.prompt_template1.format(prompt)                       
+      
          
                     
 
@@ -400,8 +401,12 @@ class SlidesDataset(Dataset):
             }
 
         answer = self.answer_template.format(target)
-        example = prompt + answer  # FIX(MZY): avoid putting a bos token before answer.
-        example_ids = self.tokenizer.encode(example)  # [prompt,answer]
+        # example = prompt + answer  # FIX(MZY): avoid putting a bos token before answer.
+        # example_ids = self.tokenizer.encode(example)  # [prompt,answer]
+        # new
+        answer_ids=self.tokenizer.encode(answer)
+        example_ids=prompt_ids+answer_ids
+
         example_ids.append(self.tokenizer.eos_token_id)  # [prompt,answer,eos]
         example_ids = torch.tensor(
             example_ids, dtype=torch.int64

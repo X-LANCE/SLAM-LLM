@@ -678,6 +678,37 @@ preds=/nfs/yangguanrou.ygr/slides-finetune-wavlm_prev_prompt2/asr/5760/decode_lo
 trans=/nfs/yangguanrou.ygr/slides-finetune-wavlm_prev_prompt3_fix/asr/7680/decode_log_dev_clean_beam4_repetition_penalty1_online_gt
 preds=/nfs/yangguanrou.ygr/slides-finetune-wavlm_prev_prompt3_fix/asr/7680/decode_log_dev_clean_beam4_repetition_penalty1_online_pred
 
+
+trans=/nfs/yangguanrou.ygr/slides-finetune-wavlm_prev_prompt3_fix/asr/7680/decode_log_test_clean_beam4_repetition_penalty1_online_gt
+preds=/nfs/yangguanrou.ygr/slides-finetune-wavlm_prev_prompt3_fix/asr/7680/decode_log_test_clean_beam4_repetition_penalty1_online_pred
+
+
+trans=/nfs/yangguanrou.ygr/slides-finetune-wavlm_prev_prompt3_fix26_max/asr/7680/decode_log_dev_clean_beam4_repetition_penalty1_asr_bs8_gt
+preds=/nfs/yangguanrou.ygr/slides-finetune-wavlm_prev_prompt3_fix26_max/asr/7680/decode_log_dev_clean_beam4_repetition_penalty1_asr_bs8_pred
+
+trans=/nfs/yangguanrou.ygr/slides-finetune-wavlm_prev_prompt3_fix26_equal/asr/17760/decode_log_dev_clean_beam4_repetition_penalty1_asr_bs8_gt
+preds=/nfs/yangguanrou.ygr/slides-finetune-wavlm_prev_prompt3_fix26_equal/asr/17760/decode_log_dev_clean_beam4_repetition_penalty1_asr_bs8_pred
+
+
+trans=/nfs/yangguanrou.ygr/slides-finetune-wavlm_prev_prompt3_fix26_max/asr/7680/decode_log_test_clean_beam4_repetition_penalty1_asr_bs8_gt
+preds=/nfs/yangguanrou.ygr/slides-finetune-wavlm_prev_prompt3_fix26_max/asr/7680/decode_log_test_clean_beam4_repetition_penalty1_asr_bs8_pred
+
+trans=/nfs/yangguanrou.ygr/slides-finetune-wavlm_prev_prompt3_fix26_equal/asr/17760/decode_log_test_clean_beam4_repetition_penalty1_asr_bs8_gt
+preds=/nfs/yangguanrou.ygr/slides-finetune-wavlm_prev_prompt3_fix26_equal/asr/17760/decode_log_test_clean_beam4_repetition_penalty1_asr_bs8_pred
+
+trans=/nfs/yangguanrou.ygr/slides-finetune-wavlm_prev_prompt3_fix26_max/asr/7680/decode_log_dev_clean_beam4_repetition_penalty1_online_bs8_gt
+preds=/nfs/yangguanrou.ygr/slides-finetune-wavlm_prev_prompt3_fix26_max/asr/7680/decode_log_dev_clean_beam4_repetition_penalty1_online_bs8_pred
+
+
+trans=/nfs/yangguanrou.ygr/slides-finetune-wavlm_prev_prompt3_fix26_equal/asr/17760/decode_log_dev_clean_beam4_repetition_penalty1_online_bs8_gt
+preds=/nfs/yangguanrou.ygr/slides-finetune-wavlm_prev_prompt3_fix26_equal/asr/17760/decode_log_dev_clean_beam4_repetition_penalty1_online_bs8_pred
+
+trans=/nfs/yangguanrou.ygr/vicuna-7b-v1.5-large_vox_433h-tri-dataset-tiaocan_again/asr/850/decode_log_test_clean_beam4_repetition_penalty1_bs12_gt
+preds=/nfs/yangguanrou.ygr/vicuna-7b-v1.5-large_vox_433h-tri-dataset-tiaocan_again/asr/850/decode_log_test_clean_beam4_repetition_penalty1_bs12_pred
+
+trans=/nfs/yangguanrou.ygr/vicuna-7b-v1.5-large_vox_433h-tri-dataset-tiaocan_again/asr/850/decode_log_test_clean_beam4_repetition_penalty1_gt
+preds=/nfs/yangguanrou.ygr/vicuna-7b-v1.5-large_vox_433h-tri-dataset-tiaocan_again/asr/850/decode_log_test_clean_beam4_repetition_penalty1_pred
+
 python src/llama_recipes/utils/whisper_tn.py ${trans} ${trans}.proc
 python src/llama_recipes/utils/llm_tn.py ${preds} ${preds}.proc
 python src/llama_recipes/utils/compute_wer.py ${trans}.proc ${preds}.proc ${preds}.proc.wer

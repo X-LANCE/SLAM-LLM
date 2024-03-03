@@ -118,7 +118,7 @@ dataset_config:
   #prev_prompt_template: "USER: Given the context from the previous speech transcript: \"{}\", enhance the accuracy of speech recognition for the current speech input. Consider any relevant context, terms, or topics from the previous transcript that may apply. \n ASSISTANT:"
   context_mode: online
   use_stopwords: false
-  fix_length: 26
+  fix_length: 10
   fix_mode: equal
 
 fsdp_config:
