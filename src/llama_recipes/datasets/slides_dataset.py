@@ -307,7 +307,7 @@ class SlidesDataset(Dataset):
                 prompt = self.prompt_template1.format(prompt)
 
         if self.dataset_config.task=="keyword_yizhi":
-            if ocr == None:
+            if self.dataset_config.use_ocr == False or ocr == None:
                 ocr=""
             prompt = self.prompt_template2.format(ocr)
 
