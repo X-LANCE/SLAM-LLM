@@ -53,6 +53,9 @@ def setup_encoder(train_config, model_config, **kwargs):
         if encoder_name == "moco_wav2vec2":
             from llama_recipes.models.encoder import AVEncoder
             encoder = AVEncoder.load(model_config)
+        if encoder_name == "av_hubert":
+            from llama_recipes.models.encoder import AVHubertEncoder
+            encoder = AVHubertEncoder.load(model_config)
         if "llama" in encoder_name.lower():
             from llama_recipes.models.encoder import HfTextEncoder
             encoder = HfTextEncoder.load(model_config)

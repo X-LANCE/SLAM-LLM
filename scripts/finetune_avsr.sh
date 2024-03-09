@@ -51,7 +51,7 @@ DISTRIBUTED_ARGS="
 
 echo $DISTRIBUTED_ARGS
 
-
+# python \
 torchrun $DISTRIBUTED_ARGS \
 src/llama_recipes/pipeline/finetune.py \
 --config-path "/root/SLAM-LLM/scripts/conf" \
@@ -92,11 +92,3 @@ log_config.wandb_entity_name=exgc-cxz299 \
 log_config.wandb_project_name=av-llm \
 log_config.wandb_exp_name=vicuna-7b-v1.5-large_vox_433h-VO \
 log_config.log_interval=10 \
-
-
-
-
-
-
-# cd /root
-# cp -r SLAM-LLM/ /nfs/yangguanrou.ygr/codes/

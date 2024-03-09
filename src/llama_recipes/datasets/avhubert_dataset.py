@@ -670,3 +670,4 @@ class AVHubertdataset(torch.utils.data.Dataset):
 def get_audio_dataset(dataset_config, model_config, tokenizer, split):
     dataset = AVHubertdataset(dataset_config, model_config, tokenizer, split)
     return dataset
+

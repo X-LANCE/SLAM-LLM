@@ -77,6 +77,17 @@ class AVEncoder:
  
         return avnet
 
+class AVHubertEncoder:
+
+    @classmethod
+    def load(cls, model_config):
+        import fairseq
+        from .avhubert import hubert_pretraining, hubert, hubert_asr
+        models, cfg, task = fairseq.checkpoint_utils.load_model_ensemble_and_task([model_config.encoder_path])
+        model = models[0]
+
+        return model
+        
 class HfTextEncoder:
 
     @classmethod
