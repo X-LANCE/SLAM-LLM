@@ -1,107 +1,102 @@
 #!/bin/bash
+set -x
+pip install wandb
+export WANDB_API_KEY='c47ab15d9059a2894bdb7db1b190e71fd197c2b3'
+# pip list
 # export PYTHONPATH=/root/whisper:$PYTHONPATH
-export PYTHONPATH=/root/fairseq:$PYTHONPATH
-export CUDA_VISIBLE_DEVICES=0,1,2,3
+# export CUDA_VISIBLE_DEVICES=0,1
 # export CUDA_LAUNCH_BLOCKING=1
-export OMP_NUM_THREADS=1
-
+# export OMP_NUM_THREADS=1
+# export PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:128
+export TOKENIZERS_PARALLELISM=false
 # debug setting for multiple gpus
-# export NCCL_DEBUG=INFO
-# export NCCL_DEBUG_SUBSYS=ALL
-# export TORCH_DISTRIBUTED_DEBUG=INFO
+export NCCL_DEBUG=INFO
+export NCCL_LAUNCH_MODE=PARALLEL
+export NCCL_IB_HCA=mlx5
+export NCCL_IB_TC=136
+export NCCL_IB_SL=f5
+export NCCL_IB_GID_INDEX=3
 
+rm -r /root/SLAM-LLM
+cp -r /nfs/yangguanrou.ygr/codes/SLAM-LLM/ /root/
+cd /root/SLAM-LLM
+pip install -e .
+
+cd /nfs/yangguanrou.ygr/av_hubert/fairseq
+pip install --editable ./
+pip install python_speech_features
+pip list
 cd /root/SLAM-LLM
 
-# speech_encoder_path= TODO!
+# 这样是可以跑的！
 
+
+speech_encoder_path=/nfs/yangguanrou.ygr/av_hubert/self_large_vox_433h.pt
 
 llm_path=/nfs/maziyang.mzy/models/vicuna-7b-v1.5
-# llm_path=/nfs/maziyang.mzy/models/vicuna-13b-v1.5
 
-output_dir=/nfs/yangguanrou.ygr/vicuna-13b-v1.5-finetune-avsr-20230115
+output_dir=/nfs/chengxize.cxz/exp/vicuna-7b-v1.5-large_vox_433h-VO
+# ckpt_path=/nfs/maziyang.mzy/exps/llama-2-hf-finetune-asr-ds5-proj2048-lr1e-4-whisper-prompt-paddinglrfix8000-20240106/asr/2/model.pt
 
-# -m debugpy --listen 5678 --wait-for-client
-if [[ $CUDA_VISIBLE_DEVICES != *","* ]]; then
-python src/llama_recipes/pipeline/finetune.py \
---model_name avsr \
---freeze_encoder \
---freeze_llm \
---llm_name vicuna-13b-v1.5 \
---llm_path $llm_path \
---llm_dim 4096 \
---encoder_name moco_wav2vec2 \
---encoder_ds_rate 2 \
---encoder_dim 512 \
---encoder_projector linear \
---encoder_projector_ds_rate 5 \
---dataset avsr_dataset \
---avsr_dataset.file src/llama_recipes/datasets/avsr_dataset.py:get_audio_dataset \
---batching_strategy custom \
---num_epochs 20 \
---batch_size_training 6 \
---val_batch_size 2 \
---num_workers_dataloader 2 \
---lr 1e-4 \
---output_dir $output_dir \
---metric acc \
---log_file "/root/SLAM-LLM/log/second_try.log" \
---use_wandb \
---wandb_dir $output_dir \
---wandb_entity_name yanghaha \
---wandb_project_name slam-llm \
---wandb_exp_name avsr \
---log_interval 5 \
+count=$1
+gpu_num=$2
 
-else
-torchrun \
---nnodes 1 \
---nproc_per_node 4 \
+DISTRIBUTED_ARGS="
+    --nnodes ${WORLD_SIZE:-1} \
+    --nproc_per_node $gpu_num \
+    --node_rank ${RANK:-0} \
+    --master_addr ${MASTER_ADDR:-127.0.0.1} \
+    --master_port ${MASTER_PORT:-26666}
+"
+
+echo $DISTRIBUTED_ARGS
+
+
+torchrun $DISTRIBUTED_ARGS \
 src/llama_recipes/pipeline/finetune.py \
---model_name avsr \
---freeze_encoder \
---freeze_llm \
---use_fp16 \
---enable_fsdp \
---llm_name vicuna-13b-v1.5 \
---llm_path $llm_path \
---llm_dim 4096 \
---encoder_name moco_wav2vec2 \
---encoder_ds_rate 2 \
---encoder_dim 512 \
---encoder_projector linear \
---encoder_projector_ds_rate 5 \
---dataset avsr_dataset \
---avsr_dataset.file src/llama_recipes/datasets/avsr_dataset.py:get_audio_dataset \
---batching_strategy custom \
---num_epochs 20 \
---batch_size_training 2 \
---val_batch_size 2 \
---num_workers_dataloader 2 \
---lr 1e-4 \
---output_dir $output_dir \
---metric acc \
---log_file "/root/SLAM-LLM/log/second_try.log" \
---use_wandb \
---wandb_dir $output_dir \
---wandb_entity_name yanghaha \
---wandb_project_name slam-llm \
---wandb_exp_name avsr \
---log_interval 5 \
-# --peft_ckpt "/nfs/maziyang.mzy/exps/llama-2-hf-finetune-asr-ds5-proj2048-lr1e-5-whisper-prompt-padding30-20231228/asr/4" \
-# --ckpt_path "/nfs/maziyang.mzy/exps/llama-2-hf-finetune-asr-ds5-proj2048-lr1e-5-whisper-prompt-padding30-20231228/asr/4/model.pt" \
-# --use_peft --peft_method lora \
-# --master_port=29501 \
-fi
+--config-path "/root/SLAM-LLM/scripts/conf_avsr" \
+--config-name "avsr.yaml" \
+hydra.run.dir=$output_dir \
+model_config.llm_name="vicuna-7b-v1.5" \
+model_config.llm_path=$llm_path \
+model_config.llm_dim=4096 \
+model_config.encoder_name=av_hubert \
+model_config.encoder_path=$speech_encoder_path \
+model_config.encoder_dim=1024 \
+model_config.encoder_projector=cov1d-linear \
+model_config.encoder_projector_ds_rate=5 \
+dataset_config.dataset=avhubert_dataset \
+dataset_config.file="src/llama_recipes/datasets/avhubert_dataset.py:get_audio_dataset" \
+model_config.modal=VO \
+train_config.model_name=asr \
+train_config.freeze_encoder=true \
+train_config.freeze_llm=true \
+train_config.batching_strategy=custom \
+train_config.warmup_steps=1000 \
+train_config.total_steps=70000 \
+train_config.lr=5e-3 \
+train_config.scheduler=tri \
+train_config.validation_interval=2000 \
+train_config.batch_size_training=8 \
+train_config.val_batch_size=8 \
+train_config.num_workers_dataloader=0 \
+train_config.output_dir=$output_dir \
+train_config.enable_fsdp=false \
+train_config.enable_ddp=false \
+train_config.use_fp16=true \
++metric=acc \
+log_config.log_file=/$output_dir/train.log \
+log_config.use_wandb=true \
+log_config.wandb_dir=$output_dir \
+log_config.wandb_entity_name=exgc-cxz299 \
+log_config.wandb_project_name=av-llm \
+log_config.wandb_exp_name=vicuna-7b-v1.5-large_vox_433h-VO \
+log_config.log_interval=10 \
 
-# {"key": "1001-134707-0000_ASR", "prompt": "<ASR>", "source": "/cpfs01/shared/Group-speech/beinian.lzr/data/open_data/librispeech_audio/audio/se_librispeech_1001-134707-0000.wav", "target": "1 little recks the laborer. How near his work is holding him to God, The loving laborer through space and time, after all, not to create, only or found only.", "target_len": 157, "source_len": 1581, "text-type": "Transcribe", "audio_language": "en", "text_language": "en", "task-type": "<ASR>"}
-# {"key": "1688-142285-0005", "prompt": "<ASR>", "source": "/nfs/beinian.lzr/workspace/datasets/data/16k/opendata/librispeech/test_other/wav/1688-142285-0005.wav", "target": "YOU WHO WERE ALWAYS ACCUSING PEOPLE OF BEING SHOPPY AT HELSTONE", "target_len": 11, "source_len": 220, "text-type": "Transcribe", "audio_language": "en", "text_language": "en", "task-type": "<ASR>"}
 
 
 
-# 没用 encoder_ds_rate
 
-# 1.15
 
-# 7b batch size 开到2 ok的
-
-#  6 2 0 可以
+# cd /root
+# cp -r SLAM-LLM/ /nfs/yangguanrou.ygr/codes/
