@@ -247,7 +247,7 @@ class SlidesDataset(Dataset):
                 prompt = "Transcribe speech to text."
                 prompt = self.prompt_template1.format(prompt)
 
-        prompt=""
+        # prompt=""
         if self.dataset_config.task=="context_fix": #
             has_previous=False
             previous_words_list=[]
@@ -288,13 +288,13 @@ class SlidesDataset(Dataset):
                 if len(previous_words_list)>= self.dataset_config.fix_length:
                     previous_words_list = previous_words_list[-self.dataset_config.fix_length:]
                     previous_sentence = " ".join(previous_words_list)
-                    prompt = previous_sentence
-                #     has_previous=True
-                #     prompt=self.prev_prompt_template.format(previous_sentence)
+                    # prompt = previous_sentence
+                    has_previous=True
+                    prompt=self.prev_prompt_template.format(previous_sentence)
 
-                # if not has_previous:
-                #     prompt = "Transcribe speech to text."
-                #     prompt = self.prompt_template1.format(prompt)                       
+                if not has_previous:
+                    prompt = "Transcribe speech to text."
+                    prompt = self.prompt_template1.format(prompt)                       
       
          
                     
@@ -305,6 +305,12 @@ class SlidesDataset(Dataset):
             else:
                 prompt = "Transcribe speech to text."
                 prompt = self.prompt_template1.format(prompt)
+
+        if self.dataset_config.task=="keyword_yizhi":
+            if ocr == None:
+                ocr=""
+            prompt = self.prompt_template2.format(ocr)
+
 
 
         if self.dataset_config.task=="context+keyword":
@@ -373,8 +379,8 @@ class SlidesDataset(Dataset):
         # new
         # if has_previous and self.prev_prompt_template=="USER: Transcribe speech to text. \n ASSISTANT: {}":
         #     prompt_ids.append(self.tokenizer.bos_token_id)
-        if prompt!="":
-            prompt_ids.append(self.tokenizer.bos_token_id)
+        # if prompt!="":
+        #     prompt_ids.append(self.tokenizer.bos_token_id)
         prompt_length = len(prompt_ids)
 
         if self.model_config.encoder_name == "hubert" or self.model_config.encoder_name == "wavlm":
@@ -403,12 +409,12 @@ class SlidesDataset(Dataset):
             }
 
         answer = self.answer_template.format(target)
-        # example = prompt + answer  # FIX(MZY): avoid putting a bos token before answer.
-        # example_ids = self.tokenizer.encode(example)  # [prompt,answer]
+        example = prompt + answer  # FIX(MZY): avoid putting a bos token before answer.
+        example_ids = self.tokenizer.encode(example)  # [prompt,answer]
         # new
-        answer_ids=self.tokenizer.encode(answer)
-        answer_ids=answer_ids[1:]
-        example_ids=prompt_ids+answer_ids
+        # answer_ids=self.tokenizer.encode(answer)
+        # answer_ids=answer_ids[1:]
+        # example_ids=prompt_ids+answer_ids
 
         example_ids.append(self.tokenizer.eos_token_id)  # [prompt,answer,eos]
         example_ids = torch.tensor(

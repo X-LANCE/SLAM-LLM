@@ -130,7 +130,7 @@ dataset_config:
   image_std: 0.165
   noise_prob: 0.0
   fine_tuning: true
-  modalities: ['video']
+  modalities: ['video','audio']
   shuffle: true
   task: none
   context_mode: none

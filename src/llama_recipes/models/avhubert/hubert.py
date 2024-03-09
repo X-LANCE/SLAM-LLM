@@ -323,7 +323,7 @@ class SubModel(nn.Module):
 
     def forward(self, x): #torch.Size([1, 1, 106, 112, 112])
         if self.resnet is not None:
-            x = self.resnet(x)  #torch.Size([1, 512, 106])
+            x = self.resnet(x)  #torch.Size([1, 512, 106])  #torch.Size([12, 26, 314])
         x = self.proj(x.transpose(1, 2))   #audio是 Linear(in_features=104, out_features=1024, bias=True) 太他妈扯了吧
         if self.encoder is not None:
             x = self.encoder(x)[0].transpose(1, 2)
@@ -707,8 +707,8 @@ class AVHubertModel(BaseFairseqModel):
             features_video = self.forward_features(src_video, modality='video')
             features_audio = features_video.new_zeros(features_video.size(0), self.encoder_embed_dim, features_video.size(-1))  #全0！
         elif src_audio is not None and src_video is not None:
-            features_video = self.forward_features(src_video, modality='video') #torch.Size([1, 1024, 106])
-            features_audio = self.forward_features(src_audio, modality='audio') # features: [B, F, T]
+            features_video = self.forward_features(src_video, modality='video') #torch.Size([1, 1024, 106])  #scr torch.Size([12, 1, 314, 88, 88])
+            features_audio = self.forward_features(src_audio, modality='audio') # features: [B, F, T]  #torch.Size([12, 26, 314])
 
         if self.modality_fuse == 'concat': #
             features = torch.cat([features_audio, features_video], dim=1)  #torch.Size([1, 2048, 106])

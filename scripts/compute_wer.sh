@@ -709,6 +709,35 @@ preds=/nfs/yangguanrou.ygr/vicuna-7b-v1.5-large_vox_433h-tri-dataset-tiaocan_aga
 trans=/nfs/yangguanrou.ygr/vicuna-7b-v1.5-large_vox_433h-tri-dataset-tiaocan_again/asr/850/decode_log_test_clean_beam4_repetition_penalty1_gt
 preds=/nfs/yangguanrou.ygr/vicuna-7b-v1.5-large_vox_433h-tri-dataset-tiaocan_again/asr/850/decode_log_test_clean_beam4_repetition_penalty1_pred
 
+trans=/nfs/yangguanrou.ygr/slides-finetune-wavlm_prev_fixlen_np/asr/9760/decode_log_test_clean_beam4_repetition_penalty1_asr_gt
+preds=/nfs/yangguanrou.ygr/slides-finetune-wavlm_prev_fixlen_np/asr/9760/decode_log_test_clean_beam4_repetition_penalty1_asr_pred
+
+trans=/nfs/yangguanrou.ygr/slides-finetune-wavlm_prev_fixlen_np/asr/9760/decode_log_dev_clean_beam4_repetition_penalty1_asr_gt
+preds=/nfs/yangguanrou.ygr/slides-finetune-wavlm_prev_fixlen_np/asr/9760/decode_log_dev_clean_beam4_repetition_penalty1_asr_pred
+
+trans=/nfs/yangguanrou.ygr/slides-finetune-wavlm_prev_fixlen_np/asr/9760/decode_log_dev_clean_beam4_repetition_penalty1_asr_gt
+preds=/nfs/yangguanrou.ygr/slides-finetune-wavlm_prev_fixlen_np/asr/9760/decode_log_dev_clean_beam4_repetition_penalty1_asr_pred
+
+trans=/nfs/yangguanrou.ygr/slides-finetune-wavlm_prev_fixlen_np/asr/9760/decode_log_dev_clean_beam4_repetition_penalty1_online_gt
+preds=/nfs/yangguanrou.ygr/slides-finetune-wavlm_prev_fixlen_np/asr/9760/decode_log_dev_clean_beam4_repetition_penalty1_online_pred
+
+trans=/nfs/yangguanrou.ygr/slides-finetune-wavlm_prev_fixlen_np/asr/9760/decode_log_test_clean_beam4_repetition_penalty1_asr_gt
+preds=/nfs/yangguanrou.ygr/slides-finetune-wavlm_prev_fixlen_np/asr/9760/decode_log_test_clean_beam4_repetition_penalty1_asr_pred
+
+trans=/nfs/yangguanrou.ygr/slides-finetune-wavlm/asr/3840/decode_log_test_clean_beam4_repetition_penalty1_infernokey_gt
+preds=/nfs/yangguanrou.ygr/slides-finetune-wavlm/asr/3840/decode_log_test_clean_beam4_repetition_penalty1_infernokey_pred
+
+trans=/nfs/yangguanrou.ygr/slides-finetune-wavlm/asr/3840/decode_log_dev_clean_beam4_repetition_penalty1_infernokey_gt
+preds=/nfs/yangguanrou.ygr/slides-finetune-wavlm/asr/3840/decode_log_dev_clean_beam4_repetition_penalty1_infernokey_pred
+
+
+trans=/nfs/yangguanrou.ygr/slides-finetune-wavlm_notext/asr/1760/decode_log_test_clean_beam4_repetition_penalty1_inferwithkey_gt
+preds=/nfs/yangguanrou.ygr/slides-finetune-wavlm_notext/asr/1760/decode_log_test_clean_beam4_repetition_penalty1_inferwithkey_pred
+
+trans=/nfs/yangguanrou.ygr/slides-finetune-wavlm_notext/asr/1760/decode_log_dev_clean_beam4_repetition_penalty1_inferwithkey_gt
+preds=/nfs/yangguanrou.ygr/slides-finetune-wavlm_notext/asr/1760/decode_log_dev_clean_beam4_repetition_penalty1_inferwithkey_pred
+
+
 python src/llama_recipes/utils/whisper_tn.py ${trans} ${trans}.proc
 python src/llama_recipes/utils/llm_tn.py ${preds} ${preds}.proc
 python src/llama_recipes/utils/compute_wer.py ${trans}.proc ${preds}.proc ${preds}.proc.wer
