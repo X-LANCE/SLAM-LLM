@@ -6,7 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.distributed as dist
 from typing import List, Optional, Tuple, Union
-from transformers import AutoModelForCausalLM, AutoTokenizer, AutoConfig, AutoModel
+from transformers import AutoModelForCausalLM, AutoTokenizer, AutoConfig
 from peft import LoraConfig, TaskType, get_peft_model, prepare_model_for_kbit_training
 
 from llama_recipes.utils.config_utils import generate_peft_config
@@ -25,13 +25,8 @@ def setup_model(tokenizer, train_config, model_config, **kwargs):
 
 def setup_tokenizer(train_config, model_config, **kwargs):
     # Load the tokenizer and add special tokens
-    if "mupt" in model_config.llm_name.lower():
-        tokenizer = AutoTokenizer.from_pretrained(model_config.llm_path,
-                                            trust_remote_code=True,
-                                            use_fast=False)
-    else:
-        tokenizer = AutoTokenizer.from_pretrained(model_config.llm_path)
-        tokenizer.pad_token_id = tokenizer.eos_token_id
+    tokenizer = AutoTokenizer.from_pretrained(model_config.llm_path)
+    tokenizer.pad_token_id = tokenizer.eos_token_id
     return tokenizer
 
 
@@ -50,15 +45,18 @@ def setup_encoder(train_config, model_config, **kwargs):
         if encoder_name == "wavlm":
             from llama_recipes.models.encoder import WavLMEncoder
             encoder = WavLMEncoder.load(model_config)
+        if encoder_name == "hubert":
+            from llama_recipes.models.encoder import HubertEncoder
+            encoder = HubertEncoder.load(model_config)
         if encoder_name == "moco_wav2vec2":
             from llama_recipes.models.encoder import AVEncoder
             encoder = AVEncoder.load(model_config)
         if encoder_name == "av_hubert":
             from llama_recipes.models.encoder import AVHubertEncoder
             encoder = AVHubertEncoder.load(model_config)
-        if "llama" in encoder_name.lower():
-            from llama_recipes.models.encoder import HfTextEncoder
-            encoder = HfTextEncoder.load(model_config)
+        # if encoder_name == "sota_avsr":
+        #     from llama_recipes.models.encoder import SOTAAVEncoder
+        #     encoder = SOTAAVEncoder.load(avmodel_config)
     print_module_size(encoder, encoder_name, int(os.environ["RANK"]) if train_config.enable_fsdp or train_config.enable_ddp else 0)
 
     if train_config.freeze_encoder:
@@ -105,7 +103,7 @@ def setup_llm(train_config, model_config, **kwargs):
             device_map="auto" if train_config.quantization else None,
             use_cache=use_cache,
         )
-    if (train_config.enable_fsdp or train_config.enable_ddp) and train_config.use_fast_kernels:
+    if (train_config.enable_fsdp or train_config.enable_ddp) and train_config.use_fast_kernels: #x
         """
         For FSDP and FSDP+PEFT, setting 'use_fast_kernels' will enable
         using of Flash Attention or Xformer memory-efficient kernels
@@ -130,9 +128,10 @@ def setup_llm(train_config, model_config, **kwargs):
         
     if kwargs.get("peft_ckpt", None): # (FIX:MZY):reload will get wrong results when decoding
         logger.info("loading peft_ckpt from: {}".format(kwargs.get("peft_ckpt")))
-        model = PeftModel.from_pretrained(model=model, model_id=kwargs.get("peft_ckpt"), is_trainable=True)
+        # model = PeftModel.from_pretrained(model=model, model_id=kwargs.get("peft_ckpt"), is_trainable=True)
+        model = PeftModel.from_pretrained(model=model, model_id=kwargs.get("peft_ckpt"), is_trainable=False)
         model.print_trainable_parameters()
-    elif train_config.use_peft:
+    elif train_config.use_peft: #
         logger.info("setup peft...")
         peft_config = generate_peft_config(train_config)
         model = get_peft_model(model, peft_config)
@@ -193,54 +192,64 @@ class slam_model(nn.Module):
                 return_dict: Optional[bool] = None,
                 **kwargs,
                 ):
-        audio_mel = kwargs.get("audio_mel", None)
+        audio_mel = kwargs.get("audio_mel", None)  #torch.Size([2, 3000, 80]) 
         audio_mel_mask = kwargs.get("audio_mel_mask", None)
         audio_mel_post_mask = kwargs.get("audio_mel_post_mask", None) # 2x downsample for whisper
-
-        audio = kwargs.get("audio", None)
-        audio_mask = kwargs.get("audio_mask", None)
-        visual = kwargs.get("visual", None)
-        vis_len = kwargs.get("vis_len", None)
-        maskw2v = kwargs.get("maskw2v", False) #(FIX:MZY) False for supervised learning and inference
-
-        # for text encoder
-        instruct_ids = kwargs.get("instruct_ids", None)
-        instruct_mask = kwargs.get("instruct_mask", None)
-
         modality_mask = kwargs.get("modality_mask", None)
 
+        audio = kwargs.get("audio", None) #torch.Size([2, 96480])  torch.Size([4, 253280])
+        audio_mask = kwargs.get("audio_mask", None) #删 #torch.Size([2, 96480])
+        visual = kwargs.get("visual", None) #torch.Size([2, 151, 1, 112, 112])
+        vis_len = kwargs.get("vis_len", None) #tensor([ 77, 151], device='cuda:0', dtype=torch.int32)
+        maskw2v = kwargs.get("maskw2v", False) #(FIX:MZY) False for supervised learning and inference
+        visual_mask = kwargs.get("visual_mask", None)
+
+
         encoder_outs = None
-        if audio_mel is not None or audio is not None:
+        if audio_mel is not None or audio is not None or visual is not None:
             if self.model_config.encoder_name == "whisper":
-                encoder_outs = self.encoder.extract_variable_length_features(audio_mel.permute(0, 2, 1)) # bs*seq*dim
+                encoder_outs = self.encoder.extract_variable_length_features(audio_mel.permute(0, 2, 1)) # bs*seq*dim  #torch.Size([2, 300, 80])
             if self.model_config.encoder_name == "beats":
-                encoder_outs, audio_mel_post_mask = self.encoder.extract_features(audio_mel, audio_mel_mask) # bs*seq*dim
+                encoder_outs, audio_mel_post_mask = self.encoder.extract_features(audio_mel, audio_mel_mask) # bs*seq*dim  
             if self.model_config.encoder_name == "wavlm":
-                encoder_outs = self.encoder.extract_features(audio, 1 - audio_mask) #(FIX:MZY): 1-audio_mask is needed for wavlm as the padding mask
+                # encoder_outs = self.encoder.extract_features(audio, 1 - audio_mask) #(FIX:MZY): 1-audio_mask is needed for wavlm as the padding mask
+                encoder_outs = self.encoder.extract_features(audio, audio_mask) #(FIX:MZY): 1-audio_mask is needed for wavlm as the padding mask
             if self.model_config.encoder_name == "moco_wav2vec2":
                 encoder_outs , inputLenBatch, audio_mel_post_mask = self.encoder((audio, audio_mask, visual, vis_len) ,maskw2v) # bs*seq*dim
+            if self.model_config.encoder_name == "hubert":
+                results = self.encoder(source = audio, padding_mask = audio_mask, mask=False, features_only=True)   #关键字参数传参！！！
+                if self.model_config.encoder_type == "pretrain":
+                    encoder_outs, audio_mel_post_mask = results["x"], results["padding_mask"] #torch.Size([4, 791, 1024]) torch.Size([4, 791])
+                if self.model_config.encoder_type == "finetune":
+                    encoder_outs, audio_mel_post_mask = results["encoder_out"], results["padding_mask"]
+                    encoder_outs = encoder_outs.transpose(0, 1) #torch.Size([4, 791, 768])
+                audio_mel_post_mask = (~audio_mel_post_mask).float()
+                # encoder_outs = self.encoder()
+            if self.model_config.encoder_name == "sota_avsr":
+                encoder_outs , inputLenBatch, audio_mel_post_mask = self.encoder((audio, audio_mask, visual, vis_len) ) # bs*seq*dim
+            
+            if self.model_config.encoder_name == "av_hubert":  #输入格式 B, C, T, H, W 
+                # visual = torch.transpose(visual,1,2)  #torch.Size([4, 1, 49, 112, 112])  #torch.Size([8, 1, 466, 88, 88])
+                results = self.encoder(source={'video':visual, 'audio':None}, padding_mask=visual_mask) # bs*seq*dim  
+                encoder_outs, audio_mel_post_mask = results["encoder_out"], results["padding_mask"]
+                encoder_outs = encoder_outs.transpose(0, 1)  #torch.Size([4, 151, 1024])
+                audio_mel_post_mask = (~audio_mel_post_mask).float() #!!!
             if self.encoder is None:
                 encoder_outs = audio_mel if audio_mel is not None else audio
 
-            if self.model_config.encoder_projector == "q-former":
-                encoder_outs = self.encoder_projector(encoder_outs, audio_mel_post_mask)
-            if self.model_config.encoder_projector == "linear":
-                encoder_outs = self.encoder_projector(encoder_outs)
 
-        if instruct_ids is not None:
-            if self.encoder is not None:
-                encoder_outs = self.encoder(input_ids=instruct_ids, attention_mask=instruct_mask).last_hidden_state
 
             if self.model_config.encoder_projector == "q-former":
-                encoder_outs = self.encoder_projector(encoder_outs, instruct_mask)
+                encoder_outs = self.encoder_projector(encoder_outs, audio_mel_post_mask) #torch.Size([2, 1500, 1280])  -> torch.Size([2, 64, 5120])
             if self.model_config.encoder_projector == "linear":
-                encoder_outs = self.encoder_projector(encoder_outs)
-
+                encoder_outs = self.encoder_projector(encoder_outs)  #torch.Size([2, 16, 5120])  torch.Size([2, 300, 4096])
+            if self.model_config.encoder_projector == "cov1d-linear": 
+                encoder_outs = self.encoder_projector(encoder_outs) 
 
         if input_ids is not None:
             input_ids[input_ids == -1] = 0
             if hasattr(self.llm.model, "embed_tokens"):
-                inputs_embeds = self.llm.model.embed_tokens(input_ids)
+                inputs_embeds = self.llm.model.embed_tokens(input_ids)  #torch.Size([2, 74, 4096])
             elif hasattr(self.llm.model.model, "embed_tokens"):
                 inputs_embeds = self.llm.model.model.embed_tokens(input_ids)
             else:
@@ -249,12 +258,12 @@ class slam_model(nn.Module):
         if modality_mask is not None:
             batch_size, token_num, dims = inputs_embeds.shape
             _, l, _ = encoder_outs.shape
-            encoder_outs_pad = F.pad(encoder_outs, (0, 0, 0, token_num-l, 0, 0), value=0.0)
-            inputs_embeds = encoder_outs_pad * modality_mask[:, :, None] + inputs_embeds * (~modality_mask[:, :, None])
-
-        if kwargs.get("inference_mode", False):
-            return inputs_embeds, attention_mask
-    
+            encoder_outs_pad = F.pad(encoder_outs, (0, 0, 0, token_num-l, 0, 0), value=0.0) #torch.Size([2, 74, 5120])  #len上padding
+            inputs_embeds = encoder_outs_pad * modality_mask[:, :, None] + inputs_embeds * (~modality_mask[:, :, None]) #tensor(16, device='cuda:0')
+        
+        # if inputs_embeds.shape[1]>4096:
+        #     logger.info(inputs_embeds.shape)
+        #     logger.info(encoder_outs.shape)
         model_outputs = self.llm(inputs_embeds=inputs_embeds, attention_mask=attention_mask, labels=labels)
 
         acc = -1
@@ -279,25 +288,80 @@ class slam_model(nn.Module):
                 return_dict: Optional[bool] = None,
                 **kwargs,
                 ):
-        kwargs["inference_mode"] = True
+        audio_mel = kwargs.get("audio_mel", None)
+        audio_mel_mask = kwargs.get("audio_mel_mask", None)
+        audio_mel_post_mask = kwargs.get("audio_mel_post_mask", None) # 2x downsample for whisper
+        modality_mask = kwargs.get("modality_mask", None)
 
-        inputs_embeds, attention_mask = self.forward(
-            input_ids=input_ids,
-            attention_mask=attention_mask,
-            position_ids=position_ids,
-            past_key_values=past_key_values,
-            inputs_embeds=inputs_embeds,
-            labels=labels,
-            use_cache=use_cache,
-            output_attentions=output_attentions,
-            output_hidden_states=output_hidden_states,
-            return_dict=return_dict,
-            **kwargs,
-        )
+        audio = kwargs.get("audio", None) #torch.Size([2, 96480])
+        audio_mask = kwargs.get("audio_mask", None) #删 #torch.Size([2, 96480])
+        visual = kwargs.get("visual", None) #torch.Size([2, 151, 1, 112, 112])
+        vis_len = kwargs.get("vis_len", None) #tensor([ 77, 151], device='cuda:0', dtype=torch.int32)
+        maskw2v = kwargs.get("maskw2v", False) #(FIX:MZY) False for supervised learning and inference
+        visual_mask = kwargs.get("visual_mask", None)
+
+
+        encoder_outs = None
+        if audio_mel is not None or audio is not None or visual is not None:
+            if self.model_config.encoder_name == "whisper":
+                encoder_outs = self.encoder.extract_variable_length_features(audio_mel.permute(0, 2, 1)) # bs*seq*dim  [1, 3000, 80] -> [1, 1500, 1280]
+            if self.model_config.encoder_name == "beats":
+                encoder_outs, audio_mel_post_mask = self.encoder.extract_features(audio_mel, audio_mel_mask) # bs*seq*dim
+            if self.model_config.encoder_name == "wavlm":
+                # encoder_outs = self.encoder.extract_features(audio, 1 - audio_mask) #(FIX:MZY): 1-audio_mask is needed for wavlm as the padding mask
+                encoder_outs = self.encoder.extract_features(audio, audio_mask) #(FIX:MZY): 1-audio_mask is needed for wavlm as the padding mask
+            if self.model_config.encoder_name == "moco_wav2vec2":
+                encoder_outs , inputLenBatch, audio_mel_post_mask = self.encoder((audio, audio_mask, visual, vis_len) ,maskw2v) # bs*seq*dim
+            if self.model_config.encoder_name == "sota_avsr":
+                encoder_outs , inputLenBatch, audio_mel_post_mask = self.encoder((audio, audio_mask, visual, vis_len) ) # bs*seq*dim
+            if self.model_config.encoder_name == "hubert":
+                results = self.encoder(source = audio, padding_mask = audio_mask, mask=False, features_only=True)   #关键字参数传参！！！
+                if self.model_config.encoder_type == "pretrain":
+                    encoder_outs, audio_mel_post_mask = results["x"], results["padding_mask"] #torch.Size([4, 791, 1024]) torch.Size([4, 791])
+                if self.model_config.encoder_type == "finetune":
+                    encoder_outs, audio_mel_post_mask = results["encoder_out"], results["padding_mask"]
+                    encoder_outs = encoder_outs.transpose(0, 1) #torch.Size([4, 791, 768])
+                audio_mel_post_mask = (~audio_mel_post_mask).float()
+                # encoder_outs = self.encoder()
+            if self.model_config.encoder_name == "sota_avsr":
+                encoder_outs , inputLenBatch, audio_mel_post_mask = self.encoder((audio, audio_mask, visual, vis_len) ) # bs*seq*dim
+            
+            if self.model_config.encoder_name == "av_hubert":  #输入格式 B, C, T, H, W 
+                # visual = torch.transpose(visual,1,2)  #torch.Size([4, 1, 49, 112, 112])  #torch.Size([8, 1, 466, 88, 88])
+                results = self.encoder(source={'video':visual, 'audio':None}, padding_mask=visual_mask) # bs*seq*dim  
+                encoder_outs, audio_mel_post_mask = results["encoder_out"], results["padding_mask"]
+                encoder_outs = encoder_outs.transpose(0, 1)  #torch.Size([4, 151, 1024])
+                audio_mel_post_mask = (~audio_mel_post_mask).float() #!!!         
+            if self.encoder is None:
+                encoder_outs = audio_mel if audio_mel is not None else audio
+
+
+            if self.model_config.encoder_projector == "q-former":
+                encoder_outs = self.encoder_projector(encoder_outs, audio_mel_post_mask)
+            if self.model_config.encoder_projector == "linear":
+                encoder_outs = self.encoder_projector(encoder_outs)
+            if self.model_config.encoder_projector == "cov1d-linear": 
+                encoder_outs = self.encoder_projector(encoder_outs) 
+
+                
+        if input_ids is not None:
+            input_ids[input_ids == -1] = 0
+            if hasattr(self.llm.model, "embed_tokens"): #
+                inputs_embeds = self.llm.model.embed_tokens(input_ids)
+            elif hasattr(self.llm.model.model, "embed_tokens"):
+                inputs_embeds = self.llm.model.model.embed_tokens(input_ids)
+            else:
+                inputs_embeds = self.llm.model.model.model.embed_tokens(input_ids)
+
+        if modality_mask is not None:
+            batch_size, token_num, dims = inputs_embeds.shape
+            _, l, _ = encoder_outs.shape
+            encoder_outs_pad = F.pad(encoder_outs, (0, 0, 0, token_num-l, 0, 0), value=0.0)
+            inputs_embeds = encoder_outs_pad * modality_mask[:, :, None] + inputs_embeds * (~modality_mask[:, :, None])
 
         model_outputs = self.llm.generate(
             inputs_embeds=inputs_embeds,
-            max_length=kwargs.get("max_length", 200),
+            # max_length=kwargs.get("max_length", 200),
             max_new_tokens=kwargs.get("max_new_tokens", 200),
             num_beams=kwargs.get("num_beams", 4),
             do_sample=kwargs.get("do_sample", False),
@@ -311,6 +375,41 @@ class slam_model(nn.Module):
             eos_token_id=self.tokenizer.eos_token_id,
             pad_token_id=self.tokenizer.pad_token_id
         )
+        # model_outputs = self.llm.generate(
+        #     inputs_embeds=inputs_embeds,
+        #     # max_length=kwargs.get("max_length", 200),
+        #     max_new_tokens=kwargs.get("max_new_tokens", 200),
+        #     num_beams=kwargs.get("num_beams", 4),
+        #     # do_sample=kwargs.get("do_sample", False),
+        #     do_sample=True,
+        #     min_length=kwargs.get("min_length", 1),
+        #     # top_p=kwargs.get("top_p", 1.0),
+        #     top_p=1.0,
+        #     repetition_penalty=kwargs.get("repetition_penalty", 1.0),
+        #     length_penalty=kwargs.get("length_penalty", 1.0),
+        #     # temperature=kwargs.get("temperature", 1.0),
+        #     temperature=1.0,
+        #     attention_mask=attention_mask,
+        #     bos_token_id=self.tokenizer.bos_token_id,      
+        #     eos_token_id=self.tokenizer.eos_token_id,
+        #     pad_token_id=self.tokenizer.pad_token_id,
+        #     # bos_token_id=151643,
+        #     # bos_token_id=1,
+        #     # eos_token_id=2,
+        #     # pad_token_id=0,
+        # )
+        
+        # model_outputs = self.llm.generate(
+        #     inputs_embeds=inputs_embeds,
+        #     attention_mask=attention_mask,
+        #     max_length=4096,
+        #     do_sample=True,
+        #     top_p=0.6,
+        #     temperature=0.9,
+        #     bos_token_id=1,
+        #     eos_token_id=2,
+        #     pad_token_id=0,
+        # )
 
         return model_outputs
 
@@ -371,4 +470,8 @@ class slam_model(nn.Module):
             **kwargs
         )
 
-        return model_outputs
+        output_text = self.tokenizer.batch_decode(model_outputs, add_special_tokens=False, skip_special_tokens=True)
+
+        return output_text
+
+        
