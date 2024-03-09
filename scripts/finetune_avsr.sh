@@ -18,7 +18,7 @@ export NCCL_IB_SL=f5
 export NCCL_IB_GID_INDEX=3
 
 rm -r /root/SLAM-LLM
-cp -r /nfs/yangguanrou.ygr/codes/SLAM-LLM/ /root/
+cp -r /nfs/chengxize.cxz/projects/SLAM-LLM/ /root/
 cd /root/SLAM-LLM
 pip install -e .
 
@@ -54,7 +54,7 @@ echo $DISTRIBUTED_ARGS
 
 torchrun $DISTRIBUTED_ARGS \
 src/llama_recipes/pipeline/finetune.py \
---config-path "/root/SLAM-LLM/scripts/conf_avsr" \
+--config-path "/root/SLAM-LLM/scripts/conf" \
 --config-name "avsr.yaml" \
 hydra.run.dir=$output_dir \
 model_config.llm_name="vicuna-7b-v1.5" \
