@@ -2,7 +2,6 @@
 set -x
 pip install wandb
 export WANDB_API_KEY='c47ab15d9059a2894bdb7db1b190e71fd197c2b3'
-
 export TOKENIZERS_PARALLELISM=false
 # debug setting for multiple gpus
 export NCCL_DEBUG=INFO
