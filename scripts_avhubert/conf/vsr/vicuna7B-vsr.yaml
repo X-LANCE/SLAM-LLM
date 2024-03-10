@@ -1,11 +1,11 @@
 model_config:
-  llm_name: "vicuna-13b-v1.5"
-  llm_path: "PATH/to/LLAMA/7B"
+  llm_name: "vicuna-7b-v1.5"
+  llm_path: "/nfs/maziyang.mzy/models/vicuna-7b-v1.5"
   llm_dim: 4096
-  encoder_name: null
+  encoder_name: 'av_hubert'
   encoder_ds_rate: 2
-  encoder_path: null
-  encoder_dim: 1280
+  encoder_path: '/nfs/yangguanrou.ygr/av_hubert/self_large_vox_433h.pt'
+  encoder_dim: 1024
   encoder_projector: "linear"
   encoder_projector_ds_rate: 5
 
@@ -25,35 +25,34 @@ model_config:
   MOCO_FRONTEND_FILE: "/nfs/yangguanrou.ygr/AVSR/pretrain_model/moco_frontend.pt" #"/home/oss/yangguanrou.ygr/AVSR/pretrain_model/moco_frontend.pt"
   WAV2VEC_FILE: "/nfs/yangguanrou.ygr/AVSR/pretrain_model/wav2vec_vox_new.pt" #"/home/oss/yangguanrou.ygr/AVSR/pretrain_model/wav2vec_vox_new.pt"
   MAIN_REQ_INPUT_LENGTH: int = 80
-  modal: "AV"
+  modal: "VO"
   TRAIN_LRS3_MODEL_FILE: "/nfs/yangguanrou.ygr/AVSR/train-step_0108-wer_0.058.ckpt"  # "/home/oss/yangguanrou.ygr/AVSR/train-step_0108-wer_0.058.ckpt"  #单一模态是这个
   TRAINED_AO_FILE: "/nfs/yangguanrou.ygr/AVSR/check/train-step_0604-wer_0.054.ckpt"  #"/home/oss/yangguanrou.ygr/AVSR/check/train-step_0604-wer_0.054.ckpt"
   TRAINED_VO_FILE: "/nfs/yangguanrou.ygr/AVSR/check/train-step_1191-wer_0.674.ckpt"  #"/home/oss/yangguanrou.ygr/AVSR/check/train-step_1191-wer_0.674.ckpt"
 
-
 train_config:
-  model_name: "vicuna7B-vsr.yaml"
-  enable_ddp: false
+  model_name: "vicuna7B-avsr"
+  enable_ddp: true
   enable_fsdp: false
   low_cpu_fsdp: false
   run_validation: true
-  batch_size_training: 4
-  batching_strategy: "packing" #alternative: padding
+  batch_size_training: 8
+  batching_strategy: "custom" #alternative: padding,packing,custom
   context_length: 4096
   gradient_accumulation_steps: 1
   num_epochs: 100
-  num_workers_dataloader: 1
+  num_workers_dataloader: 0
   warmup_steps: 5000
   hold_steps: 10000
   decay_steps: 20000
   total_steps: 50000
   validation_interval: 1000
   log_interval: 200
-  lr: 1e-4
+  lr: 2e-4
   weight_decay: 0.0
   gamma: 0.85
   seed: 42
-  use_fp16: false
+  use_fp16: true
   mixed_precision: true
   val_batch_size: 1
 
@@ -80,21 +79,21 @@ train_config:
   run_test_during_validation: false
   run_test_during_validation_file: "test.wav"
   run_test_during_validation_prompt: "<|ASR|>"
-  freeze_llm: false
-  freeze_encoder: false
+  freeze_llm: true
+  freeze_encoder: true
   scheduler: constant
   use_amp: true
 
 dataset_config:
-  dataset: "avsr_dataset"
-  file: "src/llama_recipes/datasets/avsr_dataset.py:get_audio_dataset"
+  dataset: "avhubert_dataset"
+  file: "src/llama_recipes/datasets/avhubert_dataset.py:get_audio_dataset"
   train_split: "train"
   test_split: "val"
   data_path: "/nfs/yangguanrou.ygr/"
   h5file: "/nfs/yangguanrou.ygr/LRS3/LRS3.h5"       # "/home/oss/yangguanrou.ygr/LRS3/LRS3.h5"
   noiseFile: "/nfs/yangguanrou.ygr/AVSR/LRS3/Noise.h5" #"/home/oss/yangguanrou.ygr/AVSR/LRS3/Noise.h5"
   noiseProb: 0.
-  noiseSNR: 5
+  noiseSNR: 0
   stepSize: 16384
   modal: "VO"
   pretrain_subset: "LRS3/pretrain.txt"
@@ -153,8 +152,8 @@ fsdp_config:
 log_config:
     use_wandb: false
     wandb_dir: "/root/test_wandb"
-    wandb_entity_name : "project_name"
-    wandb_project_name : "project_name"
+    wandb_entity_name : "exgc-cxz299"
+    wandb_project_name : "av-llm"
     wandb_exp_name : "exp_name"
     log_file: "/root/test.log"
     log_interval: 5
