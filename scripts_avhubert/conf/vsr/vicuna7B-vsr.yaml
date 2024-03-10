@@ -104,7 +104,7 @@ dataset_config:
   fix_length_audio: -1
   inference_mode: false
   charToIx: "x"
-  prompt: "Transcribe the silent speech in this video to text by lip-reading the speaker's clear and visible lip movements."
+  prompt: "Please repeat my words in English. Content: "
 
   data: /nfs/yangguanrou.ygr/LRS_new/433h_data/
   labels: ["wrd"]

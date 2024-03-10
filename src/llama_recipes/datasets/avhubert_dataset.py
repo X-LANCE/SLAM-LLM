@@ -363,14 +363,7 @@ class AVHubertdataset(torch.utils.data.Dataset):
         fid = self.names[index][1].split(':')[1]
         # return {"id": index, 'fid': fid, "video_source": video_feats, 'audio_source': audio_feats, "label_list": labels}
 
-        # new
-        if self.model_config.modal == "AV":
-            prompt = "Transcribe video to text. "
-        elif self.model_config.modal == "AO":
-            prompt = "Transcribe speech to text. "
-        elif self.model_config.modal == "VO":
-            prompt = self.dataset_config.prompt  # "Transcribe video to text. "
-            # prompt="Transcribe the silent speech in this video to text by lip-reading the speaker's clear and visible lip movements."
+        prompt = self.dataset_config.prompt
 
         prompt = self.prompt_template.format(prompt)
         prompt_ids = self.tokenizer.encode(prompt)
