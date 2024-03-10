@@ -10,7 +10,7 @@ cd /root/SLAM-LLM
 # speech_encoder_path=/nfs/maziyang.mzy/models/Whisper/base.pt
 # speech_encoder_path=/nfs/maziyang.mzy/models/Whisper/small.pt
 # speech_encoder_path=/nfs/maziyang.mzy/models/Whisper/medium.pt
-speech_encoder_path=/nfs/maziyang.mzy/models/Whisper/large-v2.pt
+# speech_encoder_path=/nfs/maziyang.mzy/models/Whisper/large-v2.pt
 # speech_encoder_path=/nfs/maziyang.mzy/models/Whisper/large-v2-qwen.pt
 
 # llm_path=/nfs/maziyang.mzy/models/TinyLlama-1.1B-intermediate-step-1431k-3T
@@ -22,6 +22,8 @@ llm_path=/nfs/maziyang.mzy/models/vicuna-7b-v1.5
 output_dir=/nfs/maziyang.mzy/exps/vicuna-7b-v1.5-finetune-asr-qformer64-steplrwarmupkeep1e-4-whisper-largev2-promptshort-lowergt-padding30-20240126
 ckpt_path=$output_dir/asr/2
 # peft_ckpt=/nfs/maziyang.mzy/exps/llama-2-hf-finetune-asr-ds5-proj2048-lr1e-4-whisper-lora-prompt-paddinglr-20240102-renew5/asr/1
+speech_encoder_path=/nfs/yangguanrou.ygr/av_hubert/self_large_vox_433h.pt
+
 
 # -m debugpy --listen 5678 --wait-for-client
 python -m debugpy --listen 5678 --wait-for-client src/llama_recipes/pipeline/inference.py \

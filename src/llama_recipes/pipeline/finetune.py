@@ -18,7 +18,7 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 
 from torch.distributed.fsdp.fully_sharded_data_parallel import CPUOffload
 from llama_recipes.policies import AnyPrecisionAdamW, apply_fsdp_checkpointing
-
+import math
 # config
 # from llama_recipes.configs import fsdp_config as FSDP_CONFIG
 # from llama_recipes.configs import train_config as TRAIN_CONFIG
@@ -260,23 +260,23 @@ def main(kwargs: DictConfig):
             weight_decay=train_config.weight_decay,
         )
     # scheduler = StepLR(optimizer, step_size=1, gamma=train_config.gamma)
-    scheduler = torch.optim.lr_scheduler.LambdaLR(
-        optimizer, 
-        lr_lambda=lambda step: (
-            min(step / train_config.warmup_steps, 1) if step < train_config.warmup_steps
-            else  max(0.0, 1 - (step - train_config.warmup_steps) / (train_config.total_steps - train_config.warmup_steps))
-            # else 1
-        )
-    )
-
     # scheduler = torch.optim.lr_scheduler.LambdaLR(
-    #     optimizer,
+    #     optimizer, 
     #     lr_lambda=lambda step: (
-    #         min(1, (1 - 0.01) * step / train_config.warmup_steps + 0.01) if step < train_config.hold_steps
-    #         else math.exp(math.log(0.01) / train_config.decay_steps * (step - train_config.hold_steps)) if step < train_config.decay_steps
-    #         else 0.01
+    #         min(step / train_config.warmup_steps, 1) if step < train_config.warmup_steps
+    #         else  max(0.0, 1 - (step - train_config.warmup_steps) / (train_config.total_steps - train_config.warmup_steps))
+    #         # else 1
     #     )
     # )
+
+    scheduler = torch.optim.lr_scheduler.LambdaLR(
+        optimizer,
+        lr_lambda=lambda step: (
+            min(1, (1 - 0.01) * step / train_config.warmup_steps + 0.01) if step < train_config.hold_steps
+            else math.exp(math.log(0.01) / train_config.decay_steps * (step - train_config.hold_steps)) if step < train_config.decay_steps
+            else 0.01
+        )
+    )
 
     # Start the training process
     results = train(

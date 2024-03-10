@@ -20,7 +20,8 @@ import hydra
 from omegaconf import DictConfig, ListConfig, OmegaConf
 
 
-@hydra.main(config_name=None, version_base=None)
+# @hydra.main(config_name=None, version_base="1.1")
+@hydra.main(config_name=None)
 def main_hydra(cfg: DictConfig):
 	def to_plain_list(cfg_item):
 		if isinstance(cfg_item, ListConfig):
@@ -54,11 +55,26 @@ def main(kwargs: DictConfig):
 	                                                                      kwargs.log_config, \
 	                                                                      kwargs.dataset_config
 	
-	del kwargs.train_config
-	del kwargs.fsdp_config
-	del kwargs.model_config
-	del kwargs.log_config
-	del kwargs.dataset_config
+	# del kwargs.train_config
+	# del kwargs.fsdp_config
+	# del kwargs.model_config
+	# del kwargs.log_config
+	# del kwargs.dataset_config
+
+	if model_config.encoder_name=="av_hubert":
+		OmegaConf.set_struct(kwargs,False)
+		del kwargs["train_config"]
+		del kwargs["fsdp_config"]
+		del kwargs["model_config"]
+		del kwargs["log_config"]
+		del kwargs["dataset_config"]
+		OmegaConf.set_struct(kwargs,True)
+	else:
+		del kwargs.train_config
+		del kwargs.fsdp_config
+		del kwargs.model_config
+		del kwargs.log_config
+		del kwargs.dataset_config
 
 	# Set log
 	if not os.path.exists(os.path.dirname(log_config.log_file)):
@@ -104,10 +120,11 @@ def main(kwargs: DictConfig):
 	dataset_test = get_preprocessed_dataset(
         tokenizer,
         dataset_config,
+		model_config,
         split="test",
     )
 	if not (train_config.enable_fsdp or train_config.enable_ddp) or rank == 0:
-		logger.info(f"--> Training Set Length = {len(dataset_test)}")
+		logger.info(f"--> Test Set Length = {len(dataset_test)}")
 
 	test_dataloader = torch.utils.data.DataLoader(
             dataset_test,
@@ -130,8 +147,15 @@ def main(kwargs: DictConfig):
 			model_outputs = model.generate(**batch)
 			output_text = model.tokenizer.batch_decode(model_outputs, add_special_tokens=False, skip_special_tokens=True)
 			for key, text, target in zip(batch["keys"], output_text, batch["targets"]):
+				print(f'{key}\t{text}\t{target}\n')
 				pred.write(key + "\t" + text.replace("\n", " ") + "\n")
 				gt.write(key + "\t" + target + "\n")
+
+				# if dataset_config.test_split=="test":
+				# 	with open(dataset_config.last_pred_path,'w') as last_pred:
+				# 		last_pred.write(text.replace("\n", " "))
+
+
 
 
 if __name__ == "__main__":

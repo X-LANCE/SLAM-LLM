@@ -43,8 +43,10 @@ train_config:
   gradient_accumulation_steps: 1
   num_epochs: 100
   num_workers_dataloader: 1
-  warmup_steps: 1000
-  total_steps: 100000
+  warmup_steps: 2000
+  hold_steps: 4000
+  decay_steps: 8000
+  total_steps: 70000
   validation_interval: 1000
   lr: 1e-4
   weight_decay: 0.0

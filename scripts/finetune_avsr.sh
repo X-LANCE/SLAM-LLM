@@ -35,7 +35,7 @@ speech_encoder_path=/nfs/yangguanrou.ygr/av_hubert/self_large_vox_433h.pt
 
 llm_path=/nfs/maziyang.mzy/models/vicuna-7b-v1.5
 
-output_dir=/nfs/chengxize.cxz/exp/vicuna-7b-v1.5-large_vox_433h-VO
+output_dir=/nfs/chengxize.cxz/exp/vicuna-7b-v1.5-large_vox_433h-VO-tri
 # ckpt_path=/nfs/maziyang.mzy/exps/llama-2-hf-finetune-asr-ds5-proj2048-lr1e-4-whisper-prompt-paddinglrfix8000-20240106/asr/2/model.pt
 
 count=$1
@@ -72,8 +72,6 @@ train_config.model_name=asr \
 train_config.freeze_encoder=true \
 train_config.freeze_llm=true \
 train_config.batching_strategy=custom \
-train_config.warmup_steps=1000 \
-train_config.total_steps=70000 \
 train_config.lr=2e-4 \
 train_config.scheduler=tri \
 train_config.validation_interval=2000 \
