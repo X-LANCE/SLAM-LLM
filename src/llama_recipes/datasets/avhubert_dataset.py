@@ -234,6 +234,7 @@ class AVHubertdataset(torch.utils.data.Dataset):
         logger.info(
             f"Noise wav: {noise_fn}->{len(self.noise_wav)} wav, Prob: {self.noise_prob}, SNR: {self.noise_snr}, Number of mixture: {self.noise_num}"
         )
+        logger.info(f'{split} {len(self.sizes)}\n')
 
     def get_label(self, index, label_idx):
         if self.store_labels:

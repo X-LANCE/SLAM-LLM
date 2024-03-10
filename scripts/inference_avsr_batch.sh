@@ -25,7 +25,7 @@ llm_path=/nfs/maziyang.mzy/models/vicuna-7b-v1.5
 
 output_dir=/nfs/chengxize.cxz/exp/vicuna-7b-v1.5-large_vox_433h-VO
 # ckpt_path=$output_dir/avsr/3
-ckpt_path=$output_dir/asr/1
+ckpt_path=$output_dir/asr/4
 # peft_ckpt=/nfs/maziyang.mzy/exps/llama-2-hf-finetune-asr-ds5-proj2048-lr1e-4-whisper-lora-prompt-paddinglr-20240102/asr/4
 # val_data_path= ??
 decode_log=$ckpt_path/decode_log_test_other_beam4_repetition_penalty1
@@ -46,7 +46,7 @@ train_config.model_name=asr \
 train_config.freeze_encoder=true \
 train_config.batching_strategy=custom \
 train_config.num_epochs=1 \
-train_config.val_batch_size=4 \
+train_config.val_batch_size=16 \
 train_config.num_workers_dataloader=4 \
 train_config.output_dir=$output_dir \
 train_config.freeze_llm=true \

@@ -32,7 +32,7 @@ model_config:
 
 
 train_config:
-  model_name: "PATH/to/LLAMA/7B"
+  model_name: "vicuna7B-avsr"
   enable_ddp: false
   enable_fsdp: false
   low_cpu_fsdp: false
@@ -43,11 +43,12 @@ train_config:
   gradient_accumulation_steps: 1
   num_epochs: 100
   num_workers_dataloader: 1
-  warmup_steps: 2000
-  hold_steps: 4000
-  decay_steps: 8000
-  total_steps: 70000
+  warmup_steps: 5000
+  hold_steps: 10000
+  decay_steps: 20000
+  total_steps: 50000
   validation_interval: 1000
+  log_interval: 200
   lr: 1e-4
   weight_decay: 0.0
   gamma: 0.85
@@ -157,4 +158,3 @@ log_config:
     wandb_exp_name : "exp_name"
     log_file: "/root/test.log"
     log_interval: 5
-
