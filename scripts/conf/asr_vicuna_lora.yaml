@@ -54,6 +54,7 @@ train_config:
   use_fp16: false
   mixed_precision: true
   val_batch_size: 1
+  find_unused_parameters: false
 
   use_peft: false
   peft_config:
