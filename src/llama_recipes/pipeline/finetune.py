@@ -189,7 +189,7 @@ def main(kwargs: DictConfig):
     elif train_config.enable_ddp:
         model = model.cuda(local_rank)
         model = DDP(model, device_ids=[local_rank],
-                    find_unused_parameters=kwargs.get("train_conf", {}).get("find_unused_parameters", False))
+                    find_unused_parameters=train_config.get("find_unused_parameters", False))
     elif not train_config.quantization:
         model.to(device)
 

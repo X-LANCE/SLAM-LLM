@@ -386,8 +386,7 @@ def evaluation(model,train_config, eval_dataloader, local_rank, tokenizer):
     autocast = torch.cuda.amp.autocast if train_config.use_fp16 else nullcontext # (Fix:MZY): fix expected scalar type mismatch in norm 
 
     with MemoryTrace() as memtrace:
-        total_length = len(eval_dataloader)
-        for step, batch in enumerate(tqdm(eval_dataloader,total=total_length)):
+        for step, batch in enumerate(eval_dataloader):
             for key in batch.keys():
                 if train_config.enable_fsdp or train_config.enable_ddp:
                     batch[key] = batch[key].to(local_rank) if isinstance(batch[key], torch.Tensor) else batch[key]

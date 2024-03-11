@@ -6,7 +6,7 @@ model_config:
   encoder_ds_rate: 2
   encoder_path: '/nfs/yangguanrou.ygr/av_hubert/self_large_vox_433h.pt'
   encoder_dim: 1024
-  encoder_projector: "linear"
+  encoder_projector: "linear" # "linear", "cov1d-linear", "q-former"
   encoder_projector_ds_rate: 5
 
   DMODEL: 512
@@ -31,7 +31,7 @@ model_config:
   TRAINED_VO_FILE: "/nfs/yangguanrou.ygr/AVSR/check/train-step_1191-wer_0.674.ckpt"  #"/home/oss/yangguanrou.ygr/AVSR/check/train-step_1191-wer_0.674.ckpt"
 
 train_config:
-  model_name: "vicuna7B-avsr"
+  model_name: "vicuna7B-vsr"
   enable_ddp: true
   enable_fsdp: false
   low_cpu_fsdp: false
@@ -40,6 +40,7 @@ train_config:
   batching_strategy: "custom" #alternative: padding,packing,custom
   context_length: 4096
   gradient_accumulation_steps: 1
+  find_unused_parameters: true
   num_epochs: 100
   num_workers_dataloader: 0
   warmup_steps: 5000
@@ -48,7 +49,7 @@ train_config:
   total_steps: 50000
   validation_interval: 1000
   log_interval: 200
-  lr: 2e-4
+  lr: 5e-4
   weight_decay: 0.0
   gamma: 0.85
   seed: 42
@@ -150,8 +151,8 @@ fsdp_config:
     optimizer: "AdamW"
 
 log_config:
-    use_wandb: false
-    wandb_dir: "/root/test_wandb"
+    use_wandb: true
+    wandb_dir: "/Path/To/wandb"
     wandb_entity_name : "exgc-cxz299"
     wandb_project_name : "av-llm"
     wandb_exp_name : "exp_name"

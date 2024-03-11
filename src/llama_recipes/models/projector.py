@@ -9,7 +9,7 @@ class EncoderProjectorConcat(nn.Module):
         self.encoder_dim = config.encoder_dim
         self.llm_dim = config.llm_dim
         self.linear1 = nn.Linear(self.encoder_dim * self.k, 2048)
-        self.relu = nn.ReLU()
+        self.gelu = nn.GELU()
         self.linear2 = nn.Linear(2048, config.llm_dim)
 
     def forward(self, x):
@@ -22,7 +22,7 @@ class EncoderProjectorConcat(nn.Module):
         x = x.contiguous()
         x = x.view(batch_size, seq_len // self.k, dim * self.k)
         x = self.linear1(x)
-        x = self.relu(x)
+        x = self.gelu(x)
         x = self.linear2(x)
         return x
 
@@ -34,17 +34,17 @@ class EncoderProjectorCov1d(nn.Module):
         self.llm_dim = config.llm_dim
         self.conv1d = nn.Conv1d(in_channels=self.encoder_dim, out_channels=self.encoder_dim, kernel_size=self.k, stride=self.k, padding=0)
         self.linear1 = nn.Linear(self.encoder_dim, 2048)
-        self.relu1 = nn.ReLU()
+        self.gelu1 = nn.GELU()
         self.linear2 = nn.Linear(2048, self.llm_dim)
-        self.relu2 = nn.ReLU()
+        self.gelu2 = nn.GELU()
     
     def forward(self, x):
         x = x.transpose(1, 2)
         x = self.conv1d(x)
         x = x.transpose(1, 2)
-        x = self.relu1(x)
+        x = self.gelu1(x)
         x = self.linear1(x)
-        x = self.relu2(x)
+        x = self.gelu2(x)
         x = self.linear2(x)
         return x
 

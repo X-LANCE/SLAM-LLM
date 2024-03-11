@@ -24,7 +24,7 @@ cd /root/SLAM-LLM
 
 # 这样是可以跑的！
 
-exp_name=vicuna-7b-v1.5-large_vox_433h-VO-linear
+exp_name=vicuna-7b-v1.5-large_vox_433h-VO-convlinear
 output_dir=/nfs/chengxize.cxz/exp/$exp_name
 
 count=$1
@@ -46,6 +46,7 @@ src/llama_recipes/pipeline/finetune.py \
 --config-path "/root/SLAM-LLM/scripts_avhubert/conf/vsr" \
 --config-name "vicuna7B-vsr.yaml" \
 hydra.run.dir=$output_dir \
+model_config.encoder_projector=cov1d-linear \
 train_config.output_dir=$output_dir \
 +metric=acc \
 log_config.log_file=/$output_dir/log \

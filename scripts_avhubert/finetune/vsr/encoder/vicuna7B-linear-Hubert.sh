@@ -46,7 +46,9 @@ src/llama_recipes/pipeline/finetune.py \
 --config-path "/root/SLAM-LLM/scripts_avhubert/conf/vsr" \
 --config-name "vicuna7B-vsr.yaml" \
 hydra.run.dir=$output_dir \
+model_config.encoder_projector=linear \
 train_config.output_dir=$output_dir \
+train_config.freeze_encoder=false \
 +metric=acc \
 log_config.log_file=/$output_dir/log \
 log_config.wandb_dir=$output_dir \
