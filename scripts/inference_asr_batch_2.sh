@@ -14,21 +14,21 @@ cd $code_dir
 # speech_encoder_path=/nfs/maziyang.mzy/models/Whisper/large-v2.pt
 # speech_encoder_path=/nfs/maziyang.mzy/models/Whisper/large-v2-qwen.pt
 # speech_encoder_path=/nfs/maziyang.mzy/models/wavlm/WavLM-Base.pt
-speech_encoder_path=/cxgroup/model/whisper/large-v3.pt
+speech_encoder_path=/host/model_ckpt/whisper/large-v3.pt
 
 # llm_path=/nfs/maziyang.mzy/models/TinyLlama-1.1B-intermediate-step-1431k-3T
 # llm_path=/nfs/maziyang.mzy/models/TinyLlama-1.1B-Chat-v0.4
 # llm_path=/nfs/maziyang.mzy/models/phi-2
 # llm_path=/nfs/zhifu.gzf/ckpt/Llama-2-7b-hf
 # llm_path=/nfs/maziyang.mzy/models/Llama-2-7b-chat-hf
-llm_path=/cxgroup/model/Llama-2-7b-chat-hf
+llm_path=/host/model_ckpt/vicuna-7b-v1.5
 # llm_path=/nfs/maziyang.mzy/models/vicuna-13b-v1.5
 
-output_dir=/work/exps/Llama-2-7b-chat-finetune-asr-linear-lora-32-steplrwarmupkeep1e-4-whisper-largev3-20240310-test
-ckpt_path=$output_dir/asr/5
+output_dir=/work/exps/vicuna-7b-v1.5-finetune-asr-linear-steplrwarmupkeep1e-4-whisper-largev3-20240301-test
+ckpt_path=$output_dir/asr/4
 # peft_ckpt=/nfs/maziyang.mzy/exps/llama-2-hf-finetune-asr-ds5-proj2048-lr1e-4-whisper-lora-prompt-paddinglr-20240102/asr/4
-val_data_path=data/mls/polish_test.jsonl
-decode_log=$ckpt_path/decode_log_polish_test_beam4_repetition_penalty1
+val_data_path=data/mls/polish_tem.jsonl
+decode_log=$ckpt_path/decode_log_test_clean_beam4_repetition_penalty1
 
 # -m debugpy --listen 5678 --wait-for-client
 python src/llama_recipes/pipeline/inference_batch.py \
@@ -44,6 +44,7 @@ python src/llama_recipes/pipeline/inference_batch.py \
         ++model_config.encoder_projector=linear \
         ++model_config.encoder_ds_rate=2 \
         ++dataset_config.dataset=speech_dataset \
+        ++dataset_config.fix_length_audio=64 \
         ++dataset_config.val_data_path=$val_data_path \
         ++dataset_config.input_type=mel \
         ++dataset_config.mel_size=128 \
@@ -55,17 +56,12 @@ python src/llama_recipes/pipeline/inference_batch.py \
         ++train_config.num_workers_dataloader=4 \
         ++train_config.output_dir=$output_dir \
         ++decode_log=$decode_log \
-        ++peft_ckpt=$ckpt_path \
         ++ckpt_path=$ckpt_path/model.pt \
         ++train_config.freeze_encoder=true \
         ++train_config.freeze_llm=true \
-        ++train_config.use_peft=true \
-        ++train_config.peft_config.r=32 \
         # ++dataset_config.normalize=true \
         # ++model_config.encoder_projector=q-former \
         # ++dataset_config.fix_length_audio=64 \
         # --peft_ckpt $peft_ckpt \
         # ++ckpt_path=$ckpt_path/model.pt \
         # --use_peft --peft_method lora \
-
-python src/llama_recipes/utils/compute_wer.py ${decode_log}_gt ${decode_log}_pred ${decode_log}_wer

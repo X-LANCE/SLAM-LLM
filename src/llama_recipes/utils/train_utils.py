@@ -364,8 +364,8 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
     results["avg_checkpoint_time"] = avg_checkpoint_time
 
     #saving the training params including fsdp setting for reference.
-    if (train_config.enable_fsdp or train_config.enable_ddp)and not train_config.use_peft:
-        save_train_params(train_config, fsdp_config, rank)
+    # if (train_config.enable_fsdp or train_config.enable_ddp)and not train_config.use_peft:
+    #     save_train_params(train_config, fsdp_config, rank)
 
     return results
 

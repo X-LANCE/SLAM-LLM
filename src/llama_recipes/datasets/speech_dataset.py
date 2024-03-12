@@ -98,7 +98,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
             audio_length = len(audio_raw) // 320 # ad-hoc for fairseq 320x downsample
             audio_length = audio_length // 5 # ad-hoc for 5x fc downsample
         elif self.input_type == "mel":
-            # audio_raw = whisper.pad_or_trim(audio_raw)
+            audio_raw = whisper.pad_or_trim(audio_raw)
             # audio_raw = np.concatenate((np.zeros(random.randint(0, 16000)), audio_raw, np.zeros(random.randint(0, 16000)))).astype(audio_raw.dtype)[:16000*30]
             audio_mel = whisper.log_mel_spectrogram(audio_raw, n_mels=self.mel_size).permute(1, 0)
             audio_length = (audio_mel.shape[0] + 1) // 2  # ad-hoc for whisper for 2x downsample from mel to feats

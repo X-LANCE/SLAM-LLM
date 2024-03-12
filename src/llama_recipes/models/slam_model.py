@@ -6,7 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.distributed as dist
 from typing import List, Optional, Tuple, Union
-from transformers import AutoModelForCausalLM, AutoTokenizer, AutoConfig, AutoModel
+from transformers import AutoModelForCausalLM, AutoTokenizer, AutoConfig, AutoModel, AutoModelForSeq2SeqLM, T5ForConditionalGeneration
 from peft import LoraConfig, TaskType, get_peft_model, prepare_model_for_kbit_training
 
 from llama_recipes.utils.config_utils import generate_peft_config
@@ -83,25 +83,52 @@ def setup_llm(train_config, model_config, **kwargs):
         #                     "please install latest nightly.")
         rank = int(os.environ["RANK"])
         if rank == 0:
-            model = AutoModelForCausalLM.from_pretrained(
+            if model_config.llm_name=="aya-101":
+                model = AutoModelForSeq2SeqLM.from_pretrained(
+                    model_config.llm_path,
+                    load_in_8bit=True if train_config.quantization else None,
+                    device_map="auto" if train_config.quantization else None,
+                    use_cache=use_cache,
+                )
+            else:
+                model = AutoModelForCausalLM.from_pretrained(
+                    model_config.llm_path,
+                    load_in_8bit=True if train_config.quantization else None,
+                    device_map="auto" if train_config.quantization else None,
+                    use_cache=use_cache,
+                )
+        else:
+            llama_config = AutoConfig.from_pretrained(model_config.llm_path)
+            llama_config.use_cache = use_cache
+            # with torch.device("meta"):
+            if model_config.llm_name=="aya-101":
+                model = AutoModelForSeq2SeqLM(llama_config)
+            else:
+                model = AutoModelForCausalLM(llama_config) #(FIX:MZY): torch 2.0.1 does not support `meta`
+
+    else:
+        if model_config.llm_name=="aya-101":
+            # config = AutoConfig.from_pretrained(
+            #     model_config.llm_path,
+            #     load_in_8bit=True if train_config.quantization else None,
+            #     device_map="auto" if train_config.quantization else None,
+            #     use_cache=use_cache,
+            # )
+            # model = AutoModelForSeq2SeqLM.from_config(config)
+
+            model = AutoModelForSeq2SeqLM.from_pretrained(
                 model_config.llm_path,
                 load_in_8bit=True if train_config.quantization else None,
                 device_map="auto" if train_config.quantization else None,
                 use_cache=use_cache,
             )
         else:
-            llama_config = AutoConfig.from_pretrained(model_config.llm_path)
-            llama_config.use_cache = use_cache
-            # with torch.device("meta"):
-            model = AutoModelForCausalLM(llama_config) #(FIX:MZY): torch 2.0.1 does not support `meta`
-
-    else:
-        model = AutoModelForCausalLM.from_pretrained(
-            model_config.llm_path,
-            load_in_8bit=True if train_config.quantization else None,
-            device_map="auto" if train_config.quantization else None,
-            use_cache=use_cache,
-        )
+            model = AutoModelForCausalLM.from_pretrained(
+                model_config.llm_path,
+                load_in_8bit=True if train_config.quantization else None,
+                device_map="auto" if train_config.quantization else None,
+                use_cache=use_cache,
+            )
     if (train_config.enable_fsdp or train_config.enable_ddp) and train_config.use_fast_kernels:
         """
         For FSDP and FSDP+PEFT, setting 'use_fast_kernels' will enable
@@ -236,12 +263,15 @@ class slam_model(nn.Module):
 
         if input_ids is not None:
             input_ids[input_ids == -1] = 0
-            if hasattr(self.llm.model, "embed_tokens"):
-                inputs_embeds = self.llm.model.embed_tokens(input_ids)
-            elif hasattr(self.llm.model.model, "embed_tokens"):
-                inputs_embeds = self.llm.model.model.embed_tokens(input_ids)
+            if isinstance(self.llm, T5ForConditionalGeneration):
+                inputs_embeds = self.llm.shared(input_ids)
             else:
-                inputs_embeds = self.llm.model.model.model.embed_tokens(input_ids)
+                if hasattr(self.llm.model, "embed_tokens"):
+                    inputs_embeds = self.llm.model.embed_tokens(input_ids)
+                elif hasattr(self.llm.model.model, "embed_tokens"):
+                    inputs_embeds = self.llm.model.model.embed_tokens(input_ids)
+                else:
+                    inputs_embeds = self.llm.model.model.model.embed_tokens(input_ids)
 
         if modality_mask is not None:
             batch_size, token_num, dims = inputs_embeds.shape
@@ -333,7 +363,8 @@ class slam_model(nn.Module):
             import whisper
             audio_raw = whisper.load_audio(wav_path)
             audio_raw = whisper.pad_or_trim(audio_raw)
-            mel_size = self.dataset_config.get("mel_size", 80) # 80 for large v1 and v2, 128 for large v3
+
+            mel_size = getattr(self.dataset_config, "mel_size", 80) # 80 for large v1 and v2, 128 for large v3
             audio_mel = whisper.log_mel_spectrogram(audio_raw, n_mels=mel_size).permute(1,0)[None, :, :].to(device)
 
             encoder_outs = self.encoder.extract_variable_length_features(audio_mel.permute(0, 2, 1))

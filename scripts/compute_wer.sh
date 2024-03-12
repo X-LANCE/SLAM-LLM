@@ -1,19 +1,19 @@
-#cd /root/SLAM-LLM
+#!/bin/bash
+#export PYTHONPATH=/root/whisper:$PYTHONPATH
+export CUDA_VISIBLE_DEVICES=0
+export TOKENIZERS_PARALLELISM=false
+# export CUDA_LAUNCH_BLOCKING=1
 
-trans="/nfs/maziyang.mzy/exps/vicuna-7b-v1.5-finetune-asr-ds10-proj2048-steplrwarmup1e-4decay-fuyu-lora_qkvo_promptshort-lowergt-20240220/asr/6/decode_log_test_other_beam4_repetition_penalty1_bs1_gt"
-preds="/nfs/maziyang.mzy/exps/vicuna-7b-v1.5-finetune-asr-ds10-proj2048-steplrwarmup1e-4decay-fuyu-lora_qkvo_promptshort-lowergt-20240220/asr/6/decode_log_test_other_beam4_repetition_penalty1_bs1_pred"
+code_dir=/work/SLAM-LLM
+cd $code_dir
 
-# python src/llama_recipes/utils/preprocess_text.py ${preds} ${preds}.proc
-# python src/llama_recipes/utils/compute_wer.py ${trans} ${preds}.proc ${preds}.proc.wer
+speech_encoder_path=/host/model_ckpt/whisper/large-v3.pt
 
-python src/llama_recipes/utils/whisper_tn.py ${trans} ${trans}.proc
-python src/llama_recipes/utils/llm_tn.py ${preds} ${preds}.proc
-python src/llama_recipes/utils/compute_wer.py ${trans}.proc ${preds}.proc ${preds}.proc.wer
+output_dir=/work/exps/vicuna-7b-v1.5-finetune-asr-linear-lora-32-steplrwarmupkeep1e-4-whisper-largev3-20240308-test
+ckpt_path=$output_dir/asr/4
+# peft_ckpt=/nfs/maziyang.mzy/exps/llama-2-hf-finetune-asr-ds5-proj2048-lr1e-4-whisper-lora-prompt-paddinglr-20240102/asr/4
+val_data_path=data/mls/polish_tem.jsonl
+decode_log=$ckpt_path/decode_log_polish_test_beam4_repetition_penalty1
 
-tail -3 ${preds}.proc.wer
-
-# echo "-------num2word------"
-# python src/llama_recipes/utils/num2word.py ${preds}.proc ${preds}.proc.words
-# python src/llama_recipes/utils/compute_wer.py ${trans} ${preds}.proc.words ${preds}.proc.wer.words
-
-# tail -3 ${preds}.proc.wer.words
+# python src/llama_recipes/utils/compute_wer.py ${decode_log}_gt ${decode_log}_pred ${decode_log}_wer
+python src/llama_recipes/utils/compute_wer.py ${decode_log}_gt /work/whisper/mls_polish_test /work/whisper/mls_polish_test_wer
