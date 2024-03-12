@@ -40,7 +40,7 @@ from llama_recipes.utils.train_utils import (
     get_policies
 )
 
-from model_factory import model_factory
+from llama_recipes.pipeline.model_factory import model_factory
 import sys
 import logging
 import wandb

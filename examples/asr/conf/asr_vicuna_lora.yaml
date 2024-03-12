@@ -1,0 +1,22 @@
+model_config:
+  llm_name: "vicuna-7b-v1.5"
+  llm_path: null
+  llm_dim: 4096
+  encoder_ds_rate: 2
+  encoder_name: whisper
+  encoder_path: null
+  encoder_dim: 1280
+  encoder_projector: "linear"
+  encoder_projector_ds_rate: 5
+
+
+train_config:
+  model_name: "PATH/to/LLAMA/7B"
+
+dataset_config:
+  dataset: "speech_dataset"
+  file: "src/llama_recipes/datasets/speech_dataset.py:get_speech_dataset"
+  train_split: "train"
+  test_split: "validation"
+  train_data_path: null
+  val_data_path: null
