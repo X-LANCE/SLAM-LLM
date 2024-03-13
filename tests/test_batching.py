@@ -11,7 +11,7 @@ from unittest.mock import patch
 @patch('llama_recipes.finetuning.optim.AdamW')
 @patch('llama_recipes.finetuning.StepLR')
 def test_packing(step_lr, optimizer, get_model, tokenizer, train, mocker, setup_tokenizer):
-    from llama_recipes.finetuning import main
+    from slam_llm.finetuning import main
 
     setup_tokenizer(tokenizer)
 
@@ -57,7 +57,7 @@ def test_packing(step_lr, optimizer, get_model, tokenizer, train, mocker, setup_
 @patch('llama_recipes.utils.config_utils.dist')
 def test_distributed_packing(dist, is_initialized, fsdp, setup, step_lr, optimizer, get_model, tokenizer, train, setup_tokenizer):
     import os
-    from llama_recipes.finetuning import main
+    from slam_llm.finetuning import main
 
     setup_tokenizer(tokenizer)
 
