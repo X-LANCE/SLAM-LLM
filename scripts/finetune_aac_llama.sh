@@ -3,7 +3,7 @@
 export PYTHONPATH=/root/fairseq:$PYTHONPATH
 export CUDA_VISIBLE_DEVICES=0
 # export CUDA_LAUNCH_BLOCKING=1
-export OMP_NUM_THREADS=1
+export OMP_NUM_THREADS=7
 
 # debug setting for multiple gpus
 # export NCCL_DEBUG=INFO
@@ -14,16 +14,18 @@ cd /root/SLAM-LLM
 
 # speech_encoder_path=/nfs/zhifu.gzf/ckpt/Whisper/large-v2.pt
 # speech_encoder_path=/nfs/maziyang.mzy/models/Whisper/large-v2-qwen.pt
-audio_encoder_path=/nfs/maziyang.mzy/models/BEATs/BEATs_iter3_plus_AS2M.pt
+# audio_encoder_path=/root/models/EAT/EAT-base_epoch30.pt
+audio_encoder_path=/root/models/BEATs_iter3_plus_AS2M.pt
 
-llm_path=/nfs/zhifu.gzf/ckpt/Llama-2-7b-hf
+
+llm_path=/root/models/Llama-2-7b-chat-hf
 # llm_path=/nfs/maziyang.mzy/models/vicuna-13b-v1.5/vicuna-13b-v1.5
 
-output_dir=/nfs/maziyang.mzy/exps/debug
+output_dir=/root/exps/test
 
 # -m debugpy --listen 5678 --wait-for-client
 if [[ $CUDA_VISIBLE_DEVICES != *","* ]]; then
-python -m debugpy --listen 5678 --wait-for-client src/llama_recipes/pipeline/finetune.py \
+python src/llama_recipes/pipeline/finetune.py \
 --model_name aac \
 --freeze_encoder \
 --freeze_llm \

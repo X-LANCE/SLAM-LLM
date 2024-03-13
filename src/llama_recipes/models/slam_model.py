@@ -47,6 +47,9 @@ def setup_encoder(train_config, model_config, **kwargs):
         if encoder_name == "beats": 
             from llama_recipes.models.encoder import BEATsEncoder
             encoder = BEATsEncoder.load(model_config)
+        if encoder_name == "EAT":
+            from llama_recipes.models.encoder import EATEncoder
+            encoder = EATEncoder.load(model_config)
         if encoder_name == "wavlm":
             from llama_recipes.models.encoder import WavLMEncoder
             encoder = WavLMEncoder.load(model_config)
@@ -212,6 +215,8 @@ class slam_model(nn.Module):
                 encoder_outs = self.encoder.extract_variable_length_features(audio_mel.permute(0, 2, 1)) # bs*seq*dim
             if self.model_config.encoder_name == "beats":
                 encoder_outs, audio_mel_post_mask = self.encoder.extract_features(audio_mel, audio_mel_mask) # bs*seq*dim
+            if self.model_config.encoder_name == "EAT":
+                encoder_outs, audio_mel_mask = self.encoder.extract_features(audio_mel, audio_mel_mask)
             if self.model_config.encoder_name == "wavlm":
                 encoder_outs = self.encoder.extract_features(audio, 1 - audio_mask) #(FIX:MZY): 1-audio_mask is needed for wavlm as the padding mask
             if self.model_config.encoder_name == "moco_wav2vec2":

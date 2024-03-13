@@ -72,8 +72,9 @@ class AudioDatasetJsonl(torch.utils.data.Dataset):
         task = data_dict.get("prompt", "AAC")
         
         audio_raw, sample_rate = torchaudio.load(audio_path)
-        assert sample_rate == 16e3, "Sample rate should be 16kHz, but got {}in file {}".format(sr, source_file)
+        assert sample_rate == 16e3, "Sample rate should be 16kHz, but got {}in file {}".format(sample_rate)
         audio_mel = BEATs.preprocess(audio_raw[0], fbank_mean=self.dataset_config.fbank_mean, fbank_std=self.dataset_config.fbank_std)
+        # audio_mel = self.EAT_preprocess(source_file=audio_path,norm_mean=self.dataset_config.fbank_mean,norm_std=self.dataset_config.fbank_std)
 
         prompt = "Describe the audio you hear. Output the audio caption directly without redundant content. Ensure that the output is not duplicated. "
 
@@ -159,6 +160,42 @@ class AudioDatasetJsonl(torch.utils.data.Dataset):
             'audio_mel_mask': audio_mel_mask,
             'modality_mask': modality_mask
         }
+        
+        
+    def EAT_preprocess(self, source_file, norm_mean = -4.268, norm_std = 4.569, target_length = 1024):
+        assert source_file.endswith('.wav'), "The standard format of the file should be '.wav'"
+        
+        wav, sr = sf.read(source_file)
+        channel = sf.info(source_file).channels
+        source = torch.from_numpy(wav).float().cuda()
+        
+        if sr != 16e3:
+            source = torchaudio.functional.resample(source, orig_freq=sr, new_freq=16000).float().cuda()
+            print("It is resampled to 16kHz in file {}".format(source_file))
+        else:
+            print("Original sample rate is already 16kHz in file {}".format(source_file))
+        
+        assert channel == 1, "Channel should be 1, but got {} in file {}".format(channel, source_file)
+        
+        source = source - source.mean()
+        source = source.unsqueeze(dim=0)
+        
+        source = torchaudio.compliance.kaldi.fbank(source, htk_compat=True, sample_frequency=16000, use_energy=False,
+                                                   window_type='hanning', num_mel_bins=128, dither=0.0, frame_shift=10).unsqueeze(dim=0)
+        
+        n_frames = source.shape[1]
+        diff = target_length - n_frames
+        if diff > 0:
+            m = torch.nn.ZeroPad2d((0, 0, 0, diff)) 
+            source = m(source)
+            
+        elif diff < 0:
+            source = source[0:target_length, :]
+        
+        # Normalize the mel spectrogram
+        source = (source - norm_mean) / (norm_std * 2)
+        
+        return source
 
 
 
