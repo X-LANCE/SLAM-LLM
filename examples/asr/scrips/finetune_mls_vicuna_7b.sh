@@ -11,8 +11,9 @@ export OMP_NUM_THREADS=1
 # export NCCL_DEBUG_SUBSYS=ALL
 # export TORCH_DISTRIBUTED_DEBUG=INFO
 
-code_dir=/work/SLAM-LLM
-# cd $code_dir
+run_dir=/work/SLAM-LLM
+cd $run_dir
+code_dir=examples/asr/
 
 speech_encoder_path=/cxgroup/model/whisper/large-v3.pt
 
@@ -23,19 +24,23 @@ output_dir=/work/exps/vicuna-7b-v1.5-finetune-asr-linear-lora-32-steplrwarmupkee
 
 hydra_args="
 hydra.run.dir=$output_dir \
+++model_config.llm_name=vicuna-7b-v1.5 \
 ++model_config.llm_path=$llm_path \
+++model_config.llm_dim=4096 \
+++model_config.encoder_name=whisper \
+++model_config.encoder_projector_ds_rate=5 \
 ++model_config.encoder_path=$speech_encoder_path \
+++model_config.encoder_dim=1280 \
+++model_config.encoder_projector=linear \
 ++dataset_config.dataset=speech_dataset \
 ++dataset_config.train_data_path=data/mls/polish_train.jsonl \
 ++dataset_config.val_data_path=data/mls/polish_dev.jsonl \
 ++dataset_config.input_type=mel \
 ++dataset_config.mel_size=128 \
-++train_config.use_peft=true \
-++train_config.peft_config.r=32 \
 ++train_config.model_name=asr \
 ++train_config.num_epochs=12 \
 ++train_config.freeze_encoder=true \
-++train_config.freeze_llm=false \
+++train_config.freeze_llm=true \
 ++train_config.batching_strategy=custom \
 ++train_config.warmup_steps=1000 \
 ++train_config.total_steps=100000 \
@@ -47,6 +52,8 @@ hydra.run.dir=$output_dir \
 ++train_config.output_dir=$output_dir \
 ++metric=acc \
 "
+# ++train_config.use_peft=true \
+# ++train_config.peft_config.r=32 \
 # ++model_config.encoder_projector=linear \
 # ++model_config.encoder_projector_ds_rate=5 \
 # ++train_config.peft_config.peft_method=lora \
@@ -63,17 +70,13 @@ hydra.run.dir=$output_dir \
 # -m debugpy --listen 5678 --wait-for-client
 if [[ $CUDA_VISIBLE_DEVICES != *","* ]]; then
     python -m debugpy --listen 5678 --wait-for-client finetune_asr.py \
-        --config-path "conf" \
-        --config-name "asr_vicuna_lora.yaml" \
         $hydra_args
 else
     torchrun \
         --nnodes 1 \
         --nproc_per_node 2 \
         --master_port=29501 \
-        finetune_asr.py \
-        --config-path "conf" \
-        --config-name "asr_vicuna_lora.yaml" \
+        $code_dir/finetune_asr.py \
         ++train_config.enable_fsdp=false \
         ++train_config.enable_ddp=true \
         ++train_config.use_fp16=false \

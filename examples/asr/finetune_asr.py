@@ -1,4 +1,4 @@
-from llama_recipes.pipeline.finetune import main as train
+from slam_llm.pipeline.finetune import main as train
 
 import hydra
 import logging
@@ -18,10 +18,8 @@ class RunConfig:
 
 @hydra.main(config_name=None, version_base=None)
 def main_hydra(cfg: DictConfig):
-    model_config = RunConfig()
-    cfg = OmegaConf.merge(model_config, cfg)
-    print(cfg)
-    exit()
+    run_config = RunConfig()
+    cfg = OmegaConf.merge(run_config, cfg)
     def to_plain_list(cfg_item):
         if isinstance(cfg_item, ListConfig):
             return OmegaConf.to_container(cfg_item, resolve=True)
