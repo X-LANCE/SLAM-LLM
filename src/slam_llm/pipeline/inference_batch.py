@@ -3,15 +3,15 @@ import random
 import torch
 import logging
 # import argparse
-from llama_recipes.models.slam_model import slam_model
+from slam_llm.models.slam_model import slam_model
 # config
 # from llama_recipes.configs import fsdp_config as FSDP_CONFIG
 # from llama_recipes.configs import train_config as TRAIN_CONFIG
 # from llama_recipes.configs import model_config as MODEL_CONFIG
 # from llama_recipes.configs import log_config as LOG_CONFIG
 
-from llama_recipes.pipeline.model_factory import model_factory
-from llama_recipes.utils.dataset_utils import get_preprocessed_dataset
+from slam_llm.pipeline.model_factory import model_factory
+from slam_llm.utils.dataset_utils import get_preprocessed_dataset
 import os
 import logging
 from tqdm import tqdm

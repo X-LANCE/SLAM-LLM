@@ -10,7 +10,7 @@ import yaml
 
 from transformers import LlamaTokenizer
 
-from llama_recipes.inference.model_utils import  load_llama_from_config
+from slam_llm.inference.model_utils import  load_llama_from_config
 
 # Get the current file's directory
 current_directory = os.path.dirname(os.path.abspath(__file__))

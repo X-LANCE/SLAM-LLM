@@ -11,7 +11,7 @@ import torch
 import torchaudio
 from torch.utils.data import Dataset
 import whisper
-from llama_recipes.utils.compute_utils import calculate_output_length_1d
+from slam_llm.utils.compute_utils import calculate_output_length_1d
 
 
 class SpeechDatasetJsonl(torch.utils.data.Dataset):

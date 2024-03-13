@@ -10,8 +10,8 @@ import soundfile as sf
 import torch
 import torchaudio
 from torch.utils.data import Dataset
-from llama_recipes.utils.compute_utils import calculate_output_length_1d
-from llama_recipes.models.BEATs.BEATs import BEATs
+from slam_llm.utils.compute_utils import calculate_output_length_1d
+from slam_llm.models.BEATs.BEATs import BEATs
 
 
 class AudioDatasetJsonl(torch.utils.data.Dataset):

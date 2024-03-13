@@ -12,14 +12,14 @@ from transformers import (
 )
 import whisper
 
-from llama_recipes.utils.config_utils import generate_peft_config
-from llama_recipes.utils.train_utils import print_model_size
+from slam_llm.utils.config_utils import generate_peft_config
+from slam_llm.utils.train_utils import print_model_size
 
 from .AV.av_net import AVNet
 from .slam_model import setup_llm
 from torch.nn.utils.rnn import pad_sequence
 import copy
-from llama_recipes.utils.metric import compute_accuracy
+from slam_llm.utils.metric import compute_accuracy
 
 def setupavsr_model(tokenizer, train_config, model_config, **kwargs):
     return avsrllm_model(tokenizer, train_config, model_config, **kwargs)

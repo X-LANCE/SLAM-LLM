@@ -19,16 +19,16 @@ from tqdm import tqdm
 from transformers import LlamaTokenizer
 
 
-from llama_recipes.model_checkpointing import(
+from slam_llm.model_checkpointing import(
     save_model_checkpoint, 
     save_model_and_optimizer_sharded, 
     save_optimizer_checkpoint, 
     save_model_checkpoint_peft,
     save_model_checkpoint_peft_full_shard
 )
-from llama_recipes.policies import fpSixteen,bfSixteen_mixed, get_llama_wrapper
-from llama_recipes.utils.memory_utils import MemoryTrace
-from llama_recipes.utils.metric import compute_accuracy
+from slam_llm.policies import fpSixteen,bfSixteen_mixed, get_llama_wrapper
+from slam_llm.utils.memory_utils import MemoryTrace
+from slam_llm.utils.metric import compute_accuracy
 
 import wandb
 import logging

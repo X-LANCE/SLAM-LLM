@@ -7,7 +7,7 @@ from pathlib import Path
 
 import torch
 
-from llama_recipes.datasets import (
+from slam_llm.datasets import (
     get_grammar_dataset,
     get_alpaca_dataset,
     get_samsum_dataset,

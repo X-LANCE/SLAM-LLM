@@ -17,21 +17,21 @@ from torch.distributed.fsdp import (
 from torch.nn.parallel import DistributedDataParallel as DDP
 
 from torch.distributed.fsdp.fully_sharded_data_parallel import CPUOffload
-from llama_recipes.policies import AnyPrecisionAdamW, apply_fsdp_checkpointing
+from slam_llm.policies import AnyPrecisionAdamW, apply_fsdp_checkpointing
 
 # config
 # from llama_recipes.configs import fsdp_config as FSDP_CONFIG
 # from llama_recipes.configs import train_config as TRAIN_CONFIG
 # from llama_recipes.configs import model_config as MODEL_CONFIG
 # from llama_recipes.configs import log_config as LOG_CONFIG
-from llama_recipes.data.concatenator import ConcatDataset
+from slam_llm.data.concatenator import ConcatDataset
 
 # util
-from llama_recipes.utils import fsdp_auto_wrap_policy
-from llama_recipes.utils.config_utils import get_dataloader_kwargs
+from slam_llm.utils import fsdp_auto_wrap_policy
+from slam_llm.utils.config_utils import get_dataloader_kwargs
 
-from llama_recipes.utils.dataset_utils import get_preprocessed_dataset
-from llama_recipes.utils.train_utils import (
+from slam_llm.utils.dataset_utils import get_preprocessed_dataset
+from slam_llm.utils.train_utils import (
     train,
     freeze_transformer_layers,
     setup,
@@ -40,7 +40,7 @@ from llama_recipes.utils.train_utils import (
     get_policies
 )
 
-from llama_recipes.pipeline.model_factory import model_factory
+from slam_llm.pipeline.model_factory import model_factory
 import sys
 import logging
 import wandb

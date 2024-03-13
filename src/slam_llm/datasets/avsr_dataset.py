@@ -14,7 +14,7 @@ from torch.nn.utils.rnn import pad_sequence
 import logging
 logger = logging.getLogger(__name__)
 
-from llama_recipes.utils.compute_utils import calculate_output_length_1d
+from slam_llm.utils.compute_utils import calculate_output_length_1d
 import torch.nn as nn
 
 class AVSRDataset(Dataset):

@@ -9,11 +9,11 @@ from typing import List, Optional, Tuple, Union
 from transformers import AutoModelForCausalLM, AutoTokenizer, AutoConfig, AutoModel, AutoModelForSeq2SeqLM, T5ForConditionalGeneration
 from peft import LoraConfig, TaskType, get_peft_model, prepare_model_for_kbit_training
 
-from llama_recipes.utils.config_utils import generate_peft_config
-from llama_recipes.utils.train_utils import print_module_size
+from slam_llm.utils.config_utils import generate_peft_config
+from slam_llm.utils.train_utils import print_module_size
 from peft import PeftModel, PeftConfig
 from torch.nn import CrossEntropyLoss
-from llama_recipes.utils.metric import compute_accuracy
+from slam_llm.utils.metric import compute_accuracy
 
 import logging
 logger = logging.getLogger(__name__)
@@ -42,19 +42,19 @@ def setup_encoder(train_config, model_config, **kwargs):
     if len(encoder_list) == 1:
         encoder_name = encoder_list[0]
         if encoder_name == "whisper" or encoder_name == "qwen-audio":
-            from llama_recipes.models.encoder import WhisperWrappedEncoder
+            from slam_llm.models.encoder import WhisperWrappedEncoder
             encoder = WhisperWrappedEncoder.load(model_config)
         if encoder_name == "beats": 
-            from llama_recipes.models.encoder import BEATsEncoder
+            from slam_llm.models.encoder import BEATsEncoder
             encoder = BEATsEncoder.load(model_config)
         if encoder_name == "wavlm":
-            from llama_recipes.models.encoder import WavLMEncoder
+            from slam_llm.models.encoder import WavLMEncoder
             encoder = WavLMEncoder.load(model_config)
         if encoder_name == "moco_wav2vec2":
-            from llama_recipes.models.encoder import AVEncoder
+            from slam_llm.models.encoder import AVEncoder
             encoder = AVEncoder.load(model_config)
         if "llama" in encoder_name.lower():
-            from llama_recipes.models.encoder import HfTextEncoder
+            from slam_llm.models.encoder import HfTextEncoder
             encoder = HfTextEncoder.load(model_config)
     print_module_size(encoder, encoder_name, int(os.environ["RANK"]) if train_config.enable_fsdp or train_config.enable_ddp else 0)
 
@@ -167,13 +167,13 @@ def setup_llm(train_config, model_config, **kwargs):
 
 def setup_encoder_projector(train_config, model_config, **kwargs):
     if model_config.encoder_projector == "linear":
-        from llama_recipes.models.projector import EncoderProjectorConcat
+        from slam_llm.models.projector import EncoderProjectorConcat
         encoder_projector = EncoderProjectorConcat(model_config)
     elif model_config.encoder_projector == "cov1d-linear":
-        from llama_recipes.models.projector import EncoderProjectorCov1d
+        from slam_llm.models.projector import EncoderProjectorCov1d
         encoder_projector = EncoderProjectorCov1d(model_config)
     elif model_config.encoder_projector == "q-former":
-        from llama_recipes.models.projector import EncoderProjectorQFormer
+        from slam_llm.models.projector import EncoderProjectorQFormer
         encoder_projector = EncoderProjectorQFormer(model_config)
     print_module_size(encoder_projector, model_config.encoder_projector, int(os.environ["RANK"]) if train_config.enable_fsdp or train_config.enable_ddp else 0)
     return encoder_projector

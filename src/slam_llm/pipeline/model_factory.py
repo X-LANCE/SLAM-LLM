@@ -1,6 +1,6 @@
 import torch
-from llama_recipes.models.slam_model import setup_model, setup_tokenizer
-from llama_recipes.utils.train_utils import print_model_size
+from slam_llm.models.slam_model import setup_model, setup_tokenizer
+from slam_llm.utils.train_utils import print_model_size
 import os
 
 import logging

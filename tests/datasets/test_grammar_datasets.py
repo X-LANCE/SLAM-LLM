@@ -12,7 +12,7 @@ from transformers import LlamaTokenizer
 @patch('llama_recipes.finetuning.optim.AdamW')
 @patch('llama_recipes.finetuning.StepLR')
 def test_grammar_dataset(step_lr, optimizer, get_model, tokenizer, train, mocker, setup_tokenizer):
-    from llama_recipes.finetuning import main
+    from slam_llm.finetuning import main
 
     setup_tokenizer(tokenizer)
 
