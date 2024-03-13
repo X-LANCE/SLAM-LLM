@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 import torch
 
-from llama_recipes.utils.train_utils import train
+from slam_llm.utils.train_utils import train
 
 @patch("llama_recipes.utils.train_utils.MemoryTrace")
 @patch("llama_recipes.utils.train_utils.nullcontext")

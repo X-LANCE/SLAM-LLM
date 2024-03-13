@@ -23,7 +23,7 @@ def check_padded_entry(batch):
 @patch('llama_recipes.finetuning.optim.AdamW')
 @patch('llama_recipes.finetuning.StepLR')
 def test_custom_dataset(step_lr, optimizer, get_model, tokenizer, train, mocker, setup_tokenizer):
-    from llama_recipes.finetuning import main
+    from slam_llm.finetuning import main
 
     setup_tokenizer(tokenizer)
 
@@ -83,7 +83,7 @@ def test_custom_dataset(step_lr, optimizer, get_model, tokenizer, train, mocker,
 @patch('llama_recipes.finetuning.optim.AdamW')
 @patch('llama_recipes.finetuning.StepLR')
 def test_unknown_dataset_error(step_lr, optimizer, tokenizer, get_model, train, mocker):
-    from llama_recipes.finetuning import main
+    from slam_llm.finetuning import main
 
     tokenizer.return_value = mocker.MagicMock(side_effect=lambda x: {"input_ids":[len(x)*[0,]], "attention_mask": [len(x)*[0,]]})
 
