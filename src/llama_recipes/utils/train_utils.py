@@ -99,6 +99,7 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                         batch[key] = batch[key].to(local_rank) if isinstance(batch[key], torch.Tensor) else batch[key]
                     else:
                         batch[key] = batch[key].to('cuda:0') if isinstance(batch[key], torch.Tensor) else batch[key]
+                batch['steps']=step
                 with autocast():
                     outputs, *rest = model(**batch)
                 acc = rest[0] if rest else -1
@@ -392,6 +393,7 @@ def evaluation(model,train_config, eval_dataloader, local_rank, tokenizer):
                     batch[key] = batch[key].to(local_rank) if isinstance(batch[key], torch.Tensor) else batch[key]
                 else:
                     batch[key] = batch[key].to('cuda:0') if isinstance(batch[key], torch.Tensor) else batch[key]
+            batch['steps']=-1
             # Ensure no gradients are computed for this scope to save memory
             with torch.no_grad():
                 # Forward pass and compute loss
@@ -407,8 +409,6 @@ def evaluation(model,train_config, eval_dataloader, local_rank, tokenizer):
             eval_preds.extend(
                 tokenizer.batch_decode(preds.detach().cpu().numpy(), skip_special_tokens=True)
             )
-        logger.info(f"eval_loss: {eval_loss/(step+1):.4f}, eval_acc: {eval_acc/(step+1):.4f}")
-
     # If there's more than one CUDA device, reduce evaluation loss across all devices
     if torch.cuda.device_count() > 1 and train_config.enable_fsdp or train_config.enable_ddp:
         dist.all_reduce(eval_loss, op=dist.ReduceOp.SUM)
@@ -421,6 +421,8 @@ def evaluation(model,train_config, eval_dataloader, local_rank, tokenizer):
         eval_epoch_loss = eval_epoch_loss/world_size
         eval_epoch_acc = eval_epoch_acc/world_size
     eval_ppl = torch.exp(eval_epoch_loss)
+    logger.info(f"eval_loss: {eval_epoch_loss:.4f}, eval_acc: {eval_epoch_acc:.4f}")
+
 
     # Print evaluation metrics
     if train_config.enable_fsdp or train_config.enable_ddp:

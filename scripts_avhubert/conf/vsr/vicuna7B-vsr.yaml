@@ -6,7 +6,7 @@ model_config:
   encoder_ds_rate: 2
   encoder_path: '/nfs/yangguanrou.ygr/av_hubert/self_large_vox_433h.pt'
   encoder_dim: 1024
-  encoder_projector: "linear" # "linear", "cov1d-linear", "q-former"
+  encoder_projector: "cov1d-linear" # "linear", "cov1d-linear", "q-former"
   encoder_projector_ds_rate: 5
 
   DMODEL: 512
@@ -43,13 +43,14 @@ train_config:
   find_unused_parameters: true
   num_epochs: 100
   num_workers_dataloader: 0
-  warmup_steps: 5000
-  hold_steps: 10000
+  freeze_steps: 100000
+  warmup_steps: 10000
+  hold_steps: 0
   decay_steps: 20000
-  total_steps: 50000
+  total_steps: 40000
   validation_interval: 1000
   log_interval: 200
-  lr: 5e-4
+  lr: 0.0005
   weight_decay: 0.0
   gamma: 0.85
   seed: 42

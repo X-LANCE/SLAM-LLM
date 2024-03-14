@@ -14,7 +14,7 @@ from llama_recipes.utils.train_utils import print_module_size
 from peft import PeftModel, PeftConfig
 from torch.nn import CrossEntropyLoss
 from llama_recipes.utils.metric import compute_accuracy
-
+import contextlib
 import logging
 logger = logging.getLogger(__name__)
 
@@ -192,6 +192,7 @@ class slam_model(nn.Module):
                 return_dict: Optional[bool] = None,
                 **kwargs,
                 ):
+        steps=kwargs.get('steps',None)
         audio_mel = kwargs.get("audio_mel", None)  #torch.Size([2, 3000, 80]) 
         audio_mel_mask = kwargs.get("audio_mel_mask", None)
         audio_mel_post_mask = kwargs.get("audio_mel_post_mask", None) # 2x downsample for whisper
@@ -207,6 +208,7 @@ class slam_model(nn.Module):
 
         encoder_outs = None
         if audio_mel is not None or audio is not None or visual is not None:
+            # with torch.no_grad() if steps < self.train_config.freeze_steps else contextlib.ExitStack():
             if self.model_config.encoder_name == "whisper":
                 encoder_outs = self.encoder.extract_variable_length_features(audio_mel.permute(0, 2, 1)) # bs*seq*dim  #torch.Size([2, 300, 80])
             if self.model_config.encoder_name == "beats":
@@ -334,14 +336,15 @@ class slam_model(nn.Module):
                 audio_mel_post_mask = (~audio_mel_post_mask).float() #!!!         
             if self.encoder is None:
                 encoder_outs = audio_mel if audio_mel is not None else audio
-
-
+            
+            # todo： add the transcrov
             if self.model_config.encoder_projector == "q-former":
                 encoder_outs = self.encoder_projector(encoder_outs, audio_mel_post_mask)
-            if self.model_config.encoder_projector == "linear":
+            elif self.model_config.encoder_projector == "linear":
                 encoder_outs = self.encoder_projector(encoder_outs)
-            if self.model_config.encoder_projector == "cov1d-linear": 
+            elif self.model_config.encoder_projector == "cov1d-linear": 
                 encoder_outs = self.encoder_projector(encoder_outs) 
+            
 
                 
         if input_ids is not None:

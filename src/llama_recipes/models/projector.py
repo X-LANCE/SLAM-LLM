@@ -33,9 +33,9 @@ class EncoderProjectorCov1d(nn.Module):
         self.encoder_dim = config.encoder_dim
         self.llm_dim = config.llm_dim
         self.conv1d = nn.Conv1d(in_channels=self.encoder_dim, out_channels=self.encoder_dim, kernel_size=self.k, stride=self.k, padding=0)
-        self.linear1 = nn.Linear(self.encoder_dim, 2048)
+        self.linear1 = nn.Linear(self.encoder_dim, self.encoder_dim*2)
         self.gelu1 = nn.GELU()
-        self.linear2 = nn.Linear(2048, self.llm_dim)
+        self.linear2 = nn.Linear(self.encoder_dim*2, self.llm_dim)
         self.gelu2 = nn.GELU()
     
     def forward(self, x):

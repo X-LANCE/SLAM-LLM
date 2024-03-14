@@ -272,9 +272,9 @@ def main(kwargs: DictConfig):
     scheduler = torch.optim.lr_scheduler.LambdaLR(
         optimizer,
         lr_lambda=lambda step: (
-            min(1, (1 - 0.01) * step / train_config.warmup_steps + 0.01) if step < train_config.hold_steps
-            else math.exp(math.log(0.01) / train_config.decay_steps * (step - train_config.hold_steps)) if step < train_config.decay_steps
-            else 0.01
+            min(1, (1 - 0.01) * step / train_config.warmup_steps + 0.01) if step < train_config.warmup_steps+train_config.hold_steps
+            else math.exp(math.log(0.05) / train_config.decay_steps * (step - train_config.warmup_steps -train_config.hold_steps)) if step < train_config.warmup_steps+train_config.hold_steps+train_config.decay_steps
+            else 0.05
         )
     )
 
