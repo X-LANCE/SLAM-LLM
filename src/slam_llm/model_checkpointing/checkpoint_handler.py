@@ -164,9 +164,9 @@ def save_model_checkpoint(
         
         logger.info(f"model checkpoint saved for epoch {epoch} at {save_full_path}\n")
       
-def save_model_checkpoint_peft(model, optimizer, rank, cfg, epoch=0):
+def save_model_checkpoint_peft(model, optimizer, rank, cfg, epoch=0, step=0):
     logger.info(f"--> saving model ...")
-    save_dir = os.path.join(cfg.output_dir, cfg.model_name, str(epoch+1))
+    save_dir = os.path.join(cfg.output_dir, cfg.model_name, str(epoch+1), str(step+1))
     os.makedirs(save_dir, exist_ok=True)
     if not cfg.freeze_llm:
         if hasattr(model, "module"): #(FIX:MZY): a hack to deal with the model wrapped in DDP
@@ -191,7 +191,7 @@ def save_model_checkpoint_peft(model, optimizer, rank, cfg, epoch=0):
     torch.save(encoder_dict, save_full_path)
     logger.info(f"encoder saved at {save_full_path}")
 
-    logger.info(f"model checkpoint saved for epoch {epoch+1}\n")
+    logger.info(f"model checkpoint saved for epoch {epoch+1} step {step+1}\n")
     
 def save_model_checkpoint_peft_full_shard(model, optimizer, rank, cfg, epoch=0):
     with FSDP.state_dict_type(
