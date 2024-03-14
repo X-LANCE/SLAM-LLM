@@ -49,8 +49,6 @@ def get_custom_dataset(dataset_config, tokenizer, split: str):
 def get_preprocessed_dataset(
     tokenizer, dataset_config, split: str = "train"
 ) -> torch.utils.data.Dataset:
-    if not dataset_config.dataset in DATASET_PREPROC:
-        raise NotImplementedError(f"{dataset_config.dataset} is not (yet) implemented")
 
     def get_split():
         return (
