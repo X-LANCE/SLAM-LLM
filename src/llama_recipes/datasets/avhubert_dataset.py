@@ -191,7 +191,7 @@ class AVHubertdataset(torch.utils.data.Dataset):
             noise_fn).readlines()] if noise_fn is not None else [], dataset_config.noise_prob, noise_snr, noise_num
 
         assert self.single_target == (
-                    self.label_rates[0] == -1), f"single target should be equivalent to sequence label (label_rate==-1)"
+                self.label_rates[0] == -1), f"single target should be equivalent to sequence label (label_rate==-1)"
         if store_labels:
             self.label_list = [load_label(p, inds, tot) for p in label_paths]
         else:
@@ -235,6 +235,8 @@ class AVHubertdataset(torch.utils.data.Dataset):
             f"Noise wav: {noise_fn}->{len(self.noise_wav)} wav, Prob: {self.noise_prob}, SNR: {self.noise_snr}, Number of mixture: {self.noise_num}"
         )
         logger.info(f'{split} {len(self.sizes)}\n')
+
+        self.prompt_aug_operations = [add_random_word, repeat_last_word, reverse_sentence, add_quotes_to_word]
 
     def get_label(self, index, label_idx):
         if self.store_labels:
@@ -364,6 +366,9 @@ class AVHubertdataset(torch.utils.data.Dataset):
         # return {"id": index, 'fid': fid, "video_source": video_feats, 'audio_source': audio_feats, "label_list": labels}
 
         prompt = self.dataset_config.prompt
+
+        prompt_aug_opt = random.choice(self.prompt_aug_operations)
+        prompt, target = prompt_aug_opt(prompt,target)
 
         prompt = self.prompt_template.format(prompt)
         prompt_ids = self.tokenizer.encode(prompt)
@@ -665,3 +670,21 @@ def get_audio_dataset(dataset_config, model_config, tokenizer, split):
     dataset = AVHubertdataset(dataset_config, model_config, tokenizer, split)
     return dataset
 
+def add_random_word(prompt, sentence):
+    random_word = ''.join(random.choices('abcdefghijklmnopqrstuvwxyz', k=random.randint(1, 5)))
+    return f"{prompt} and append the string '{random_word}' at the end of the sentence.", sentence + ' ' + random_word
+
+def repeat_last_word(prompt, sentence):
+    words = sentence.split()
+    return f"{prompt} and repeat the last word.", sentence + ' ' + words[-1]
+
+def reverse_sentence(prompt, sentence):
+    words = sentence.split()
+    reversed_words = words[::-1]
+    return f"{prompt} and reverse the sentence.", ' '.join(reversed_words)
+
+def add_quotes_to_word(prompt,sentence):
+    words = sentence.split()
+    target_word=random.choices(words, k=1)
+    modified_sentence = sentence.replace(target_word, f'"{target_word}"')
+    return f"{prompt} and add quotes to {target_word}.",modified_sentence
