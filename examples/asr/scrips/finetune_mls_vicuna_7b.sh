@@ -1,7 +1,7 @@
 #!/bin/bash
 # export PYTHONPATH=/root/whisper:$PYTHONPATH
 export PYTHONPATH=/root/fairseq:$PYTHONPATH
-export CUDA_VISIBLE_DEVICES=2,3
+export CUDA_VISIBLE_DEVICES=4,5
 export TOKENIZERS_PARALLELISM=false
 # export CUDA_LAUNCH_BLOCKING=1
 export OMP_NUM_THREADS=1
@@ -20,7 +20,7 @@ speech_encoder_path=/cxgroup/model/whisper/large-v3.pt
 llm_path=/cxgroup/model/vicuna-7b-v1.5
 # llm_path=/nfs/maziyang.mzy/models/vicuna-13b-v1.5
 
-output_dir=/work/exps/vicuna-7b-v1.5-finetune-asr-linear-lora-32-steplrwarmupkeep1e-4-whisper-largev3-$(date +"%Y%m%d")-test
+output_dir=/work/exps/vicuna-7b-v1.5-mls-french-linear-lora-32-steplrwarmupkeep1e-4-whisper-largev3-$(date +"%Y%m%d")-test
 
 hydra_args="
 hydra.run.dir=$output_dir \
@@ -33,8 +33,8 @@ hydra.run.dir=$output_dir \
 ++model_config.encoder_dim=1280 \
 ++model_config.encoder_projector=linear \
 ++dataset_config.dataset=speech_dataset \
-++dataset_config.train_data_path=data/mls/polish_train.jsonl \
-++dataset_config.val_data_path=data/mls/polish_dev.jsonl \
+++dataset_config.train_data_path=data/mls/french_train.jsonl \
+++dataset_config.val_data_path=data/mls/french_dev.jsonl \
 ++dataset_config.input_type=mel \
 ++dataset_config.mel_size=128 \
 ++train_config.model_name=asr \
@@ -75,7 +75,7 @@ else
     torchrun \
         --nnodes 1 \
         --nproc_per_node 2 \
-        --master_port=29501 \
+        --master_port=29502 \
         $code_dir/finetune_asr.py \
         ++train_config.enable_fsdp=false \
         ++train_config.enable_ddp=true \

@@ -4,6 +4,7 @@ from typing import Optional, List
 class ModelConfig:
     llm_name: str = "vicuna-13b-v1.5"
     llm_path: str = "PATH/to/LLAMA/7B"
+    llm_type: str = "decoder_only"
     llm_dim: int = 4096
     encoder_name: Optional[str] = None
     encoder_ds_rate: int = 2

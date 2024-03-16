@@ -1,5 +1,4 @@
 import torch
-from slam_llm.models.slam_model import setup_model, setup_tokenizer
 from slam_llm.utils.train_utils import print_model_size
 import os
 
@@ -7,6 +6,11 @@ import logging
 logger = logging.getLogger(__name__)
 
 def model_factory(train_config, model_config, **kwargs):
+    llm_type=model_config.get("llm_type", "decoder_only")
+    if llm_type == "decoder_only":
+        from slam_llm.models.slam_model import setup_model, setup_tokenizer
+    else:
+        from slam_llm.models.slam_model_t5 import setup_model, setup_tokenizer
 
     tokenizer = setup_tokenizer(train_config, model_config, **kwargs)
 
