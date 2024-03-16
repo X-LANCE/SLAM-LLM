@@ -132,7 +132,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
                 "target": target,
             }
 
-        answer = self.answer_template.format(target.lower())
+        answer = self.answer_template.format(target)
         example = prompt + answer  # FIX(MZY): avoid putting a bos token before answer.
         example_ids = self.tokenizer.encode(example)  # [prompt,answer]
         example_ids.append(self.tokenizer.eos_token_id)  # [prompt,answer,eos]

@@ -83,7 +83,7 @@ def setup_llm(train_config, model_config, **kwargs):
         #                     "please install latest nightly.")
         rank = int(os.environ["RANK"])
         if rank == 0:
-            if model_config.llm_name=="aya-101":
+            if "aya" in model_config.llm_name.lower():
                 model = AutoModelForSeq2SeqLM.from_pretrained(
                     model_config.llm_path,
                     load_in_8bit=True if train_config.quantization else None,
@@ -101,21 +101,13 @@ def setup_llm(train_config, model_config, **kwargs):
             llama_config = AutoConfig.from_pretrained(model_config.llm_path)
             llama_config.use_cache = use_cache
             # with torch.device("meta"):
-            if model_config.llm_name=="aya-101":
+            if "aya" in model_config.llm_name.lower():
                 model = AutoModelForSeq2SeqLM(llama_config)
             else:
                 model = AutoModelForCausalLM(llama_config) #(FIX:MZY): torch 2.0.1 does not support `meta`
 
     else:
-        if model_config.llm_name=="aya-101":
-            # config = AutoConfig.from_pretrained(
-            #     model_config.llm_path,
-            #     load_in_8bit=True if train_config.quantization else None,
-            #     device_map="auto" if train_config.quantization else None,
-            #     use_cache=use_cache,
-            # )
-            # model = AutoModelForSeq2SeqLM.from_config(config)
-
+        if "aya" in model_config.llm_name.lower():
             model = AutoModelForSeq2SeqLM.from_pretrained(
                 model_config.llm_path,
                 load_in_8bit=True if train_config.quantization else None,
