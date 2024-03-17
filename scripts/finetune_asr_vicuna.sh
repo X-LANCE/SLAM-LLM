@@ -1,7 +1,7 @@
 #!/bin/bash
 # export PYTHONPATH=/root/whisper:$PYTHONPATH
 export PYTHONPATH=/root/fairseq:$PYTHONPATH
-export CUDA_VISIBLE_DEVICES=0,1
+export CUDA_VISIBLE_DEVICES=7
 export TOKENIZERS_PARALLELISM=false
 # export CUDA_LAUNCH_BLOCKING=1
 export OMP_NUM_THREADS=1
@@ -31,18 +31,18 @@ output_dir=/nfs/maziyang.mzy/exps/vicuna-7b-v1.5-finetune-asr-qformer64-steplrwa
 
 # -m debugpy --listen 5678 --wait-for-client
 if [[ $CUDA_VISIBLE_DEVICES != *","* ]]; then
-python -m debugpy --listen 5678 --wait-for-client src/llama_recipes/pipeline/finetune.py \
+python src/llama_recipes/pipeline/finetune.py \
 --config-path "/root/SLAM-LLM/scripts/conf" \
 --config-name "asr_vicuna_lora.yaml" \
 hydra.run.dir=$output_dir \
-++model_config.llm_name="vicuna-7b-v1.5" \
-++model_config.llm_path=$llm_path \
-++model_config.llm_dim=4096 \
-++model_config.encoder_name=whisper \
-++model_config.encoder_ds_rate=2 \
-++model_config.encoder_path=$speech_encoder_path \
-++model_config.encoder_dim=1280 \
-++model_config.encoder_projector=q-former \
+model_config.llm_name="vicuna-7b-v1.5" \
+model_config.llm_path=$llm_path \
+model_config.llm_dim=4096 \
+model_config.encoder_name=whisper \
+model_config.encoder_ds_rate=2 \
+model_config.encoder_path=$speech_encoder_path \
+model_config.encoder_dim=1280 \
+model_config.encoder_projector=q-former \
 ++dataset_config.fix_length_audio=64 \
 ++dataset_config.dataset=speech_dataset \
 ++dataset_config.train_data_path=/nfs/maziyang.mzy/data/librispeech/librispeech_train_960h.jsonl \

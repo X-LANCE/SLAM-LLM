@@ -9,3 +9,4 @@ wandb/
 log/
 *.log
 outputs/
+scripts/lxq.sh
