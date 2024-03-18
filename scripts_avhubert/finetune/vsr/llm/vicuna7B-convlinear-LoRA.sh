@@ -24,7 +24,7 @@ cd /root/SLAM-LLM
 
 # 这样是可以跑的！
 
-exp_name=vicuna-7b-v1.5-large_vox_433h-VO-convlinear-aug2
+exp_name=vicuna-7b-v1.5-large_vox_433h-VO-convlinear-lora-freeze
 output_dir=/nfs/chengxize.cxz/exp/$exp_name
 
 count=$1
@@ -48,6 +48,8 @@ src/llama_recipes/pipeline/finetune.py \
 hydra.run.dir=$output_dir \
 model_config.encoder_projector=cov1d-linear \
 train_config.output_dir=$output_dir \
+train_config.use_peft=true \
+train_config.freeze_llm=false \
 +metric=acc \
 log_config.log_file=/$output_dir/log \
 log_config.wandb_dir=$output_dir \

@@ -21,10 +21,10 @@ cd /root/SLAM-LLM
 speech_encoder_path=/nfs/yangguanrou.ygr/av_hubert/self_large_vox_433h.pt
 
 
-output_dir=/nfs/chengxize.cxz/exp/vicuna-7b-v1.5-large_vox_433h-VO-convlinear
+output_dir=/nfs/chengxize.cxz/exp/vicuna-7b-v1.5-large_vox_433h-VO-convlinear-lora-freeze
 # ckpt_path=$output_dir/avsr/3
 ckpt_path=$output_dir/vicuna7B-vsr/5
-# peft_ckpt=/nfs/maziyang.mzy/exps/llama-2-hf-finetune-asr-ds5-proj2048-lr1e-4-whisper-lora-prompt-paddinglr-20240102/asr/4
+peft_ckpt=$output_dir/vicuna7B-vsr/5
 # val_data_path= ??
 decode_log=$ckpt_path/decode_log_test
 
@@ -36,13 +36,15 @@ model_config.encoder_path=$speech_encoder_path \
 model_config.encoder_projector=cov1d-linear \
 train_config.enable_ddp=false \
 train_config.num_epochs=1 \
-train_config.val_batch_size=16 \
+train_config.val_batch_size=8 \
 train_config.num_workers_dataloader=4 \
 train_config.output_dir=$output_dir \
+train_config.use_peft=true \
+train_config.freeze_encoder=false \
 dataset_config.inference_mode=true \
 dataset_config.test_split='test' \
-dataset_config.prompt="Please repeat my words in English." \
 +ckpt_path=$ckpt_path/model.pt \
++peft_ckpt=$ckpt_path \
 +decode_log=$decode_log 
 
 

@@ -153,7 +153,7 @@ def main(kwargs: DictConfig):
             for key, hyp, ref in zip(batch["keys"], output_text, batch["targets"]):
                 refs.append(ref)
                 hyps.append(hyp)
-                print(f'{key}\t{hyp}\t{ref}\n')
+                print(f'{key}\tHYP: {hyp}\tREF: {ref}\n')
                 pred.write(key + "\t" + hyp.replace("\n", " ") + "\n")
                 gt.write(key + "\t" + ref + "\n")
     wer = compute_wer(refs=refs, hyps=hyps)

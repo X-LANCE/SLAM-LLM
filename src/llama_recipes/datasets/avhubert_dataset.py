@@ -367,8 +367,10 @@ class AVHubertdataset(torch.utils.data.Dataset):
 
         prompt = self.dataset_config.prompt
 
-        prompt_aug_opt = random.choice(self.prompt_aug_operations)
-        prompt, target = prompt_aug_opt(prompt,target)
+        if self.dataset_config.prompt_aug:
+            prompt_aug_opt = random.choice(self.prompt_aug_operations)
+            prompt, target = prompt_aug_opt(prompt,target)
+            # prompt, target = repeat_penultimate_word(prompt,target)
 
         prompt = self.prompt_template.format(prompt)
         prompt_ids = self.tokenizer.encode(prompt)
@@ -678,6 +680,10 @@ def repeat_last_word(prompt, sentence):
     words = sentence.split()
     return f"{prompt} and repeat the last word.", sentence + ' ' + words[-1]
 
+def repeat_penultimate_word(prompt, sentence):
+    words = sentence.split()
+    return f"{prompt} and repeat the penultimate word.", sentence + ' ' + words[-2]
+
 def reverse_sentence(prompt, sentence):
     words = sentence.split()
     reversed_words = words[::-1]
@@ -685,6 +691,6 @@ def reverse_sentence(prompt, sentence):
 
 def add_quotes_to_word(prompt,sentence):
     words = sentence.split()
-    target_word=random.choices(words, k=1)
+    target_word=random.choices(words, k=1)[0]
     modified_sentence = sentence.replace(target_word, f'"{target_word}"')
     return f"{prompt} and add quotes to {target_word}.",modified_sentence

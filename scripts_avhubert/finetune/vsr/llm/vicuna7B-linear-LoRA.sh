@@ -24,7 +24,7 @@ cd /root/SLAM-LLM
 
 # 这样是可以跑的！
 
-exp_name=vicuna-7b-v1.5-large_vox_433h-VO-convlinear-lora
+exp_name=vicuna-7b-v1.5-large_vox_433h-VO-convlinear-lora-aug
 output_dir=/nfs/chengxize.cxz/exp/$exp_name
 
 count=$1

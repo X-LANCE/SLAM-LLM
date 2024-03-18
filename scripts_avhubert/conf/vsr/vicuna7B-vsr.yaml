@@ -106,7 +106,8 @@ dataset_config:
   fix_length_audio: -1
   inference_mode: false
   charToIx: "x"
-  prompt: "Please repeat my words in English. Content: "
+  prompt: "Recognize this speech in English"
+  prompt_aug: false
 
   data: /nfs/yangguanrou.ygr/LRS_new/433h_data/
   labels: ["wrd"]

@@ -17,7 +17,7 @@ from torch.distributed.fsdp import StateDictType
 from torch.distributed.fsdp.sharded_grad_scaler import ShardedGradScaler
 from tqdm import tqdm
 from transformers import LlamaTokenizer
-
+from shutil import copyfile
 
 from llama_recipes.model_checkpointing import(
     save_model_checkpoint, 
@@ -163,7 +163,7 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                     eval_ppl, eval_epoch_loss, *rest = evaluation(model, train_config, eval_dataloader, local_rank, tokenizer)
                     eval_epoch_acc = rest[0] if rest else -1
                     checkpoint_start_time = time.perf_counter()
-                    if train_config.save_model and rest and eval_epoch_acc < best_val_acc:
+                    if train_config.save_model and rest and eval_epoch_acc > best_val_acc:
                         if train_config.enable_fsdp or train_config.enable_ddp:
                             dist.barrier()
                         if train_config.use_peft:
@@ -264,8 +264,14 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                             if train_config.enable_fsdp or train_config.enable_ddp:
                                 if rank==0:
                                     logger.info(f"best eval acc on epoch {epoch+1} is {best_val_acc}")
+                                    os.makedirs(os.path.join(train_config.output_dir, train_config.model_name,'best'),exist_ok=True)
+                                    copyfile(os.path.join(train_config.output_dir, train_config.model_name, str(epoch+1),"model.pt"),
+                                    os.path.join(train_config.output_dir, train_config.model_name,'best',"model.pt"))
                             else:
                                 logger.info(f"best eval acc on epoch {epoch+1} is {best_val_acc}")
+                                os.makedirs(os.path.join(train_config.output_dir, train_config.model_name,'best'),exist_ok=True)
+                                copyfile(os.path.join(train_config.output_dir, train_config.model_name, str(epoch+1),"model.pt"),
+                                os.path.join(train_config.output_dir, train_config.model_name,'best',"model.pt"))
                         val_acc.append(rest[0]) 
                     else: 
                         val_acc.append(-1)
