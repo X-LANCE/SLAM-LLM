@@ -166,6 +166,7 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                     eval_epoch_acc = rest[0] if rest else -1
                     checkpoint_start_time = time.perf_counter()
                     if train_config.save_model and (eval_epoch_loss < best_val_loss):
+                        checkpoint_name = f"{train_config.model_name}_epoch_{str(epoch+1)}_step_{step+1}_acc_{eval_epoch_acc}"
                         if train_config.enable_fsdp or train_config.enable_ddp:
                             dist.barrier()
                         if train_config.use_peft:
@@ -182,19 +183,19 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                                 elif fsdp_config.sharding_strategy == ShardingStrategy.NO_SHARD:
                                     if rank==0:
                                         save_model_checkpoint_peft(
-                                            model, optimizer, rank, train_config, epoch=epoch, step=step
+                                            model, optimizer, rank, train_config, checkpoint_name=checkpoint_name
                                         )
                                     dist.barrier()
                             elif train_config.enable_ddp:
                                 if rank==0:
                                     save_model_checkpoint_peft(
-                                            model, optimizer, rank, train_config, epoch=epoch, step=step
+                                            model, optimizer, rank, train_config, checkpoint_name=checkpoint_name
                                         )
                                 dist.barrier()
                             else:
                                 # model.save_pretrained(train_config.output_dir)
                                 save_model_checkpoint_peft(
-                                        model, optimizer, rank, train_config, epoch=epoch, step=step
+                                        model, optimizer, rank, train_config, checkpoint_name=checkpoint_name
                                     )
                             if train_config.enable_fsdp or train_config.enable_ddp:
                                 if rank==0:
@@ -212,18 +213,18 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                                 elif fsdp_config.sharding_strategy == ShardingStrategy.NO_SHARD:
                                     if rank==0:
                                         save_model_checkpoint_peft(
-                                            model, optimizer, rank, train_config, epoch=epoch, step=step
+                                            model, optimizer, rank, train_config, checkpoint_name=checkpoint_name
                                         )
                                     dist.barrier()
                             elif train_config.enable_ddp:
                                 if rank==0:
                                     save_model_checkpoint_peft(
-                                            model, optimizer, rank, train_config, epoch=epoch, step=step
+                                            model, optimizer, rank, train_config, checkpoint_name=checkpoint_name
                                         )
                                 dist.barrier()
                             else:
                                 save_model_checkpoint_peft(
-                                        model, optimizer, rank, train_config, epoch=epoch, step=step
+                                        model, optimizer, rank, train_config, checkpoint_name=checkpoint_name
                                     )
 
                         else:
