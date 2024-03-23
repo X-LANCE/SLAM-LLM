@@ -416,7 +416,6 @@ def evaluation(model,train_config, eval_dataloader, local_rank, tokenizer):
             )
             pbar.update(1)
             pbar.set_description(f"step: {step+1}/{total_length}, eval_loss: {eval_loss/(step+1):.4f}, eval_acc: {eval_acc/(step+1):.4f}")
-            break
 
     # If there's more than one CUDA device, reduce evaluation loss across all devices
     if torch.cuda.device_count() > 1 and train_config.enable_fsdp or train_config.enable_ddp:
