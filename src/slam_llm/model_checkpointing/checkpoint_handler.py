@@ -170,10 +170,9 @@ def save_model_checkpoint_peft(model, optimizer, rank, cfg, checkpoint_name="che
     save_dir = os.path.join(cfg.output_dir, checkpoint_name)
     os.makedirs(save_dir, exist_ok=True)
     save_full_path = os.path.join(save_dir, "model.pt")
-    if hasattr(model, "module"): #(FIX:MZY): a hack to deal with the model wrapped in DDP
-        cpu_state = model.module.state_dict()
-    else:
-        cpu_state = model.state_dict()
+    if cfg.enable_ddp:
+        model = model.module
+    cpu_state = model.state_dict()
     if save_trainable_only:
         state_dict = OrderedDict()
         for name, para in model.named_parameters():
