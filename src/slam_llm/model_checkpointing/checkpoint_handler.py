@@ -5,6 +5,7 @@ from pathlib import Path
 from datetime import datetime
 import torch
 import time
+from collections import OrderedDict
 
 from torch.distributed.fsdp import (
     FullyShardedDataParallel as FSDP,
@@ -164,34 +165,23 @@ def save_model_checkpoint(
         
         logger.info(f"model checkpoint saved for epoch {epoch} at {save_full_path}\n")
       
-def save_model_checkpoint_peft(model, optimizer, rank, cfg, epoch=0, step=0):
+def save_model_checkpoint_peft(model, optimizer, rank, cfg, checkpoint_name="checkpoint", save_trainable_only=True):
     logger.info(f"--> saving model ...")
-    save_dir = os.path.join(cfg.output_dir, cfg.model_name, str(epoch+1), str(step+1))
+    save_dir = os.path.join(cfg.output_dir, checkpoint_name)
     os.makedirs(save_dir, exist_ok=True)
-    if not cfg.freeze_llm:
-        if hasattr(model, "module"): #(FIX:MZY): a hack to deal with the model wrapped in DDP
-            model.module.llm.save_pretrained(save_dir)
-        else:
-            model.llm.save_pretrained(save_dir)
-        logger.info(f"llm saved at {save_dir}")
-    
     save_full_path = os.path.join(save_dir, "model.pt")
-    if hasattr(model, "module"): #(FIX:MZY): a hack to deal with the model wrapped in DDP
-        cpu_state = model.module.state_dict()
+    if cfg.enable_ddp:
+        model = model.module
+    cpu_state = model.state_dict()
+    if save_trainable_only:
+        state_dict = OrderedDict()
+        for name, para in model.named_parameters():
+            if para.requires_grad:
+                state_dict[name] = cpu_state[name]
     else:
-        cpu_state = model.state_dict()
-    encoder_dict = {}
-    if not cfg.freeze_encoder:
-        for key in cpu_state.keys():
-            if key.startswith("encoder."):
-                encoder_dict[key] = cpu_state[key]
-    for key in cpu_state.keys():
-        if key.startswith("encoder_projector."):
-            encoder_dict[key] = cpu_state[key]
-    torch.save(encoder_dict, save_full_path)
+        state_dict = cpu_state
+    torch.save(state_dict, save_full_path)
     logger.info(f"encoder saved at {save_full_path}")
-
-    logger.info(f"model checkpoint saved for epoch {epoch+1} step {step+1}\n")
     
 def save_model_checkpoint_peft_full_shard(model, optimizer, rank, cfg, epoch=0):
     with FSDP.state_dict_type(
