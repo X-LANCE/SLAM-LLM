@@ -79,6 +79,7 @@ class DataConfig:
     val_data_path: Optional[str] = None
     train_split: str = "train"
     test_split:str = "validation"
+    prompt: Optional[str] = None
     data_path: Optional[str] = None
     max_words: Optional[int] = None
     max_mel: Optional[float] = None

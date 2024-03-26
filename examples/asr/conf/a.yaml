@@ -1,0 +1,2 @@
+dataset_config:
+  prompt: "Transcrire la parole en français. Sortez la transcription directement sans contenu redondant. Assurez-vous que la sortie n'est pas dupliquée. "
