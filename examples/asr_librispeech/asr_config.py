@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from typing import Optional, List
 @dataclass
 class ModelConfig:
-    file: str = "examples/asr/model/slam_model_asr.py:model_factory"
+    file: str = "examples/asr_librispeech/model/slam_model_asr.py:model_factory"
     llm_name: str = "vicuna-13b-v1.5"
     llm_path: str = "PATH/to/LLAMA/7B"
     llm_type: str = "decoder_only"

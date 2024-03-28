@@ -13,7 +13,7 @@ export OMP_NUM_THREADS=1
 
 run_dir=/work/SLAM-LLM
 cd $run_dir
-code_dir=examples/asr/
+code_dir=examples/asr_librispeech/
 
 speech_encoder_path=/cxgroup/model/whisper/large-v3.pt
 
