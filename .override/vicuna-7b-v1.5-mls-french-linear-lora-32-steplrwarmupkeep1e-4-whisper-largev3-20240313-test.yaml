@@ -1,0 +1,29 @@
+dataset_config:
+    prompt: "中文"
+hydra:
+    run.dir:/work/exps/vicuna-7b-v1.5-mls-french-linear-lora-32-steplrwarmupkeep1e-4-whisper-largev3-20240313-test/asr/1
+model_config:
+    llm_name:"vicuna-7b-v1.5"
+    llm_path=/cxgroup/model/vicuna-7b-v1.5
+    llm_dim:4096
+    encoder_name:whisper
+    encoder_path:/cxgroup/model/whisper/large-v3.pt
+    encoder_dim:1280
+    encoder_projector:linear
+dataset_config:
+    dataset:speech_dataset
+    val_data_path:data/mls/french_test.jsonl
+    input_type:mel
+    mel_size:128
+    inference_mode:true
+train_config:
+    model_name:asr
+    batching_strategy:custom
+    num_epochs:1
+    val_batch_size:4
+    num_workers_dataloader:4
+    output_dir:/work/exps/vicuna-7b-v1.5-mls-french-linear-lora-32-steplrwarmupkeep1e-4-whisper-largev3-20240313-test
+    freeze_encoder:true
+    freeze_llm:true
+decode_log:/work/exps/vicuna-7b-v1.5-mls-french-linear-lora-32-steplrwarmupkeep1e-4-whisper-largev3-20240313-test/asr/1/decode_french_prompt_french_test_beam4
+ckpt_path:/work/exps/vicuna-7b-v1.5-mls-french-linear-lora-32-steplrwarmupkeep1e-4-whisper-largev3-20240313-test/asr/1/model.pt

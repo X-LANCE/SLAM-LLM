@@ -7,8 +7,8 @@ preds="/work/exps/vicuna-7b-v1.5-mls-french-linear-lora-32-steplrwarmupkeep1e-4-
 # python src/llama_recipes/utils/preprocess_text.py ${preds} ${preds}.proc
 # python src/llama_recipes/utils/compute_wer.py ${trans} ${preds}.proc ${preds}.proc.wer
 
-# python src/slam_llm/utils/whisper_tn.py ${trans} ${trans}.proc
-# python src/slam_llm/utils/whisper_tn.py ${preds} ${preds}.proc
+python src/slam_llm/utils/whisper_tn.py ${trans} ${trans}.proc
+python src/slam_llm/utils/whisper_tn.py ${preds} ${preds}.proc
 # python src/slam_llm/utils/llm_tn.py ${preds} ${preds}.proc
 python src/slam_llm/utils/compute_wer.py ${trans}.proc ${preds}.proc ${preds}.proc.wer
 

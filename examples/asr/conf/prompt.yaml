@@ -1,0 +1,5 @@
+dataset_config:
+    # prompt: "Transcribe speech to French. Output the transcription directly without redundant content. Ensure that the output is not duplicated."
+    prompt: "Transcribe speech to French. Output the transcription directly without redundant content. Ensure that the output is not duplicated. Ensure that the spell and the grammar are correct."
+    # prompt: "Transcrire la parole en français. Sortez la transcription directement sans contenu redondant. Assurez-vous que la sortie n'est pas dupliquée. "
+    # prompt: "Transcrire la parole en français. Sortez la transcription directement sans contenu redondant. Assurez-vous que la sortie n'est pas dupliquée. "

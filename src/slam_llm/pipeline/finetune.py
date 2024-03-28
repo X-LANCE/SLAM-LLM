@@ -30,7 +30,8 @@ from slam_llm.data.concatenator import ConcatDataset
 from slam_llm.utils import fsdp_auto_wrap_policy
 from slam_llm.utils.config_utils import get_dataloader_kwargs
 
-from slam_llm.utils.dataset_utils import get_preprocessed_dataset
+from slam_llm.utils.dataset_utils import get_preprocessed_dataset, load_module_from_py_file
+from slam_llm.utils.model_utils import get_custom_model_factory
 from slam_llm.utils.train_utils import (
     train,
     freeze_transformer_layers,
@@ -40,13 +41,13 @@ from slam_llm.utils.train_utils import (
     get_policies
 )
 
-from slam_llm.pipeline.model_factory import model_factory
 import sys
 import logging
 import wandb
 
 import hydra
 from omegaconf import DictConfig, ListConfig, OmegaConf
+from pathlib import Path
 
 @hydra.main(config_name=None, version_base=None)
 def main_hydra(cfg: DictConfig):
@@ -69,7 +70,7 @@ def main_hydra(cfg: DictConfig):
         pdb.set_trace()
         
     main(kwargs)
-    
+
 
 def main(kwargs: DictConfig):
     # Update the configuration for the training and sharding process
@@ -145,6 +146,8 @@ def main(kwargs: DictConfig):
             wandb_config={"train_config": train_config, "fsdp_config": fsdp_config, "model_config": model_config, "log_config": log_config}
             wandb.init(dir=log_config.wandb_dir, entity=log_config.wandb_entity_name, project=log_config.wandb_project_name,name=log_config.wandb_exp_name ,config=wandb_config)
 
+
+    model_factory = get_custom_model_factory(model_config, logger)
     model, tokenizer = model_factory(train_config, model_config, **kwargs)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

@@ -167,7 +167,7 @@ class slam_model(nn.Module):
             .unsqueeze(1)
         )
         quantize_index = cosine_similarity.argmax(dim=-1)
-        encoder_outs = self.llm_embed(quantize_index)
+        # encoder_outs = self.llm_embed(quantize_index)
         # c_mask = c.max(-1)[0]<0.095
         # c_argmax = c.argmax(-1)
         # c_argmax[c_mask]=0
@@ -217,7 +217,7 @@ class slam_model(nn.Module):
         #             preds.detach()[:, :-1], labels.detach()[:, 1:], ignore_label=-100
         #         )
 
-        return quantize_index
+        return quantize_index, cosine_similarity
 
     @torch.no_grad()
     def generate(
@@ -464,6 +464,10 @@ def main(kwargs: DictConfig):
             # output_text = model.tokenizer.batch_decode(
             #     index, add_special_tokens=False, skip_special_tokens=True
             # )
+            quantize_index, cosine_similarity = model(**batch)
+            quantize_text = model.tokenizer.batch_decode(
+                quantize_index, add_special_tokens=False, skip_special_tokens=True
+            )
 
             model_outputs = model.generate(**batch)
             output_text = model.tokenizer.batch_decode(

@@ -1,19 +1,5 @@
 from dataclasses import dataclass, field
 from typing import Optional, List
-@dataclass
-class ModelConfig:
-    file: str = "examples/asr/model/slam_model_asr.py:model_factory"
-    llm_name: str = "vicuna-13b-v1.5"
-    llm_path: str = "PATH/to/LLAMA/7B"
-    llm_type: str = "decoder_only"
-    llm_dim: int = 4096
-    encoder_name: Optional[str] = None
-    encoder_ds_rate: int = 2
-    encoder_path: Optional[str] = None
-    encoder_dim: int = 1280
-    encoder_projector: str = "linear"
-    encoder_projector_ds_rate: int = 5
-    modal: str = "audio"
 
 @dataclass
 class PeftConfig:
@@ -72,26 +58,6 @@ class TrainConfig:
     })
     freeze_encoder:bool = False
 
-@dataclass
-class DataConfig:
-    dataset: str = "speech_dataset"
-    file: str = "src/slam_llm/datasets/speech_dataset.py:get_speech_dataset"
-    train_data_path: Optional[str] = None
-    val_data_path: Optional[str] = None
-    train_split: str = "train"
-    test_split:str = "validation"
-    prompt: Optional[str] = None
-    data_path: Optional[str] = None
-    max_words: Optional[int] = None
-    max_mel: Optional[float] = None
-    fix_length_audio: int = -1
-    inference_mode:bool = False
-    input_type: str = field(default="raw", metadata={
-                                "help":"Use raw when input is wav, mel when for whisper"
-                            })
-    mel_size: int = field(default=80, metadata={
-        "help": "80 for whisper large v1 and v2, 128 for v3"
-    })
 
 @dataclass
 class FSDPConfig:
@@ -114,3 +80,4 @@ class LogConfig:
     wandb_exp_name: str = "exp_name"
     log_file: str = "/root/test.log"
     log_interval: int = 5
+
