@@ -13,7 +13,8 @@ cd /root/SLAM-LLM
 # speech_encoder_path=/nfs/maziyang.mzy/models/Whisper/large-v2.pt
 # speech_encoder_path=/nfs/maziyang.mzy/models/Whisper/large-v2-qwen.pt
 # speech_encoder_path=/nfs/maziyang.mzy/models/wavlm/WavLM-Base.pt
-speech_encoder_path=/nfs/maziyang.mzy/models/wavlm/WavLM-Large.pt
+# speech_encoder_path=/nfs/maziyang.mzy/models/wavlm/WavLM-Large.pt
+audio_encoder_path=/root/models/BEATs_iter3_plus_AS2M.pt
 
 # llm_path=/nfs/maziyang.mzy/models/TinyLlama-1.1B-intermediate-step-1431k-3T
 # llm_path=/nfs/maziyang.mzy/models/TinyLlama-1.1B-Chat-v0.4
@@ -40,7 +41,7 @@ hydra.run.dir=$ckpt_path \
 ++model_config.encoder_name=wavlm \
 ++dataset_config.normalize=true \
 ++model_config.normalize=true \
-++model_config.encoder_path=$speech_encoder_path \
+++model_config.encoder_path=$audio_encoder_path \
 ++model_config.encoder_dim=1024 \
 ++model_config.encoder_projector=linear \
 ++model_config.encoder_projector_ds_rate=5 \

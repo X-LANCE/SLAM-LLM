@@ -67,7 +67,7 @@ class EncoderProjectorQFormer(nn.Module):
         self.norm = nn.LayerNorm(self.llm_dim, eps=1e-5)
 
     def forward(self, x, atts):
-        query = self.query.expand(x.shape[0], -1, -1)
+        query = self.query.expand(x.shape[0], -1, -1) # 复制 batch size 份
         
         query_output = self.qformer(
             query_embeds=query,

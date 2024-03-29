@@ -59,13 +59,13 @@ class EATEncoder:
         import fairseq
         model_path = UserDirModule('/fairseq/EAT')
         fairseq.utils.import_user_module(model_path)
-        EATEncoder, cfg, task = fairseq.checkpoint_utils.load_model_ensemble_and_task([model_config])
+        EATEncoder, cfg, task = fairseq.checkpoint_utils.load_model_ensemble_and_task([model_config.encoder_path])
         EATEncoder = EATEncoder[0]
 
         return EATEncoder
     
     def extract_features(self, source, padding_mask):
-        return self.model.extract_features(source, padding_mask,mask=False, remove_extra_tokens=True)['x']
+        return self.model.extract_features(source, padding_mask=padding_mask,mask=False, remove_extra_tokens=True)['x']
 
 
 class WavLMEncoder(nn.Module):

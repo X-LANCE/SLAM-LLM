@@ -139,6 +139,7 @@ class BEATs(nn.Module):
     def extract_features(
             self,
             fbank: torch.Tensor,
+            feature_only: bool = True,
             padding_mask: Optional[torch.Tensor] = None,
     ):
         if padding_mask is not None:
@@ -163,7 +164,7 @@ class BEATs(nn.Module):
             padding_mask=padding_mask,
         )
 
-        if self.predictor is not None:
+        if self.predictor is not None and (not feature_only): # 关闭了后面的分类头
             x = self.predictor_dropout(x)
             logits = self.predictor(x)
 

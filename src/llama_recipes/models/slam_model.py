@@ -47,7 +47,7 @@ def setup_encoder(train_config, model_config, **kwargs):
         if encoder_name == "beats": 
             from llama_recipes.models.encoder import BEATsEncoder
             encoder = BEATsEncoder.load(model_config)
-        if encoder_name == "EAT":
+        if encoder_name == "eat":
             from llama_recipes.models.encoder import EATEncoder
             encoder = EATEncoder.load(model_config)
         if encoder_name == "wavlm":
@@ -214,9 +214,10 @@ class slam_model(nn.Module):
             if self.model_config.encoder_name == "whisper":
                 encoder_outs = self.encoder.extract_variable_length_features(audio_mel.permute(0, 2, 1)) # bs*seq*dim
             if self.model_config.encoder_name == "beats":
-                encoder_outs, audio_mel_post_mask = self.encoder.extract_features(audio_mel, audio_mel_mask) # bs*seq*dim
-            if self.model_config.encoder_name == "EAT":
-                encoder_outs, audio_mel_mask = self.encoder.extract_features(audio_mel, audio_mel_mask)
+                encoder_outs, audio_mel_post_mask = self.encoder.extract_features(audio_mel, padding_mask = audio_mel_mask, feature_only = True) # bs*seq*dim，修改了来适用于 finetuned model
+            if self.model_config.encoder_name == "eat":
+                # encoder_outs = self.encoder.extract_features(audio_mel.unsqueeze(dim=1), padding_mask = None, mask=False, remove_extra_tokens = False)['x']  # fixme: 这里没有考虑 audio_mel_mask
+                encoder_outs = self.encoder.model.extract_features(audio_mel.unsqueeze(dim=1), padding_mask = None, mask=False, remove_extra_tokens = False)['x']
             if self.model_config.encoder_name == "wavlm":
                 encoder_outs = self.encoder.extract_features(audio, 1 - audio_mask) #(FIX:MZY): 1-audio_mask is needed for wavlm as the padding mask
             if self.model_config.encoder_name == "moco_wav2vec2":
@@ -248,6 +249,7 @@ class slam_model(nn.Module):
             else:
                 inputs_embeds = self.llm.model.model.model.embed_tokens(input_ids)
 
+        # shape (audio embeddings, bos, prompt, answer, eos) -> length 看 batch size 中最长的那个
         if modality_mask is not None:
             batch_size, token_num, dims = inputs_embeds.shape
             _, l, _ = encoder_outs.shape
@@ -263,7 +265,7 @@ class slam_model(nn.Module):
         if self.metric:
             with torch.no_grad():
                 preds = torch.argmax(model_outputs.logits, -1)
-                acc = compute_accuracy(preds.detach()[:, :-1], labels.detach()[:, 1:], ignore_label=-100)
+                acc = compute_accuracy(preds.detach()[:, :-1], labels.detach()[:, 1:], ignore_label=-100) # next step prediction
 
         return model_outputs, acc
     
@@ -299,7 +301,7 @@ class slam_model(nn.Module):
 
         model_outputs = self.llm.generate(
             inputs_embeds=inputs_embeds,
-            max_length=kwargs.get("max_length", 200),
+            # max_length=kwargs.get("max_length", 200),
             max_new_tokens=kwargs.get("max_new_tokens", 200),
             num_beams=kwargs.get("num_beams", 4),
             do_sample=kwargs.get("do_sample", False),
@@ -332,15 +334,41 @@ class slam_model(nn.Module):
         negative_prompt_attention_mask = None,
         **kwargs,
     ):
-
+        #TODO: 修改成 beats 的
         device = kwargs.get("device", "cuda")
         if os.path.exists(wav_path): # Audio-Text QA
-            import whisper
-            audio_raw = whisper.load_audio(wav_path)
-            audio_raw = whisper.pad_or_trim(audio_raw)
-            audio_mel = whisper.log_mel_spectrogram(audio_raw).permute(1,0)[None, :, :].to(device)
+            # import whisper
+            # audio_raw = whisper.load_audio(wav_path)
+            # audio_raw = whisper.pad_or_trim(audio_raw)
+            # audio_mel = whisper.log_mel_spectrogram(audio_raw).permute(1,0)[None, :, :].to(device)
 
-            encoder_outs = self.encoder.extract_variable_length_features(audio_mel.permute(0, 2, 1))
+            # encoder_outs = self.encoder.extract_variable_length_features(audio_mel.permute(0, 2, 1))
+            
+            from torchaudio.transforms import Resample
+            from llama_recipes.models.BEATs.BEATs import BEATs
+            from llama_recipes.models.EAT.EAT import EAT_preprocess
+            import torchaudio
+            audio_raw, sample_rate = torchaudio.load(wav_path)
+
+            resampler = Resample(orig_freq=sample_rate, new_freq=16000)
+            audio_raw = resampler(audio_raw)
+
+            if self.model_config.encoder_name == 'beats':
+                audio_mel = BEATs.preprocess(audio_raw[0])
+            elif self.model_config.encoder_name == 'eat':
+                audio_mel = EAT_preprocess(audio_raw[0])
+            else: 
+                pass
+                
+            audio_mel = audio_mel.unsqueeze(0)
+            audio_mel_mask = torch.ones_like(audio_mel)
+            audio_mel = audio_mel.to(device)
+            audio_mel_mask = audio_mel_mask.to(device)
+            
+            if self.model_config.encoder_name == 'beats':
+                encoder_outs, audio_mel_post_mask = self.encoder.extract_features(audio_mel, audio_mel_mask)
+            elif self.model_config.encoder_name == 'eat':
+                encoder_outs = self.encoder.extract_features(audio_mel.unsqueeze(dim=1), padding_mask = None, mask=False, remove_extra_tokens = True)['x']
             
             if self.model_config.encoder_projector == "q-former":
                 audio_mel_post_mask = torch.ones(encoder_outs.size()[:-1], dtype=torch.long).to(encoder_outs.device)

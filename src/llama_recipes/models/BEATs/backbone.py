@@ -109,6 +109,7 @@ class TransformerEncoder(nn.Module):
     def extract_features(self, x, padding_mask=None, tgt_layer=None):
 
         if padding_mask is not None:
+            padding_mask= ~padding_mask
             x[padding_mask] = 0
 
         x_conv = self.pos_conv(x.transpose(1, 2))
