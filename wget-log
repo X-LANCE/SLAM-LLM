@@ -1,0 +1,6 @@
+--2024-03-28 07:24:50--  https://valle.blob.core.windows.net/share/BEATs/BEATs_iter3_plus_AS2M_finetuned_on_AS2M_cpt2.pt?sv=2020-08-04
+Resolving valle.blob.core.windows.net (valle.blob.core.windows.net)... 20.60.231.33
+Connecting to valle.blob.core.windows.net (valle.blob.core.windows.net)|20.60.231.33|:443... connected.
+HTTP request sent, awaiting response... 409 Public access is not permitted on this storage account.
+2024-03-28 07:24:56 ERROR 409: Public access is not permitted on this storage account..
+
