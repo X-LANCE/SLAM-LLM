@@ -1,6 +1,6 @@
 #!/bin/bash
 #export PYTHONPATH=/root/whisper:$PYTHONPATH
-export CUDA_VISIBLE_DEVICES=7
+export CUDA_VISIBLE_DEVICES=2
 export TOKENIZERS_PARALLELISM=false
 # export CUDA_LAUNCH_BLOCKING=1
 
@@ -14,7 +14,7 @@ cd /root/SLAM-LLM
 # speech_encoder_path=/nfs/maziyang.mzy/models/Whisper/large-v2-qwen.pt
 # speech_encoder_path=/nfs/maziyang.mzy/models/wavlm/WavLM-Base.pt
 # speech_encoder_path=/nfs/maziyang.mzy/models/wavlm/WavLM-Large.pt
-audio_encoder_path=/root/models/EAT/EAT-base_epoch30.pt
+audio_encoder_path=/root/models/EAT/EAT-base_epoch30_finetune_AS2M.pt
 
 # llm_path=/nfs/maziyang.mzy/models/TinyLlama-1.1B-intermediate-step-1431k-3T
 # llm_path=/nfs/maziyang.mzy/models/TinyLlama-1.1B-Chat-v0.4
@@ -25,8 +25,8 @@ llm_path=/root/models/vicuna-7b-v1.5
 # llm_path=/nfs/maziyang.mzy/models/vicuna-7b-v1.5
 # llm_path=/nfs/maziyang.mzy/models/vicuna-13b-v1.5
 
-output_dir=/root/exps/eat_fp16_btz16_linear
-ckpt_path=$output_dir/aac/3
+output_dir=/root/exps/eat_finetune_linear
+ckpt_path=$output_dir/aac/4
 # peft_ckpt=/nfs/maziyang.mzy/exps/llama-2-hf-finetune-asr-ds5-proj2048-lr1e-4-whisper-lora-prompt-paddinglr-20240102/asr/4
 val_data_path=/root/data/AudioCaps/new_test.jsonl
 decode_log=$ckpt_path/decode_log_test_clean_beam4_repetition_penalty1
@@ -57,7 +57,7 @@ python src/llama_recipes/pipeline/inference_batch.py \
     train_config.model_name=aac \
     train_config.batching_strategy=custom \
     train_config.num_epochs=1 \
-    train_config.val_batch_size=8 \
+    train_config.val_batch_size=4 \
     train_config.num_workers_dataloader=4 \
     train_config.output_dir=$output_dir \
     +ckpt_path=$ckpt_path/model.pt \

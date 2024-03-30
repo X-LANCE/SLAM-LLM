@@ -1,7 +1,7 @@
 #!/bin/bash
 # export PYTHONPATH=/root/whisper:$PYTHONPATH
 export PYTHONPATH=/root/fairseq:$PYTHONPATH
-export CUDA_VISIBLE_DEVICES=4
+export CUDA_VISIBLE_DEVICES=3
 export TOKENIZERS_PARALLELISM=false
 # export CUDA_LAUNCH_BLOCKING=1
 export OMP_NUM_THREADS=7
@@ -18,7 +18,7 @@ cd /root/SLAM-LLM
 audio_encoder_path=/root/models/EAT/EAT-base_epoch30_finetune_AS2M.pt
 # speech_encoder_path=/root/models/eat_iter3_plus_AS2M.pt
 
-exp_name=eat_finetune_linear
+exp_name=eat_finetune_linear_btz4
 llm_path=/root/models/vicuna-7b-v1.5
 # llm_path=/nfs/maziyang.mzy/models/vicuna-13b-v1.5/vicuna-13b-v1.5
 
@@ -54,9 +54,9 @@ python /root/SLAM-LLM/src/llama_recipes/pipeline/finetune.py \
     train_config.total_steps=100000 \
     train_config.lr=1e-4 \
     train_config.validation_interval=1000 \
-    train_config.batch_size_training=16 \
+    train_config.batch_size_training=4 \
     train_config.val_batch_size=4 \
-    train_config.num_workers_dataloader=8 \
+    train_config.num_workers_dataloader=4 \
     train_config.use_fp16=true \
     train_config.output_dir=$output_dir \
     log_config.log_file="${output_dir}/train.log" \
