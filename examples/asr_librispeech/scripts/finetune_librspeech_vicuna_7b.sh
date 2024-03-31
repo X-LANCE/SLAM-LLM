@@ -1,7 +1,7 @@
 #!/bin/bash
 # export PYTHONPATH=/root/whisper:$PYTHONPATH
 export PYTHONPATH=/root/fairseq:$PYTHONPATH
-export CUDA_VISIBLE_DEVICES=2,3
+export CUDA_VISIBLE_DEVICES=6,7
 export TOKENIZERS_PARALLELISM=false
 # export CUDA_LAUNCH_BLOCKING=1
 export OMP_NUM_THREADS=1
@@ -20,7 +20,7 @@ speech_encoder_path=/cxgroup/model/whisper/large-v3.pt
 llm_path=/cxgroup/model/vicuna-7b-v1.5
 # llm_path=/nfs/maziyang.mzy/models/vicuna-13b-v1.5
 
-output_dir=/work/exps/vicuna-7b-v1.5-librispeech-qformer-steplrwarmupkeep1e-4-whisper-largev3-$(date +"%Y%m%d")
+output_dir=/work/exps/vicuna-7b-v1.5-librispeech-linear-steplrwarmupkeep1e-4-whisper-largev3-$(date +"%Y%m%d")
 
 hydra_args="
 hydra.run.dir=$output_dir \
@@ -31,8 +31,7 @@ hydra.run.dir=$output_dir \
 ++model_config.encoder_projector_ds_rate=5 \
 ++model_config.encoder_path=$speech_encoder_path \
 ++model_config.encoder_dim=1280 \
-++model_config.encoder_projector=q-former \
-++dataset_config.fix_length_audio=64 \
+++model_config.encoder_projector=linear \
 ++dataset_config.dataset=speech_dataset \
 ++dataset_config.train_data_path=data/librispeech/train960.jsonl \
 ++dataset_config.val_data_path=data/librispeech/dev.jsonl \
