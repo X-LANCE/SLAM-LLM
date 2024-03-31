@@ -21,7 +21,7 @@ speech_encoder_path=/cxgroup/model/whisper/large-v3.pt
 llm_path=/cxgroup/model/vicuna-7b-v1.5
 # llm_path=/nfs/maziyang.mzy/models/vicuna-13b-v1.5
 
-output_dir=/work/exps/vicuna-7b-v1.5-mls-polish-linear-steplrwarmupkeep1e-4-whisper-largev3-$(date +"%Y%m%d")-deepspeed
+output_dir=/work/exps/vicuna-7b-v1.5-librispeech-linear-steplrwarmupkeep1e-4-whisper-largev3-$(date +"%Y%m%d")-deepspeed
 
 hydra_args="
 hydra.run.dir=$output_dir \
@@ -47,7 +47,7 @@ hydra.run.dir=$output_dir \
 ++train_config.warmup_steps=1000 \
 ++train_config.total_steps=100000 \
 ++train_config.lr=1e-4 \
-++train_config.validation_interval=5 \
+++train_config.validation_interval=1000 \
 ++train_config.batch_size_training=4 \
 ++train_config.val_batch_size=4 \
 ++train_config.num_workers_dataloader=4 \
