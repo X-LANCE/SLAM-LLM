@@ -27,7 +27,7 @@ from hydra.types import TaskFunction
 from hydra.core.utils import _flush_loggers, configure_log
 
 
-from slam_llm.model_checkpointing import (
+from slam_llm.utils.checkpoint_handler import (
     save_model_checkpoint,
     save_model_checkpoint_deepspeed,
     save_model_and_optimizer_sharded,
