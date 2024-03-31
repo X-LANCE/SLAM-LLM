@@ -164,6 +164,15 @@ def save_model_checkpoint(
 
         
         logger.info(f"model checkpoint saved for epoch {epoch} at {save_full_path}\n")
+
+def save_model_checkpoint_deepspeed(model, cfg, checkpoint_name="checkpoint"):
+    logger.info(f"--> saving model ...")
+    save_dir = os.path.join(cfg.output_dir, checkpoint_name)
+    os.makedirs(save_dir, exist_ok=True)
+    # save_full_path = os.path.join(save_dir, "model.pt")
+    save_full_path = save_dir
+    model.save_checkpoint(save_dir=save_full_path, exclude_frozen_parameters=True)
+    logger.info(f"encoder saved at {save_full_path}")
       
 def save_model_checkpoint_peft(model, optimizer, rank, cfg, checkpoint_name="checkpoint", save_trainable_only=True):
     logger.info(f"--> saving model ...")

@@ -4,6 +4,7 @@
 from slam_llm.model_checkpointing.checkpoint_handler import (
     load_model_checkpoint,
     save_model_checkpoint,
+    save_model_checkpoint_deepspeed,
     load_optimizer_checkpoint,
     save_optimizer_checkpoint,
     save_model_and_optimizer_sharded,

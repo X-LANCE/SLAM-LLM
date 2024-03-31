@@ -30,6 +30,7 @@ class PeftConfig:
 class TrainConfig:
     model_name:str = "PATH/to/LLAMA/7B"
     enable_ddp:bool = False
+    enable_deepspeed:bool = False
     enable_fsdp:bool = False
     low_cpu_fsdp:bool = False
     run_validation:bool = True
