@@ -227,6 +227,22 @@ class slam_model(nn.Module):
         self.train_config = train_config
         self.model_config = model_config
 
+        if train_config.get("enable_deepspeed", False):
+            def new_forward(self, input):
+                output = F.layer_norm(
+                    input.float(),
+                    self.normalized_shape,
+                    self.weight.float() if self.weight is not None else None,
+                    self.bias.float() if self.bias is not None else None,
+                    self.eps,
+                )
+                return output.type_as(input)
+            for item in self.modules():
+                if isinstance(item, nn.LayerNorm):
+                    item.forward = types.MethodType(new_forward, item)
+
+
+
     def forward(self,
                 input_ids: torch.LongTensor = None,
                 attention_mask: Optional[torch.Tensor] = None,
