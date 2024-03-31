@@ -80,6 +80,10 @@ train_config:
   run_test_during_validation_prompt: "<|ASR|>"
   freeze_llm: false
   freeze_encoder: false
+  use_neft: false
+  neft_noise_alpha: 5
+  use_neft_both: false
+  specaug: false
 
 dataset_config:
   dataset: "speech_dataset"

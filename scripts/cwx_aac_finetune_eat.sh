@@ -1,7 +1,7 @@
 #!/bin/bash
 # export PYTHONPATH=/root/whisper:$PYTHONPATH
 export PYTHONPATH=/root/fairseq:$PYTHONPATH
-export CUDA_VISIBLE_DEVICES=3
+export CUDA_VISIBLE_DEVICES=2
 export TOKENIZERS_PARALLELISM=false
 # export CUDA_LAUNCH_BLOCKING=1
 export OMP_NUM_THREADS=7
@@ -13,14 +13,11 @@ export OMP_NUM_THREADS=7
 
 cd /root/SLAM-LLM
 
-# speech_encoder_path=/nfs/zhifu.gzf/ckpt/Whisper/large-v2.pt
-# speech_encoder_path=/nfs/maziyang.mzy/models/Whisper/large-v2-qwen.pt
-audio_encoder_path=/root/models/EAT/EAT-base_epoch30_finetune_AS2M.pt
-# speech_encoder_path=/root/models/eat_iter3_plus_AS2M.pt
+# audio_encoder_path=/root/models/EAT/EAT-base_epoch30.pt  # pretrain
+audio_encoder_path=/root/models/EAT/EAT-base_epoch30_finetune_AS2M.pt  # finetune
 
-exp_name=eat_finetune_linear_btz4
+exp_name=eat_lora_specaug
 llm_path=/root/models/vicuna-7b-v1.5
-# llm_path=/nfs/maziyang.mzy/models/vicuna-13b-v1.5/vicuna-13b-v1.5
 
 output_dir=/root/exps/$exp_name
 
@@ -48,7 +45,7 @@ python /root/SLAM-LLM/src/llama_recipes/pipeline/finetune.py \
     dataset_config.model_name=eat \
     train_config.model_name='aac' \
     train_config.freeze_encoder=true \
-    train_config.freeze_llm=true \
+    train_config.freeze_llm=false \
     train_config.batching_strategy='custom' \
     train_config.warmup_steps=1000 \
     train_config.total_steps=100000 \
@@ -60,11 +57,15 @@ python /root/SLAM-LLM/src/llama_recipes/pipeline/finetune.py \
     train_config.use_fp16=true \
     train_config.output_dir=$output_dir \
     log_config.log_file="${output_dir}/train.log" \
+    train_config.use_peft=true \
+    train_config.peft_config.peft_method=lora \
     log_config.use_wandb=true \
     log_config.wandb_dir=${output_dir} \
     log_config.wandb_entity_name=wxc12 \
     log_config.wandb_project_name=slam-llm \
     log_config.wandb_exp_name=$exp_name \
+    train_config.specaug=true \
+    # train_config.use_neft=true \
     # ++metric=acc \
     # train_config.use_peft=true \
     # train_config.peft_config.peft_method=lora \

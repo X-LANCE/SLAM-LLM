@@ -15,10 +15,10 @@ def model_factory(train_config, model_config, **kwargs):
 
     ckpt_path = kwargs.get("ckpt_path", None) #FIX(MZY): load model ckpt(mainly projector, related to model_checkpointing/checkpoint_handler.py: save_model_checkpoint_peft)
     if ckpt_path is not None and model_config.encoder_name == 'eat':
-        logger.info("loading other parts from: {} and there will be a bug when using q-former or lora~".format(ckpt_path))
+        logger.info("loading other parts from: {} and there will be a bug when using q-former~".format(ckpt_path))
         ckpt_dict = torch.load(ckpt_path, map_location="cpu")
         updated_ckpt_dict = {key.replace('encoder_projector.', ''): value for key, value in ckpt_dict.items()}
-        model.encoder_projector.load_state_dict(updated_ckpt_dict, strict=False)   # fixme: 暂时只 load 线性层
+        model.encoder_projector.load_state_dict(updated_ckpt_dict, strict=False)   # fixme: 暂时只 load 线性层，q-former 还没管 (btw LoRA 在 setup_model 中已经 load 了)
     
     elif ckpt_path is not None:
         logger.info("loading other parts from: {}".format(ckpt_path))

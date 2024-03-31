@@ -1,7 +1,7 @@
 #!/bin/bash
 # export PYTHONPATH=/root/whisper:$PYTHONPATH
 export PYTHONPATH=/root/fairseq:$PYTHONPATH
-export CUDA_VISIBLE_DEVICES=0,1
+export CUDA_VISIBLE_DEVICES=5
 export TOKENIZERS_PARALLELISM=false
 # export CUDA_LAUNCH_BLOCKING=1
 export OMP_NUM_THREADS=7
@@ -13,21 +13,18 @@ export OMP_NUM_THREADS=7
 
 cd /root/SLAM-LLM
 
-# speech_encoder_path=/nfs/zhifu.gzf/ckpt/Whisper/large-v2.pt
-# speech_encoder_path=/nfs/maziyang.mzy/models/Whisper/large-v2-qwen.pt
-# audio_encoder_path=/root/models/BEATs_iter3_plus_AS2M.pt
-audio_encoder_path=/root/models/BEATs_iter3_plus_AS2M_finetuned_on_AS2M_cpt2.pt
-# speech_encoder_path=/root/models/BEATs_iter3_plus_AS2M.pt
 
-exp_name=test
+# audio_encoder_path=/root/models/BEATs_iter3_plus_AS2M.pt  # pretrain
+audio_encoder_path=/root/models/BEATs_iter3_plus_AS2M_finetuned_on_AS2M_cpt2.pt  # finetune
+
+exp_name=test_neft
 llm_path=/root/models/vicuna-7b-v1.5
-# llm_path=/nfs/maziyang.mzy/models/vicuna-13b-v1.5/vicuna-13b-v1.5
 
 output_dir=/root/exps/$exp_name
 
 # -m debugpy --listen 6666 --wait-for-client
 if [[ $CUDA_VISIBLE_DEVICES != *","* ]]; then
-python /root/SLAM-LLM/src/llama_recipes/pipeline/finetune.py \
+python -m debugpy --listen 6666 --wait-for-client /root/SLAM-LLM/src/llama_recipes/pipeline/finetune.py \
     --config-path "/root/SLAM-LLM/scripts/conf" \
     --config-name "aac_vicuna_lora.yaml" \
     hydra.run.dir=$output_dir \
@@ -61,13 +58,15 @@ python /root/SLAM-LLM/src/llama_recipes/pipeline/finetune.py \
     train_config.output_dir=$output_dir \
     train_config.use_fp16=true \
     log_config.log_file="${output_dir}/train.log" \
+    train_config.use_peft=true \
+    train_config.peft_config.peft_method=lora \
+    train_config.use_neft=true \
+    train_config.neft_noise_alpha=5 \
     # log_config.wandb_dir=${output_dir} \
     # log_config.wandb_entity_name=wxc12 \
     # log_config.wandb_project_name=slam-llm \
     # log_config.wandb_exp_name=$exp_name \
     # log_config.use_wandb=true \
-    # train_config.use_peft=true \
-    # train_config.peft_config.peft_method=lora \
     # ++metric=acc \
     # train_config.use_peft=true \
     # train_config.peft_config.peft_method=lora \

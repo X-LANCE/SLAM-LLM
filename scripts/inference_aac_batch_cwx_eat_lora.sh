@@ -1,6 +1,6 @@
 #!/bin/bash
 #export PYTHONPATH=/root/whisper:$PYTHONPATH
-export CUDA_VISIBLE_DEVICES=0
+export CUDA_VISIBLE_DEVICES=2
 export TOKENIZERS_PARALLELISM=false
 # export CUDA_LAUNCH_BLOCKING=1
 
@@ -25,7 +25,7 @@ llm_path=/root/models/vicuna-7b-v1.5
 # llm_path=/nfs/maziyang.mzy/models/vicuna-7b-v1.5
 # llm_path=/nfs/maziyang.mzy/models/vicuna-13b-v1.5
 
-output_dir=/root/exps/eat_lora_neft_v0
+output_dir=/root/exps/eat_lora_specaug
 ckpt_path=$output_dir/aac/3
 # peft_ckpt=/nfs/maziyang.mzy/exps/llama-2-hf-finetune-asr-ds5-proj2048-lr1e-4-whisper-lora-prompt-paddinglr-20240102/asr/4
 val_data_path=/root/data/AudioCaps/new_test.jsonl
@@ -60,11 +60,13 @@ python src/llama_recipes/pipeline/inference_batch.py \
     train_config.val_batch_size=4 \
     train_config.num_workers_dataloader=4 \
     train_config.output_dir=$output_dir \
-    +ckpt_path=$ckpt_path/model.pt \
     +decode_log=$decode_log \
     train_config.freeze_encoder=true \
     train_config.freeze_llm=true \
-
+    train_config.use_peft=true \
+    train_config.peft_config.peft_method=lora \
+    +ckpt_path=$ckpt_path/model.pt \
+    +peft_ckpt=$ckpt_path \
 # ++model_config.encoder_projector=q-former \
 # ++dataset_config.fix_length_audio=64 \
 # --peft_ckpt $peft_ckpt \

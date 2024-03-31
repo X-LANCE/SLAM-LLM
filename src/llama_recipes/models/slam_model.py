@@ -208,16 +208,27 @@ class slam_model(nn.Module):
         instruct_mask = kwargs.get("instruct_mask", None)
 
         modality_mask = kwargs.get("modality_mask", None)
+        
+        # Specaug
+        # NOTE: 有两种 specaug 的设置，有空可以改成 EAT 那种
+        audio_mel = audio_mel.unsqueeze(dim=1)
+        if audio_mel is not None and self.train_config.specaug and self.llm.training: 
+            from torchlibrosa.augmentation import SpecAugmentation
+            spec_augmenter = SpecAugmentation(time_drop_width=64,
+                                        time_stripes_num=2,
+                                        freq_drop_width=8,
+                                        freq_stripes_num=2)
+            audio_mel = spec_augmenter(audio_mel)
 
         encoder_outs = None
         if audio_mel is not None or audio is not None:
             if self.model_config.encoder_name == "whisper":
                 encoder_outs = self.encoder.extract_variable_length_features(audio_mel.permute(0, 2, 1)) # bs*seq*dim
             if self.model_config.encoder_name == "beats":
-                encoder_outs, audio_mel_post_mask = self.encoder.extract_features(audio_mel, padding_mask = audio_mel_mask, feature_only = True) # bs*seq*dim，修改了来适用于 finetuned model
+                encoder_outs, audio_mel_post_mask = self.encoder.extract_features(audio_mel.squeeze(), padding_mask = audio_mel_mask, feature_only = True) # bs*seq*dim，修改了来适用于 finetuned model
             if self.model_config.encoder_name == "eat":
                 # encoder_outs = self.encoder.extract_features(audio_mel.unsqueeze(dim=1), padding_mask = None, mask=False, remove_extra_tokens = False)['x']  # fixme: 这里没有考虑 audio_mel_mask
-                encoder_outs = self.encoder.model.extract_features(audio_mel.unsqueeze(dim=1), padding_mask = None, mask=False, remove_extra_tokens = False)['x']
+                encoder_outs = self.encoder.model.extract_features(audio_mel, padding_mask = None, mask=False, remove_extra_tokens = False)['x']
             if self.model_config.encoder_name == "wavlm":
                 encoder_outs = self.encoder.extract_features(audio, 1 - audio_mask) #(FIX:MZY): 1-audio_mask is needed for wavlm as the padding mask
             if self.model_config.encoder_name == "moco_wav2vec2":
@@ -248,6 +259,11 @@ class slam_model(nn.Module):
                 inputs_embeds = self.llm.model.model.embed_tokens(input_ids)
             else:
                 inputs_embeds = self.llm.model.model.model.embed_tokens(input_ids)
+                
+        # NEFtune for text embeddings only
+        if self.train_config.use_neft and self.llm.training: 
+            noise_alpha = self.train_config.neft_noise_alpha
+            inputs_embeds = self.neft(inputs_embeds,noise_alpha)
 
         # shape (audio embeddings, bos, prompt, answer, eos) -> length 看 batch size 中最长的那个
         if modality_mask is not None:
@@ -255,6 +271,11 @@ class slam_model(nn.Module):
             _, l, _ = encoder_outs.shape
             encoder_outs_pad = F.pad(encoder_outs, (0, 0, 0, token_num-l, 0, 0), value=0.0)
             inputs_embeds = encoder_outs_pad * modality_mask[:, :, None] + inputs_embeds * (~modality_mask[:, :, None])
+            
+        # NEFtune for both text and audio embeddings
+        if self.train_config.use_neft_both and self.llm.training: 
+            noise_alpha = self.train_config.neft_noise_alpha
+            inputs_embeds = self.neft(inputs_embeds,noise_alpha)
 
         if kwargs.get("inference_mode", False):
             return inputs_embeds, attention_mask
@@ -268,6 +289,13 @@ class slam_model(nn.Module):
                 acc = compute_accuracy(preds.detach()[:, :-1], labels.detach()[:, 1:], ignore_label=-100) # next step prediction
 
         return model_outputs, acc
+    
+    def neft(self, orig_embed, noise_alpha):
+        embed_init = orig_embed
+        dims = torch.tensor(embed_init.size(1) * embed_init.size(2))
+        mag_norm = noise_alpha/torch.sqrt(dims)
+        return embed_init + torch.zeros_like(embed_init).uniform_(-mag_norm, mag_norm)
+        
     
     @torch.no_grad()
     def generate(self,
