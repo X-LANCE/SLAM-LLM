@@ -9,13 +9,5 @@ wandb/
 log/
 *.log
 PATH/
-scriptsmy/
 configs/
 *.txt
-scripts_finish/
-scripts_general/
-slides_script/
-scripts_avhubert/
-scripts_hubert/
-scripts_hubert_remake/
-scripts_AVSR/

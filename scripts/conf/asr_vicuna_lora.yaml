@@ -54,13 +54,25 @@ train_config:
   use_fp16: false
   mixed_precision: true
   val_batch_size: 1
-
+  num_beams: 4
+  length_penalty: 1.0
+  repetition_penalty: 1.0
+  
   use_peft: false
+  # peft_config:
+  #   peft_method: "lora" # None , llama_adapter, prefix
+  #   r: 8
+  #   lora_alpha: 32
+  #   target_modules: [ "q_proj", "v_proj" ]
+  #   bias: "none"
+  #   task_type: "CAUSAL_LM"
+  #   lora_dropout: 0.05
+  #   inference_mode: false
   peft_config:
     peft_method: "lora" # None , llama_adapter, prefix
-    r: 8
+    r: 32
     lora_alpha: 32
-    target_modules: [ "q_proj", "v_proj" ]
+    target_modules: [ "q_proj", "v_proj","k_proj","o_proj" ]
     bias: "none"
     task_type: "CAUSAL_LM"
     lora_dropout: 0.05
@@ -81,6 +93,7 @@ train_config:
   freeze_llm: false
   freeze_encoder: false
   scheduler: constant
+  use_amp: true
 
 dataset_config:
   dataset: "speech_dataset"
