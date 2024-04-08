@@ -87,6 +87,7 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
     best_val_loss = float("inf")
     best_val_acc = 0.0
     for epoch in range(train_config.num_epochs):
+        current_epoch_best_val_loss = float("inf")
         epoch_start_time = time.perf_counter()
         with MemoryTrace() as memtrace:  # track the memory usage
             model.train()
@@ -165,7 +166,8 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                     eval_ppl, eval_epoch_loss, *rest = evaluation(model, train_config, eval_dataloader, local_rank, tokenizer)
                     eval_epoch_acc = rest[0] if rest else -1
                     checkpoint_start_time = time.perf_counter()
-                    if train_config.save_model and (eval_epoch_loss < best_val_loss):
+                    #if train_config.save_model and (eval_epoch_loss < best_val_loss):
+                    if train_config.save_model and (eval_epoch_loss < current_epoch_best_val_loss):
                         if train_config.enable_fsdp or train_config.enable_ddp:
                             dist.barrier()
                         if train_config.use_peft:
@@ -251,6 +253,13 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                             dist.barrier()
                     checkpoint_end_time = time.perf_counter() - checkpoint_start_time
                     checkpoint_times.append(checkpoint_end_time)
+                    if eval_epoch_loss < current_epoch_best_val_loss:
+                        current_epoch_best_val_loss = eval_epoch_loss
+                        if train_config.enable_fsdp or train_config.enable_ddp:
+                            if rank==0:
+                                logger.info(f"current best eval loss on epoch {epoch+1} is {current_epoch_best_val_loss}")
+                        else:
+                            logger.info(f"current best eval loss on epoch {epoch+1} is {current_epoch_best_val_loss}")
                     if eval_epoch_loss < best_val_loss:
                         best_val_loss = eval_epoch_loss
                         if train_config.enable_fsdp or train_config.enable_ddp:

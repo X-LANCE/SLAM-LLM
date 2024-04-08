@@ -1,14 +1,13 @@
 #cd /root/SLAM-LLM
 
-trans="/nfs/maziyang.mzy/exps/vicuna-7b-v1.5-finetune-asr-ds10-proj2048-steplrwarmup1e-4decay-fuyu-lora_qkvo_promptshort-lowergt-20240220/asr/6/decode_log_test_other_beam4_repetition_penalty1_bs1_gt"
-preds="/nfs/maziyang.mzy/exps/vicuna-7b-v1.5-finetune-asr-ds10-proj2048-steplrwarmup1e-4decay-fuyu-lora_qkvo_promptshort-lowergt-20240220/asr/6/decode_log_test_other_beam4_repetition_penalty1_bs1_pred"
+trans="/exps/mixtral-7b-finetune-asr-cvmls-linear-lora-24-projector-2048-steplrwarmupkeep1e-4-whisper-largev3-fr-LID-longprompt-average-20240404-test/asr/average/decode_log_test_beam4_gt"
+preds="/exps/mixtral-7b-finetune-asr-cvmls-linear-lora-24-projector-2048-steplrwarmupkeep1e-4-whisper-largev3-fr-LID-longprompt-average-20240404-test/asr/average/decode_log_test_beam4_pred"
 
-# python src/llama_recipes/utils/preprocess_text.py ${preds} ${preds}.proc
-# python src/llama_recipes/utils/compute_wer.py ${trans} ${preds}.proc ${preds}.proc.wer
+cd /SLAM-LLM
+python src/slam_llm/utils/preprocess_text_mls.py ${preds} ${preds}.proc fr
+python src/slam_llm/utils/preprocess_text_mls.py ${trans} ${trans}.proc fr
 
-python src/llama_recipes/utils/whisper_tn.py ${trans} ${trans}.proc
-python src/llama_recipes/utils/llm_tn.py ${preds} ${preds}.proc
-python src/llama_recipes/utils/compute_wer.py ${trans}.proc ${preds}.proc ${preds}.proc.wer
+python /SLAM-LLM/src/slam_llm/utils/compute_wer.py ${trans}.proc ${preds}.proc ${preds}.proc.wer
 
 tail -3 ${preds}.proc.wer
 

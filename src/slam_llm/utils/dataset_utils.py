@@ -35,6 +35,7 @@ def get_custom_dataset(dataset_config, tokenizer, split: str):
         raise ValueError(f"Dataset file {module_path} is not a .py file.")
 
     module_path = Path(module_path)
+    print(module_path)
     if not module_path.is_file():
         raise FileNotFoundError(f"Dataset py file {module_path.as_posix()} does not exist or is not a file.")
 
@@ -49,8 +50,6 @@ def get_custom_dataset(dataset_config, tokenizer, split: str):
 def get_preprocessed_dataset(
     tokenizer, dataset_config, split: str = "train"
 ) -> torch.utils.data.Dataset:
-    if not dataset_config.dataset in DATASET_PREPROC:
-        raise NotImplementedError(f"{dataset_config.dataset} is not (yet) implemented")
 
     def get_split():
         return (

@@ -8,9 +8,9 @@ class EncoderProjectorConcat(nn.Module):
         self.k = config.encoder_projector_ds_rate
         self.encoder_dim = config.encoder_dim
         self.llm_dim = config.llm_dim
-        self.linear1 = nn.Linear(self.encoder_dim * self.k, 2048)
+        self.linear1 = nn.Linear(self.encoder_dim * self.k, config.encoder_projector_dim)
         self.relu = nn.ReLU()
-        self.linear2 = nn.Linear(2048, config.llm_dim)
+        self.linear2 = nn.Linear(config.encoder_projector_dim, config.llm_dim)
 
     def forward(self, x):
         batch_size, seq_len, dim = x.size()
