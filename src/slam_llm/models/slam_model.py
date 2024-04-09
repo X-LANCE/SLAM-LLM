@@ -196,6 +196,8 @@ class slam_model(nn.Module):
         self.train_config = train_config
         self.model_config = model_config
 
+        self.encoder_out_weight = nn.Parameter(torch.randn(3))
+
     def forward(self,
                 input_ids: torch.LongTensor = None,
                 attention_mask: Optional[torch.Tensor] = None,
@@ -228,7 +230,11 @@ class slam_model(nn.Module):
         encoder_outs = None
         if audio_mel is not None or audio is not None:
             if self.model_config.encoder_name == "whisper":
-                encoder_outs = self.encoder.extract_variable_length_features(audio_mel.permute(0, 2, 1)) # bs*seq*dim
+                if kwargs.get("use_weight_sum", False):
+                    encoder_out_weight = F.softmax(self.encoder_out_weight, dim=0)
+                    encoder_outs = self.encoder.extract_variable_length_features_weight_sum(audio_mel.permute(0, 2, 1), encoder_out_weight) # bs*seq*dim
+                else:
+                    encoder_outs = self.encoder.extract_variable_length_features(audio_mel.permute(0, 2, 1)) # bs*seq*dim
             if self.model_config.encoder_name == "beats":
                 encoder_outs, audio_mel_post_mask = self.encoder.extract_features(audio_mel, audio_mel_mask) # bs*seq*dim
             if self.model_config.encoder_name == "wavlm":
@@ -313,6 +319,9 @@ class slam_model(nn.Module):
             return_dict=return_dict,
             **kwargs,
         )
+
+        length_penalty=kwargs.get("length_penalty", 1.0)
+        logger.info("length penalty:{}".format(length_penalty))
 
         model_outputs = self.llm.generate(
             inputs_embeds=inputs_embeds,

@@ -259,6 +259,11 @@ def main(kwargs: DictConfig):
     )
 
     # Start the training process
+
+    use_weight_sum = kwargs.get("use_weight_sum", False)
+    if use_weight_sum:
+        logger.info("Use encoder output weighted sum!")
+
     results = train(
         model,
         train_dataloader,
@@ -269,6 +274,7 @@ def main(kwargs: DictConfig):
         train_config.gradient_accumulation_steps,
         train_config,
         log_config,
+        use_weight_sum,
         fsdp_config if train_config.enable_fsdp else None,
         local_rank if train_config.enable_fsdp or train_config.enable_ddp else None,
         rank if train_config.enable_fsdp or train_config.enable_ddp else None,

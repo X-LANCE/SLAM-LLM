@@ -127,7 +127,7 @@ def main(kwargs: DictConfig):
 		for step, batch in tqdm(enumerate(test_dataloader), total=len(test_dataloader)):
 			for key in batch.keys():
 				batch[key] = batch[key].to(device) if isinstance(batch[key], torch.Tensor) else batch[key]
-			model_outputs = model.generate(**batch)
+			model_outputs = model.generate(**batch, length_penalty=kwargs.get("length_penalty", 1.0))
 			output_text = model.tokenizer.batch_decode(model_outputs, add_special_tokens=False, skip_special_tokens=True)
 			for key, text, target in zip(batch["keys"], output_text, batch["targets"]):
 				pred.write(key + "\t" + text.replace("\n", " ") + "\n")

@@ -1,7 +1,7 @@
 #!/bin/bash
 # export PYTHONPATH=/root/whisper:$PYTHONPATH
 export PYTHONPATH=/SLAM-LLM/src:$PYTHONPATH
-export CUDA_VISIBLE_DEVICES=1,2,6,7
+export CUDA_VISIBLE_DEVICES=6,7
 export TOKENIZERS_PARALLELISM=false
 # export CUDA_LAUNCH_BLOCKING=1
 export OMP_NUM_THREADS=1
@@ -16,14 +16,14 @@ cd $code_dir
 
 speech_encoder_path=/cxgroup/model/whisper/large-v3.pt
 llm_path=/cxgroup/model/Mistral-7B-Instruct-v0.2
-output_dir=/exps/mixtral-7b-finetune-asr-cvmls-linear-lora-24-projector-3072-steplrwarmupkeep1e-4-whisper-largev3-fr-LID-longprompt-average-$(date +"%Y%m%d")-test
+output_dir=/exps/mixtral-7b-finetune-asr-mls-linear-lora-24-projector-2048-weightsum-steplrwarmupkeep1e-4-whisper-largev3-fr-LID-longprompt-average-$(date +"%Y%m%d")-test
 
 # {"key": "1001-134707-0000_ASR", "prompt": "<ASR>", "source": "/cpfs01/shared/Group-speech/beinian.lzr/data/open_data/librispeech_audio/audio/se_librispeech_1001-134707-0000.wav", "target": "1 little recks the laborer. How near his work is holding him to God, The loving laborer through space and time, after all, not to create, only or found only.", "target_len": 157, "source_len": 1581, "text-type": "Transcribe", "audio_language": "en", "text_language": "en", "task-type": "<ASR>"}
 # {"key": "1688-142285-0005", "prompt": "<ASR>", "source": "/nfs/beinian.lzr/workspace/datasets/data/16k/opendata/librispeech/test_other/wav/1688-142285-0005.wav", "target": "YOU WHO WERE ALWAYS ACCUSING PEOPLE OF BEING SHOPPY AT HELSTONE", "target_len": 11, "source_len": 220, "text-type": "Transcribe", "audio_language": "en", "text_language": "en", "task-type": "<ASR>"}
 
 torchrun \
 --nnodes 1 \
---nproc_per_node 4 \
+--nproc_per_node 2 \
 --master_port=29450 \
 src/slam_llm/pipeline/finetune.py \
 --config-path "${code_dir}/scripts/conf" \
@@ -37,10 +37,10 @@ hydra.run.dir=$output_dir \
 ++model_config.encoder_path=$speech_encoder_path \
 ++model_config.encoder_dim=1280 \
 ++model_config.encoder_projector=linear \
-++model_config.encoder_projector_dim=3072 \
+++model_config.encoder_projector_dim=2048 \
 ++dataset_config.dataset=speech_dataset \
-++dataset_config.train_data_path=/data/merge_fr/train.jsonl \
-++dataset_config.val_data_path=/data/merge_fr/dev.jsonl \
+++dataset_config.train_data_path=/data/french/train.jsonl \
+++dataset_config.val_data_path=/data/french/dev.jsonl \
 ++dataset_config.input_type=mel \
 ++dataset_config.mel_size=128 \
 ++dataset_config.prompt="Transcribe speech to french text. Output the transcription directly without redundant content. Ensure that the output is not duplicated." \
@@ -64,3 +64,4 @@ hydra.run.dir=$output_dir \
 ++train_config.enable_fsdp=false \
 ++train_config.enable_ddp=true \
 ++train_config.use_fp16=true \
+++use_weight_sum=true \

@@ -43,7 +43,7 @@ def set_tokenizer_params(tokenizer: LlamaTokenizer):
 def byte2mb(x):
     return int(x / 2**20)
 
-def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_scheduler, gradient_accumulation_steps, train_config, log_config, fsdp_config=None, local_rank=None, rank=None):
+def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_scheduler, gradient_accumulation_steps, train_config, log_config, use_weight_sum, fsdp_config=None, local_rank=None, rank=None):
     """
     Trains the model on the given dataloader
 
@@ -102,7 +102,7 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                     else:
                         batch[key] = batch[key].to('cuda:0') if isinstance(batch[key], torch.Tensor) else batch[key]
                 with autocast():
-                    outputs, *rest = model(**batch)
+                    outputs, *rest = model(**batch, use_weight_sum=use_weight_sum)
                 acc = rest[0] if rest else -1
                 loss = outputs.loss
 
