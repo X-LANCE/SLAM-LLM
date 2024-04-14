@@ -1,7 +1,7 @@
 #!/bin/bash
 # export PYTHONPATH=/root/whisper:$PYTHONPATH
 export PYTHONPATH=/SLAM-LLM/src:$PYTHONPATH
-export CUDA_VISIBLE_DEVICES=6,7
+export CUDA_VISIBLE_DEVICES=4,7
 export TOKENIZERS_PARALLELISM=false
 # export CUDA_LAUNCH_BLOCKING=1
 export OMP_NUM_THREADS=1
@@ -16,7 +16,7 @@ cd $code_dir
 
 speech_encoder_path=/cxgroup/model/whisper/large-v3.pt
 llm_path=/cxgroup/model/Mistral-7B-Instruct-v0.2
-output_dir=/exps/mixtral-7b-finetune-asr-mls-linear-lora-24-projector-2048-weightsum-steplrwarmupkeep1e-4-whisper-largev3-fr-LID-longprompt-average-$(date +"%Y%m%d")-test
+output_dir=/exps/mixtral-7b-finetune-asr-mls-linear-lora-24-projector-2048-ctc-steplrwarmupkeep1e-4-whisper-largev3-fr-LID-longprompt-average-$(date +"%Y%m%d")-test
 
 # {"key": "1001-134707-0000_ASR", "prompt": "<ASR>", "source": "/cpfs01/shared/Group-speech/beinian.lzr/data/open_data/librispeech_audio/audio/se_librispeech_1001-134707-0000.wav", "target": "1 little recks the laborer. How near his work is holding him to God, The loving laborer through space and time, after all, not to create, only or found only.", "target_len": 157, "source_len": 1581, "text-type": "Transcribe", "audio_language": "en", "text_language": "en", "task-type": "<ASR>"}
 # {"key": "1688-142285-0005", "prompt": "<ASR>", "source": "/nfs/beinian.lzr/workspace/datasets/data/16k/opendata/librispeech/test_other/wav/1688-142285-0005.wav", "target": "YOU WHO WERE ALWAYS ACCUSING PEOPLE OF BEING SHOPPY AT HELSTONE", "target_len": 11, "source_len": 220, "text-type": "Transcribe", "audio_language": "en", "text_language": "en", "task-type": "<ASR>"}
@@ -64,4 +64,5 @@ hydra.run.dir=$output_dir \
 ++train_config.enable_fsdp=false \
 ++train_config.enable_ddp=true \
 ++train_config.use_fp16=true \
-++use_weight_sum=true \
+++train_config.use_ctc=true \
+++train_config.alpha=0.3 \

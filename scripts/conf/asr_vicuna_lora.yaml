@@ -55,6 +55,9 @@ train_config:
   use_fp16: false
   mixed_precision: true
   val_batch_size: 1
+  alpha: 0.3
+  use_ctc: false
+  encoder_weight_sum: false
 
   use_peft: false
   peft_config:

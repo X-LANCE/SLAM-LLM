@@ -50,7 +50,7 @@ hydra.run.dir=$ckpt_path \
 ++train_config.freeze_encoder=true \
 ++train_config.freeze_llm=true \
 ++peft_ckpt=$peft_ckpt \
-++length_penalty=5.0 \
+++length_penalty=2.0 \
 # ++model_config.encoder_projector=q-former \
 # ++dataset_config.fix_length_audio=64 \
 # --peft_ckpt $peft_ckpt \

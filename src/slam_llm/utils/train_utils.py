@@ -43,7 +43,7 @@ def set_tokenizer_params(tokenizer: LlamaTokenizer):
 def byte2mb(x):
     return int(x / 2**20)
 
-def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_scheduler, gradient_accumulation_steps, train_config, log_config, use_weight_sum, fsdp_config=None, local_rank=None, rank=None):
+def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_scheduler, gradient_accumulation_steps, train_config, log_config, fsdp_config=None, local_rank=None, rank=None):
     """
     Trains the model on the given dataloader
 
@@ -102,9 +102,12 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                     else:
                         batch[key] = batch[key].to('cuda:0') if isinstance(batch[key], torch.Tensor) else batch[key]
                 with autocast():
-                    outputs, *rest = model(**batch, use_weight_sum=use_weight_sum)
+                    outputs, *rest = model(**batch)
                 acc = rest[0] if rest else -1
                 loss = outputs.loss
+                if train_config.use_ctc:
+                    ctc_loss = rest[1] if rest else 0
+                    loss = loss * (1 - train_config.alpha) + ctc_loss * train_config.alpha
 
                 loss = loss / gradient_accumulation_steps
                 acc = acc / gradient_accumulation_steps
@@ -378,7 +381,7 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
 
     return results
 
-def evaluation(model,train_config, eval_dataloader, local_rank, tokenizer):
+def evaluation(model,train_config,eval_dataloader, local_rank, tokenizer):
     """
     Evaluates the model on the given dataloader
 
@@ -414,6 +417,9 @@ def evaluation(model,train_config, eval_dataloader, local_rank, tokenizer):
                     outputs, *rest = model(**batch)
                 acc = rest[0] if rest else -1
                 loss = outputs.loss
+                if train_config.use_ctc:
+                    ctc_loss = rest[1] if rest else 0
+                    loss = loss * (1 - train_config.alpha) + ctc_loss * train_config.alpha
 
                 eval_loss += loss.detach().float()
                 eval_acc += acc

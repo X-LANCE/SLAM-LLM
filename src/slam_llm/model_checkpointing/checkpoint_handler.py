@@ -186,7 +186,7 @@ def save_model_checkpoint_peft(model, optimizer, rank, cfg, epoch=0):
             if key.startswith("encoder."):
                 encoder_dict[key] = cpu_state[key]
     for key in cpu_state.keys():
-        if key.startswith("encoder_projector."):
+        if key.startswith("encoder_projector.") or key.startswith("ctc"):
             encoder_dict[key] = cpu_state[key]
     torch.save(encoder_dict, save_full_path)
     logger.info(f"encoder saved at {save_full_path}")

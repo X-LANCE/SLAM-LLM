@@ -196,7 +196,15 @@ class slam_model(nn.Module):
         self.train_config = train_config
         self.model_config = model_config
 
-        self.encoder_out_weight = nn.Parameter(torch.randn(3))
+        if self.train_config.encoder_weight_sum:
+            self.encoder_out_weight = nn.Parameter(torch.randn(3))
+        
+        if self.train_config.use_ctc:
+            self.ctc = nn.Sequential(
+                nn.Dropout(p=0.1),
+                nn.Linear(self.model_config.encoder_dim, self.tokenizer.vocab_size),
+                nn.LogSoftmax(dim=-1),
+            )
 
     def forward(self,
                 input_ids: torch.LongTensor = None,
@@ -230,7 +238,7 @@ class slam_model(nn.Module):
         encoder_outs = None
         if audio_mel is not None or audio is not None:
             if self.model_config.encoder_name == "whisper":
-                if kwargs.get("use_weight_sum", False):
+                if self.train_config.encoder_weight_sum:
                     encoder_out_weight = F.softmax(self.encoder_out_weight, dim=0)
                     encoder_outs = self.encoder.extract_variable_length_features_weight_sum(audio_mel.permute(0, 2, 1), encoder_out_weight) # bs*seq*dim
                 else:
@@ -243,6 +251,22 @@ class slam_model(nn.Module):
                 encoder_outs , inputLenBatch, audio_mel_post_mask = self.encoder((audio, audio_mask, visual, vis_len) ,maskw2v) # bs*seq*dim
             if self.encoder is None:
                 encoder_outs = audio_mel if audio_mel is not None else audio
+
+            if self.train_config.use_ctc:
+                ctc_output = self.ctc(encoder_outs)
+                encoder_out_lens = torch.tensor([1500] * encoder_outs.size()[0])
+                targets = torch.tensor([x for label in labels for x in label if x!=-100 and x!=2])
+                label_mask = (labels != -100) & (labels != 2)
+                target_lengths = label_mask.sum(dim=1)
+                ctc_loss = torch.nn.functional.ctc_loss(
+                    log_probs=ctc_output.permute(1, 0, 2), 
+                    targets=targets,
+                    input_lengths=encoder_out_lens,
+                    target_lengths=target_lengths,
+                    reduction="sum",
+                )
+
+                ctc_loss /= (1500 * encoder_outs.size()[0])
 
             if self.model_config.encoder_projector == "q-former":
                 encoder_outs = self.encoder_projector(encoder_outs, audio_mel_post_mask)
@@ -288,7 +312,7 @@ class slam_model(nn.Module):
                 preds = torch.argmax(model_outputs.logits, -1)
                 acc = compute_accuracy(preds.detach()[:, :-1], labels.detach()[:, 1:], ignore_label=-100)
 
-        return model_outputs, acc
+        return model_outputs, acc, ctc_loss
     
     @torch.no_grad()
     def generate(self,
