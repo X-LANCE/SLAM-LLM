@@ -1,4 +1,3 @@
-
 model_config:
   llm_name: "vicuna-13b-v1.5"
   llm_path: "PATH/to/LLAMA/7B"
@@ -54,6 +53,9 @@ train_config:
   use_fp16: false
   mixed_precision: true
   val_batch_size: 1
+  num_beams: 4
+  length_penalty: 1.0
+  repetition_penalty: 1.0
 
   use_peft: false
   # peft_config:

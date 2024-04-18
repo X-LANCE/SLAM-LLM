@@ -845,6 +845,42 @@ preds=/nfs/yangguanrou.ygr/experiments_hubert/vicuna-7b-v1.5-hubert_xtralarge_ll
 trans=/nfs/yangguanrou.ygr/experiments_hubert/vicuna-7b-v1.5-hubert_xtralarge_ll60k_finetune_ls960/asr/1188/decode_log_test_other_beam4_repetition_penalty1_length_penalty2_gt
 preds=/nfs/yangguanrou.ygr/experiments_hubert/vicuna-7b-v1.5-hubert_xtralarge_ll60k_finetune_ls960/asr/1188/decode_log_test_other_beam4_repetition_penalty1_length_penalty2_pred
 
+trans=/nfs/yangguanrou.ygr/vicuna-7b-v1.5-hubert_xtralarge_ll60k_finetune_ls960_weighted/asr/2594/decode_log_test_clean_beam4_repetition_penalty1_gt
+preds=/nfs/yangguanrou.ygr/vicuna-7b-v1.5-hubert_xtralarge_ll60k_finetune_ls960_weighted/asr/2594/decode_log_test_clean_beam4_repetition_penalty1_pred
+
+trans=/nfs/yangguanrou.ygr/vicuna-7b-v1.5-hubert_xtralarge_ll60k_finetune_ls960_weighted/asr/2594/decode_log_test_other_beam4_repetition_penalty1_gt
+preds=/nfs/yangguanrou.ygr/vicuna-7b-v1.5-hubert_xtralarge_ll60k_finetune_ls960_weighted/asr/2594/decode_log_test_other_beam4_repetition_penalty1_pred
+
+trans=/nfs/yangguanrou.ygr/slides-finetune-wavlm/asr/3840/decode_log_NER_English_gt
+preds=/nfs/yangguanrou.ygr/slides-finetune-wavlm/asr/3840/decode_log_NER_English_pred
+
+trans=/nfs/yangguanrou.ygr/slides-finetune-wavlm/asr/3840/decode_log_NER_English_notext_gt
+preds=/nfs/yangguanrou.ygr/slides-finetune-wavlm/asr/3840/decode_log_NER_English_notext_pred
+
+trans=/nfs/yangguanrou.ygr/slides-finetune-wavlm_notext/asr/1760/decode_log_NER_English_noname_gt
+preds=/nfs/yangguanrou.ygr/slides-finetune-wavlm_notext/asr/1760/decode_log_NER_English_noname_pred
+
+trans=/nfs/yangguanrou.ygr/vicuna-7b-v1.5-hubert_xtralarge_ll60k_finetune_ls960_weighted_continue/asr/10000/decode_log_test_clean_beam4_repetition_penalty1_gt
+preds=/nfs/yangguanrou.ygr/vicuna-7b-v1.5-hubert_xtralarge_ll60k_finetune_ls960_weighted_continue/asr/10000/decode_log_test_clean_beam4_repetition_penalty1_pred
+
+trans=/nfs/yangguanrou.ygr/vicuna-7b-v1.5-hubert_xtralarge_ll60k_finetune_ls960_weighted_continue/asr/10000/decode_log_test_other_beam4_repetition_penalty1_gt
+preds=/nfs/yangguanrou.ygr/vicuna-7b-v1.5-hubert_xtralarge_ll60k_finetune_ls960_weighted_continue/asr/10000/decode_log_test_other_beam4_repetition_penalty1_pred
+
+trans=/nfs/yangguanrou.ygr/slides-finetune-wavlm_notext/asr/1760/decode_log_Giga_noname_gt
+preds=/nfs/yangguanrou.ygr/slides-finetune-wavlm_notext/asr/1760/decode_log_Giga_noname_pred
+
+trans=/nfs/yangguanrou.ygr/slides-finetune-wavlm/asr/3840/decode_log_Giga_gt
+preds=/nfs/yangguanrou.ygr/slides-finetune-wavlm/asr/3840/decode_log_Giga_pred
+
+trans=/nfs/yangguanrou.ygr/slides-finetune-wavlm/asr/3840/decode_log_Giga_noname_gt
+preds=/nfs/yangguanrou.ygr/slides-finetune-wavlm/asr/3840/decode_log_Giga_noname_pred
+
+trans=/root/SLAM-LLM/scripts_all/scripts_ner_texttop/decode_giga_texttop_gt
+preds=/root/SLAM-LLM/scripts_all/scripts_ner_texttop/decode_giga_texttop_pred
+
+trans=/root/SLAM-LLM/scripts_all/scripts_ner_texttop/decode_giga_speechtop_gt
+preds=/root/SLAM-LLM/scripts_all/scripts_ner_texttop/decode_giga_speechtop_pred
+
 python src/llama_recipes/utils/whisper_tn.py ${trans} ${trans}.proc
 python src/llama_recipes/utils/llm_tn.py ${preds} ${preds}.proc
 python src/llama_recipes/utils/compute_wer.py ${trans}.proc ${preds}.proc ${preds}.proc.wer

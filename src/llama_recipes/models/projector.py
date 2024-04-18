@@ -11,9 +11,12 @@ class EncoderProjectorConcat(nn.Module):
         self.linear1 = nn.Linear(self.encoder_dim * self.k, 2048)
         self.relu = nn.ReLU()
         self.linear2 = nn.Linear(2048, config.llm_dim)
+        self.weighted_sum = nn.Linear(48, 1)
 
     def forward(self, x):
-        batch_size, seq_len, dim = x.size()  #2,151,512
+        # batch_size, seq_len, dim = x.size()  #2,151,512
+        batch_size, seq_len, dim, layer_num = x.size()  # 6, 794, 1280, 48
+        x = self.weighted_sum(x).squeeze(-1)  #torch.Size([6, 794, 1280])
         num_frames_to_discard = seq_len % self.k #1
         if num_frames_to_discard > 0:
             x = x[:, :-num_frames_to_discard, :] 
@@ -38,7 +41,7 @@ class EncoderProjectorCov1d(nn.Module):
         self.linear2 = nn.Linear(2048, self.llm_dim)
         self.relu2 = nn.ReLU()
     
-    def forward(self, x):  #torch.Size([6, 258, 1280])
+    def forward(self, x):  #torch.Size([6, 258, 1280])  #走的是这 暂不影响
         x = x.transpose(1, 2)
         x = self.conv1d(x)
         x = x.transpose(1, 2)

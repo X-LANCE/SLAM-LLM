@@ -96,6 +96,14 @@ class HubertEncoder:
             model.w2v_encoder.apply_mask = False
         return model
 
+    def extract_features(self, source, padding_mask):
+        # return self.model.extract_features(source, padding_mask)[0]c
+        rep, layer_results = self.model.extract_features(source=source, padding_mask=padding_mask, output_layer=self.config.encoder_layers, ret_layer_results=True)[0]
+        layer_reps = [x.transpose(0, 1).unsqueeze(-1) for x, _, _ in layer_results]
+        # concat all layers with a new dim
+        layer_reps = torch.cat(layer_reps, dim=-1)
+        return layer_reps 
+
 class AVHubertEncoder:
 
     @classmethod

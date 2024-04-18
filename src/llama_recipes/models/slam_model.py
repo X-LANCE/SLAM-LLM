@@ -45,7 +45,7 @@ def setup_encoder(train_config, model_config, **kwargs):
         if encoder_name == "wavlm":
             from llama_recipes.models.encoder import WavLMEncoder
             encoder = WavLMEncoder.load(model_config)
-        if encoder_name == "hubert":
+        if encoder_name == "hubert" or encoder_name == "hubert_weighted":
             from llama_recipes.models.encoder import HubertEncoder
             encoder = HubertEncoder.load(model_config)
         if encoder_name == "moco_wav2vec2":
@@ -217,14 +217,22 @@ class slam_model(nn.Module):
             if self.model_config.encoder_name == "moco_wav2vec2":
                 encoder_outs , inputLenBatch, audio_mel_post_mask = self.encoder((audio, audio_mask, visual, vis_len) ,maskw2v) # bs*seq*dim
             if self.model_config.encoder_name == "hubert":
-                results = self.encoder(source = audio, padding_mask = audio_mask, mask=False, features_only=True)   #关键字参数传参！！！
+                results = self.encoder(source = audio, padding_mask = audio_mask, mask=False, features_only=True)   #关键字参数传参！！！ 后面这俩参无效传参
                 if self.model_config.encoder_type == "pretrain":
                     encoder_outs, audio_mel_post_mask = results["x"], results["padding_mask"] #torch.Size([4, 791, 1024]) torch.Size([4, 791])
                 if self.model_config.encoder_type == "finetune":
                     encoder_outs, audio_mel_post_mask = results["encoder_out"], results["padding_mask"]
                     encoder_outs = encoder_outs.transpose(0, 1) #torch.Size([4, 791, 768])
                 audio_mel_post_mask = (~audio_mel_post_mask).float()
-                # encoder_outs = self.encoder()
+            if self.model_config.encoder_name == "hubert_weighted":
+                results = self.encoder(source = audio, padding_mask = audio_mask, mask=False, features_only=True, output_layer=self.model_config.output_layer,)   #关键字参数传参！！！
+                if self.model_config.encoder_type == "pretrain":
+                    encoder_outs, audio_mel_post_mask = results["x"], results["padding_mask"] #torch.Size([4, 791, 1024]) torch.Size([4, 791])
+                if self.model_config.encoder_type == "finetune":
+                    encoder_outs, audio_mel_post_mask, layer_results = results["encoder_out"], results["padding_mask"], results["layer_results"]
+                    layer_reps = [x.transpose(0, 1).unsqueeze(-1) for x, _, _ in layer_results]  #torch.Size([6, 794, 1280, 1]) 
+                    encoder_outs = torch.cat(layer_reps, dim=-1)  #torch.Size([6, 794, 1280, 44])
+                audio_mel_post_mask = (~audio_mel_post_mask).float()
             if self.model_config.encoder_name == "sota_avsr":
                 encoder_outs , inputLenBatch, audio_mel_post_mask = self.encoder((audio, audio_mask, visual, vis_len) ) # bs*seq*dim
             
@@ -322,7 +330,15 @@ class slam_model(nn.Module):
                     encoder_outs, audio_mel_post_mask = results["encoder_out"], results["padding_mask"]
                     encoder_outs = encoder_outs.transpose(0, 1) #torch.Size([4, 791, 768])
                 audio_mel_post_mask = (~audio_mel_post_mask).float()
-                # encoder_outs = self.encoder()
+            if self.model_config.encoder_name == "hubert_weighted":
+                results = self.encoder(source = audio, padding_mask = audio_mask, mask=False, features_only=True, output_layer=self.model_config.output_layer,)   #关键字参数传参！！！
+                if self.model_config.encoder_type == "pretrain":
+                    encoder_outs, audio_mel_post_mask = results["x"], results["padding_mask"] #torch.Size([4, 791, 1024]) torch.Size([4, 791])
+                if self.model_config.encoder_type == "finetune":
+                    encoder_outs, audio_mel_post_mask, layer_results = results["encoder_out"], results["padding_mask"], results["layer_results"]
+                    layer_reps = [x.transpose(0, 1).unsqueeze(-1) for x, _, _ in layer_results]  #torch.Size([6, 794, 1280, 1]) 
+                    encoder_outs = torch.cat(layer_reps, dim=-1)  #torch.Size([6, 794, 1280, 44])
+                audio_mel_post_mask = (~audio_mel_post_mask).float()
             if self.model_config.encoder_name == "sota_avsr":
                 encoder_outs , inputLenBatch, audio_mel_post_mask = self.encoder((audio, audio_mask, visual, vis_len) ) # bs*seq*dim
             

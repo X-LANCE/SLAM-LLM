@@ -63,6 +63,8 @@ DATASET_PREPROC = {
     "hubert_dataset": get_custom_dataset,
     "avhubert_dataset": get_custom_dataset,
     "whisper_dataset": get_custom_dataset,
+    "ner_dataset": get_custom_dataset,
+    "giga_dataset": get_custom_dataset,
 }
 
 
