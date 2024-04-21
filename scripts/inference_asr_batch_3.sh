@@ -10,7 +10,7 @@ cd /SLAM-LLM
 speech_encoder_path=/cxgroup/model/whisper/large-v3.pt
 llm_path=/cxgroup/model/Mistral-7B-Instruct-v0.2
 
-output_dir=/exps/mixtral-7b-finetune-asr-mls-linear-lora-24-projector-2048-weightsum-steplrwarmupkeep1e-4-whisper-largev3-fr-LID-longprompt-average-20240410-test/asr/average
+output_dir=/exps/mixtral-7b-finetune-asr-mls-linear-lora-24-projector-2048-ctc-steplrwarmupkeep1e-4-whisper-largev3-fr-LID-longprompt-average-20240413-test/asr/average
 ckpt_path=$output_dir
 peft_ckpt=$ckpt_path
 val_data_path=/data/french/test.jsonl
@@ -50,7 +50,6 @@ hydra.run.dir=$ckpt_path \
 ++train_config.freeze_encoder=true \
 ++train_config.freeze_llm=true \
 ++peft_ckpt=$peft_ckpt \
-++use_weight_sum=true \
 #++length_penalty=2.0 \
 # ++model_config.encoder_projector=q-former \
 # ++dataset_config.fix_length_audio=64 \

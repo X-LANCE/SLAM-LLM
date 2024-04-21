@@ -252,6 +252,7 @@ class slam_model(nn.Module):
             if self.encoder is None:
                 encoder_outs = audio_mel if audio_mel is not None else audio
 
+            ctc_loss = 0
             if self.train_config.use_ctc:
                 ctc_output = self.ctc(encoder_outs)
                 encoder_out_lens = torch.tensor([1500] * encoder_outs.size()[0])

@@ -1,7 +1,7 @@
 #!/bin/bash
 # export PYTHONPATH=/root/whisper:$PYTHONPATH
 export PYTHONPATH=/SLAM-LLM/src:$PYTHONPATH
-export CUDA_VISIBLE_DEVICES=4,7
+export CUDA_VISIBLE_DEVICES=2,3
 export TOKENIZERS_PARALLELISM=false
 # export CUDA_LAUNCH_BLOCKING=1
 export OMP_NUM_THREADS=1
@@ -16,7 +16,7 @@ cd $code_dir
 
 speech_encoder_path=/cxgroup/model/whisper/large-v3.pt
 llm_path=/cxgroup/model/Mistral-7B-Instruct-v0.2
-output_dir=/exps/mixtral-7b-finetune-asr-mls-linear-lora-24-projector-2048-ctc-steplrwarmupkeep1e-4-whisper-largev3-fr-LID-longprompt-average-$(date +"%Y%m%d")-test
+output_dir=/exps/mixtral-7b-finetune-asr-mls-linear-lora-24-projector-2048-ctc-steplrwarmupkeep1e-4-whisper-largev3-es-LID-longprompt-average-$(date +"%Y%m%d")-test
 
 # {"key": "1001-134707-0000_ASR", "prompt": "<ASR>", "source": "/cpfs01/shared/Group-speech/beinian.lzr/data/open_data/librispeech_audio/audio/se_librispeech_1001-134707-0000.wav", "target": "1 little recks the laborer. How near his work is holding him to God, The loving laborer through space and time, after all, not to create, only or found only.", "target_len": 157, "source_len": 1581, "text-type": "Transcribe", "audio_language": "en", "text_language": "en", "task-type": "<ASR>"}
 # {"key": "1688-142285-0005", "prompt": "<ASR>", "source": "/nfs/beinian.lzr/workspace/datasets/data/16k/opendata/librispeech/test_other/wav/1688-142285-0005.wav", "target": "YOU WHO WERE ALWAYS ACCUSING PEOPLE OF BEING SHOPPY AT HELSTONE", "target_len": 11, "source_len": 220, "text-type": "Transcribe", "audio_language": "en", "text_language": "en", "task-type": "<ASR>"}
@@ -39,11 +39,11 @@ hydra.run.dir=$output_dir \
 ++model_config.encoder_projector=linear \
 ++model_config.encoder_projector_dim=2048 \
 ++dataset_config.dataset=speech_dataset \
-++dataset_config.train_data_path=/data/french/train.jsonl \
-++dataset_config.val_data_path=/data/french/dev.jsonl \
+++dataset_config.train_data_path=/data/spanish/train.jsonl \
+++dataset_config.val_data_path=/data/spanish/dev.jsonl \
 ++dataset_config.input_type=mel \
 ++dataset_config.mel_size=128 \
-++dataset_config.prompt="Transcribe speech to french text. Output the transcription directly without redundant content. Ensure that the output is not duplicated." \
+++dataset_config.prompt="Transcribe speech to spanish text. Output the transcription directly without redundant content. Ensure that the output is not duplicated." \
 ++train_config.use_peft=true \
 ++train_config.peft_config.r=24 \
 ++train_config.peft_config.lora_alpha=48 \
