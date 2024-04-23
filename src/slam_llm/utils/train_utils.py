@@ -19,7 +19,7 @@ from tqdm import tqdm
 from transformers import LlamaTokenizer
 
 
-from slam_llm.model_checkpointing import(
+from slam_llm.utils.checkpoint_handler import (
     save_model_checkpoint, 
     save_model_and_optimizer_sharded, 
     save_optimizer_checkpoint, 
