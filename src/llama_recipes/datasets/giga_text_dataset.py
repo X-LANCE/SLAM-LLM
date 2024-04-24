@@ -19,36 +19,34 @@ def build_ngram_index(names, n=2):
     """构建N-Gram倒排索引"""
     index = {}
     for name in names:
-        phonemes = name.split()
-        for i in range(len(phonemes) - n + 1):
-            ngram = ' '.join(phonemes[i:i+n]).lower()
+        for i in range(len(name) - n + 1):
+            ngram = name[i:i+n].lower()
             index.setdefault(ngram, set()).add(name)
     return index
 
-def find_candidate_names(phonemes, ngram_index, n=2):
+def find_candidate_names(sentence, ngram_index, n=2):
     """通过N-Gram倒排索引找到候选人名"""
     candidates = set()
-    phonemes = phonemes.split()
-    for i in range(len(phonemes) - n + 1):
-        ngram = ' '.join(phonemes[i:i+n]).lower()
+    for i in range(len(sentence) - n + 1):
+        ngram = sentence[i:i+n].lower()
         candidates.update(ngram_index.get(ngram, []))       
     return candidates
 
 # @lru_cache(maxsize=None)
 @lru_cache(maxsize=100000)
-def similarity(name, phonemes):
-    return Levenshtein.ratio(name, phonemes)  #速度主要来源于这个函数的更换
+def similarity(name, sentence):
+    return Levenshtein.ratio(name, sentence)  #速度主要来源于这个函数的更换
 
-def generate_ngrams(phonemes, n):
+def generate_ngrams(sentence, n):
     """生成长度为n的n-grams"""
-    phonemes = phonemes.split()
-    return [' '.join(phonemes[i:i+n]) for i in range(len(phonemes)-n+1)]
+    sentence = sentence.split()
+    return [' '.join(sentence[i:i+n]) for i in range(len(sentence)-n+1)]
 
-def calculate_similarity_score(name, phonemes, length_tolerance=3):
+def calculate_similarity_score(name, sentence, length_tolerance=3):
     max_similarity = 0
-    name_phonemes = name.split()
-    name_length = len(name_phonemes)
-    sentence_ngrams = generate_ngrams(phonemes, name_length) #9
+    name_sentence = name.split()
+    name_length = len(name_sentence)
+    sentence_ngrams = generate_ngrams(sentence, name_length) #9
     
     for ngram in sentence_ngrams:
         if abs(len(ngram) - len(name)) <= length_tolerance:
@@ -56,73 +54,52 @@ def calculate_similarity_score(name, phonemes, length_tolerance=3):
             max_similarity = max(max_similarity, sim)
     return max_similarity
 
-def score_candidates(candidates, phonemes):
+def score_candidates(candidates, sentence):
     """为候选人名计算得分"""
     scores = {}
     for candidate in candidates:
-        score = calculate_similarity_score(candidate, phonemes)
+        score = calculate_similarity_score(candidate, sentence)
         scores[candidate] = score
     return scores
 
 
-class GigaDataset(Dataset):
+class GigatextDataset(Dataset):
     def __init__(self, dataset_config, model_config, tokenizer=None, split='train',):
         super().__init__()
         self.data_list = []
         self.label_list = []
         self.key_list = []
-
-        self.label_phoneme_list =[]
-        self.infer_phoneme_list =[]
-        self.line_name_phoneme_list=[]
-
-        self.name_phoneme_list =[]
-
-        self.phn_to_name_dict={}
-        self.name_to_phn_dict={}
+        self.infer_list=[]
+        self.line_name_list =[]
+        self.name_list=[]
 
         if split == "train":
             pass
 
         elif split == "val":
-            # with open(dataset_config.dev_scp_file_path + "2/giga_ner_phone_wsplit.txt",'r') as f:
-            with open(dataset_config.dev_scp_file_path + "g2p/giga_ner_phone_wsplit",'r') as f:
+            with open(dataset_config.dev_scp_file_path + "2/giga_ner_wsplit.txt",'r') as f:
                 for line in f:
                     line = line.strip().split('\t')
 
                     self.key_list.append(line[0])
                     self.data_list.append(line[1])
                     self.label_list.append(line[2]) 
-                    self.label_phoneme_list.append(line[4])
-                    self.line_name_phoneme_list.append(line[-1]) 
+                    self.line_name_list.append(line[3]) 
 
-            # with open(dataset_config.dev_scp_file_path + "person_uniq_my_phone_spn",'r') as f:  #spn也去重过的
-            with open(dataset_config.dev_scp_file_path + "g2p/name_to_phone_g2p",'r') as f:
+            with open(dataset_config.dev_scp_file_path + "person_uniq_my",'r') as f:
                 for line in f:
-                    line = line.strip().split('\t')
-                    name=line[0]
-                    phone=line[1]
-
-                    self.name_phoneme_list.append(phone)
-                    self.name_to_phn_dict[name]=phone
-                    # self.phn_to_name_dict[phone]=name  #没考虑 一对多！
-                    if phone in self.phn_to_name_dict:
-                        self.phn_to_name_dict[phone].append(name)
-                    else:
-                        self.phn_to_name_dict[phone]=[name]
-
-            self.name_phoneme_list = list(set(self.name_phoneme_list))
-            self.ngram_index = build_ngram_index(self.name_phoneme_list)
+                    line = line.strip()
+                    self.name_list.append(line)
+            self.ngram_index = build_ngram_index(self.name_list)
 
             if dataset_config.source == "speech":
-                with open(dataset_config.dev_scp_file_path + "infer.phn",'r') as f:  #spn也去重过的
+                with open(dataset_config.dev_scp_file_path + "infer.ltr",'r') as f:  #spn也去重过的
                     for line in f:
                         line = line.strip()
-                        self.infer_phoneme_list.append(line)
+                        self.infer_list.append(line)
                           
         elif split == "test":  # 3188  只有prev用这个 不用ground truth 用解码
             pass
-
 
         self.model_config = model_config
         self.dataset_config = dataset_config
@@ -134,7 +111,6 @@ class GigaDataset(Dataset):
         self.inference_mode = dataset_config.get("inference_mode", False)
         self.split = split
 
-
     def __getitem__(self, index):
         wav_path = self.data_list[index]
         audio_raw = whisper.load_audio(wav_path) #(35600,)
@@ -143,38 +119,32 @@ class GigaDataset(Dataset):
         key = self.key_list[index] #'1012-133424-0005'
 
         if self.dataset_config.source == "text":
-            phoneme_sentence = self.label_phoneme_list[index] #'K IH1 M W AA1 Z N AA1 T D AW1 N W IH0 DH DH AH0 K R AH0 T IY1 K'
+            sentence = self.label_list[index] #'K IH1 M W AA1 Z N AA1 T D AW1 N W IH0 DH DH AH0 K R AH0 T IY1 K'
         elif self.dataset_config.source == "speech":
-            phoneme_sentence = self.infer_phoneme_list[index]
+            sentence = self.infer_list[index]
 
+        gt=self.line_name_list[index]
 
-        gt=self.line_name_phoneme_list[index]
-
-        # 筛选 text to phone
-        candidates = find_candidate_names(phoneme_sentence, self.ngram_index) #第一个len11
-        scores = score_candidates(candidates, phoneme_sentence)
+        # 筛选 name
+        candidates = find_candidate_names(sentence, self.ngram_index) #第一个len11
+        scores = score_candidates(candidates, sentence)
         sorted_dict = sorted(scores.items(), key=lambda item: item[1],  reverse=True)
         high_score_items = [(k, value) for k, value in sorted_dict if value > 0.9] 
         if len(high_score_items) < 20:
             high_score_items = sorted_dict [:20]
-        keys_list = [k for k, _ in high_score_items]
         if len(high_score_items)>20:
             logger.info(len(high_score_items))
-
+        keys_list = [k for k, _ in high_score_items]
+        
         # valid 实际没用
         for name in gt.split('|'):
             if name not in keys_list:
-                logger.info("sentence: %s",phoneme_sentence)
+                logger.info("sentence: %s",sentence)
                 logger.info("name: %s",name)
                 logger.info("gt: %s",gt)
                 logger.info("keys_list: %s", keys_list)
 
-        # 用 phone 取出名字的原text
-        ocr=[]
-        for k in keys_list:
-            name_text = self.phn_to_name_dict[k]
-            ocr = ocr + name_text
-        ocr = " ".join(ocr)
+        ocr = " ".join(keys_list)
         
         # ==================================================================#
         if self.dataset_config.use_ocr == True:
@@ -342,7 +312,7 @@ class GigaDataset(Dataset):
 
 
 def get_audio_dataset(dataset_config, model_config, tokenizer, split):
-    dataset = GigaDataset(dataset_config, model_config, tokenizer, split)
+    dataset = GigatextDataset(dataset_config, model_config, tokenizer, split)
     return dataset
 
 

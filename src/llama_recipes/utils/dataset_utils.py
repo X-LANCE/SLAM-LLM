@@ -65,6 +65,7 @@ DATASET_PREPROC = {
     "whisper_dataset": get_custom_dataset,
     "ner_dataset": get_custom_dataset,
     "giga_dataset": get_custom_dataset,
+    "giga_text_dataset": get_custom_dataset,
 }
 
 

@@ -20,7 +20,6 @@ import hydra
 from omegaconf import DictConfig, ListConfig, OmegaConf
 
 import whisper
-
 # @hydra.main(config_name=None, version_base="1.1")
 @hydra.main(config_name=None)
 def main_hydra(cfg: DictConfig):
