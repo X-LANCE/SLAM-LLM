@@ -14,6 +14,9 @@ class ModelConfig:
     encoder_projector: str = "linear"
     encoder_projector_ds_rate: int = 5
     modal: str = "audio"
+    normalize: Optional[bool] = field(default=False, metadata={
+        "help": "whether inpit is normalized, used for models such as wavlm"
+    })
 
 @dataclass
 class PeftConfig:
@@ -92,6 +95,9 @@ class DataConfig:
                             })
     mel_size: int = field(default=80, metadata={
         "help": "80 for whisper large v1 and v2, 128 for v3"
+    })
+    normalize: Optional[bool] = field(default=False, metadata={
+        "help": "whether inpit is normalized, used for models such as wavlm"
     })
 
 @dataclass
