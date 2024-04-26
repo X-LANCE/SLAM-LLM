@@ -1,7 +1,7 @@
 #!/bin/bash
 # export PYTHONPATH=/root/whisper:$PYTHONPATH
 export PYTHONPATH=/root/fairseq:$PYTHONPATH
-export CUDA_VISIBLE_DEVICES=4,5
+export CUDA_VISIBLE_DEVICES=0,1
 export TOKENIZERS_PARALLELISM=false
 # export CUDA_LAUNCH_BLOCKING=1
 export OMP_NUM_THREADS=1
@@ -11,32 +11,33 @@ export OMP_NUM_THREADS=1
 # export NCCL_DEBUG_SUBSYS=ALL
 # export TORCH_DISTRIBUTED_DEBUG=INFO
 
-run_dir=/work/SLAM-LLM
+run_dir=/root/SLAM-LLM
 cd $run_dir
-code_dir=examples/asr_librispeech/
+code_dir=examples/asr_librispeech
 
-speech_encoder_path=/cxgroup/model/whisper/large-v3.pt
+speech_encoder_path=/nfs/maziyang.mzy/models/wavlm/WavLM-Large.pt
+llm_path=/nfs/maziyang.mzy/models/vicuna-7b-v1.5
+train_data_path=/nfs/maziyang.mzy/data/librispeech/librispeech_train_960h.jsonl
+val_data_path=/nfs/maziyang.mzy/data/librispeech/librispeech_dev_other.jsonl
 
-llm_path=/cxgroup/model/vicuna-7b-v1.5
-# llm_path=/nfs/maziyang.mzy/models/vicuna-13b-v1.5
-
-output_dir=/work/exps/vicuna-7b-v1.5-librispeech-linear-steplrwarmupkeep1e-4-whisper-largev3-$(date +"%Y%m%d")
+output_dir=/root/tmp/vicuna-7b-v1.5-librispeech-linear-steplrwarmupkeep1e-4-wavlm-large-$(date +"%Y%m%d")
 
 hydra_args="
 hydra.run.dir=$output_dir \
 ++model_config.llm_name=vicuna-7b-v1.5 \
 ++model_config.llm_path=$llm_path \
 ++model_config.llm_dim=4096 \
-++model_config.encoder_name=whisper \
+++model_config.encoder_name=wavlm \
+++model_config.normalize=true \
+++dataset_config.normalize=true \
 ++model_config.encoder_projector_ds_rate=5 \
 ++model_config.encoder_path=$speech_encoder_path \
-++model_config.encoder_dim=1280 \
+++model_config.encoder_dim=1024 \
 ++model_config.encoder_projector=linear \
 ++dataset_config.dataset=speech_dataset \
-++dataset_config.train_data_path=data/librispeech/train960.jsonl \
-++dataset_config.val_data_path=data/librispeech/dev.jsonl \
-++dataset_config.input_type=mel \
-++dataset_config.mel_size=128 \
+++dataset_config.train_data_path=$train_data_path \
+++dataset_config.val_data_path=$val_data_path \
+++dataset_config.input_type=raw \
 ++train_config.model_name=asr \
 ++train_config.num_epochs=3 \
 ++train_config.freeze_encoder=true \
@@ -55,7 +56,7 @@ hydra.run.dir=$output_dir \
 
 # -m debugpy --listen 5678 --wait-for-client
 if [[ $CUDA_VISIBLE_DEVICES != *","* ]]; then
-    python -m debugpy --listen 5678 --wait-for-client finetune_asr.py \
+    python -m debugpy --listen 5678 --wait-for-client $code_dir/finetune_asr.py \
         --config-path "conf" \
         --config-name "prompt.yaml" \
         $hydra_args
@@ -72,6 +73,3 @@ else
         ++train_config.use_fp16=true \
         $hydra_args
 fi
-
-# {"key": "1001-134707-0000_ASR", "prompt": "<ASR>", "source": "/cpfs01/shared/Group-speech/beinian.lzr/data/open_data/librispeech_audio/audio/se_librispeech_1001-134707-0000.wav", "target": "1 little recks the laborer. How near his work is holding him to God, The loving laborer through space and time, after all, not to create, only or found only.", "target_len": 157, "source_len": 1581, "text-type": "Transcribe", "audio_language": "en", "text_language": "en", "task-type": "<ASR>"}
-# {"key": "1688-142285-0005", "prompt": "<ASR>", "source": "/nfs/beinian.lzr/workspace/datasets/data/16k/opendata/librispeech/test_other/wav/1688-142285-0005.wav", "target": "YOU WHO WERE ALWAYS ACCUSING PEOPLE OF BEING SHOPPY AT HELSTONE", "target_len": 11, "source_len": 220, "text-type": "Transcribe", "audio_language": "en", "text_language": "en", "task-type": "<ASR>"}
