@@ -1,5 +1,5 @@
 #!/bin/bash
-export CUDA_VISIBLE_DEVICES=7
+export CUDA_VISIBLE_DEVICES=5
 export TOKENIZERS_PARALLELISM=false
 
 cd /root/SLAM-LLM
@@ -32,7 +32,7 @@ python src/llama_recipes/pipeline/inference.py \
     dataset_config.fixed_length=true \
     dataset_config.target_length=1024 \
     +ckpt_path=$ckpt_path/model.pt \
-    +wav_path="/root/data/Clotho_v2/evaluation/Santa Motor.wav" \
+    +wav_path="/root/data/Clotho/clotho_audio_files/evaluation/In the City.wav" \
     +prompt="Describe the audio you hear." \
     train_config.model_name=aac \
     train_config.freeze_encoder=true \
