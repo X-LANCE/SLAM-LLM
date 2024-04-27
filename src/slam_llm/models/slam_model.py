@@ -53,7 +53,9 @@ def model_factory(train_config, model_config, **kwargs):
 
 def setup_tokenizer(train_config, model_config, **kwargs):
     # Load the tokenizer and add special tokens
-    if "mupt" in model_config.llm_name.lower():
+    if "vallex" in model_config.llm_name.lower():
+        return None  
+    elif "mupt" in model_config.llm_name.lower():
         tokenizer = AutoTokenizer.from_pretrained(model_config.llm_path,
                                             trust_remote_code=True,
                                             use_fast=False)

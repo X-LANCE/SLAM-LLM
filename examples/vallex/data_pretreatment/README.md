@@ -1,0 +1,10 @@
+提取codec：
+/cpfs01/projects-HDD/cfff-d02564a61bb4_HDD/ai3_sais/wangtianrui/codes/fairseq_viola/examples/vallex/pretreatment/10wh/extract_codec.sh
+根据刚刚筛选的结果（里面有ASR结果）和提取到的codec，生成对应的文本文件（acoustic和semantic的文件，这里把文字转换成token了）
+/cpfs01/projects-HDD/cfff-d02564a61bb4_HDD/ai3_sais/wangtianrui/codes/fairseq_viola/examples/vallex/pretreatment/10wh/10wh_train_data/run.sh
+制作semantic二进制数据：
+/cpfs01/projects-HDD/cfff-d02564a61bb4_HDD/ai3_sais/wangtianrui/codes/fairseq_viola/examples/vallex/pretreatment/10wh/10wh_train_data/txt2idx_st.sh
+制作acoustic二进制数据：
+/cpfs01/projects-HDD/cfff-d02564a61bb4_HDD/ai3_sais/wangtianrui/codes/fairseq_viola/examples/vallex/pretreatment/10wh/10wh_train_data/txt2idx.sh
+根据二进制数据集统计数据集的长度，训练时会用到：
+/cpfs01/projects-HDD/cfff-d02564a61bb4_HDD/ai3_sais/wangtianrui/codes/fairseq_viola/examples/vallex/pretreatment/10wh/10wh_train_data/get_token_sizes.py
