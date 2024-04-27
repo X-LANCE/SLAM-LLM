@@ -1,10 +1,11 @@
 # AAC_Audiocaps
 
 ## Performance and checkpoints
-We only train the linear projector in this recipe. We use [EAT](https://github.com/cwx-worst-one/EAT) and [BEATs](https://github.com/microsoft/unilm/tree/master/beats) as the main audio encoder for SLAM-AAC. Be sure to set up the corresponding environments based on the instructions provided in each repository.
-Audio Encoder | Projector | LLM | SPIDEr
-|---|---|---|---|
-[EAT-base (fine-tuned)](https://drive.google.com/file/d/1aCYiQmoZv_Gh1FxnR-CCWpNAp6DIJzn6/view?usp=sharing) | Linear(~18.88M) | [vicuna-7b-v1.5](https://huggingface.co/lmsys/vicuna-7b-v1.5) | 0.4692
+We use [EAT](https://github.com/cwx-worst-one/EAT) and [BEATs](https://github.com/microsoft/unilm/tree/master/beats) as the main audio encoder for SLAM-AAC. Be sure to set up the corresponding environments based on the instructions provided in each repository.
+Audio Encoder | Projector | LLM | PEFT | METEOR | CIDEr | SPICE | SPIDEr
+|---|---|---|---|---|---|---|---|
+[EAT-base (fine-tuned)](https://drive.google.com/file/d/1aCYiQmoZv_Gh1FxnR-CCWpNAp6DIJzn6/view?usp=sharing) | [Linear](https://drive.google.com/file/d/1xyhgx8cUKSIKpYgPlEWjHL-jLgSnhfGJ/view?usp=sharing)(~16.26M) | [vicuna-7b-v1.5](https://huggingface.co/lmsys/vicuna-7b-v1.5) | x | | | |0.4692
+[EAT-base (fine-tuned)](https://drive.google.com/file/d/1aCYiQmoZv_Gh1FxnR-CCWpNAp6DIJzn6/view?usp=sharing) | [Linear]()(~16.26M) | [vicuna-7b-v1.5](https://huggingface.co/lmsys/vicuna-7b-v1.5) | [LoRA]()(~4.19M) |  |  |  |0.4692
 
 
 ## Data preparation

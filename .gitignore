@@ -10,3 +10,4 @@ log/
 *.log
 outputs/
 data/
+coco_caption/
