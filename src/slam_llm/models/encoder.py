@@ -2,6 +2,7 @@ import types
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from dataclasses import dataclass
 
 class WhisperWrappedEncoder:
     
@@ -44,6 +45,26 @@ class BEATsEncoder:
         BEATs_model.load_state_dict(checkpoint['model'])
 
         return BEATs_model
+
+
+@dataclass
+class UserDirModule:
+    user_dir: str
+    
+class EATEncoder:
+    
+    @classmethod
+    def load(cls, model_config):
+        import fairseq
+        model_path = UserDirModule(model_config.encoder_fairseq_dir)
+        fairseq.utils.import_user_module(model_path)
+        EATEncoder, cfg, task = fairseq.checkpoint_utils.load_model_ensemble_and_task([model_config.encoder_path])
+        EATEncoder = EATEncoder[0]
+
+        return EATEncoder
+    
+    def extract_features(self, source, padding_mask):
+        return self.model.extract_features(source, padding_mask = padding_mask, mask=False, remove_extra_tokens = False)['x']
 
 
 class WavLMEncoder(nn.Module):
