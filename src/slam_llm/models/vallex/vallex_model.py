@@ -1,17 +1,3 @@
-# Copyright    2023                             (authors: Feiteng Li)
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 import random
 from typing import Dict, Iterator, List, Tuple, Union
 from fairseq import utils
@@ -20,15 +6,13 @@ import torch
 import math
 import torch.nn as nn
 import torch.nn.functional as F
-# from icefall.utils import make_pad_mask
-# from torchmetrics.classification import MulticlassAccuracy
 from fairseq.data import Dictionary
-from llama_recipes.models.vallex.transformers import (
+from src.slam_llm.models.vallex.transformers import (
     LayerNorm,
     TransformerEncoder,
     TransformerEncoderLayer,
 )
-from llama_recipes.models.vallex.vallex_config import VallexConfig
+from src.slam_llm.models.vallex.vallex_config import VallexConfig
 from transformers.modeling_utils import PreTrainedModel
 from transformers import AutoConfig, AutoModel, AutoModelForImageClassification
 from dataclasses import dataclass
@@ -43,17 +27,15 @@ def label_smoothed_nll_loss(lprobs, target, epsilon, ignore_index=None, reduce=T
     if target.dim() == lprobs.dim() - 1:
         target = target.unsqueeze(-1)
     if prob_mask is not None:
-        # lprobs.masked_fill_(prob_mask, 0.0)
-        # lprobs = lprobs * (1-prob_mask.float())
         lprobs = lprobs.masked_fill(prob_mask, 0.0)
         n_class = (1-prob_mask.float()).sum()
     else:
         n_class = lprobs.size(-1)
-    nll_loss = -lprobs.gather(dim=-1, index=target)  # 选出对应的概率， B,1
+    nll_loss = -lprobs.gather(dim=-1, index=target) 
     # nll_loss = nll_loss * scale
-    smooth_loss = -lprobs.sum(dim=-1, keepdim=True) * scale  # 求和，B,1
+    smooth_loss = -lprobs.sum(dim=-1, keepdim=True) * scale 
     if ignore_index is not None:
-        pad_mask = target.eq(ignore_index)  # 如果为pad，就mask掉
+        pad_mask = target.eq(ignore_index) 
         nll_loss.masked_fill_(pad_mask, 0.0)
         smooth_loss.masked_fill_(pad_mask, 0.0)
         pad_mask_float = (1 - pad_mask.to(torch.float)).sum()
@@ -63,18 +45,13 @@ def label_smoothed_nll_loss(lprobs, target, epsilon, ignore_index=None, reduce=T
     if reduce:
         nll_loss = nll_loss.sum()
         smooth_loss = smooth_loss.sum()
-    eps_i = epsilon / (n_class - 1)  # 0.2 / (class - 1)， 缩放因子
+    eps_i = epsilon / (n_class - 1) 
     loss = (1.0 - epsilon - eps_i) * nll_loss + \
-        eps_i * smooth_loss  # (1-epsilon) * sum(p)
+        eps_i * smooth_loss 
     return loss / pad_mask_float, nll_loss / pad_mask_float
 
 
 class SinusoidalPositionalEmbedding(nn.Module):
-    """This module produces sinusoidal positional embeddings of any length.
-
-    Padding symbols are ignored.
-    """
-
     def __init__(self, embedding_dim, padding_idx, init_size=1024):
         super().__init__()
         self.embedding_dim = embedding_dim
@@ -93,11 +70,6 @@ class SinusoidalPositionalEmbedding(nn.Module):
     def get_embedding(
         num_embeddings: int, embedding_dim: int, padding_idx = None
     ):
-        """Build sinusoidal embeddings.
-
-        This matches the implementation in tensor2tensor, but differs slightly
-        from the description in Section 3.5 of "Attention Is All You Need".
-        """
         half_dim = embedding_dim // 2
         emb = math.log(10000) / (half_dim - 1)
         emb = torch.exp(torch.arange(half_dim, dtype=torch.float) * -emb)
@@ -121,7 +93,6 @@ class SinusoidalPositionalEmbedding(nn.Module):
         timestep = None,
         positions = None,
     ):
-        """Input is expected to be of size [bsz x seqlen]."""
         bspair = torch.onnx.operators.shape_as_tensor(input)
         bsz, seq_len = bspair[0], bspair[1]
         max_pos = self.padding_idx + 1 + seq_len
@@ -163,16 +134,11 @@ class SinusoidalPositionalEmbedding(nn.Module):
 
 
 class Transpose(nn.Identity):
-    """(N, T, D) -> (N, D, T)"""
-
     def forward(self, input: torch.Tensor) -> torch.Tensor:
         return input.transpose(1, 2)
 
 
 class VALLF(PreTrainedModel):
-    """It implements https://arxiv.org/abs/2301.02111
-    "Neural Codec Language Models are Zero-Shot Text to Speech Synthesizers"
-    """
     config_class = VallexConfig
     
     def __init__(
@@ -337,71 +303,7 @@ class VALLF(PreTrainedModel):
 
         return targets[:, :-1], targets[:, 1:]
 
-    def _prepare_prompts(self, y, y_lens, codes, nar_stage, y_prompts_codes, prefix_mode):
-        # 5.1 For the NAR acoustic prompt tokens, we select a random segment waveform of 3 seconds
-        # from the same utterance.
-        # We implement this differently.
-        if prefix_mode == 0:
-            # no prefix
-            prefix_len = 0
-            y_emb = self.nar_audio_embeddings[0](y)
-            for j in range(1, nar_stage):
-                # Formula (4) (5)
-                y_emb = y_emb + self.nar_audio_embeddings[j](codes[..., j])
-        elif prefix_mode == 1:
-            # prefix at begining
-            int_low = (0.25 * y_lens.min()).type(torch.int64).item()
-            prefix_len = torch.randint(0, int_low * 2, size=()).item()
-            prefix_len = min(prefix_len, 225)  # 24000/320 * 3s = 225 frames
-
-            y_prompts = self.nar_audio_embeddings[0](y[:, :prefix_len])
-            y_emb = self.nar_audio_embeddings[0](y[:, prefix_len:])
-            for j in range(1, self.num_quantizers):
-                y_prompts += self.nar_audio_embeddings[j](
-                    codes[:, :prefix_len, j]
-                )
-                if j < nar_stage:
-                    y_emb += self.nar_audio_embeddings[j](
-                        codes[:, prefix_len:, j]
-                    )
-            y_emb = torch.concat([y_prompts, y_emb], axis=1)
-        elif prefix_mode in [2, 4]:
-            if prefix_mode == 2:
-                # random prefix
-                prefix_len = min(225, int(0.25 * y_lens.min().item()))
-
-                y_prompts_codes = []
-                for b in range(codes.shape[0]):
-                    start = self.rng.randint(0, y_lens[b].item() - prefix_len)
-                    y_prompts_codes.append(
-                        torch.clone(codes[b, start : start + prefix_len])
-                    )
-                    codes[
-                        b, start : start + prefix_len, nar_stage
-                    ] = self.NUM_AUDIO_TOKENS
-                y_prompts_codes = torch.stack(y_prompts_codes, dim=0)
-            else:
-                prefix_len = y_prompts_codes.shape[1]
-
-            y_prompts = self.nar_audio_embeddings[0](y_prompts_codes[..., 0])
-            y_emb = self.nar_audio_embeddings[0](y)
-            for j in range(1, self.num_quantizers):
-                y_prompts += self.nar_audio_embeddings[j](
-                    y_prompts_codes[..., j]
-                )
-                if j < nar_stage:
-                    y_emb += self.nar_audio_embeddings[j](codes[..., j])
-            y_emb = torch.concat([y_prompts, y_emb], axis=1)
-        else:
-            raise ValueError
-
-        return y_emb, prefix_len
-
-
 class VALLE(VALLF):
-    """It implements https://arxiv.org/abs/2301.02111
-    "Neural Codec Language Models are Zero-Shot Text to Speech Synthesizers"
-    """
     config_class = VallexConfig
     
     def __init__(
@@ -409,15 +311,6 @@ class VALLE(VALLF):
         config: VallexConfig,
         **kwargs,
     ):
-        """
-        Args:
-          d_model:
-            The number of expected features in the input (required).
-          nhead:
-            The number of heads in the multiheadattention models (required).
-          num_layers:
-            The number of sub-decoder-layers in the decoder (required).
-        """
         super(VALLE, self).__init__(
             config,
             **kwargs,
@@ -434,13 +327,7 @@ class VALLE(VALLF):
         self.ar_language_embedding = nn.Embedding(3, d_model, padding_idx=2) 
         self.nar_language_embedding = nn.Embedding(3, d_model, padding_idx=2) 
         self.embed_scale = 32.0
-        # if config.only_ar:
-        #     self.remove_nar_parameters_with_keyword()
-        # if config.only_nar:
-        #     self.remove_ar_parameters_with_keyword()
-            
-        # self.train_flag = self.config.train_flag
-    
+        
     def forward(
         self,
         zh,
@@ -477,7 +364,6 @@ class VALLE(VALLF):
         padding_mask = data["padding_mask"]
         langid = data["langid"]
         
-        # print(st_tokens)
         st_len = st_tokens.size(1)
         st_emb = self.embed_scale * self.ar_text_embedding(st_tokens)
         src_lang_emb = self.embed_scale * self.ar_language_embedding(langid)
@@ -499,11 +385,8 @@ class VALLE(VALLF):
             mask=self_atten_mask,
             src_key_padding_mask=padding_mask
         )
-        # print(x.mean())
         x = self.ar_predict_layer(x)
-        # print(x.mean())
         x = x[:, st_len:, :]
-        # print(x.size(), at_tokens_tgt.size())
         loss, nll_loss, lprob, right_rate = self.calculate_loss(
             x, at_tokens_tgt
         )
@@ -520,7 +403,6 @@ class VALLE(VALLF):
             right_rate = n_correct * 100.0 / total
         
         lprob, target = lprob.view(-1, lprob.size(-1)), target.view(-1)
-        # print(lprob.mean())
         loss, nll_loss = label_smoothed_nll_loss(
             lprob,
             target,
@@ -557,22 +439,6 @@ class VALLE(VALLF):
         return_worst: bool = False,
         at_eos: int = -1
     ) -> torch.Tensor:
-        """
-        Args:
-          x:
-            A 2-D tensor of shape (1, S).
-          x_lens:
-            A 1-D tensor of shape (1,). It contains the number of tokens in `x`
-            before padding.
-          y:
-            A 3-D tensor of shape (1, T, 8).
-          top_k: (`optional`) int
-            The number of highest probability tokens to keep for top-k-filtering. Default to -100.
-          temperature: (`optional`) float
-            The value used to module the next token probabilities. Must be strictly positive. Default to 1.0.
-        Returns:
-          Return the predicted audio code matrix.
-        """
         assert x.ndim == 2, x.shape
         assert x_lens.ndim == 1, x_lens.shape
         assert y.ndim == 3, y.shape
@@ -580,10 +446,8 @@ class VALLE(VALLF):
 
         assert torch.all(x_lens > 0)
         self.NUM_AUDIO_TOKENS = at_eos
-        # NOTE: x has been padded in TextTokenCollater
         text = x
         x = self.embed_scale * self.ar_text_embedding(text)
-        # Add language embedding
         prompt_language_id = prompt_language.to(x.device)
         text_language_id = text_language.to(x.device)
         src_lang_emb = self.embed_scale * self.ar_language_embedding(prompt_language_id)
@@ -664,20 +528,14 @@ class VALLE(VALLF):
                 past_kv=kv_cache,
                 use_cache=use_kv_caching,
             )
-            # xy_dec, _ = self.ar_decoder(
-            #     (xy_pos, None),
-            #     mask=xy_attn_mask,
-            # )
 
             logits = self.ar_predict_layer(xy_dec[:, -1])
             samples, current_logprobs = topk_sampling(
                 logits, top_k=top_k, top_p=1, temperature=temperature
             )
-            # print(current_logprobs.size())
             sum_logprobs += current_logprobs * (y[:, -1] != self.NUM_AUDIO_TOKENS)
             samples[y[:, -1] == self.NUM_AUDIO_TOKENS] = self.NUM_AUDIO_TOKENS
             completed = (samples[:, -1] == self.NUM_AUDIO_TOKENS).all()
-            # print(completed, (y.shape[1] - prompts.shape[1]) > x_lens.max() * 16, (y.shape[1] - prompts.shape[1]) > x_lens.max() * 32)
             if (
                 completed
                 or (y.shape[1] - prompts.shape[1]) > x_lens.max() * 32
@@ -769,57 +627,17 @@ class VALLE(VALLF):
                     xy_pos
                 )
                 logits = self.nar_predict_layers[i-1](xy_dec[:, text_len + prefix_len :])
-                print(logits.size(), xy_pos.size(), xy_dec.size())
+                # print(logits.size(), xy_pos.size(), xy_dec.size())
                 samples = torch.argmax(logits, dim=-1)
                 est_at = torch.concat([est_at, samples.unsqueeze(-1)], dim=-1)
                 codes.append(samples)
 
         assert len(codes) == self.num_quantizers
         return torch.stack(codes, dim=-1)
-
-    def remove_ar_parameters_with_keyword(self):
-        # 创建一个空列表，用于存储要删除的参数
-        parameters_to_remove = []
-
-        # 遍历模型的所有参数
-        for name, param in self.named_parameters():
-            # 检查参数名称是否包含特定的关键字
-            if str(name).startswith("ar_"):
-                # 如果包含特定的关键字，则将参数添加到要删除的列表中
-                parameters_to_remove.append(name)
-        print("removed: " + str(parameters_to_remove))
-        # 遍历删除参数列表，从模型中移除这些参数
-        for name in parameters_to_remove:
-            delattr(self, name)
-    
-    def remove_nar_parameters_with_keyword(self):
-        # 创建一个空列表，用于存储要删除的参数
-        parameters_to_remove = []
-
-        # 遍历模型的所有参数
-        for name, param in self.named_parameters():
-            # 检查参数名称是否包含特定的关键字
-            if str(name).startswith("nar_"):
-                # 如果包含特定的关键字，则将参数添加到要删除的列表中
-                parameters_to_remove.append(name)
-        print("removed: " + str(parameters_to_remove))
-        # 遍历删除参数列表，从模型中移除这些参数
-        for name in parameters_to_remove:
-            delattr(self, name)
             
-# https://github.com/microsoft/unilm/blob/master/xtune/src/transformers/modeling_utils.py
 def top_k_top_p_filtering(
     logits, top_k=0, top_p=1.0, filter_value=-float("Inf"), min_tokens_to_keep=1
 ):
-    """Filter a distribution of logits using top-k and/or nucleus (top-p) filtering
-    Args:
-        logits: logits distribution shape (batch size, vocabulary size)
-        if top_k > 0: keep only top k tokens with highest probability (top-k filtering).
-        if top_p < 1.0: keep the top tokens with cumulative probability >= top_p (nucleus filtering).
-            Nucleus filtering is described in Holtzman et al. (http://arxiv.org/abs/1904.09751)
-        Make sure we keep at least min_tokens_to_keep per batch example in the output
-    From: https://gist.github.com/thomwolf/1a5a29f6962089e871b94cbd09daf317
-    """
     if top_k > 0:
         top_k = min(
             max(top_k, min_tokens_to_keep), logits.size(-1)
@@ -854,14 +672,6 @@ def top_k_top_p_filtering(
 
 
 def topk_sampling(logits, top_k=10, top_p=1.0, temperature=1.0):
-    # temperature: (`optional`) float
-    #     The value used to module the next token probabilities. Must be strictly positive. Default to 1.0.
-    # top_k: (`optional`) int
-    #     The number of highest probability vocabulary tokens to keep for top-k-filtering. Between 1 and infinity. Default to 50.
-    # top_p: (`optional`) float
-    #     The cumulative probability of parameter highest probability vocabulary tokens to keep for nucleus sampling. Must be between 0 and 1. Default to 1.
-
-    # Temperature (higher temperature => more likely to sample low probability tokens)
     if temperature != 1.0:
         logits = logits / temperature
     # Top-p/top-k filtering
@@ -873,10 +683,6 @@ def topk_sampling(logits, top_k=10, top_p=1.0, temperature=1.0):
     return token, current_logprobs
 
 class SLSTM(nn.Module):
-    """
-    LSTM without worrying about the hidden state, nor the layout of the data.
-    Expects input as convolutional layout.
-    """
     def __init__(self, dimension: int, num_layers: int = 2, skip: bool = True, bidirectional=False):
         super().__init__()
         self.skip = skip

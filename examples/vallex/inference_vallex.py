@@ -1,5 +1,5 @@
-from src.llama_recipes.models.vallex.vallex_config import VallexConfig
-from src.llama_recipes.models.vallex.vallex_model import VALLE
+from src.slam_llm.models.vallex.vallex_config import VallexConfig
+from src.slam_llm.models.vallex.vallex_model import VALLE
 import torch
 import string
 import os
@@ -7,7 +7,6 @@ punctuation_string = string.punctuation
 import re
 import sentencepiece as spm
 from zhon.hanzi import punctuation
-import macropodus
 import soundfile as sf
 from encodec import EncodecModel
 import torchaudio
@@ -43,7 +42,7 @@ def norm_eng(txt):
     return re.sub('[{}]'.format(punctuation),"", temp).upper()
 
 def norm_zh(txt):
-    temp = re.sub('[{}]'.format(punctuation),"", macropodus.han2zh(txt))
+    temp = re.sub('[{}]'.format(punctuation),"", txt)
     return re.sub('[{}]'.format(punctuation_string),"", temp)
 
 def get_codec(model, audio_path, device):
@@ -141,6 +140,6 @@ if __name__ == "__main__":
     model.eval().to(device)
 
     sp = spm.SentencePieceProcessor()
-    sp.load(os.path.join(args.model_home, r"ori_bpe_32000_noextraid.model"))
+    sp.load(os.path.join(args.model_home, r"bpe.model"))
     generate_audio_24L(model, device, args.prompt_txt, args.prompt_audio, 
                        args.target_txt, args.save_path, sp, args.prompt_lang, args.target_lang)

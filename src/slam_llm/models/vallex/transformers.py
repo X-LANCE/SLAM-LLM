@@ -222,14 +222,6 @@ class TransformerEncoderLayer(nn.Module):
         elif isinstance(activation, partial):
             activation = activation(d_model)
 
-        # # We can't test self.activation in forward() in TorchScript,
-        # # so stash some information about it instead.
-        # if activation is F.relu or isinstance(activation, torch.nn.ReLU):
-        #     self.activation_relu_or_gelu = 1
-        # elif activation is F.gelu or isinstance(activation, torch.nn.GELU):
-        #     self.activation_relu_or_gelu = 2
-        # else:
-        #     self.activation_relu_or_gelu = 0
         self.activation = activation
 
         norm1 = layer_norm_cls(d_model, eps=layer_norm_eps, **factory_kwargs)
@@ -370,23 +362,6 @@ class TransformerEncoderLayer(nn.Module):
 
 
 class TransformerEncoder(nn.Module):
-    r"""TransformerEncoder is a stack of N encoder layers. Users can build the
-    BERT(https://arxiv.org/abs/1810.04805) model with corresponding parameters.
-
-    Args:
-        encoder_layer: an instance of the TransformerEncoderLayer() class (required).
-        num_layers: the number of sub-encoder-layers in the encoder (required).
-        norm: the layer normalization component (optional).
-        enable_nested_tensor: if True, input will automatically convert to nested tensor
-            (and convert back on output). This will improve the overall performance of
-            TransformerEncoder when padding rate is high. Default: ``True`` (enabled).
-
-    Examples::
-        >>> encoder_layer = TransformerEncoderLayer(d_model=512, nhead=8)
-        >>> transformer_encoder = TransformerEncoder(encoder_layer, num_layers=6)
-        >>> src = torch.rand(10, 32, 512)
-        >>> out = transformer_encoder(src)
-    """
     __constants__ = ["norm"]
 
     def __init__(self, encoder_layer, num_layers, norm=None):
@@ -402,17 +377,6 @@ class TransformerEncoder(nn.Module):
         src_key_padding_mask: Optional[Tensor] = None,
         return_layer_states: bool = False,
     ) -> Tensor:
-        r"""Pass the input through the encoder layers in turn.
-
-        Args:
-            src: the sequence to the encoder (required).
-            mask: the mask for the src sequence (optional).
-            src_key_padding_mask: the mask for the src keys per batch (optional).
-            return_layer_states: return layers' state (optional).
-
-        Shape:
-            see the docs in Transformer class.
-        """
         output = src
         for i, mod in enumerate(self.layers):
             output = mod(
@@ -557,19 +521,6 @@ class TransformerDecoderLayer(nn.Module):
         tgt_key_padding_mask: Optional[Tensor] = None,
         memory_key_padding_mask: Optional[Tensor] = None,
     ) -> Tensor:
-        r"""Pass the inputs (and mask) through the decoder layer.
-
-        Args:
-            tgt: the sequence to the decoder layer (required).
-            memory: the sequence from the last layer of the encoder (required).
-            tgt_mask: the mask for the tgt sequence (optional).
-            memory_mask: the mask for the memory sequence (optional).
-            tgt_key_padding_mask: the mask for the tgt keys per batch (optional).
-            memory_key_padding_mask: the mask for the memory keys per batch (optional).
-
-        Shape:
-            see the docs in Transformer class.
-        """
         tgt_is_tuple = False
         if isinstance(tgt, tuple):
             x, stage_embedding = tgt

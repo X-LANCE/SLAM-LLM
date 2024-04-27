@@ -113,7 +113,14 @@ def setup_llm(train_config, model_config, **kwargs):
         #                     "please install latest nightly.")
         rank = int(os.environ["RANK"])
         if rank == 0:
-            if "aya" in model_config.llm_name.lower():
+            if "vallex" in model_config.llm_name.lower():
+                from src.slam_llm.models.vallex.vallex_config import VallexConfig
+                from src.slam_llm.models.vallex.vallex_model import VALLE
+                vallex_config = VallexConfig(
+                    **model_config
+                )
+                model = VALLE(vallex_config)
+            elif "aya" in model_config.llm_name.lower():
                 model = AutoModelForSeq2SeqLM.from_pretrained(
                     model_config.llm_path,
                     load_in_8bit=True if train_config.quantization else None,

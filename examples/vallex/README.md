@@ -1,4 +1,18 @@
-## Prepare dataset for training
+# An unofficial reproduction of VALL-E-X
+We refer to the repository of https://github.com/Plachtaa/VALL-E-X to open an unofficial reproduction of VALLEX.
+
+## Checkpoints
+Pretrained model can be found at [Google driven](https://drive.google.com/drive/folders/1wCTffPnSsiHpthaX-yzUne1dTBAMI_JV?usp=drive_link).
+
+
+## Decode with checkpoints
+```shell
+# first modify the model_home in following scrip to the location of downloaded/pretrained models.
+# second diy the prompt_txt, prompt_audio, target_txt with a corresponding language id
+bash examples\\vallex\\scripts\\inference.sh
+```
+
+## Data preparation
 Vallex is trained on the dataset containing discrete speech tokens and text tokens.
 
 
@@ -64,4 +78,12 @@ Vallex is trained on the dataset containing discrete speech tokens and text toke
     ```
     where dict.at.txt and dict.st.txt are simple idx-to-idx rows of speech discrete tokens and text tokens, as shown in examples/vallex/data_pretreatment 
 
-In this way, we can train the vallex with the dataset_config.train_data_path set as the home_path of binary files.
+In this way, we can train the vallex with the dataset_config.train_data_path set as the home_path of binary files. We also release a tiny dataset for reference at [Google driven](https://drive.google.com/drive/folders/1wCTffPnSsiHpthaX-yzUne1dTBAMI_JV?usp=drive_link).
+
+## Train a new AR model
+
+After pretreated dataset, modify the "train_data_path" in following script, you can start for your training or finetuning.
+
+```shell
+bash examples\\vallex\\scripts\\vallex.sh
+```

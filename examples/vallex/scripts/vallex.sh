@@ -9,7 +9,7 @@ cd /home/wangtianrui/codes/SLAM-LLM-main
 output_dir=/home/wangtianrui/model_save/vallex
 
 PYTHONPATH=/home/wangtianrui/codes/SLAM-LLM-main \
-python src/llama_recipes/pipeline/finetune.py \
+python src/slam_llm/pipeline/finetune.py \
 --config-path "examples/vallex/conf" \
 --config-name "vallex.yaml" \
 hydra.run.dir=$output_dir \
@@ -18,8 +18,8 @@ hydra.run.dir=$output_dir \
 ++model_config.llm_dim=1536 \
 \
 ++dataset_config.dataset=vallex_dataset \
-++dataset_config.file="src/llama_recipes/datasets/vallex_dataset.py:get_vallex_dataset" \
-++dataset_config.train_data_path=/home/wangtianrui/datas/tiny_data/bilibli_7min_woman/data_bin_zh \
+++dataset_config.file="src/slam_llm/datasets/vallex_dataset.py:get_vallex_dataset" \
+++dataset_config.train_data_path=/home/wangtianrui/datas/tiny_data/data_bin \
 \
 ++train_config.batching_strategy=custom \
 ++train_config.use_fp16=true \
