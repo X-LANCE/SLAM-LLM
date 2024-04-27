@@ -1,7 +1,7 @@
 #!/bin/bash
 # export PYTHONPATH=/root/whisper:$PYTHONPATH
 export PYTHONPATH=/root/fairseq:$PYTHONPATH
-export CUDA_VISIBLE_DEVICES=2
+export CUDA_VISIBLE_DEVICES=6
 export TOKENIZERS_PARALLELISM=false
 # export CUDA_LAUNCH_BLOCKING=1
 export OMP_NUM_THREADS=7
@@ -14,13 +14,46 @@ export OMP_NUM_THREADS=7
 cd /root/SLAM-LLM
 
 # audio_encoder_path=/root/models/EAT/EAT-base_epoch30.pt  # pretrain
-audio_encoder_path=/root/models/EAT/EAT-base_epoch30_finetune_AS2M.pt  # finetune
-
-exp_name=eat_lora_specaug
+audio_encoder_path=/root/models/EAT/EAT-base_epoch30_finetune_AS2M.pt  # finetune 原本的定长版本 —— 需要修改 images.py
+# audio_encoder_path=/root/models/EAT/EAT-base_epoch30_finetune_AS2M_v1.pt  # finetune 变长
+# audio_encoder_path=/root/models/EAT/EAT-large_epoch20_finetune_AS2M_old.pt # finetune 原本的定长版本 —— embedding 要改成 1024
 llm_path=/root/models/vicuna-7b-v1.5
 
-output_dir=/root/exps/$exp_name
+seed=666
+threshold=0.8
+btz=16
+lr=1e-4
+pt_epoch=20
+encoder_projector_ds_rate=5
+short_prompt="Describe the audio you hear."
+long_prompt="Describe the audio you hear. Output the audio caption directly without redundant content. Ensure that the output is not duplicated."
+pre_tune_data_version=v4
 
+pretrain_ckpt_path=/root/exps/wavcaps_pt-seed42_btz16_lr1e-4-random_crop/aac/${pt_epoch}
+
+# exp_name=audiocaps_keyword_audio_prompt_seed${seed}_threshold${threshold}
+# exp_name=wavcaps_btz16_epoch${pt_epoch}-audiocaps_ft-seed${seed}-btz${btz}-lr${lr}-short_prompt
+exp_name=wavcap_pt_${pre_tune_data_version}-seed${seed}-btz${btz}-lr${lr}-short_prompt
+
+# train_jsonl_path=/root/data/AudioCaps/train.jsonl
+# train_jsonl_path=/root/data/AudioCaps/hot_word/updated_train.jsonl
+# train_jsonl_path=/root/data/AudioCaps/hot_word/train/updated_train_${threshold}.jsonl
+train_jsonl_path=/root/data/merged_data_${pre_tune_data_version}.jsonl
+
+val_jsonl_path=/root/data/AudioCaps/val.jsonl
+# val_jsonl_path=/root/data/AudioCaps/hot_word/updated_val.jsonl
+# val_jsonl_path=/root/data/AudioCaps/hot_word/val/updated_val_${threshold}.jsonl
+
+# category=audiocaps
+# category=clotho
+category=pre-tune
+# category=test
+
+
+output_dir=/root/exps/${category}/${exp_name}
+
+# note: 下面用于 pretrain（关掉按照 eval 来存 ckpt）
+# train_config.run_validation=false
 # -m debugpy --listen 6666 --wait-for-client
 if [[ $CUDA_VISIBLE_DEVICES != *","* ]]; then
 python /root/SLAM-LLM/src/llama_recipes/pipeline/finetune.py \
@@ -35,11 +68,13 @@ python /root/SLAM-LLM/src/llama_recipes/pipeline/finetune.py \
     model_config.encoder_path=$audio_encoder_path \
     model_config.encoder_dim=768 \
     model_config.encoder_projector='linear' \
-    model_config.encoder_projector_ds_rate=5 \
+    model_config.encoder_projector_ds_rate=${encoder_projector_ds_rate} \
+    dataset_config.encoder_projector_ds_rate=${encoder_projector_ds_rate} \
     +dataset_config.input_type=mel \
     dataset_config.dataset='audio_dataset' \
-    dataset_config.train_data_path='/root/data/AudioCaps/train.jsonl' \
-    dataset_config.val_data_path='/root/data/AudioCaps/val.jsonl' \
+    dataset_config.train_data_path=${train_jsonl_path} \
+    dataset_config.val_data_path=${val_jsonl_path} \
+    dataset_config.prompt="${short_prompt}" \
     dataset_config.fbank_mean=-4.268 \
     dataset_config.fbank_std=4.569 \
     dataset_config.model_name=eat \
@@ -49,22 +84,37 @@ python /root/SLAM-LLM/src/llama_recipes/pipeline/finetune.py \
     train_config.batching_strategy='custom' \
     train_config.warmup_steps=1000 \
     train_config.total_steps=100000 \
-    train_config.lr=1e-4 \
-    train_config.validation_interval=1000 \
-    train_config.batch_size_training=4 \
-    train_config.val_batch_size=4 \
+    train_config.lr=$lr \
+    train_config.validation_interval=500 \
+    train_config.batch_size_training=$btz \
+    train_config.val_batch_size=$btz \
     train_config.num_workers_dataloader=4 \
     train_config.use_fp16=true \
     train_config.output_dir=$output_dir \
     log_config.log_file="${output_dir}/train.log" \
     train_config.use_peft=true \
     train_config.peft_config.peft_method=lora \
-    log_config.use_wandb=true \
+    train_config.specaug=true \
+    train_config.seed=${seed} \
     log_config.wandb_dir=${output_dir} \
     log_config.wandb_entity_name=wxc12 \
     log_config.wandb_project_name=slam-llm \
     log_config.wandb_exp_name=$exp_name \
-    train_config.specaug=true \
+    dataset_config.fixed_length=true \
+    dataset_config.target_length=1024 \
+    log_config.use_wandb=true \
+    train_config.run_validation=false
+    
+    
+    # dataset_config.use_keyword=true \
+    # dataset_config.keyword_first=true \
+    # train_config.keyword_first=true \
+
+    # train_config.model_eval=true
+    # train_config.run_validation=false
+
+    # +ckpt_path="${pretrain_ckpt_path}/model.pt" \
+    # +peft_ckpt="$pretrain_ckpt_path" \
     # train_config.use_neft=true \
     # ++metric=acc \
     # train_config.use_peft=true \

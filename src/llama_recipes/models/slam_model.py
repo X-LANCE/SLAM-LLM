@@ -193,6 +193,10 @@ class slam_model(nn.Module):
                 return_dict: Optional[bool] = None,
                 **kwargs,
                 ):
+        
+        if self.train_config.model_eval:
+            self.encoder.eval()
+        
         audio_mel = kwargs.get("audio_mel", None)
         audio_mel_mask = kwargs.get("audio_mel_mask", None)
         audio_mel_post_mask = kwargs.get("audio_mel_post_mask", None) # 2x downsample for whisper
@@ -211,7 +215,9 @@ class slam_model(nn.Module):
         
         # Specaug
         # NOTE: 有两种 specaug 的设置，有空可以改成 EAT 那种
-        audio_mel = audio_mel.unsqueeze(dim=1)
+        if audio_mel is not None:
+            audio_mel = audio_mel.unsqueeze(dim=1)
+            
         if audio_mel is not None and self.train_config.specaug and self.llm.training: 
             from torchlibrosa.augmentation import SpecAugmentation
             spec_augmenter = SpecAugmentation(time_drop_width=64,
@@ -227,7 +233,6 @@ class slam_model(nn.Module):
             if self.model_config.encoder_name == "beats":
                 encoder_outs, audio_mel_post_mask = self.encoder.extract_features(audio_mel.squeeze(), padding_mask = audio_mel_mask, feature_only = True) # bs*seq*dim，修改了来适用于 finetuned model
             if self.model_config.encoder_name == "eat":
-                # encoder_outs = self.encoder.extract_features(audio_mel.unsqueeze(dim=1), padding_mask = None, mask=False, remove_extra_tokens = False)['x']  # fixme: 这里没有考虑 audio_mel_mask
                 encoder_outs = self.encoder.model.extract_features(audio_mel, padding_mask = None, mask=False, remove_extra_tokens = False)['x']
             if self.model_config.encoder_name == "wavlm":
                 encoder_outs = self.encoder.extract_features(audio, 1 - audio_mask) #(FIX:MZY): 1-audio_mask is needed for wavlm as the padding mask
@@ -270,6 +275,13 @@ class slam_model(nn.Module):
             batch_size, token_num, dims = inputs_embeds.shape
             _, l, _ = encoder_outs.shape
             encoder_outs_pad = F.pad(encoder_outs, (0, 0, 0, token_num-l, 0, 0), value=0.0)
+            
+            if self.train_config.keyword_first:
+                index = (input_ids == 0).cumsum(dim=1).argmax(dim=1) - 101 # fixme: 这里只取了定长的
+                for i in range(encoder_outs.shape[0]):
+                    shift = index[i].item()
+                    encoder_outs_pad[i] = torch.roll(encoder_outs_pad[i], shifts=shift, dims=0)
+
             inputs_embeds = encoder_outs_pad * modality_mask[:, :, None] + inputs_embeds * (~modality_mask[:, :, None])
             
         # NEFtune for both text and audio embeddings
@@ -286,7 +298,7 @@ class slam_model(nn.Module):
         if self.metric:
             with torch.no_grad():
                 preds = torch.argmax(model_outputs.logits, -1)
-                acc = compute_accuracy(preds.detach()[:, :-1], labels.detach()[:, 1:], ignore_label=-100) # next step prediction
+                acc = compute_accuracy(preds.detach()[:, :-1], labels.detach()[:, 1:], ignore_label=-100) # next step prediction -> 保证了错位，最后一个 pred 其实没有用
 
         return model_outputs, acc
     
@@ -331,13 +343,14 @@ class slam_model(nn.Module):
             inputs_embeds=inputs_embeds,
             # max_length=kwargs.get("max_length", 200),
             max_new_tokens=kwargs.get("max_new_tokens", 200),
-            num_beams=kwargs.get("num_beams", 4),
-            do_sample=kwargs.get("do_sample", False),
+            num_beams=self.model_config.num_beams,
+            num_return_sequences=self.model_config.num_return_seq,
+            do_sample=self.model_config.do_sample,
             min_length=kwargs.get("min_length", 1),
-            top_p=kwargs.get("top_p", 1.0),
+            top_p=self.model_config.top_p,
             repetition_penalty=kwargs.get("repetition_penalty", 1.0),
             length_penalty=kwargs.get("length_penalty", 1.0),
-            temperature=kwargs.get("temperature", 1.0),
+            temperature=self.model_config.temperature,
             attention_mask=attention_mask,
             bos_token_id=self.tokenizer.bos_token_id,
             eos_token_id=self.tokenizer.eos_token_id,
@@ -351,6 +364,7 @@ class slam_model(nn.Module):
         self,
         wav_path = None,
         prompt = None,
+        dataset_config = None,
         generation_config = None,
         logits_processor = None,
         stopping_criteria = None,
@@ -362,41 +376,41 @@ class slam_model(nn.Module):
         negative_prompt_attention_mask = None,
         **kwargs,
     ):
-        #TODO: 修改成 beats 的
         device = kwargs.get("device", "cuda")
         if os.path.exists(wav_path): # Audio-Text QA
-            # import whisper
-            # audio_raw = whisper.load_audio(wav_path)
-            # audio_raw = whisper.pad_or_trim(audio_raw)
-            # audio_mel = whisper.log_mel_spectrogram(audio_raw).permute(1,0)[None, :, :].to(device)
-
-            # encoder_outs = self.encoder.extract_variable_length_features(audio_mel.permute(0, 2, 1))
             
             from torchaudio.transforms import Resample
             from llama_recipes.models.BEATs.BEATs import BEATs
             from llama_recipes.models.EAT.EAT import EAT_preprocess
             import torchaudio
-            audio_raw, sample_rate = torchaudio.load(wav_path)
+            
+            try:
+                audio_raw, sample_rate = torchaudio.load(wav_path)
+                if audio_raw.shape[1] == 0:
+                    raise ValueError("Empty audio file")
+                resampler = Resample(orig_freq=sample_rate, new_freq=16000)
+                audio_raw = resampler(audio_raw)
 
-            resampler = Resample(orig_freq=sample_rate, new_freq=16000)
-            audio_raw = resampler(audio_raw)
+            except (FileNotFoundError, ValueError, RuntimeError):
+                audio_raw = torch.zeros(1, 16000)
 
-            if self.model_config.encoder_name == 'beats':
-                audio_mel = BEATs.preprocess(audio_raw[0])
-            elif self.model_config.encoder_name == 'eat':
-                audio_mel = EAT_preprocess(audio_raw[0])
-            else: 
+            if self.model_config.encoder_name == "beats":
+                audio_mel = BEATs.preprocess(audio_raw[0], fbank_mean=dataset_config.fbank_mean, fbank_std=dataset_config.fbank_std)
+            elif self.model_config.encoder_name == "eat":
+                audio_mel = EAT_preprocess(source=audio_raw[0],norm_mean=dataset_config.fbank_mean,norm_std=dataset_config.fbank_std,
+                                        target_length=dataset_config.target_length,fixed_length=dataset_config.fixed_length,random_crop=dataset_config.random_crop)
+            else:
                 pass
                 
-            audio_mel = audio_mel.unsqueeze(0)
+            audio_mel = audio_mel.unsqueeze(dim=0)
             audio_mel_mask = torch.ones_like(audio_mel)
             audio_mel = audio_mel.to(device)
             audio_mel_mask = audio_mel_mask.to(device)
             
-            if self.model_config.encoder_name == 'beats':
-                encoder_outs, audio_mel_post_mask = self.encoder.extract_features(audio_mel, audio_mel_mask)
-            elif self.model_config.encoder_name == 'eat':
-                encoder_outs = self.encoder.extract_features(audio_mel.unsqueeze(dim=1), padding_mask = None, mask=False, remove_extra_tokens = True)['x']
+            if self.model_config.encoder_name == "beats":
+                encoder_outs, audio_mel_post_mask = self.encoder.extract_features(audio_mel, padding_mask = audio_mel_mask, feature_only = True)
+            if self.model_config.encoder_name == "eat":
+                encoder_outs = self.encoder.model.extract_features(audio_mel.unsqueeze(dim=1), padding_mask = None, mask=False, remove_extra_tokens = False)['x']
             
             if self.model_config.encoder_projector == "q-former":
                 audio_mel_post_mask = torch.ones(encoder_outs.size()[:-1], dtype=torch.long).to(encoder_outs.device)
@@ -406,7 +420,7 @@ class slam_model(nn.Module):
         else: # Text QA
             encoder_outs = torch.empty(1, 0, self.llm.model.embed_tokens.embedding_dim).to(device)
 
-        prompt = "USER: {}\n ASSISTANT:".format(prompt)
+        prompt = "USER: {} \n ASSISTANT:".format(prompt)
         prompt_ids = self.tokenizer.encode(prompt)
         prompt_length = len(prompt_ids)
         prompt_ids = torch.tensor(prompt_ids, dtype=torch.int64).to(device)

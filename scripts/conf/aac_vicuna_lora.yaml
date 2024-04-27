@@ -9,6 +9,11 @@ model_config:
   encoder_dim: 1280
   encoder_projector: "linear"
   encoder_projector_ds_rate: 5
+  do_sample: false
+  top_p: 1.0
+  temperature: 1.0
+  num_beams: 4
+  num_return_seq: 1
 
   DMODEL: 512
   FRONTEND_DMODEL: 1024   #这个是专门指moco的
@@ -84,6 +89,10 @@ train_config:
   neft_noise_alpha: 5
   use_neft_both: false
   specaug: false
+  save_step_interval: 2000
+  model_eval: false
+  keyword_first: false
+
 
 dataset_config:
   dataset: "speech_dataset"
@@ -101,6 +110,14 @@ dataset_config:
   fbank_mean: 15.41663
   fbank_std: 6.55582
   target_length: 1024
+  fixed_length: false
+  prompt: "Describe the audio you hear. Output the audio caption directly without redundant content. Ensure that the output is not duplicated. "
+  use_keyword: false
+  use_rag: false
+  keyword_first: false
+  random_crop: false
+  encoder_projector_ds_rate: 5
+
 
 fsdp_config:
     mixed_precision: true

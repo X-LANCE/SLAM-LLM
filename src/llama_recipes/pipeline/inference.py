@@ -71,7 +71,7 @@ def main(kwargs: DictConfig):
 		# wav_path = kwargs.get('wav_path')
 		prompt = kwargs.get('prompt')
 		try:
-			model_outputs = model.inference(wav_path, prompt)
+			model_outputs = model.inference(wav_path, prompt,dataset_config)
 			output_text = model.tokenizer.batch_decode(model_outputs, add_special_tokens=False, skip_special_tokens=True)
 			print(output_text)
 		except:

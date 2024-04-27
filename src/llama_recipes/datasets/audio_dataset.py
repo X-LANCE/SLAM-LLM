@@ -78,20 +78,43 @@ class AudioDatasetJsonl(torch.utils.data.Dataset):
         task = data_dict.get("prompt", "AAC")
         key = data_dict.get("key", None)
         
-        audio_raw, sample_rate = torchaudio.load(audio_path)
-        
-        resampler = Resample(orig_freq=sample_rate, new_freq=16000)
-        audio_raw = resampler(audio_raw)
+        # audio_raw, sample_rate = torchaudio.load(audio_path)
+        try:
+            audio_raw, sample_rate = torchaudio.load(audio_path)
+            if audio_raw.shape[1] == 0:
+                raise ValueError("Empty audio file")
+            resampler = Resample(orig_freq=sample_rate, new_freq=16000)
+            audio_raw = resampler(audio_raw)
+
+        except (FileNotFoundError, ValueError, RuntimeError):
+            audio_raw = torch.zeros(1, 16000)
         
         # assert sample_rate == 16e3, "Sample rate should be 16kHz, but got {} in file {}".format(sample_rate,audio_path)
         if self.model_name == "beats":
             audio_mel = BEATs.preprocess(audio_raw[0], fbank_mean=self.dataset_config.fbank_mean, fbank_std=self.dataset_config.fbank_std)
         elif self.model_name == "eat":
-            audio_mel = EAT_preprocess(source=audio_raw[0],norm_mean=self.dataset_config.fbank_mean,norm_std=self.dataset_config.fbank_std,target_length=self.dataset_config.target_length)
+            audio_mel = EAT_preprocess(source=audio_raw[0],norm_mean=self.dataset_config.fbank_mean,norm_std=self.dataset_config.fbank_std,
+                                       target_length=self.dataset_config.target_length,fixed_length=self.dataset_config.fixed_length,random_crop=self.dataset_config.random_crop)
         else:
             pass
         
-        prompt = "Describe the audio you hear. Output the audio caption directly without redundant content. Ensure that the output is not duplicated. "
+        # prompt = "Describe the audio you hear. Output the audio caption directly without redundant content. Ensure that the output is not duplicated. "
+        # prompt = "Describe the audio you hear. "
+        prompt = self.dataset_config.prompt + ' '
+        
+        if self.dataset_config.use_keyword and not self.dataset_config.keyword_first:
+            keyword = data_dict.get("keyword", None)
+            # prompt += f'Pay attention to these keywords related to the audio event categories: {keyword}. '
+            # prompt += f'Use keywords related to the audio event categories to improve the quality of the audio captioning. But if the keywords are irrelevant, just ignore them. The keywords are {keyword}'
+            # prompt += ' '
+            prompt = f"Keywords are {keyword}. " + prompt
+
+        elif self.dataset_config.use_rag: 
+            similar_captions = data_dict.get("similar_captions", None)
+            similar_captions_cat = ""
+            for similar_caption in similar_captions: 
+                similar_captions_cat = similar_captions_cat + similar_caption + " "
+            prompt = f"Similar audios sound like: {similar_captions_cat}, this audio sounds like "
 
         prompt = self.prompt_template.format(prompt)
         answer = self.answer_template.format(target)
@@ -99,8 +122,12 @@ class AudioDatasetJsonl(torch.utils.data.Dataset):
         prompt_ids = self.tokenizer.encode(prompt)
 
         prompt_length = len(prompt_ids)
-        audio_length = (audio_mel.shape[0] + 1) // 2  # ad-hoc for beats / eat for 2x downsample from mel to feats
-        audio_length = audio_length // 5 # ad-hoc for 5x fc downsample
+        if self.model_name == "beats":
+            audio_length = (audio_mel.shape[0] + 1) // 2  # ad-hoc for beats for 2x downsample from mel to feats
+            
+        elif self.model_name == "eat":
+            audio_length = audio_mel.shape[0] // 2 + 1      # ad-hoc for eat for 2x downsample from mel to feats
+        audio_length = audio_length // self.dataset_config.encoder_projector_ds_rate # ad-hoc for 5x fc downsample
         # audio_length = calculate_output_length_1d(audio_length, 5, 5, 0) # ad-hoc for 5x cov1d downsample
         if self.fix_length_audio > 0:
             audio_length = self.fix_length_audio
@@ -109,6 +136,15 @@ class AudioDatasetJsonl(torch.utils.data.Dataset):
         if self.inference_mode:
             prompt_ids = torch.tensor(prompt_ids, dtype=torch.int64)
             example_ids = torch.cat((audio_pseudo, prompt_ids))  # [audio,prompt]
+            
+            if self.dataset_config.keyword_first:
+                keyword = data_dict.get("keyword", None)
+                keyword_ids = self.tokenizer.encode(keyword)
+                keyword_ids.append(self.tokenizer.eos_token_id)  # [keyword,eos]
+                keyword_length = len(keyword_ids)
+                keyword_ids = torch.tensor(keyword_ids, dtype=torch.int64)
+                example_ids = torch.cat((keyword_ids, example_ids))
+                
             example_mask = example_ids.ge(-1)  # [True,True]
 
             return {
@@ -119,6 +155,7 @@ class AudioDatasetJsonl(torch.utils.data.Dataset):
                 "audio_length": audio_length,
                 "key": key,
                 "target": target,
+                'keyword_length': keyword_length if self.dataset_config.keyword_first else None,
             }
 
         example = prompt + answer  # FIX(MZY): avoid putting a bos token before answer.
@@ -131,7 +168,30 @@ class AudioDatasetJsonl(torch.utils.data.Dataset):
 
         labels_ids = copy.deepcopy(example_ids)  # [audio,prompt,answer,eos]
         labels_ids[:audio_length + prompt_length] = -1  # [-1,-1,answer,eos];
-        example_mask = example_ids.ge(-1)  # FIX(GZF): [True,True,True,True]
+        
+        # note: [keywords] [audio embeddings] [prompt]  
+        if self.dataset_config.keyword_first:
+            keyword = data_dict.get("keyword", None)
+            # example = prompt + answer  # FIX(MZY): avoid putting a bos token before answer.
+            example_ids = self.tokenizer.encode(example)  # [prompt,answer]
+            example_ids.append(self.tokenizer.eos_token_id)  # [prompt,answer,eos]
+            example_ids = torch.tensor(
+                example_ids, dtype=torch.int64
+            )
+            
+            keyword_ids = self.tokenizer.encode(keyword)  # [keyword]
+            keyword_ids.append(self.tokenizer.eos_token_id)  # [keyword,eos]
+            keyword_length = len(keyword_ids)
+            keyword_ids = torch.tensor(
+                keyword_ids, dtype=torch.int64
+            )
+            
+            example_ids = torch.cat((keyword_ids, audio_pseudo, example_ids))  # [keyword,eos,audio,prompt,answer,eos]
+
+            labels_ids = copy.deepcopy(example_ids)  # [keyword,eos,audio,prompt,answer,eos]
+            labels_ids[:keyword_length + audio_length + prompt_length] = -1  # [-1,-1,-1,-1,answer,eos];     
+        
+        example_mask = example_ids.ge(-1)  # FIX(GZF): [True,True,True,True]            
 
         label_mask = labels_ids.ge(0)  # [False,False,True,True]
         example_ids[~example_mask] = 0  # [audio,prompt,answer,eos]
@@ -143,7 +203,8 @@ class AudioDatasetJsonl(torch.utils.data.Dataset):
             "attention_mask": example_mask,
             'audio_mel': audio_mel,
             'audio_length': audio_length,
-            'target': target
+            'target': target,
+            'keyword_length': keyword_length if self.dataset_config.keyword_first else None,
         }
 
     def pad(self, sequence, max_length, padding_idx=0):
@@ -173,12 +234,16 @@ class AudioDatasetJsonl(torch.utils.data.Dataset):
         audio_mel_max_length = max([s['audio_mel'].shape[0] for s in samples])
         audio_mel = torch.stack([self.pad(s['audio_mel'], audio_mel_max_length, 0)
                                   for s in samples])
-        audio_mel_mask = torch.zeros(len(samples), audio_mel_max_length)
+        audio_mel_mask = torch.zeros(len(samples), audio_mel_max_length)    # note: 相当于 audio mel 的 padding，但是我们用的都是 10s 的，所以不用考虑
         for line, sample in enumerate(samples):
             audio_mel_mask[line, :sample['audio_mel'].shape[0]] = 1
         modality_mask = torch.zeros_like(attention_mask)
         for line, sample in enumerate(samples):
-            modality_mask[line, :sample['audio_length']] = 1
+            if not self.dataset_config.keyword_first:
+                modality_mask[line, :sample['audio_length']] = 1
+            else:
+                modality_mask[line, sample['keyword_length']:sample['audio_length'] + sample['keyword_length']] = 1
+            
     
         targets = [s['target'] for s in samples]
         if self.inference_mode:

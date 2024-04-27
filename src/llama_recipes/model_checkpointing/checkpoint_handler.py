@@ -164,9 +164,28 @@ def save_model_checkpoint(
         
         logger.info(f"model checkpoint saved for epoch {epoch} at {save_full_path}\n")
       
-def save_model_checkpoint_peft(model, optimizer, rank, cfg, epoch=0):
+      
+# def save_model_checkpoint_peft(model, optimizer, rank, cfg, checkpoint_name="checkpoint", save_trainable_only=True):
+#     logger.info(f"--> saving model ...")
+#     save_dir = os.path.join(cfg.output_dir, checkpoint_name)
+#     os.makedirs(save_dir, exist_ok=True)
+#     save_full_path = os.path.join(save_dir, "model.pt")
+#     if cfg.enable_ddp:
+#         model = model.module
+#     cpu_state = model.state_dict()
+#     if save_trainable_only:
+#         state_dict = OrderedDict()
+#         for name, para in model.named_parameters():
+#             if para.requires_grad:
+#                 state_dict[name] = cpu_state[name]
+#     else:
+#         state_dict = cpu_state
+#     torch.save(state_dict, save_full_path)
+#     logger.info(f"encoder saved at {save_full_path}")
+      
+def save_model_checkpoint_peft(model, optimizer, rank, cfg, checkpoint_name="checkpoint", epoch=0):
     logger.info(f"--> saving model ...")
-    save_dir = os.path.join(cfg.output_dir, cfg.model_name, str(epoch+1))
+    save_dir = os.path.join(cfg.output_dir, checkpoint_name)
     os.makedirs(save_dir, exist_ok=True)
     if not cfg.freeze_llm:
         if hasattr(model, "module"): #(FIX:MZY): a hack to deal with the model wrapped in DDP
