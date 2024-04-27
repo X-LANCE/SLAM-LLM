@@ -70,6 +70,8 @@ hydra.run.dir=$output_dir \
 ++metric=acc \
 "
 
+# note: to train the linear layer only, you could set '++train_config.use_peft=false' and 'train_config.freeze_llm=true'
+
 # -m debugpy --listen 6666 --wait-for-client
 if [[ $CUDA_VISIBLE_DEVICES != *","* ]]; then
     python $code_dir/finetune_aac.py \

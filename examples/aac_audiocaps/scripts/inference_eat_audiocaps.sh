@@ -55,3 +55,5 @@ python $code_dir/inference_aac_batch.py \
     ++dataset_config.target_length=1024 \
     ++peft_ckpt=$output_dir \
     ++train_config.use_peft=true \
+
+# note: to inference model trained the linear layer only, you could set '++train_config.use_peft=false' and 'train_config.freeze_llm=true'
