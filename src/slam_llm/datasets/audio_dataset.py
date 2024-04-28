@@ -1,5 +1,6 @@
 import os.path as osp
 import random
+from torchaudio.transforms import Resample
 import json, yaml
 import copy
 
@@ -12,6 +13,7 @@ import torchaudio
 from torch.utils.data import Dataset
 from slam_llm.utils.compute_utils import calculate_output_length_1d
 from slam_llm.models.BEATs.BEATs import BEATs
+from slam_llm.models.EAT.EAT import EAT_preprocess
 
 
 class AudioDatasetJsonl(torch.utils.data.Dataset):
@@ -32,6 +34,10 @@ class AudioDatasetJsonl(torch.utils.data.Dataset):
         self.prompt_template = "USER: {}\n ASSISTANT:"
         self.answer_template = "{}"
         self.fix_length_audio = dataset_config.fix_length_audio
+        self.inference_mode = dataset_config.get("inference_mode", False)
+        self.input_type = dataset_config.get("input_type", None)
+        self.split = split
+        self.model_name = dataset_config.get("model_name", "beats")
 
         self.data_list = []
         if split == "train":
@@ -70,12 +76,32 @@ class AudioDatasetJsonl(torch.utils.data.Dataset):
         audio_path = data_dict.get("source")
         target = data_dict.get("target", None)
         task = data_dict.get("prompt", "AAC")
+        key = data_dict.get("key", None)
         
-        audio_raw, sample_rate = torchaudio.load(audio_path)
-        assert sample_rate == 16e3, "Sample rate should be 16kHz, but got {}in file {}".format(sr, source_file)
-        audio_mel = BEATs.preprocess(audio_raw[0], fbank_mean=self.dataset_config.fbank_mean, fbank_std=self.dataset_config.fbank_std)
+        # audio_raw, sample_rate = torchaudio.load(audio_path)
+        try:
+            audio_raw, sample_rate = torchaudio.load(audio_path)
+            if audio_raw.shape[1] == 0:
+                raise ValueError("Empty audio file")
+            resampler = Resample(orig_freq=sample_rate, new_freq=16000)
+            audio_raw = resampler(audio_raw)
 
-        prompt = "Describe the audio you hear. Output the audio caption directly without redundant content. Ensure that the output is not duplicated. "
+        except (FileNotFoundError, ValueError, RuntimeError):
+            audio_raw = torch.zeros(1, 16000)
+        
+        # assert sample_rate == 16e3, "Sample rate should be 16kHz, but got {} in file {}".format(sample_rate,audio_path)
+        if self.model_name == "beats":
+            audio_mel = BEATs.preprocess(audio_raw[0], fbank_mean=self.dataset_config.fbank_mean, fbank_std=self.dataset_config.fbank_std)
+        elif self.model_name == "eat":
+            audio_mel = EAT_preprocess(source=audio_raw[0],norm_mean=self.dataset_config.fbank_mean,norm_std=self.dataset_config.fbank_std,
+                                       target_length=self.dataset_config.target_length,fixed_length=self.dataset_config.fixed_length,random_crop=self.dataset_config.random_crop)
+        else:
+            pass
+        
+        # prompt = "Describe the audio you hear. Output the audio caption directly without redundant content. Ensure that the output is not duplicated. "
+        # prompt = "Describe the audio you hear. "
+        prompt = self.dataset_config.prompt + ' '
+        
 
         prompt = self.prompt_template.format(prompt)
         answer = self.answer_template.format(target)
@@ -83,12 +109,31 @@ class AudioDatasetJsonl(torch.utils.data.Dataset):
         prompt_ids = self.tokenizer.encode(prompt)
 
         prompt_length = len(prompt_ids)
-        audio_length = (audio_mel.shape[0] + 1) // 2  # ad-hoc for beats for 2x downsample from mel to feats
-        audio_length = audio_length // 5 # ad-hoc for 5x fc downsample
+        if self.model_name == "beats":
+            audio_length = (audio_mel.shape[0] + 1) // 2  # ad-hoc for beats for 2x downsample from mel to feats
+            
+        elif self.model_name == "eat":
+            audio_length = audio_mel.shape[0] // 2 + 1      # ad-hoc for eat for 2x downsample from mel to feats
+        audio_length = audio_length // self.dataset_config.encoder_projector_ds_rate # ad-hoc for 5x fc downsample
         # audio_length = calculate_output_length_1d(audio_length, 5, 5, 0) # ad-hoc for 5x cov1d downsample
         if self.fix_length_audio > 0:
             audio_length = self.fix_length_audio
         audio_pseudo = torch.full((audio_length,), -1) # placeholder
+
+        if self.inference_mode:
+            prompt_ids = torch.tensor(prompt_ids, dtype=torch.int64)
+            example_ids = torch.cat((audio_pseudo, prompt_ids))  # [audio,prompt]
+            example_mask = example_ids.ge(-1)  # [True,True]
+
+            return {
+                "input_ids": example_ids,
+                "attention_mask": example_mask,
+                "audio": audio_raw if self.input_type == "raw" else None,
+                "audio_mel": audio_mel if self.input_type == "mel" else None,
+                "audio_length": audio_length,
+                "key": key,
+                "target": target,
+            }
 
         example = prompt + answer  # FIX(MZY): avoid putting a bos token before answer.
         example_ids = self.tokenizer.encode(example)  # [prompt,answer]
@@ -112,7 +157,7 @@ class AudioDatasetJsonl(torch.utils.data.Dataset):
             "attention_mask": example_mask,
             'audio_mel': audio_mel,
             'audio_length': audio_length,
-    
+            "target": target,
         }
 
     def pad(self, sequence, max_length, padding_idx=0):
@@ -136,8 +181,6 @@ class AudioDatasetJsonl(torch.utils.data.Dataset):
         input_ids_max_length = max([s['input_ids'].shape[0] for s in samples])
         input_ids = torch.stack([self.pad(s['input_ids'], input_ids_max_length, self.tokenizer.pad_token_id)
                                  for s in samples])
-        labels = torch.stack([self.pad(s['labels'], input_ids_max_length, self.IGNORE_INDEX)
-                              for s in samples])
         attention_mask = torch.stack([self.pad(s['attention_mask'], input_ids_max_length, False)
                                       for s in samples])
     
@@ -151,6 +194,21 @@ class AudioDatasetJsonl(torch.utils.data.Dataset):
         for line, sample in enumerate(samples):
             modality_mask[line, :sample['audio_length']] = 1
     
+        targets = [s['target'] for s in samples]
+        if self.inference_mode:
+            keys = [s['key'] for s in samples]
+
+            return {
+                "input_ids": input_ids,
+                "attention_mask": attention_mask,
+                "audio_mel": audio_mel if self.input_type == "mel" else None,
+                "modality_mask": modality_mask,
+                "keys": keys,
+                "targets": targets
+            }
+            
+        labels = torch.stack([self.pad(s['labels'], input_ids_max_length, self.IGNORE_INDEX)
+                              for s in samples])     
         return {
             'input_ids': input_ids,
             'labels': labels,
