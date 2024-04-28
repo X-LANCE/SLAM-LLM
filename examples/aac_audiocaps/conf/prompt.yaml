@@ -1,0 +1,4 @@
+dataset_config:
+    # we put prompt here, because the hydra override in shell script only support a small subset of chars
+    # prompt: "Describe the audio you hear. Output the audio caption directly without redundant content. Ensure that the output is not duplicated."
+    prompt: "Describe the audio you hear. Output the audio caption directly without redundant content. Ensure that the output is not duplicated."
