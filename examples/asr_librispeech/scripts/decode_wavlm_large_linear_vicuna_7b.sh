@@ -41,7 +41,7 @@ python $code_dir/inference_asr_batch.py \
         ++train_config.freeze_llm=true \
         ++train_config.batching_strategy=custom \
         ++train_config.num_epochs=1 \
-        ++train_config.val_batch_size=4 \
+        ++train_config.val_batch_size=1 \
         ++train_config.num_workers_dataloader=2 \
         ++train_config.output_dir=$output_dir \
         ++decode_log=$decode_log \
