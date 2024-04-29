@@ -1,17 +1,10 @@
 
 model_config:
   llm_name: ""
-  llm_path: ""
-  encoder_name: null
-  # encoder_ds_rate: 2
-  # encoder_path: null
-  encoder_dim: 1
-  encoder_projector: "linear"
-  encoder_projector_ds_rate: 5
-  ar_at_dict: "/home/wangtianrui/datas/viola_bpe/data_bin/dict.at.txt"
-  ar_st_dict: "/home/wangtianrui/datas/viola_bpe/data_bin/dict.st.txt"
-  nar_at_dict: "/home/wangtianrui/datas/viola_bpe/data_bin/dict.at.txt"
-  nar_st_dict: "/home/wangtianrui/datas/viola_bpe/data_bin/dict.st.txt"
+  ar_at_dict: "/Work20/2023/wangtianrui/datas/bilibli_7min_woman/data_bin/dict.at.txt"
+  ar_st_dict: "/Work20/2023/wangtianrui/datas/bilibli_7min_woman/data_bin/dict.st.txt"
+  nar_at_dict: "/Work20/2023/wangtianrui/datas/bilibli_7min_woman/data_bin/dict.at.txt"
+  nar_st_dict: "/Work20/2023/wangtianrui/datas/bilibli_7min_woman/data_bin/dict.st.txt"
   only_ar: true
   only_nar: false
   
@@ -38,16 +31,6 @@ train_config:
   mixed_precision: true
   val_batch_size: 1
 
-  use_peft: false
-  peft_config:
-    peft_method: "lora" # None , llama_adapter, prefix
-    r: 8
-    lora_alpha: 32
-    target_modules: [ "q_proj", "v_proj" ]
-    bias: "none"
-    task_type: "CAUSAL_LM"
-    lora_dropout: 0.05
-    inference_mode: false
   output_dir: "PATH/to/save/PEFT/model"
   freeze_layers: false
   num_freeze_layers: 1
@@ -57,25 +40,12 @@ train_config:
   dist_checkpoint_root_folder: "PATH/to/save/FSDP/model" # will be used if using FSDP
   dist_checkpoint_folder: "fine-tuned" # will be used if using FSDP
   save_optimizer: false # will be used if using FSDP
-  use_fast_kernels: false # Enable using SDPA from PyTroch Accelerated Transformers, make use Flash Attention and Xformer memory-efficient kernels
-  run_test_during_validation: false
-  run_test_during_validation_file: "test.wav"
-  run_test_during_validation_prompt: "<|ASR|>"
-  freeze_llm: false
-  freeze_encoder: false
 
 dataset_config:
   dataset: "speech_dataset"
   file: "src/slam_llm/datasets/speech_dataset.py:get_speech_dataset"
   train_data_path: null
   val_data_path: null
-  train_split: "train"
-  test_split: "valid"
-  data_path: null
-  max_words: null
-  max_mel: null
-  fix_length_audio: -1
-  inference_mode: false
 
 fsdp_config:
     mixed_precision: true
@@ -90,10 +60,10 @@ fsdp_config:
 
 log_config:
     use_wandb: false
-    wandb_dir: "/home/wangtianrui/model_save/vallex/test_wandb"
+    wandb_dir: "/Work20/2023/wangtianrui/codes/test/debug/test_wandb"
     wandb_entity_name : "project_name"
     wandb_project_name : "project_name"
     wandb_exp_name : "exp_name"
-    log_file: "/home/wangtianrui/model_save/vallex/test.log"
+    log_file: "/Work20/2023/wangtianrui/codes/test/debug/test.log"
     log_interval: 5
 
