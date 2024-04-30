@@ -84,6 +84,9 @@ def setup_encoder(train_config, model_config, **kwargs):
         if encoder_name == "moco_wav2vec2":
             from slam_llm.models.encoder import AVEncoder
             encoder = AVEncoder.load(model_config)
+        if encoder_name == "emotion2vec":
+            from slam_llm.models.encoder import Emotion2vecEncoder
+            encoder = Emotion2vecEncoder(model_config)
         if "llama" in encoder_name.lower():
             from slam_llm.models.encoder import HfTextEncoder
             encoder = HfTextEncoder.load(model_config)
@@ -287,6 +290,8 @@ class slam_model(nn.Module):
                 encoder_outs = self.encoder.extract_features(audio, 1 - audio_mask) #(FIX:MZY): 1-audio_mask is needed for wavlm as the padding mask
             if self.model_config.encoder_name == "moco_wav2vec2":
                 encoder_outs , inputLenBatch, audio_mel_post_mask = self.encoder((audio, audio_mask, visual, vis_len) ,maskw2v) # bs*seq*dim
+            if self.model_config.encoder_name == "emotion2vec":
+                encoder_outs = self.encoder.extract_features(audio, None) # bs*seq*dim
             if self.encoder is None:
                 encoder_outs = audio_mel if audio_mel is not None else audio
 
