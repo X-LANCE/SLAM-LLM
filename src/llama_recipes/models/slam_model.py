@@ -27,6 +27,11 @@ def setup_tokenizer(train_config, model_config, **kwargs):
     # Load the tokenizer and add special tokens
     tokenizer = AutoTokenizer.from_pretrained(model_config.llm_path)
     tokenizer.pad_token_id = tokenizer.eos_token_id
+    
+    # with open('/root/SLAM-LLM/vicuna_dict.txt', 'w') as file:
+    #     for key, value in tokenizer.vocab.items():
+    #         file.write(f"{key} {value}\n")  # 你可
+    # exit()
     return tokenizer
 
 

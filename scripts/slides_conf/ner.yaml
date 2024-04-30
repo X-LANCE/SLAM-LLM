@@ -107,6 +107,7 @@ dataset_config:
   prompt: "USER: Transcribe speech to text. Use hotwords in ppt to improve speech recognition accuracy. But if the hotwords are irrelevant, just ignore them. The hotwords are \"{}\". \n ASSISTANT:"
   use_ocr: true
   source: text
+  add_phn: false
   
 fsdp_config:
     mixed_precision: true
