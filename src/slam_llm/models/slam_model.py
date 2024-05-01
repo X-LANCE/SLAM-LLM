@@ -81,9 +81,10 @@ def setup_encoder(train_config, model_config, **kwargs):
         if encoder_name == "wavlm":
             from slam_llm.models.encoder import WavLMEncoder
             encoder = WavLMEncoder.load(model_config)
-        if encoder_name == "moco_wav2vec2":
-            from slam_llm.models.encoder import AVEncoder
-            encoder = AVEncoder.load(model_config)
+        if encoder_name == "av_hubert":
+            from slam_llm.models.encoder import AVHubertEncoder
+            encoder = AVHubertEncoder.load(model_config)
+            
         if "llama" in encoder_name.lower():
             from slam_llm.models.encoder import HfTextEncoder
             encoder = HfTextEncoder.load(model_config)

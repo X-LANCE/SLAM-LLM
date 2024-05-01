@@ -1,0 +1,6 @@
+soundfile
+joblib
+sklearn
+torchaudio==0.10.1
+npy-append-array==0.9.13
+submitit==1.4.1

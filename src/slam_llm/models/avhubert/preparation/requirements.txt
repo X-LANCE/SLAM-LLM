@@ -1,0 +1,7 @@
+pydub==0.25.1
+dlib==19.22.1
+scikit-image==0.17.2
+scikit-video==1.1.11
+scipy==1.5.4
+submitit==1.4.1
+sentencepiece==0.1.96
