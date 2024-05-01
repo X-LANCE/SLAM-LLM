@@ -115,7 +115,7 @@ class GigaDataset(Dataset):
             self.ngram_index = build_ngram_index(self.name_phoneme_list)
 
             if dataset_config.source == "speech":
-                with open(dataset_config.dev_scp_file_path + "infer.phn",'r') as f:  #spn也去重过的
+                with open(dataset_config.dev_scp_file_path + dataset_config.infer_file_name,'r') as f:  #spn也去重过的
                     for line in f:
                         line = line.strip()
                         self.infer_phoneme_list.append(line)
@@ -162,12 +162,15 @@ class GigaDataset(Dataset):
             logger.info(len(high_score_items))
 
         # valid 实际没用
+        # count=0
         for name in gt.split('|'):
             if name not in keys_list:
+                # count+=1
                 logger.info("sentence: %s",phoneme_sentence)
                 logger.info("name: %s",name)
                 logger.info("gt: %s",gt)
                 logger.info("keys_list: %s", keys_list)
+        # logger.info("count: %d",count)
 
         # 用 phone 取出名字的原text
         ocr=[]
@@ -181,6 +184,10 @@ class GigaDataset(Dataset):
             prompt = self.prompt_template.format(ocr)
         else:
             prompt = "USER: Transcribe speech to text. \n ASSISTANT:"
+
+        if self.dataset_config.add_phn == True:
+            prompt_template = "USER: Transcribe speech to text. Use hotwords in ppt to improve speech recognition accuracy. But if the hotwords are irrelevant, just ignore them. The hotwords are \"{}\". The phonemes of the speech is \"{}\". \n ASSISTANT:"
+            prompt = prompt_template.format(ocr,phoneme_sentence)
 
         prompt_ids = self.tokenizer.encode(prompt) #[1, 3148, 1001, 29901, 4103, 29581, 12032, 304, 1426, 29889, 4803, 7375, 9303, 297, ...]
         prompt_length = len(prompt_ids)  #13305

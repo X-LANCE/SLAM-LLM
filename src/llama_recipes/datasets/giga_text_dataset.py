@@ -93,11 +93,11 @@ class GigatextDataset(Dataset):
             self.ngram_index = build_ngram_index(self.name_list)
 
             if dataset_config.source == "speech":
-                with open(dataset_config.dev_scp_file_path + "infer.ltr",'r') as f:  #spn也去重过的
+                with open(dataset_config.dev_scp_file_path + dataset_config.infer_file_name,'r') as f:  #spn也去重过的
                     for line in f:
                         line = line.strip()
                         self.infer_list.append(line)
-                          
+
         elif split == "test":  # 3188  只有prev用这个 不用ground truth 用解码
             pass
 
@@ -122,6 +122,8 @@ class GigatextDataset(Dataset):
             sentence = self.label_list[index] #'K IH1 M W AA1 Z N AA1 T D AW1 N W IH0 DH DH AH0 K R AH0 T IY1 K'
         elif self.dataset_config.source == "speech":
             sentence = self.infer_list[index]
+        else:
+            sentence = self.label_list[index]
 
         gt=self.line_name_list[index]
 
@@ -137,14 +139,21 @@ class GigatextDataset(Dataset):
         keys_list = [k for k, _ in high_score_items]
         
         # valid 实际没用
+        # count=0
         for name in gt.split('|'):
             if name not in keys_list:
+                # count+=1
                 logger.info("sentence: %s",sentence)
                 logger.info("name: %s",name)
                 logger.info("gt: %s",gt)
                 logger.info("keys_list: %s", keys_list)
+        # logger.info("count: %d",count)
 
         ocr = " ".join(keys_list)
+
+        if self.dataset_config.source == "ground_truth":
+            ocr = self.line_name_list[index]
+            ocr = ocr.replace("|"," ")
         
         # ==================================================================#
         if self.dataset_config.use_ocr == True:
