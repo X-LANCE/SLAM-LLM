@@ -86,7 +86,7 @@ def setup_encoder(train_config, model_config, **kwargs):
             encoder = AVEncoder.load(model_config)
         if encoder_name == "emotion2vec":
             from slam_llm.models.encoder import Emotion2vecEncoder
-            encoder = Emotion2vecEncoder(model_config)
+            encoder = Emotion2vecEncoder.load(model_config)
         if "llama" in encoder_name.lower():
             from slam_llm.models.encoder import HfTextEncoder
             encoder = HfTextEncoder.load(model_config)
