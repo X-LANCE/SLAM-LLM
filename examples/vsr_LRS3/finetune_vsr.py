@@ -16,7 +16,7 @@ class RunConfig:
     debug: bool = field(default=False, metadata={"help": "Use pdb when true"})
     metric: str = field(default="acc", metadata={"help": "The metric for evaluation"})
 
-@hydra.main(config_name=None, version_base=None)
+@hydra.main(config_name=None)
 def main_hydra(cfg: DictConfig):
     run_config = RunConfig()
     cfg = OmegaConf.merge(run_config, cfg)
