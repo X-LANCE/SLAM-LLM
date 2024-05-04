@@ -69,22 +69,25 @@ def setup_encoder(train_config, model_config, **kwargs):
         return None
     if len(encoder_list) == 1:
         encoder_name = encoder_list[0]
-        if encoder_name == "whisper" or encoder_name == "qwen-audio":
+        if encoder_name == "SpatialAST":
+            from slam_llm.models.encoder import SpatialASTEncoder
+            encoder = SpatialASTEncoder.load(model_config)
+        elif encoder_name == "whisper" or encoder_name == "qwen-audio":
             from slam_llm.models.encoder import WhisperWrappedEncoder
             encoder = WhisperWrappedEncoder.load(model_config)
-        if encoder_name == "beats": 
+        elif encoder_name == "beats": 
             from slam_llm.models.encoder import BEATsEncoder
             encoder = BEATsEncoder.load(model_config)
-        if encoder_name == "eat":
+        elif encoder_name == "eat":
             from slam_llm.models.encoder import EATEncoder
             encoder = EATEncoder.load(model_config)
-        if encoder_name == "wavlm":
+        elif encoder_name == "wavlm":
             from slam_llm.models.encoder import WavLMEncoder
             encoder = WavLMEncoder.load(model_config)
-        if encoder_name == "moco_wav2vec2":
+        elif encoder_name == "moco_wav2vec2":
             from slam_llm.models.encoder import AVEncoder
             encoder = AVEncoder.load(model_config)
-        if "llama" in encoder_name.lower():
+        elif "llama" in encoder_name.lower():
             from slam_llm.models.encoder import HfTextEncoder
             encoder = HfTextEncoder.load(model_config)
     print_module_size(encoder, encoder_name, int(os.environ["RANK"]) if train_config.enable_fsdp or train_config.enable_ddp else 0)
@@ -287,6 +290,8 @@ class slam_model(nn.Module):
                 encoder_outs = self.encoder.extract_features(audio, 1 - audio_mask) #(FIX:MZY): 1-audio_mask is needed for wavlm as the padding mask
             if self.model_config.encoder_name == "moco_wav2vec2":
                 encoder_outs , inputLenBatch, audio_mel_post_mask = self.encoder((audio, audio_mask, visual, vis_len) ,maskw2v) # bs*seq*dim
+            if self.model_config.encoder_name == "SpatialAST":
+                encoder_outs = self.encoder(audio) # output: [bs, seq_len=3+512, dim=768]
             if self.encoder is None:
                 encoder_outs = audio_mel if audio_mel is not None else audio
 

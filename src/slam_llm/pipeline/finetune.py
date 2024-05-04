@@ -77,11 +77,9 @@ def main(kwargs: DictConfig):
     # train_config, fsdp_config, model_config, log_config = TRAIN_CONFIG(), FSDP_CONFIG(), MODEL_CONFIG(), LOG_CONFIG()
     # update_config((train_config, fsdp_config, model_config, log_config), **kwargs)
 
-    train_config, fsdp_config, model_config, log_config, dataset_config = kwargs.train_config, \
-                                                                          kwargs.fsdp_config, \
-                                                                          kwargs.model_config, \
-                                                                          kwargs.log_config, \
-                                                                          kwargs.dataset_config
+    train_config, fsdp_config, model_config, log_config, dataset_config = \
+        kwargs.train_config, kwargs.fsdp_config, kwargs.model_config, kwargs.log_config, kwargs.dataset_config
+        
     fsdp_config.use_fp16 = train_config.use_fp16
     del kwargs.train_config
     del kwargs.fsdp_config
@@ -150,7 +148,6 @@ def main(kwargs: DictConfig):
     model_factory = get_custom_model_factory(model_config, logger)
     model, tokenizer = model_factory(train_config, model_config, **kwargs)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
     
     # Convert the model to bfloat16 if fsdp and pure_bf16 is enabled
     if (train_config.enable_fsdp or train_config.enable_ddp) and fsdp_config.pure_bf16:

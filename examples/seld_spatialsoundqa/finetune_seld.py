@@ -2,8 +2,8 @@ import hydra
 import logging
 from dataclasses import dataclass, field
 from omegaconf import DictConfig, ListConfig, OmegaConf
-from asr_config import ModelConfig, TrainConfig, DataConfig, LogConfig, FSDPConfig
 
+from seld_config import ModelConfig, TrainConfig, DataConfig, LogConfig, FSDPConfig
 from slam_llm.pipeline.finetune import main as train
 
 @dataclass
@@ -31,7 +31,6 @@ def main_hydra(cfg: DictConfig):
     # kwargs = to_plain_list(cfg)
     kwargs = cfg
     log_level = getattr(logging, kwargs.get("log_level", "INFO").upper())
-    
     logging.basicConfig(level=log_level)
     
     if kwargs.get("debug", False):

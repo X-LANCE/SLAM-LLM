@@ -1,8 +1,9 @@
 import types
+from dataclasses import dataclass
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from dataclasses import dataclass
 
 class WhisperWrappedEncoder:
     
@@ -52,7 +53,6 @@ class UserDirModule:
     user_dir: str
     
 class EATEncoder:
-    
     @classmethod
     def load(cls, model_config):
         import fairseq
@@ -66,6 +66,20 @@ class EATEncoder:
     def extract_features(self, source, padding_mask):
         return self.model.extract_features(source, padding_mask = padding_mask, mask=False, remove_extra_tokens = False)['x']
 
+class SpatialASTEncoder:
+    @classmethod
+    def load(cls, model_config):
+        from functools import partial
+        from .SpatialAST import SpatialAST 
+        binaural_encoder = SpatialAST.BinauralEncoder(
+            num_classes=355, drop_path_rate=0.1, num_cls_tokens=3,
+            patch_size=16, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4, qkv_bias=True,
+            norm_layer=partial(nn.LayerNorm, eps=1e-6)
+        )
+
+        checkpoint = torch.load(model_config.encoder_ckpt, map_location='cpu')
+        binaural_encoder.load_state_dict(checkpoint['model'], strict=False) 
+        return binaural_encoder
 
 class WavLMEncoder(nn.Module):
     def __init__(self, config, model):

@@ -1,22 +1,18 @@
 from dataclasses import dataclass, field
 from typing import Optional, List
+
 @dataclass
 class ModelConfig:
-    file: str = "examples/asr_librispeech/model/slam_model_asr.py:model_factory"
+    file: str = "examples/seld_spatialsoundqa/model/slam_model_seld.py:model_factory"
     llm_name: str = "vicuna-13b-v1.5"
     llm_path: str = "PATH/to/LLAMA/7B"
     llm_type: str = "decoder_only"
     llm_dim: int = 4096
+    
     encoder_name: Optional[str] = None
-    encoder_ds_rate: int = 2
-    encoder_path: Optional[str] = None
-    encoder_dim: int = 1280
-    encoder_projector: str = "linear"
-    encoder_projector_ds_rate: int = 5
-    modal: str = "audio"
-    normalize: Optional[bool] = field(default=False, metadata={
-        "help": "whether inpit is normalized, used for models such as wavlm"
-    })
+    encoder_ckpt: Optional[str] = None
+    encoder_projector: str = "q-former"
+    encoder_dim: int = 768
 
 @dataclass
 class PeftConfig:
@@ -37,7 +33,7 @@ class TrainConfig:
     enable_fsdp:bool = False
     low_cpu_fsdp:bool = False
     run_validation:bool = True
-    batch_size_training:int = 1
+    batch_size_training:int = 4
     batching_strategy:str = field(default="packing", metadata={
         "help":"alternative: padding"
     }) #
@@ -78,27 +74,22 @@ class TrainConfig:
 
 @dataclass
 class DataConfig:
-    dataset: str = "speech_dataset"
-    file: str = "src/slam_llm/datasets/speech_dataset.py:get_speech_dataset"
-    train_data_path: Optional[str] = None
-    val_data_path: Optional[str] = None
+    dataset: str = "spatial_audio_dataset"
+    file: str = "src/slam_llm/datasets/spatial_audio_dataset.py:get_spatial_audio_dataset"
+    ext_audio: str = ".wav"
     train_split: str = "train"
-    test_split:str = "validation"
-    prompt: Optional[str] = None
-    data_path: Optional[str] = None
+    test_split: str = "eval"
+
+    stage: Optional[str] = None
+    
+    qa_data_root: Optional[str] = None
+    anechoic_data_root: Optional[str] = None
+    reverb_data_root: Optional[str] = None
+    channel_type: str = "binaural"
+    normalize: bool = True
     max_words: Optional[int] = None
-    max_mel: Optional[float] = None
-    fix_length_audio: int = -1
-    inference_mode:bool = False
-    input_type: str = field(default="raw", metadata={
-                                "help":"Use raw when input is wav, mel when for whisper"
-                            })
-    mel_size: int = field(default=80, metadata={
-        "help": "80 for whisper large v1 and v2, 128 for v3"
-    })
-    normalize: Optional[bool] = field(default=False, metadata={
-        "help": "whether inpit is normalized, used for models such as wavlm"
-    })
+    fix_length_audio: Optional[int] = None
+    inference_mode: bool = False
 
 @dataclass
 class FSDPConfig:

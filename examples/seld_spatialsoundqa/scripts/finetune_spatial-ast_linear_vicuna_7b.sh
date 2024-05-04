@@ -1,6 +1,6 @@
 #!/bin/bash
 # export PYTHONPATH=/root/whisper:$PYTHONPATH
-export CUDA_VISIBLE_DEVICES=0
+export CUDA_VISIBLE_DEVICES=0,1,2,3
 export TOKENIZERS_PARALLELISM=false
 # export CUDA_LAUNCH_BLOCKING=1
 export OMP_NUM_THREADS=1
@@ -10,14 +10,17 @@ export OMP_NUM_THREADS=1
 # export NCCL_DEBUG_SUBSYS=ALL
 # export TORCH_DISTRIBUTED_DEBUG=INFO
 
-run_dir=/mnt/cloudstorfs/sjtu_home/zhisheng.zheng/SLAM-LLM
-cd $run_dir
-code_dir=examples/asr_librispeech
+SLAM_DIR=/mnt/cloudstorfs/sjtu_home/zhisheng.zheng/SLAM-LLM
+cd $SLAM_DIR
+code_dir=examples/seld_spatialsoundqa
 
-speech_encoder_path=/mnt/cloudstorfs/sjtu_home/zhisheng.zheng/models/whisper/large-v3.pt
+audio_encoder_path=/mnt/cloudstorfs/sjtu_home/zhisheng.zheng/models/SpatialAST/SpatialAST.pth
 llm_path=/mnt/cloudstorfs/sjtu_home/zhisheng.zheng/models/vicuna-7b-v1.5
-train_data_path=/mnt/cloudstorfs/sjtu_home/zhisheng.zheng/data/librispeech/librispeech_dev_other.jsonl
-val_data_path=/mnt/cloudstorfs/sjtu_home/zhisheng.zheng/data/librispeech/librispeech_dev_other.jsonl
+
+stage=classification
+qa_data_root=/mnt/cloudstorfs/sjtu_home/zhisheng.zheng/data/SpatialAudio/closed-end
+reverb_data_root=/mnt/cloudstorfs/sjtu_home/zhisheng.zheng/data/SpatialAudio/reverb/mp3d
+anechoic_data_root=/mnt/cloudstorfs/sjtu_home/zhisheng.zheng/data/AudioSet
 
 output_dir=/mnt/cloudstorfs/sjtu_home/zhisheng.zheng/SLAM-LLM/outputs/vicuna-7b-v1.5-librispeech-linear-steplrwarmupkeep1e-4-whisper-largev3-$(date +"%Y%m%d")
 
@@ -26,18 +29,16 @@ hydra.run.dir=$output_dir \
 ++model_config.llm_name=vicuna-7b-v1.5 \
 ++model_config.llm_path=$llm_path \
 ++model_config.llm_dim=4096 \
-++model_config.encoder_name=whisper \
-++model_config.encoder_projector_ds_rate=5 \
-++model_config.encoder_path=$speech_encoder_path \
-++model_config.encoder_dim=1280 \
-++model_config.encoder_projector=linear \
-++dataset_config.dataset=speech_dataset \
-++dataset_config.train_data_path=$train_data_path \
-++dataset_config.val_data_path=$val_data_path \
-++dataset_config.input_type=mel \
-++dataset_config.mel_size=128 \
+++model_config.encoder_name=SpatialAST \
+++model_config.encoder_projector=q-former \
+++model_config.encoder_ckpt=$audio_encoder_path \
+++dataset_config.stage=$stage \
+++dataset_config.qa_data_root=$qa_data_root \
+++dataset_config.anechoic_data_root=$anechoic_data_root \
+++dataset_config.reverb_data_root=$reverb_data_root \
+++dataset_config.fix_length_audio=64 \
 ++train_config.model_name=asr \
-++train_config.num_epochs=3 \
+++train_config.num_epochs=2 \
 ++train_config.freeze_encoder=true \
 ++train_config.freeze_llm=true \
 ++train_config.batching_strategy=custom \
@@ -55,18 +56,16 @@ hydra.run.dir=$output_dir \
 
 # -m debugpy --listen 5678 --wait-for-client
 if [[ $CUDA_VISIBLE_DEVICES != *","* ]]; then
-    python -m debugpy --listen 55555 --wait-for-client $code_dir/finetune_asr.py \
+    python -u $code_dir/finetune_seld.py \
         --config-path "conf" \
-        --config-name "prompt.yaml" \
         $hydra_args
 else
     torchrun \
         --nnodes 1 \
-        --nproc_per_node 2 \
+        --nproc_per_node 4 \
         --master_port=29503 \
-        $code_dir/finetune_asr.py \
+        $code_dir/finetune_seld.py \
         --config-path "conf" \
-        --config-name "prompt.yaml" \
         ++train_config.enable_fsdp=false \
         ++train_config.enable_ddp=true \
         ++train_config.use_fp16=true \
