@@ -1,0 +1,69 @@
+
+model_config:
+  llm_name: ""
+  ar_at_dict: "/Work20/2023/wangtianrui/datas/bilibli_7min_woman/data_bin/dict.at.txt"
+  ar_st_dict: "/Work20/2023/wangtianrui/datas/bilibli_7min_woman/data_bin/dict.st.txt"
+  nar_at_dict: "/Work20/2023/wangtianrui/datas/bilibli_7min_woman/data_bin/dict.at.txt"
+  nar_st_dict: "/Work20/2023/wangtianrui/datas/bilibli_7min_woman/data_bin/dict.st.txt"
+  only_ar: true
+  only_nar: false
+  
+train_config:
+  model_name: ""
+  enable_ddp: false
+  enable_fsdp: false
+  low_cpu_fsdp: false
+  run_validation: true
+  batch_size_training: 4
+  batching_strategy: "packing" #alternative: padding
+  context_length: 4096
+  gradient_accumulation_steps: 1
+  num_epochs: 100
+  num_workers_dataloader: 1
+  warmup_steps: 1000
+  total_steps: 100000
+  validation_interval: 1000
+  lr: 1e-4
+  weight_decay: 0.0
+  gamma: 0.85
+  seed: 42
+  use_fp16: false
+  mixed_precision: true
+  val_batch_size: 1
+
+  output_dir: "PATH/to/save/PEFT/model"
+  freeze_layers: false
+  num_freeze_layers: 1
+  quantization: false
+  one_gpu: false
+  save_model: true
+  dist_checkpoint_root_folder: "PATH/to/save/FSDP/model" # will be used if using FSDP
+  dist_checkpoint_folder: "fine-tuned" # will be used if using FSDP
+  save_optimizer: false # will be used if using FSDP
+
+dataset_config:
+  dataset: "speech_dataset"
+  file: "src/slam_llm/datasets/speech_dataset.py:get_speech_dataset"
+  train_data_path: null
+  val_data_path: null
+
+fsdp_config:
+    mixed_precision: true
+    use_fp16: false
+    # sharding_strategy: "FULL_SHARD" #ShardingStrategy = ShardingStrategy.FULL_SHARD
+    sharding_strategy: "NO_SHARD" #ShardingStrategy.NO_SHARD #MZY: set NO_SHARD when use DDP
+    checkpoint_type: "SHARDED_STATE_DICT"  # alternatively can use SHARDED_STATE_DICT save one file per rank, and can resize the world-size.
+    fsdp_activation_checkpointing: true
+    fsdp_cpu_offload: false
+    pure_bf16: false
+    optimizer: "AdamW"
+
+log_config:
+    use_wandb: false
+    wandb_dir: "/Work20/2023/wangtianrui/codes/test/debug/test_wandb"
+    wandb_entity_name : "project_name"
+    wandb_project_name : "project_name"
+    wandb_exp_name : "exp_name"
+    log_file: "/Work20/2023/wangtianrui/codes/test/debug/test.log"
+    log_interval: 5
+
