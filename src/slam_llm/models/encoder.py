@@ -113,9 +113,6 @@ class Emotion2vecEncoder:
     def load(cls, model_config):
         import fairseq
         from fairseq import checkpoint_utils
-        if hasattr(model_config, 'encoder_fairseq_dir'):
-            model_path = UserDirModule(model_config.encoder_fairseq_dir)
-            fairseq.utils.import_user_module(model_path)
         model, cfg, task = fairseq.checkpoint_utils.load_model_ensemble_and_task([model_config.encoder_path])
         model = model[0]
         
