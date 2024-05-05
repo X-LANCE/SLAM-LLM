@@ -21,7 +21,8 @@ llm_path=/nfs/maziyang.mzy/models/vicuna-7b-v1.5
 
 output_dir=/nfs/yangguanrou.ygr/vicuna-7b-v1.5-hubert_xtralarge_ll60k_finetune_ls960_weighted
 
-python -m debugpy --listen 5678 --wait-for-client src/llama_recipes/pipeline/finetune.py \
+#scripts_all/script_mzy/finetune_asr_vicuna_hubert_xtralarge_ll60k_finetune_ls960_weighted_debug.sh
+python src/llama_recipes/pipeline/finetune.py \
 --config-path "/root/SLAM-LLM/scripts/conf" \
 --config-name "asr_vicuna_lora.yaml" \
 hydra.run.dir=$output_dir \

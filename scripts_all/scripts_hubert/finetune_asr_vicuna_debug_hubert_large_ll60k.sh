@@ -7,16 +7,17 @@ export OMP_NUM_THREADS=1
 
 cd /root/SLAM-LLM
 
-speech_encoder_path=/nfs/yangguanrou.ygr/hubert_ckpt/hubert_large_ll60k.pt
+speech_encoder_path=/nfs/yangguanrou.ygr/ckpts/hubert_ckpt/hubert_large_ll60k.pt
 # speech_encoder_path=/nfs/maziyang.mzy/models/Whisper/large-v2-qwen.pt
+
 
 llm_path=/nfs/maziyang.mzy/models/vicuna-7b-v1.5
 # llm_path=/nfs/maziyang.mzy/models/vicuna-13b-v1.5
 
 output_dir=/nfs/yangguanrou.ygr/debug
 
-# 
-python -m debugpy --listen 5679 --wait-for-client src/llama_recipes/pipeline/finetune.py \
+# -m debugpy --listen 5679 --wait-for-client
+python src/llama_recipes/pipeline/finetune.py \
 --config-path "/root/SLAM-LLM/scripts/conf" \
 --config-name "asr_vicuna_lora.yaml" \
 hydra.run.dir=$output_dir \
