@@ -53,7 +53,9 @@ def model_factory(train_config, model_config, **kwargs):
 
 def setup_tokenizer(train_config, model_config, **kwargs):
     # Load the tokenizer and add special tokens
-    if "mupt" in model_config.llm_name.lower():
+    if "vallex" in model_config.llm_name.lower():
+        return None  
+    elif "mupt" in model_config.llm_name.lower():
         tokenizer = AutoTokenizer.from_pretrained(model_config.llm_path,
                                             trust_remote_code=True,
                                             use_fast=False)
@@ -115,7 +117,14 @@ def setup_llm(train_config, model_config, **kwargs):
         #                     "please install latest nightly.")
         rank = int(os.environ["RANK"])
         if rank == 0:
-            if "aya" in model_config.llm_name.lower():
+            if "vallex" in model_config.llm_name.lower():
+                from src.slam_llm.models.vallex.vallex_config import VallexConfig
+                from src.slam_llm.models.vallex.vallex_model import VALLE
+                vallex_config = VallexConfig(
+                    **model_config
+                )
+                model = VALLE(vallex_config)
+            elif "aya" in model_config.llm_name.lower():
                 model = AutoModelForSeq2SeqLM.from_pretrained(
                     model_config.llm_path,
                     load_in_8bit=True if train_config.quantization else None,
@@ -139,7 +148,14 @@ def setup_llm(train_config, model_config, **kwargs):
                 model = AutoModelForCausalLM(llama_config) #(FIX:MZY): torch 2.0.1 does not support `meta`
 
     else:
-        if "aya" in model_config.llm_name.lower():
+        if "vallex" in model_config.llm_name.lower():
+            from src.slam_llm.models.vallex.vallex_config import VallexConfig
+            from src.slam_llm.models.vallex.vallex_model import VALLE
+            vallex_config = VallexConfig(
+                **model_config
+            )
+            model = VALLE(vallex_config)
+        elif "aya" in model_config.llm_name.lower():
             model = AutoModelForSeq2SeqLM.from_pretrained(
                 model_config.llm_path,
                 load_in_8bit=True if train_config.quantization else None,
@@ -199,6 +215,8 @@ def setup_encoder_projector(train_config, model_config, **kwargs):
     elif model_config.encoder_projector == "q-former":
         from slam_llm.models.projector import EncoderProjectorQFormer
         encoder_projector = EncoderProjectorQFormer(model_config)
+    else:
+        return None
     print_module_size(encoder_projector, model_config.encoder_projector, int(os.environ["RANK"]) if train_config.enable_fsdp or train_config.enable_ddp else 0)
     return encoder_projector
 
@@ -275,6 +293,9 @@ class slam_model(nn.Module):
         instruct_mask = kwargs.get("instruct_mask", None)
 
         modality_mask = kwargs.get("modality_mask", None)
+        
+        zh_data = kwargs.get("zh", None)
+        en_data = kwargs.get("en", None)
 
         encoder_outs = None
         if audio_mel is not None or audio is not None:
@@ -326,14 +347,16 @@ class slam_model(nn.Module):
 
         if kwargs.get("inference_mode", False):
             return inputs_embeds, attention_mask
-    
-        model_outputs = self.llm(inputs_embeds=inputs_embeds, attention_mask=attention_mask, labels=labels)
 
-        acc = -1
-        if self.metric:
-            with torch.no_grad():
-                preds = torch.argmax(model_outputs.logits, -1)
-                acc = compute_accuracy(preds.detach()[:, :-1], labels.detach()[:, 1:], ignore_label=-100)
+        if zh_data is not None and en_data is not None:
+            model_outputs, acc = self.llm(zh=zh_data, en=en_data)
+        else:
+            model_outputs = self.llm(inputs_embeds=inputs_embeds, attention_mask=attention_mask, labels=labels)
+            acc = -1
+            if self.metric:
+                with torch.no_grad():
+                    preds = torch.argmax(model_outputs.logits, -1)
+                    acc = compute_accuracy(preds.detach()[:, :-1], labels.detach()[:, 1:], ignore_label=-100)
 
         return model_outputs, acc
     

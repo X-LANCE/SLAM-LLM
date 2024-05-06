@@ -98,8 +98,14 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                 for key in batch.keys():
                     if train_config.enable_fsdp or train_config.enable_ddp:
                         batch[key] = batch[key].to(local_rank) if isinstance(batch[key], torch.Tensor) else batch[key]
+                        if isinstance(batch[key], dict):
+                            for k2 in batch[key].keys():
+                                batch[key][k2] = batch[key][k2].to(local_rank) if isinstance(batch[key][k2], torch.Tensor) else batch[key][k2]
                     else:
                         batch[key] = batch[key].to('cuda:0') if isinstance(batch[key], torch.Tensor) else batch[key]
+                        if isinstance(batch[key], dict):
+                            for k2 in batch[key].keys():
+                                batch[key][k2] = batch[key][k2].to('cuda:0') if isinstance(batch[key][k2], torch.Tensor) else batch[key][k2]
                 with autocast():
                     outputs, *rest = model(**batch)
                 acc = rest[0] if rest else -1
@@ -410,10 +416,13 @@ def evaluation(model,train_config, eval_dataloader, local_rank, tokenizer):
                 eval_loss += loss.detach().float()
                 eval_acc += acc
             # Decode predictions and add to evaluation predictions list
-            preds = torch.argmax(outputs.logits, -1)
-            eval_preds.extend(
-                tokenizer.batch_decode(preds.detach().cpu().numpy(), skip_special_tokens=True)
-            )
+            try:
+                preds = torch.argmax(outputs.logits, -1)
+                eval_preds.extend(
+                    tokenizer.batch_decode(preds.detach().cpu().numpy(), skip_special_tokens=True)
+                )
+            except Exception:
+                pass  # vallex does not need to show it's result (we can't view any thing from abstract acoustic token)
             pbar.update(1)
             pbar.set_description(f"step: {step+1}/{total_length}, eval_loss: {eval_loss/(step+1):.4f}, eval_acc: {eval_acc/(step+1):.4f}")
 
