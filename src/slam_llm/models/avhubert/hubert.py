@@ -59,6 +59,7 @@ EXTRACTOR_MODE_CHOICES = ChoiceEnum(["default", "layer_norm"])
 MASKING_DISTRIBUTION_CHOICES = ChoiceEnum(
     ["static", "uniform", "normal", "poisson"]
 )
+# LAYER_TYPE_CHOICES = ChoiceEnum(["transformer", "conformer", "trf_adp"])
 
 
 @dataclass
@@ -313,6 +314,18 @@ class AVHubertConfig(FairseqDataclass):
         metadata={"help": "share decoder input and output embeddings"},
     )
     no_scale_embedding: bool = field(default=True, metadata={'help': 'scale embedding'})
+
+    # # new fairseq
+    # required_seq_len_multiple: int = field(
+    #     default=1,
+    #     metadata={
+    #         "help": "pad the input to encoder such that the sequence length is divisible by multiple"
+    #     },
+    # )
+
+    # layer_type: LAYER_TYPE_CHOICES = field(
+    #     default="transformer", metadata={"help": "layer type in encoder"}
+    # )
 
 class SubModel(nn.Module):
     def __init__(self, resnet=None, input_dim=None, cfg=None):

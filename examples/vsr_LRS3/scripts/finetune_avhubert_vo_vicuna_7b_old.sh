@@ -15,7 +15,8 @@ run_dir=/root/SLAM-LLM
 cd $run_dir
 code_dir=examples/vsr_LRS3
 
-speech_encoder_path=/nfs/yangguanrou.ygr/codes/av_hubert/self_large_vox_433h_new.pt
+# speech_encoder_path=/nfs/yangguanrou.ygr/codes/av_hubert/self_large_vox_433h_new.pt
+speech_encoder_path=/nfs/yangguanrou.ygr/codes/av_hubert/self_large_vox_433h_newfairseq.pt
 llm_path=/nfs/maziyang.mzy/models/vicuna-7b-v1.5
 
 output_dir=/root/tmp/vicuna-7b-v1.5-large_vox_433h-$(date +"%Y%m%d")
