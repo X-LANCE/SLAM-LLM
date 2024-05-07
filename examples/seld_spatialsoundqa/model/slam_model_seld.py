@@ -25,7 +25,7 @@ def model_factory(train_config, model_config, **kwargs):
     encoder_projector = setup_encoder_projector(
         train_config, model_config, **kwargs
     )
-    model = slam_model_asr(
+    model = slam_model_seld(
         encoder,
         llm,
         encoder_projector,
@@ -55,7 +55,7 @@ def model_factory(train_config, model_config, **kwargs):
     return model, tokenizer
 
 
-class slam_model_asr(slam_model):
+class slam_model_seld(slam_model):
     def __init__(
         self,
         encoder,
@@ -75,7 +75,6 @@ class slam_model_asr(slam_model):
             model_config,
             **kwargs,
         )
-
 
     @torch.no_grad()
     def inference(

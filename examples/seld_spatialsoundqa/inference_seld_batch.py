@@ -1,12 +1,11 @@
-from slam_llm.pipeline.inference_batch import main as inference
-
 import hydra
 import logging
 from dataclasses import dataclass, field
 from omegaconf import DictConfig, ListConfig, OmegaConf
 from typing import Optional
-from asr_config import ModelConfig, TrainConfig, DataConfig, LogConfig, FSDPConfig
 
+from slam_llm.pipeline.inference_batch import main as inference
+from seld_config import ModelConfig, TrainConfig, DataConfig, LogConfig, FSDPConfig, PeftConfig
 
 @dataclass
 class RunConfig:
@@ -15,6 +14,7 @@ class RunConfig:
     train_config: TrainConfig = field(default_factory=TrainConfig)
     log_config: LogConfig = field(default_factory=LogConfig)
     fsdp_config: FSDPConfig = field(default_factory=FSDPConfig)
+    peft_config: PeftConfig = field(default_factory=PeftConfig)
     debug: bool = field(default=False, metadata={"help": "Use pdb when true"})
     metric: str = field(default="acc", metadata={"help": "The metric for evaluation"})
     decode_log: str = field(

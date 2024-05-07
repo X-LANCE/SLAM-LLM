@@ -16,11 +16,11 @@ def format_prompt(instruction, input=None):
         "prompt_input": (
             "Below is an instruction that describes a task, paired with an input that provides further context. "
             "Write a response that appropriately completes the request.\n\n"
-            "### Instruction:\n{instruction}\n\n### Input:\n{input}\n\n### Response: "
+            "### Instruction:\n{instruction}\n\n### Input:\n{input}\n\n### Response:"
         ),
         "prompt_no_input": (
             "Based on the audio you've heard, refer to the instruction and provide a response.\n\n"
-            "### Instruction:\n{instruction}\n\n### Response: "
+            "### Instruction:\n{instruction}\n\n### Response:"
         ),
     }
     if input is None:
@@ -79,8 +79,22 @@ class SpatialAudioDatasetJsonl(Dataset):
 
         prompt = sample['question']
         prompt = format_prompt(prompt, None)
-        prmopt_ids = self.tokenizer.encode(prompt)
-        prompt_length = len(prmopt_ids)
+        prompt_ids = self.tokenizer.encode(prompt)
+        prompt_length = len(prompt_ids)
+
+        if self.inference_mode:
+            prompt_ids = torch.tensor(prompt_ids, dtype=torch.int64)
+            example_ids = torch.cat((audio_pseudo, prompt_ids))  # [audio,prompt]
+            example_mask = example_ids.ge(-1)  # [True,True]
+
+            return {
+                "input_ids": example_ids,
+                "attention_mask": example_mask,
+                "audio": waveforms,
+                "audio_length": audio_length,
+                "key": f"{sample['question_type']}-{sample['question_id']}",
+                "target": sample['answer'],
+            }
 
         answer = sample['answer']        
         example = prompt + answer
@@ -91,7 +105,7 @@ class SpatialAudioDatasetJsonl(Dataset):
         example_ids = torch.cat((audio_pseudo, example_ids))  # [audio,prompt,answer,eos]
 
         labels_ids = copy.deepcopy(example_ids)  # [audio,prompt,answer,eos]
-        labels_ids[:audio_length+prompt_length-1] = -1  # [-1,-1,answer,eos];
+        labels_ids[:audio_length + prompt_length] = -1  # [-1,-1,answer,eos];
         example_mask = example_ids.ge(-1)  # FIX(GZF): [True,True,True,True]
 
         label_mask = labels_ids.ge(0)  # [False,False,True,True]
@@ -202,18 +216,18 @@ class SpatialAudioDatasetJsonl(Dataset):
         for line, sample in enumerate(samples):
             modality_mask[line, :sample['audio_length']] = 1
 
-        # if self.inference_mode:
-        #     keys = [s['key'] for s in samples]
-        #     targets = [s['target'] for s in samples]
+        if self.inference_mode:
+            keys = [s['key'] for s in samples]
+            targets = [s['target'] for s in samples]
 
-        #     return {
-        #         "input_ids": input_ids,
-        #         "attention_mask": attention_mask,
-        #         "audio": audio,
-        #         "modality_mask": modality_mask,
-        #         "keys": keys,
-        #         "targets": targets
-        #     }
+            return {
+                "input_ids": input_ids,
+                "attention_mask": attention_mask,
+                "audio": audio,
+                "modality_mask": modality_mask,
+                "keys": keys,
+                "targets": targets
+            }
 
         labels = torch.stack([self.padding(s['labels'], input_ids_max_length, self.IGNORE_INDEX)
                               for s in samples])

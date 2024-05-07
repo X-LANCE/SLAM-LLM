@@ -48,11 +48,8 @@ def main(kwargs: DictConfig):
 	# Update the configuration for the training and sharding process
 	# train_config, fsdp_config, model_config, log_config = TRAIN_CONFIG(), FSDP_CONFIG(), MODEL_CONFIG(), LOG_CONFIG()
 	# update_config((train_config, fsdp_config, model_config, log_config), **kwargs)
-	train_config, fsdp_config, model_config, log_config, dataset_config = kwargs.train_config, \
-	                                                                      kwargs.fsdp_config, \
-	                                                                      kwargs.model_config, \
-	                                                                      kwargs.log_config, \
-	                                                                      kwargs.dataset_config
+	train_config, fsdp_config, model_config, log_config, dataset_config = \
+		kwargs.train_config, kwargs.fsdp_config, kwargs.model_config, kwargs.log_config, kwargs.dataset_config
 	
 	del kwargs.train_config
 	del kwargs.fsdp_config

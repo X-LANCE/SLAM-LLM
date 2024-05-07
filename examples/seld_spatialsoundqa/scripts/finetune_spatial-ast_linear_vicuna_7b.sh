@@ -1,6 +1,6 @@
 #!/bin/bash
 # export PYTHONPATH=/root/whisper:$PYTHONPATH
-export CUDA_VISIBLE_DEVICES=0,1,2,3
+export CUDA_VISIBLE_DEVICES=0 #,1,2,3
 export TOKENIZERS_PARALLELISM=false
 # export CUDA_LAUNCH_BLOCKING=1
 export OMP_NUM_THREADS=1
@@ -15,18 +15,18 @@ cd $SLAM_DIR
 code_dir=examples/seld_spatialsoundqa
 
 audio_encoder_path=/mnt/cloudstorfs/sjtu_home/zhisheng.zheng/models/SpatialAST/SpatialAST.pth
-llm_path=/mnt/cloudstorfs/sjtu_home/zhisheng.zheng/models/vicuna-7b-v1.5
+llm_path=/mnt/cloudstorfs/sjtu_home/zhisheng.zheng/models/llama-2-hf
 
 stage=classification
 qa_data_root=/mnt/cloudstorfs/sjtu_home/zhisheng.zheng/data/SpatialAudio/closed-end
 reverb_data_root=/mnt/cloudstorfs/sjtu_home/zhisheng.zheng/data/SpatialAudio/reverb/mp3d
 anechoic_data_root=/mnt/cloudstorfs/sjtu_home/zhisheng.zheng/data/AudioSet
 
-output_dir=/mnt/cloudstorfs/sjtu_home/zhisheng.zheng/SLAM-LLM/outputs/vicuna-7b-v1.5-librispeech-linear-steplrwarmupkeep1e-4-whisper-largev3-$(date +"%Y%m%d")
+output_dir=/mnt/cloudstorfs/sjtu_home/zhisheng.zheng/SLAM-LLM/outputs/bat-llama-2-spatialAST-qformer-steplrwarmupkeep1e-4-${stage}-$(date +"%Y%m%d")
 
 hydra_args="
 hydra.run.dir=$output_dir \
-++model_config.llm_name=vicuna-7b-v1.5 \
+++model_config.llm_name=llama-2-7b \
 ++model_config.llm_path=$llm_path \
 ++model_config.llm_dim=4096 \
 ++model_config.encoder_name=SpatialAST \
@@ -37,7 +37,7 @@ hydra.run.dir=$output_dir \
 ++dataset_config.anechoic_data_root=$anechoic_data_root \
 ++dataset_config.reverb_data_root=$reverb_data_root \
 ++dataset_config.fix_length_audio=64 \
-++train_config.model_name=asr \
+++train_config.model_name=bat \
 ++train_config.num_epochs=2 \
 ++train_config.freeze_encoder=true \
 ++train_config.freeze_llm=true \
@@ -45,11 +45,13 @@ hydra.run.dir=$output_dir \
 ++train_config.warmup_steps=1000 \
 ++train_config.total_steps=100000 \
 ++train_config.lr=1e-4 \
-++train_config.validation_interval=1000 \
-++train_config.batch_size_training=4 \
+++train_config.validation_interval=10000 \
+++train_config.batch_size_training=8 \
 ++train_config.val_batch_size=4 \
 ++train_config.num_workers_dataloader=2 \
 ++train_config.output_dir=$output_dir \
+++train_config.use_peft=true \
+++peft_config.peft_method=llama_adapter \
 ++metric=acc \
 ++log_config.log_file=$output_dir/log.txt \
 "

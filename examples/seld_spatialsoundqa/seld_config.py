@@ -27,7 +27,7 @@ class PeftConfig:
 
 @dataclass
 class TrainConfig:
-    model_name:str = "PATH/to/LLAMA/7B"
+    model_name: str = "vicuna-7b-v1.5"
     enable_ddp:bool = False
     enable_deepspeed:bool = False
     enable_fsdp:bool = False
@@ -66,7 +66,7 @@ class TrainConfig:
     use_fast_kernels:bool = False # Enable using SDPA from PyTroch Accelerated Transformers, make use Flash Attention and Xformer memory-efficient kernels
     run_test_during_validation:bool = False
     run_test_during_validation_file:str = "test.wav"
-    run_test_during_validation_prompt:str = "<|ASR|>"
+    run_test_during_validation_prompt:str = ""
     freeze_llm:bool = field(default=False, metadata={
         "help": "whether to freeze llm when finetuning, should be true when use peft finetuning"
     })
