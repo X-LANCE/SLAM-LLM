@@ -342,7 +342,6 @@ class slam_model(nn.Module):
                 encoder_outs = self.encoder_projector(encoder_outs)
 
 
-
         if input_ids is not None:
             input_ids[input_ids == -1] = 0
             if isinstance(self.llm, T5ForConditionalGeneration):
