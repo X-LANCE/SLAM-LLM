@@ -15,7 +15,7 @@ llm_path=/nfs/maziyang.mzy/models/vicuna-7b-v1.5
 output_dir=/nfs/yangguanrou.ygr/experiments_avhubert/vicuna-7b-v1.5-large_vox_433h-tri-dataset-tiaocan_again
 ckpt_path=$output_dir/asr/850
 
-decode_log=$ckpt_path/decode_${split}_beam4_again
+decode_log=$ckpt_path/decode_${split}_beam4
 
 # -m debugpy --listen 5678 --wait-for-client
 python $code_dir/inference_vsr_batch.py \

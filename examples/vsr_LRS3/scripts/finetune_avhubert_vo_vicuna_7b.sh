@@ -1,7 +1,7 @@
 #!/bin/bash
 # export PYTHONPATH=/root/whisper:$PYTHONPATH
 # export PYTHONPATH=/root/fairseq:$PYTHONPATH
-export CUDA_VISIBLE_DEVICES=3
+export CUDA_VISIBLE_DEVICES=2,3
 export TOKENIZERS_PARALLELISM=false
 # export CUDA_LAUNCH_BLOCKING=1
 export OMP_NUM_THREADS=1
@@ -31,7 +31,6 @@ hydra.run.dir=$output_dir \
 +model_config.encoder_projector=cov1d-linear \
 +model_config.encoder_projector_ds_rate=5 \
 +dataset_config.dataset=avhubert_dataset \
-+dataset_config.input_type=raw \
 +dataset_config.labels=[\"wrd\"] \
 +train_config.model_name=vsr \
 +train_config.num_epochs=10 \
