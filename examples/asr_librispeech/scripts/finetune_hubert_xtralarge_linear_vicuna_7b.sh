@@ -1,7 +1,7 @@
 #!/bin/bash
 # export PYTHONPATH=/root/whisper:$PYTHONPATH
 export PYTHONPATH=/root/fairseq:$PYTHONPATH
-export CUDA_VISIBLE_DEVICES=0,1,2,3
+export CUDA_VISIBLE_DEVICES=2,3
 export TOKENIZERS_PARALLELISM=false
 # export CUDA_LAUNCH_BLOCKING=1
 export OMP_NUM_THREADS=1
@@ -39,7 +39,6 @@ hydra.run.dir=$output_dir \
 ++dataset_config.train_data_path=$train_data_path \
 ++dataset_config.val_data_path=$val_data_path \
 ++dataset_config.input_type=raw \
-++dataset_config.prompt=\"Transcribe speech to text. \" \
 ++train_config.model_name=asr \
 ++train_config.num_epochs=3 \
 ++train_config.freeze_encoder=true \
@@ -65,7 +64,7 @@ if [[ $CUDA_VISIBLE_DEVICES != *","* ]]; then
 else
     torchrun \
         --nnodes 1 \
-        --nproc_per_node 4 \
+        --nproc_per_node 2 \
         --master_port=29503 \
         $code_dir/finetune_asr.py \
         --config-path "conf" \

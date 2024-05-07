@@ -5,8 +5,6 @@ preds="/nfs/maziyang.mzy/exps/vicuna-7b-v1.5-finetune-asr-ds10-proj2048-steplrwa
 
 # python src/llama_recipes/utils/preprocess_text.py ${preds} ${preds}.proc
 # python src/llama_recipes/utils/compute_wer.py ${trans} ${preds}.proc ${preds}.proc.wer
-trans=/nfs/yangguanrou.ygr/experiments_avhubert/vicuna-7b-v1.5-large_vox_433h-tri-dataset-tiaocan_again/asr/850/decode__beam4_noself_gt
-preds=/nfs/yangguanrou.ygr/experiments_avhubert/vicuna-7b-v1.5-large_vox_433h-tri-dataset-tiaocan_again/asr/850/decode__beam4_noself_pred
 
 python src/llama_recipes/utils/whisper_tn.py ${trans} ${trans}.proc
 python src/llama_recipes/utils/llm_tn.py ${preds} ${preds}.proc

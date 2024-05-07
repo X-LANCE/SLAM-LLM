@@ -301,7 +301,7 @@ class slam_model(nn.Module):
         en_data = kwargs.get("en", None)
 
         encoder_outs = None
-        if audio_mel is not None or audio or visual is not None:
+        if audio_mel is not None or audio is not None or visual is not None:
             if self.model_config.encoder_name == "whisper":
                 encoder_outs = self.encoder.extract_variable_length_features(audio_mel.permute(0, 2, 1)) # bs*seq*dim
             if self.model_config.encoder_name == "beats":
