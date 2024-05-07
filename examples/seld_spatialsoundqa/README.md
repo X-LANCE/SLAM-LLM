@@ -3,9 +3,9 @@
 This repo hosts the code and models of "[BAT: Learning to Reason about Spatial Sounds with Large Language Models](https://arxiv.org/abs/2402.01591)" [ICML 2024 [bib](https://github.com/zszheng147/Spatial-AST#citation)].
 
 ## Performance and checkpoints
-Encoder | Projector | LLM
-|---|---|---
-[Spatial-AST]() | Q-Former | [vicuna-7b-v1.5](https://huggingface.co/lmsys/vicuna-7b-v1.5) 
+Encoder | Projector | PEFT | LLM
+|---|---|---|---|
+[Spatial-AST](https://huggingface.co/zhisheng01/Bat/blob/main/spatial-ast.pth) | Q-Former | adapter |[llama-2-7b](https://huggingface.co/meta-llama/Llama-2-7b) 
 
 ## Data preparation
 You need to prepare the data jsonl in this format.
@@ -16,12 +16,18 @@ You need to prepare the data jsonl in this format.
 ```
 
 ## Train a new model
-```
+```bash
 bash examples/seld_spatialsoundqa/scripts/finetune_spatial-ast_linear_vicuna_7b.sh
 ```
 
+## Decoding with checkpoints
+```bash
+bash examples/seld_spatialsoundqa/scripts/decode_spatial-ast_linear_vicuna_7b.sh
+```
+
+
 ## TODO
-- [ ] Decode with checkpoints
+- [x] Decode with checkpoints
 - [ ] Upload SpatialSoundQA dataset
 - [ ] Upload pretrained checkpoints
 - [ ] Update model performance
