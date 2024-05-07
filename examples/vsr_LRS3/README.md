@@ -4,7 +4,7 @@
 We only train the linear projector in this recipe.
 Encoder | Projector | LLM | test 
 |---|---|---|---|
-[AV-HuBERT Large + Self-Training](https://dl.fbaipublicfiles.com/avhubert/model/lrs3_vox/vsr/self_large_vox_433h.pt) | [Linear]()(~18.88M) | [vicuna-7b-v1.5](https://huggingface.co/lmsys/vicuna-7b-v1.5) | 29.47 
+[AV-HuBERT Large + Self-Training](https://dl.fbaipublicfiles.com/avhubert/model/lrs3_vox/vsr/self_large_vox_433h.pt) | [Linear](https://drive.google.com/file/d/1DNfJgyeLx9xet4DT5xZXyx8ZOcNoawL8/view?usp=drive_link)(~15.74M) | [vicuna-7b-v1.5](https://huggingface.co/lmsys/vicuna-7b-v1.5) | 29.47 
 
 
 ## Data preparation
