@@ -1,19 +1,15 @@
-# ASR_Librispeech
+# VSR_LRS3
 
 ## Performance and checkpoints
 We only train the linear projector in this recipe.
-Encoder | Projector | LLM | test-clean | test-other
-|---|---|---|---|---
+Encoder | Projector | LLM | test 
+|---|---|---|---|
 [WavLM-large](https://drive.google.com/file/d/12-cB34qCTvByWT-QtOcZaqwwO21FLSqU/view) | [Linear](https://drive.google.com/file/d/1cLNuMR05oXxKj8M_Z3yAZ5JHJ06ybIHp/view?usp=sharing)(~18.88M) | [vicuna-7b-v1.5](https://huggingface.co/lmsys/vicuna-7b-v1.5) | 2.28 | 4.78
 
 
 ## Data preparation
-You need to prepare the data jsonl in this format.
-```
-{"key": "1001-134707-0000_ASR", "source": "/data/open_data/librispeech_audio/audio/librispeech_1001-134707-0000.wav", "target": "1 little recks the laborer. How near his work is holding him to God, The loving laborer through space and time, after all, not to create, only or found only."}
-...
-{"key": "1001-134707-0000_ASR", "source": "/data/open_data/librispeech_audio/audio/librispeech_1001-134707-0000.wav", "target": "1 little recks the laborer. How near his work is holding him to God, The loving laborer through space and time, after all, not to create, only or found only."}
-```
+Follow the steps in [preparation](https://github.com/facebookresearch/av_hubert/tree/main/avhubert/preparation) to pre-process LRS3 dataset
+
 
 ## Decode with checkpoints
 ```

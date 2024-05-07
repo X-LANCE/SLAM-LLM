@@ -95,8 +95,24 @@ class AVHubertEncoder:
         from .avhubert import hubert_pretraining, hubert, hubert_asr
         models, cfg, task = fairseq.checkpoint_utils.load_model_ensemble_and_task([model_config.encoder_path])
         model = models[0]
-
         return model
+
+class HubertEncoder:
+
+    @classmethod
+    def load(cls, model_config):
+        import fairseq
+        models, cfg, task = fairseq.checkpoint_utils.load_model_ensemble_and_task([model_config.encoder_path])
+        model = models[0]
+        if model_config.encoder_type == "pretrain":
+            pass
+        elif model_config.encoder_type == "finetune":
+            model.w2v_encoder.proj = None
+            model.w2v_encoder.apply_mask = False
+        else:
+            assert model_config.encoder_type in ["pretrain", "finetune"], "input_type must be one of [pretrain, finetune]" 
+        return model
+
 
 class HfTextEncoder:
 

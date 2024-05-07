@@ -17,6 +17,9 @@ class ModelConfig:
     normalize: Optional[bool] = field(default=False, metadata={
         "help": "whether inpit is normalized, used for models such as wavlm"
     })
+    encoder_type: str = field(default="finetune", metadata={
+        "help": "whether model is only pretrained or finetuned, used for models such as hubert"
+    })
 
 @dataclass
 class PeftConfig:

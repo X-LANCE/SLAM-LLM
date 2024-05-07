@@ -5,7 +5,7 @@ import logging
 from dataclasses import dataclass, field
 from omegaconf import DictConfig, ListConfig, OmegaConf
 from typing import Optional
-from asr_config import ModelConfig, TrainConfig, DataConfig, LogConfig, FSDPConfig
+from vsr_config import ModelConfig, TrainConfig, DataConfig, LogConfig, FSDPConfig
 
 
 @dataclass
@@ -32,7 +32,7 @@ class RunConfig:
     )
 
 
-@hydra.main(config_name=None, version_base=None)
+@hydra.main(config_name=None)
 def main_hydra(cfg: DictConfig):
     run_config = RunConfig()
     cfg = OmegaConf.merge(run_config, cfg)

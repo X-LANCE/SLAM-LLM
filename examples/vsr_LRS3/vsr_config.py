@@ -12,7 +12,7 @@ class ModelConfig:
     encoder_dim: int = 1024
     encoder_projector: str = "cov1d-linear"
     encoder_projector_ds_rate: int = 5
-    modal: str = "VO"
+    
 
 @dataclass
 class PeftConfig:
@@ -75,14 +75,18 @@ class TrainConfig:
 
 @dataclass
 class DataConfig:
+    fix_length_audio: int = -1
+    inference_mode: bool = False
     dataset: str = "avhubert_dataset"
-    file: str = "src/llama_recipes/datasets/avhubert_dataset.py:get_audio_dataset"
+    file: str = "src/slam_llm/datasets/avhubert_dataset.py:get_audio_dataset"
     data: str = "/nfs/yangguanrou.ygr/LRS_new/433h_data/"
+    train_split: str = "train"
+    test_split: str = "val"
     labels: List = field(default_factory=lambda:["wrd"])
-    label_dir: str = "/nfs/yangguanrou.ygr/data/LRS_new/433h_data"
+    label_dir: str = "/nfs/yangguanrou.ygr/LRS_new/433h_data"
     label_rate: int = -1
     is_s2s: bool = True
-    # noise_wav: Optional[str] = field(default_factory=None, metadata={'help': 'noise wav file'})
+    noise_wav: Optional[str] = None
     noise_snr: str = "0.0"
     noise_num: int = 1
     sample_rate: int = 16000
@@ -103,7 +107,8 @@ class DataConfig:
     image_std: float = 0.165
     noise_prob: float = field(default=0, metadata={'help': 'noise probability'})
     fine_tuning: bool = True
-    modalities: List = field(default_factory=lambda: ['video','audio'])
+    modal: str = "VO"
+    modalities: List = field(default_factory=lambda: ['video'])
     shuffle: bool = True
     prompt: str = "Transcribe the silent speech in this video to text by lip-reading the speaker's clear and visible lip movements."
     input_type: str = field(default="raw", metadata={

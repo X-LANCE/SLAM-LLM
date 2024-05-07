@@ -86,7 +86,10 @@ def setup_encoder(train_config, model_config, **kwargs):
         if encoder_name == "av_hubert":
             from slam_llm.models.encoder import AVHubertEncoder
             encoder = AVHubertEncoder.load(model_config)
-            
+        if encoder_name == "hubert":
+            from slam_llm.models.encoder import HubertEncoder
+            encoder = HubertEncoder.load(model_config)
+
         if "llama" in encoder_name.lower():
             from slam_llm.models.encoder import HfTextEncoder
             encoder = HfTextEncoder.load(model_config)
@@ -285,8 +288,8 @@ class slam_model(nn.Module):
         audio = kwargs.get("audio", None)
         audio_mask = kwargs.get("audio_mask", None)
         visual = kwargs.get("visual", None)
-        vis_len = kwargs.get("vis_len", None)
-        maskw2v = kwargs.get("maskw2v", False) #(FIX:MZY) False for supervised learning and inference
+        visual_mask = kwargs.get("visual_mask", None)
+
 
         # for text encoder
         instruct_ids = kwargs.get("instruct_ids", None)
@@ -298,7 +301,7 @@ class slam_model(nn.Module):
         en_data = kwargs.get("en", None)
 
         encoder_outs = None
-        if audio_mel is not None or audio is not None:
+        if audio_mel is not None or audio or visual is not None:
             if self.model_config.encoder_name == "whisper":
                 encoder_outs = self.encoder.extract_variable_length_features(audio_mel.permute(0, 2, 1)) # bs*seq*dim
             if self.model_config.encoder_name == "beats":
@@ -307,8 +310,19 @@ class slam_model(nn.Module):
                 encoder_outs = self.encoder.model.extract_features(audio_mel.unsqueeze(dim=1), padding_mask = None, mask=False, remove_extra_tokens = False)['x']
             if self.model_config.encoder_name == "wavlm":
                 encoder_outs = self.encoder.extract_features(audio, 1 - audio_mask) #(FIX:MZY): 1-audio_mask is needed for wavlm as the padding mask
-            if self.model_config.encoder_name == "moco_wav2vec2":
-                encoder_outs , inputLenBatch, audio_mel_post_mask = self.encoder((audio, audio_mask, visual, vis_len) ,maskw2v) # bs*seq*dim
+            if self.model_config.encoder_name == "hubert":
+                results = self.encoder(source = audio, padding_mask = 1-audio_mask)
+                if self.model_config.encoder_type == "pretrain":
+                    encoder_outs, audio_mel_post_mask = results["x"], results["padding_mask"]
+                if self.model_config.encoder_type == "finetune":
+                    encoder_outs, audio_mel_post_mask = results["encoder_out"], results["padding_mask"]
+                    encoder_outs = encoder_outs.transpose(0, 1)
+            if self.model_config.encoder_name == "av_hubert":  #输入格式 B, C, T, H, W   #auido,torch.Size([12, 26, 314]),torch.Size([12, 1, 314, 88, 88])
+                # visual = torch.transpose(visual,1,2)  #torch.Size([4, 1, 49, 112, 112])  #torch.Size([8, 1, 466, 88, 88])
+                results = self.encoder(source={'video':visual, 'audio':audio}, padding_mask=visual_mask) # bs*seq*dim  
+                encoder_outs, audio_mel_post_mask = results["encoder_out"], results["padding_mask"]
+                encoder_outs = encoder_outs.transpose(0, 1)  #torch.Size([4, 151, 1024])
+                audio_mel_post_mask = (~audio_mel_post_mask).float() #!!!
             if self.encoder is None:
                 encoder_outs = audio_mel if audio_mel is not None else audio
 
@@ -316,6 +330,8 @@ class slam_model(nn.Module):
                 encoder_outs = self.encoder_projector(encoder_outs, audio_mel_post_mask)
             if self.model_config.encoder_projector == "linear":
                 encoder_outs = self.encoder_projector(encoder_outs)
+            if self.model_config.encoder_projector == "cov1d-linear": 
+                encoder_outs = self.encoder_projector(encoder_outs) 
 
         if instruct_ids is not None:
             if self.encoder is not None:
@@ -325,6 +341,7 @@ class slam_model(nn.Module):
                 encoder_outs = self.encoder_projector(encoder_outs, instruct_mask)
             if self.model_config.encoder_projector == "linear":
                 encoder_outs = self.encoder_projector(encoder_outs)
+
 
 
         if input_ids is not None:
@@ -392,7 +409,7 @@ class slam_model(nn.Module):
 
         model_outputs = self.llm.generate(
             inputs_embeds=inputs_embeds,
-            max_length=kwargs.get("max_length", 200),
+            # max_length=kwargs.get("max_length", 200),
             max_new_tokens=kwargs.get("max_new_tokens", 200),
             num_beams=kwargs.get("num_beams", 4),
             do_sample=kwargs.get("do_sample", False),
