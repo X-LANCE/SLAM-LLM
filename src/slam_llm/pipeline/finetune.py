@@ -49,7 +49,7 @@ import hydra
 from omegaconf import DictConfig, ListConfig, OmegaConf
 from pathlib import Path
 
-@hydra.main(config_name=None, version_base=None)
+@hydra.main(config_name=None)
 def main_hydra(cfg: DictConfig):
     def to_plain_list(cfg_item):
         if isinstance(cfg_item, ListConfig):
@@ -83,11 +83,20 @@ def main(kwargs: DictConfig):
                                                                           kwargs.log_config, \
                                                                           kwargs.dataset_config
     fsdp_config.use_fp16 = train_config.use_fp16
-    del kwargs.train_config
-    del kwargs.fsdp_config
-    del kwargs.model_config
-    del kwargs.log_config
-    del kwargs.dataset_config
+    if model_config.encoder_name=="av_hubert":
+        OmegaConf.set_struct(kwargs,False)
+        del kwargs["train_config"]
+        del kwargs["fsdp_config"]
+        del kwargs["model_config"]
+        del kwargs["log_config"]
+        del kwargs["dataset_config"]
+        OmegaConf.set_struct(kwargs,True)
+    else:
+        del kwargs.train_config
+        del kwargs.fsdp_config
+        del kwargs.model_config
+        del kwargs.log_config
+        del kwargs.dataset_config
     
     # Set log
     if not os.path.exists(os.path.dirname(log_config.log_file)):

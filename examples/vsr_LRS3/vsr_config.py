@@ -2,25 +2,17 @@ from dataclasses import dataclass, field
 from typing import Optional, List
 @dataclass
 class ModelConfig:
-    file: str = "examples/asr_librispeech/model/slam_model_asr.py:model_factory"
-    llm_name: str = "vicuna-13b-v1.5"
-    llm_path: str = "PATH/to/LLAMA/7B"
+    file: str = "examples/vsr_LRS3/model/slam_model_vsr.py:model_factory"
+    llm_name: str = "vicuna-7b-v1.5"
+    llm_path: str = "PATH/to/Vicuna/7B"
     llm_type: str = "decoder_only"
     llm_dim: int = 4096
-    encoder_name: Optional[str] = None
-    encoder_ds_rate: int = 2
-    encoder_path: Optional[str] = None
-    encoder_dim: int = 1280
-    encoder_projector: str = "linear"
+    encoder_name: Optional[str] = "av_hubert"
+    encoder_path: Optional[str] = "PATH/to/self_large_vox_433h.pt"
+    encoder_dim: int = 1024
+    encoder_projector: str = "cov1d-linear"
     encoder_projector_ds_rate: int = 5
-    modal: str = "audio"
-    normalize: Optional[bool] = field(default=False, metadata={
-        "help": "whether input is normalized, used for models such as wavlm"
-    })
-    encoder_type: str = field(default="finetune", metadata={
-        "help": "whether model is only pretrained or finetuned, used for models such as hubert"
-    })
-
+    
 @dataclass
 class PeftConfig:
     peft_method: str = "lora" # None , llama_adapter, prefix
@@ -34,7 +26,7 @@ class PeftConfig:
 
 @dataclass
 class TrainConfig:
-    model_name:str = "PATH/to/LLAMA/7B"
+    model_name:str = "av_hubert"
     enable_ddp:bool = False
     enable_deepspeed:bool = False
     enable_fsdp:bool = False
@@ -75,33 +67,48 @@ class TrainConfig:
     run_test_during_validation_file:str = "test.wav"
     run_test_during_validation_prompt:str = "<|ASR|>"
     freeze_llm:bool = field(default=False, metadata={
-        "help": "whether to freeze llm when finetuning, should be true when use peft finetuning"
+        "help": "whether to freeze llm when finetuning, should be True when use peft finetuning"
     })
     freeze_encoder:bool = False
 
 @dataclass
 class DataConfig:
-    dataset: str = "speech_dataset"
-    file: str = "src/slam_llm/datasets/speech_dataset.py:get_speech_dataset"
-    train_data_path: Optional[str] = None
-    val_data_path: Optional[str] = None
-    train_split: str = "train"
-    test_split:str = "validation"
-    prompt: Optional[str] = None
-    data_path: Optional[str] = None
-    max_words: Optional[int] = None
-    max_mel: Optional[float] = None
     fix_length_audio: int = -1
-    inference_mode:bool = False
-    input_type: str = field(default="raw", metadata={
-                                "help":"Use raw when input is wav, mel when for whisper"
-                            })
-    mel_size: int = field(default=80, metadata={
-        "help": "80 for whisper large v1 and v2, 128 for v3"
-    })
-    normalize: Optional[bool] = field(default=False, metadata={
-        "help": "whether input is normalized, used for models such as wavlm"
-    })
+    inference_mode: bool = False
+    dataset: str = "avhubert_dataset"
+    file: str = "src/slam_llm/datasets/avhubert_dataset.py:get_audio_dataset"
+    data: str = "/nfs/yangguanrou.ygr/LRS_new/433h_data/"
+    train_split: str = "train"
+    test_split: str = "val"
+    labels: List = field(default_factory=lambda:["wrd"])
+    label_dir: str = "/nfs/yangguanrou.ygr/LRS_new/433h_data"
+    label_rate: int = -1
+    is_s2s: bool = True
+    noise_wav: Optional[str] = None
+    noise_snr: str = "0.0"
+    noise_num: int = 1
+    sample_rate: int = 16000
+    normalize: bool = True
+    enable_padding: bool = False
+    max_sample_size: int = 500
+    min_sample_size: int = 0
+    max_trim_sample_size: int = 500
+    single_target: bool = True
+    random_crop: bool = False
+    pad_audio: bool = True
+    pdb: bool = False
+    stack_order_audio: int = 1
+    skip_verify: bool = False
+    # image_aug: True
+    image_crop_size: int = 88
+    image_mean: float = 0.421
+    image_std: float = 0.165
+    noise_prob: float = field(default=0, metadata={'help': 'noise probability'})
+    fine_tuning: bool = True
+    modal: str = "VO"
+    modalities: List = field(default_factory=lambda: ['video'])
+    shuffle: bool = True
+    prompt: str = "Transcribe the silent speech in this video to text by lip-reading the speaker's clear and visible lip movements."
 
 @dataclass
 class FSDPConfig:

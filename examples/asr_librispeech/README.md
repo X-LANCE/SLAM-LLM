@@ -5,7 +5,7 @@ We only train the linear projector in this recipe.
 Encoder | Projector | LLM | test-clean | test-other
 |---|---|---|---|---
 [WavLM-large](https://drive.google.com/file/d/12-cB34qCTvByWT-QtOcZaqwwO21FLSqU/view) | [Linear](https://drive.google.com/file/d/1cLNuMR05oXxKj8M_Z3yAZ5JHJ06ybIHp/view?usp=sharing)(~18.88M) | [vicuna-7b-v1.5](https://huggingface.co/lmsys/vicuna-7b-v1.5) | 2.28 | 4.78
-
+[hubert_xtralarge_ll60k_finetune_ls960](https://dl.fbaipublicfiles.com/hubert/hubert_xtralarge_ll60k_finetune_ls960.pt) | [Linear](https://drive.google.com/file/d/1Np7EjMYSZCl7M6Q92pt_MvOSSX6ggJPA/view?usp=drive_link)(~21.50M) | [vicuna-7b-v1.5](https://huggingface.co/lmsys/vicuna-7b-v1.5) | 1.84 | 3.39 
 
 ## Data preparation
 You need to prepare the data jsonl in this format.
