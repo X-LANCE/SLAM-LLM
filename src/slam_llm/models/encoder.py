@@ -87,16 +87,32 @@ class WavLMEncoder(nn.Module):
     def extract_features(self, source, padding_mask):
         return self.model.extract_features(source, padding_mask)[0]
 
-class AVEncoder:
+class AVHubertEncoder:
 
     @classmethod
     def load(cls, model_config):
-        from .AV.av_net import AVNet
-        avnet = AVNet(model_config)
-        checkpoint = torch.load(model_config.TRAIN_LRS3_MODEL_FILE)
-        avnet.load_state_dict(checkpoint['state_dict'],strict=False)
- 
-        return avnet
+        import fairseq
+        from .avhubert import hubert_pretraining, hubert, hubert_asr
+        models, cfg, task = fairseq.checkpoint_utils.load_model_ensemble_and_task([model_config.encoder_path])
+        model = models[0]
+        return model
+
+class HubertEncoder:
+
+    @classmethod
+    def load(cls, model_config):
+        import fairseq
+        models, cfg, task = fairseq.checkpoint_utils.load_model_ensemble_and_task([model_config.encoder_path])
+        model = models[0]
+        if model_config.encoder_type == "pretrain":
+            pass
+        elif model_config.encoder_type == "finetune":
+            model.w2v_encoder.proj = None
+            model.w2v_encoder.apply_mask = False
+        else:
+            assert model_config.encoder_type in ["pretrain", "finetune"], "input_type must be one of [pretrain, finetune]" 
+        return model
+
 
 class HfTextEncoder:
 
