@@ -17,7 +17,7 @@ def get_custom_model_factory(model_config, logger):
     if not module_path.endswith(".py"):
         raise ValueError(f"Dataset file {module_path} is not a .py file.")
     
-    module_path = Path("/root/SLAM-LLM/"+module_path)  #TODO
+    module_path = Path(module_path)
     if not module_path.is_file():
         raise FileNotFoundError(f"Dataset py file {module_path.as_posix()} does not exist or is not a file.")
 

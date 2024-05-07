@@ -27,8 +27,10 @@ developers to train custom multimodal large language model (MLLM), focusing on <
 5. [Acknowledge](#acknowledge)
 
 # News
-- [Update Apr. 28, 2024] Recipes for automated audio captioning (AAC) with SOTA performance has been supported. 
-- [Update Mar. 31, 2024] Recipes for automatic speech recognition (ASR) with SOTA performance has been supported. 
+- [Update May. 8, 2024] Recipes for [visual speech recognition (VSR)](examples/vsr_LRS3/README.md) has been supported. 
+- [Update May. 4, 2024] Recipes for [zero-shot text-to-speech (TTS)](examples/vallex/README.md) has been supported. 
+- [Update Apr. 28, 2024] Recipes for [automated audio captioning (AAC)](examples/aac_audiocaps/README.md) has been supported. 
+- [Update Mar. 31, 2024] Recipes for [automatic speech recognition (ASR)](examples/asr_librispeech/README.md) has been supported. 
 
 # Installation
 ```bash
@@ -61,6 +63,7 @@ We provide reference implementations of various LLM-based speech, audio, and mus
 - **Speech Task**
     - [Automatic Speech Recognition (ASR)](examples/asr_librispeech/README.md)
     - [Text-to-Speech (TTS)](examples/vallex/README.md)
+    - [Visual Speech Recognition (VSR)](examples/vsr_LRS3/README.md)
 - **Audio Task**
     - [Automated Audio Captioning (AAC)](examples/aac_audiocaps/README.md)
 

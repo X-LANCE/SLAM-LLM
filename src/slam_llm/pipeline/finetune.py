@@ -19,18 +19,13 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.distributed.fsdp.fully_sharded_data_parallel import CPUOffload
 from slam_llm.policies import AnyPrecisionAdamW, apply_fsdp_checkpointing
 
-# config
-# from llama_recipes.configs import fsdp_config as FSDP_CONFIG
-# from llama_recipes.configs import train_config as TRAIN_CONFIG
-# from llama_recipes.configs import model_config as MODEL_CONFIG
-# from llama_recipes.configs import log_config as LOG_CONFIG
-from slam_llm.data.concatenator import ConcatDataset
-
 # util
 from slam_llm.utils import fsdp_auto_wrap_policy
 from slam_llm.utils.config_utils import get_dataloader_kwargs
 
-from slam_llm.utils.dataset_utils import get_preprocessed_dataset, load_module_from_py_file
+from slam_llm.utils.dataset_utils import get_preprocessed_dataset
+from slam_llm.data.concatenator import ConcatDataset
+
 from slam_llm.utils.model_utils import get_custom_model_factory
 from slam_llm.utils.train_utils import (
     train,
@@ -49,7 +44,7 @@ import hydra
 from omegaconf import DictConfig, ListConfig, OmegaConf
 from pathlib import Path
 
-@hydra.main(config_name=None)
+@hydra.main(config_name=None, version_base=None)
 def main_hydra(cfg: DictConfig):
     def to_plain_list(cfg_item):
         if isinstance(cfg_item, ListConfig):
@@ -82,21 +77,15 @@ def main(kwargs: DictConfig):
                                                                           kwargs.model_config, \
                                                                           kwargs.log_config, \
                                                                           kwargs.dataset_config
+    
     fsdp_config.use_fp16 = train_config.use_fp16
-    if model_config.encoder_name=="av_hubert":
-        OmegaConf.set_struct(kwargs,False)
-        del kwargs["train_config"]
-        del kwargs["fsdp_config"]
-        del kwargs["model_config"]
-        del kwargs["log_config"]
-        del kwargs["dataset_config"]
-        OmegaConf.set_struct(kwargs,True)
-    else:
-        del kwargs.train_config
-        del kwargs.fsdp_config
-        del kwargs.model_config
-        del kwargs.log_config
-        del kwargs.dataset_config
+    OmegaConf.set_struct(kwargs,False)
+    del kwargs["train_config"]
+    del kwargs["fsdp_config"]
+    del kwargs["model_config"]
+    del kwargs["log_config"]
+    del kwargs["dataset_config"]
+    OmegaConf.set_struct(kwargs,True)
     
     # Set log
     if not os.path.exists(os.path.dirname(log_config.log_file)):
