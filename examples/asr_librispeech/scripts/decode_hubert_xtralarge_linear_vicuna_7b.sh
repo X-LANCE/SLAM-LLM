@@ -13,8 +13,7 @@ speech_encoder_path=/nfs/yangguanrou.ygr/ckpts/hubert_ckpt/hubert_xtralarge_ll60
 llm_path=/nfs/maziyang.mzy/models/vicuna-7b-v1.5
 
 output_dir=/nfs/yangguanrou.ygr/experiments_hubert/vicuna-7b-v1.5-hubert_xtralarge_ll60k_finetune_ls960
-# ckpt_path=$output_dir/asr_epoch_1_step_1000
-ckpt_path=$output_dir/asr/1188
+ckpt_path=$output_dir/asr_epoch_1_step_1000
 split=librispeech_test_clean
 val_data_path=/nfs/maziyang.mzy/data/librispeech/${split}.jsonl
 decode_log=$ckpt_path/decode_${split}_beam4

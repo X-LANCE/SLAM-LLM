@@ -15,7 +15,7 @@ class ModelConfig:
     encoder_projector_ds_rate: int = 5
     modal: str = "audio"
     normalize: Optional[bool] = field(default=False, metadata={
-        "help": "whether inpit is normalized, used for models such as wavlm"
+        "help": "whether input is normalized, used for models such as wavlm"
     })
     encoder_type: str = field(default="finetune", metadata={
         "help": "whether model is only pretrained or finetuned, used for models such as hubert"
@@ -100,7 +100,7 @@ class DataConfig:
         "help": "80 for whisper large v1 and v2, 128 for v3"
     })
     normalize: Optional[bool] = field(default=False, metadata={
-        "help": "whether inpit is normalized, used for models such as wavlm"
+        "help": "whether input is normalized, used for models such as wavlm"
     })
 
 @dataclass
