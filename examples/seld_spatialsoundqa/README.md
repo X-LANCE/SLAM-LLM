@@ -17,12 +17,12 @@ You need to prepare the data jsonl in this format.
 
 ## Train a new model
 ```bash
-bash examples/seld_spatialsoundqa/scripts/finetune_spatial-ast_linear_vicuna_7b.sh
+bash examples/seld_spatialsoundqa/scripts/finetune_spatial-ast_linear_llama_2_7b.sh
 ```
 
 ## Decoding with checkpoints
 ```bash
-bash examples/seld_spatialsoundqa/scripts/decode_spatial-ast_linear_vicuna_7b.sh
+bash examples/seld_spatialsoundqa/scripts/decode_spatial-ast_linear_llama_2_7b.sh
 ```
 
 

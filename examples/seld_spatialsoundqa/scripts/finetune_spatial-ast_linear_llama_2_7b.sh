@@ -17,7 +17,7 @@ code_dir=examples/seld_spatialsoundqa
 audio_encoder_path=/mnt/cloudstorfs/sjtu_home/zhisheng.zheng/models/SpatialAST/SpatialAST.pth
 llm_path=/mnt/cloudstorfs/sjtu_home/zhisheng.zheng/models/llama-2-hf
 
-stage=classification
+stage=stage1-clsdoa
 qa_data_root=/mnt/cloudstorfs/sjtu_home/zhisheng.zheng/data/SpatialAudio/closed-end
 reverb_data_root=/mnt/cloudstorfs/sjtu_home/zhisheng.zheng/data/SpatialAudio/reverb/mp3d
 anechoic_data_root=/mnt/cloudstorfs/sjtu_home/zhisheng.zheng/data/AudioSet
