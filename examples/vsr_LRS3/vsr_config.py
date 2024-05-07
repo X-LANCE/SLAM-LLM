@@ -4,7 +4,7 @@ from typing import Optional, List
 class ModelConfig:
     file: str = "examples/vsr_LRS3/model/slam_model_vsr.py:model_factory"
     llm_name: str = "vicuna-7b-v1.5"
-    llm_path: str = "PATH/to/LLAMA/7B"
+    llm_path: str = "PATH/to/Vicuna/7B"
     llm_type: str = "decoder_only"
     llm_dim: int = 4096
     encoder_name: Optional[str] = "av_hubert"
@@ -13,7 +13,6 @@ class ModelConfig:
     encoder_projector: str = "cov1d-linear"
     encoder_projector_ds_rate: int = 5
     
-
 @dataclass
 class PeftConfig:
     peft_method: str = "lora" # None , llama_adapter, prefix
@@ -27,7 +26,7 @@ class PeftConfig:
 
 @dataclass
 class TrainConfig:
-    model_name:str = "PATH/to/LLAMA/7B" #?
+    model_name:str = "av_hubert"
     enable_ddp:bool = False
     enable_deepspeed:bool = False
     enable_fsdp:bool = False
@@ -71,7 +70,6 @@ class TrainConfig:
         "help": "whether to freeze llm when finetuning, should be True when use peft finetuning"
     })
     freeze_encoder:bool = False
-    scheduler: str = "constant"
 
 @dataclass
 class DataConfig:
@@ -111,10 +109,6 @@ class DataConfig:
     modalities: List = field(default_factory=lambda: ['video'])
     shuffle: bool = True
     prompt: str = "Transcribe the silent speech in this video to text by lip-reading the speaker's clear and visible lip movements."
-    input_type: str = field(default="raw", metadata={
-                                "help":"Use raw when input is wav, mel when for whisper"
-                            })    
-    
 
 @dataclass
 class FSDPConfig:
