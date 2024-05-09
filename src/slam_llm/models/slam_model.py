@@ -308,6 +308,8 @@ class slam_model(nn.Module):
                 encoder_outs, audio_mel_post_mask = self.encoder.extract_features(audio_mel, audio_mel_mask) # bs*seq*dim
             if self.model_config.encoder_name == "eat":
                 encoder_outs = self.encoder.model.extract_features(audio_mel.unsqueeze(dim=1), padding_mask = None, mask=False, remove_extra_tokens = False)['x']
+            if self.model_config.encoder_name == "SpatialAST":
+                encoder_outs = self.encoder(audio) # output: [bs, seq_len=3+512, dim=768]
             if self.model_config.encoder_name == "wavlm":
                 encoder_outs = self.encoder.extract_features(audio, 1 - audio_mask) #(FIX:MZY): 1-audio_mask is needed for wavlm as the padding mask
             if self.model_config.encoder_name == "hubert":
