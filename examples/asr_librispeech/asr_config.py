@@ -10,6 +10,7 @@ class ModelConfig:
     encoder_name: Optional[str] = None
     encoder_ds_rate: int = 2
     encoder_path: Optional[str] = None
+    encoder_fairseq_dir: Optional[str] = None
     encoder_dim: int = 1280
     encoder_projector: str = "linear"
     encoder_projector_ds_rate: int = 5

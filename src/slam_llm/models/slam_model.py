@@ -312,7 +312,7 @@ class slam_model(nn.Module):
             if self.model_config.encoder_name == "moco_wav2vec2":
                 encoder_outs , inputLenBatch, audio_mel_post_mask = self.encoder((audio, audio_mask, visual, vis_len) ,maskw2v) # bs*seq*dim
             if self.model_config.encoder_name == "emotion2vec":
-                encoder_outs = self.encoder.extract_features(audio, None) # bs*seq*dim
+                encoder_outs = self.encoder.extract_features(audio, None)['x'] # bs*seq*dim
             if self.encoder is None:
                 encoder_outs = audio_mel if audio_mel is not None else audio
 

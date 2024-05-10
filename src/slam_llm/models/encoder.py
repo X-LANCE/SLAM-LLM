@@ -112,11 +112,9 @@ class Emotion2vecEncoder:
     @classmethod
     def load(cls, model_config):
         import fairseq
-        fairseq.utils.import_user_module(model_config.encoder_fairseq_dir)
+        model_path = UserDirModule(model_config.encoder_fairseq_dir)
+        fairseq.utils.import_user_module(model_path)
         model, cfg, task = fairseq.checkpoint_utils.load_model_ensemble_and_task([model_config.encoder_path])
         model = model[0]
         
         return model
-
-    def extract_features(self, source, padding_mask):
-        return self.model.extract_features(source, padding_mask=padding_mask, remove_extra_tokens=True)['x']
