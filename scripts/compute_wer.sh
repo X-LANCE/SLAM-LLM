@@ -49,6 +49,9 @@ preds=/root/SLAM-LLM/scripts_all/scripts_ner_texttop/whisper_v3_encoder/decode_g
 trans=/root/SLAM-LLM/scripts_all/scripts_ner_texttop/whisper_v3_encoder/decode_giga_gt_gt
 preds=/root/SLAM-LLM/scripts_all/scripts_ner_texttop/whisper_v3_encoder/decode_giga_gt_pred
 
+trans=/nfs/yangguanrou.ygr/experiments_hubert/vicuna-7b-v1.5-hubert_xtralarge_ll60k_finetune_ls960/asr/1188/decode_librispeech_test_clean_beam4_filtered_gt
+preds=/nfs/yangguanrou.ygr/experiments_hubert/vicuna-7b-v1.5-hubert_xtralarge_ll60k_finetune_ls960/asr/1188/decode_librispeech_test_clean_beam4_filtered_pred
+
 python src/llama_recipes/utils/whisper_tn.py ${trans} ${trans}.proc
 python src/llama_recipes/utils/llm_tn.py ${preds} ${preds}.proc
 python src/llama_recipes/utils/compute_wer.py ${trans}.proc ${preds}.proc ${preds}.proc.wer
