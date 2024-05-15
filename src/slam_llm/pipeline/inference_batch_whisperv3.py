@@ -3,15 +3,15 @@ import random
 import torch
 import logging
 # import argparse
-from llama_recipes.models.slam_model import slam_model
+from slam_llm.models.slam_model import slam_model
 # config
 # from llama_recipes.configs import fsdp_config as FSDP_CONFIG
 # from llama_recipes.configs import train_config as TRAIN_CONFIG
 # from llama_recipes.configs import model_config as MODEL_CONFIG
 # from llama_recipes.configs import log_config as LOG_CONFIG
 
-from llama_recipes.pipeline.model_factory import model_factory
-from llama_recipes.utils.dataset_utils import get_preprocessed_dataset
+from slam_llm.utils.model_utils import get_custom_model_factory
+from slam_llm.utils.dataset_utils import get_preprocessed_dataset
 import os
 import logging
 from tqdm import tqdm
@@ -20,8 +20,7 @@ import hydra
 from omegaconf import DictConfig, ListConfig, OmegaConf
 
 import whisper
-# @hydra.main(config_name=None, version_base="1.1")
-@hydra.main(config_name=None)
+@hydra.main(config_name=None, version_base=None)
 def main_hydra(cfg: DictConfig):
 	def to_plain_list(cfg_item):
 		if isinstance(cfg_item, ListConfig):
@@ -54,27 +53,14 @@ def main(kwargs: DictConfig):
 	                                                                      kwargs.model_config, \
 	                                                                      kwargs.log_config, \
 	                                                                      kwargs.dataset_config
-	
-	# del kwargs.train_config
-	# del kwargs.fsdp_config
-	# del kwargs.model_config
-	# del kwargs.log_config
-	# del kwargs.dataset_config
 
-	if model_config.encoder_name=="av_hubert":
-		OmegaConf.set_struct(kwargs,False)
-		del kwargs["train_config"]
-		del kwargs["fsdp_config"]
-		del kwargs["model_config"]
-		del kwargs["log_config"]
-		del kwargs["dataset_config"]
-		OmegaConf.set_struct(kwargs,True)
-	else:
-		del kwargs.train_config
-		del kwargs.fsdp_config
-		del kwargs.model_config
-		del kwargs.log_config
-		del kwargs.dataset_config
+	OmegaConf.set_struct(kwargs,False)
+	del kwargs["train_config"]
+	del kwargs["fsdp_config"]
+	del kwargs["model_config"]
+	del kwargs["log_config"]
+	del kwargs["dataset_config"]
+	OmegaConf.set_struct(kwargs,True)
 
 	# Set log
 	if not os.path.exists(os.path.dirname(log_config.log_file)):
@@ -110,6 +96,7 @@ def main(kwargs: DictConfig):
 	torch.manual_seed(train_config.seed)
 	random.seed(train_config.seed)
 	
+	# model_factory = get_custom_model_factory(model_config, logger)
 	# model, tokenizer = model_factory(train_config, model_config, **kwargs)
 	model = whisper.load_model(model_config.encoder_path)
 	device = torch.device("cuda" if torch.cuda.is_available() else "cpu") # FIX(MZY): put the whole model to device.

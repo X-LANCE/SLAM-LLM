@@ -183,14 +183,14 @@ def main(kwargs: DictConfig):
         model = DDP(model, device_ids=[local_rank],
                     find_unused_parameters=kwargs.get("train_conf", {}).get("find_unused_parameters", False))
     elif not train_config.quantization:
-        model.to(device)
+        model.to(device)  #到这都还是false
 
     # dataset_config = generate_dataset_config(train_config, kwargs)
     logger.info("dataset_config: {}".format(dataset_config))
     if not (train_config.enable_fsdp or train_config.enable_ddp) or rank == 0:
         if log_config.use_wandb:
             wandb.config.update({"dataset_config": dataset_config})
-    
+     
     # Load and preprocess the dataset for training and validation
     dataset_train = get_preprocessed_dataset(
         tokenizer,

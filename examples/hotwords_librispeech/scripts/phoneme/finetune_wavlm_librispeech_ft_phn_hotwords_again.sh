@@ -1,6 +1,6 @@
 #!/bin/bash
 export PYTHONPATH=/root/fairseq:$PYTHONPATH
-export CUDA_VISIBLE_DEVICES=2,3
+export CUDA_VISIBLE_DEVICES=0,1
 export TOKENIZERS_PARALLELISM=false
 # export CUDA_LAUNCH_BLOCKING=1
 export OMP_NUM_THREADS=1
@@ -8,12 +8,12 @@ export OMP_NUM_THREADS=1
 cd /root/SLAM-LLM
 code_dir=examples/hotwords_librispeech
 
-speech_encoder_path=/nfs/maziyang.mzy/models/wavlm/WavLM-Large.pt
+speech_encoder_path=/nfs/yangguanrou.ygr/ckpts/wavlm_large_finetune_librispeech_phoneme/wavlm_large_finetune_librispeech_phoneme.pt
 llm_path=/nfs/maziyang.mzy/models/vicuna-7b-v1.5
 train_data_path=/nfs/maziyang.mzy/data/librispeech/librispeech_train_960h.jsonl
 val_data_path=/nfs/maziyang.mzy/data/librispeech/librispeech_dev_other.jsonl
 
-output_dir=/nfs/yangguanrou.ygr/experiments_librispeech/vicuna-7b-v1.5-WavLM-Large-hotwords-$(date +"%Y%m%d")
+output_dir=/nfs/yangguanrou.ygr/experiments_librispeech/vicuna-7b-v1.5-WavLM-Large-ft-phn-hotwords-again-$(date +"%Y%m%d")
 
 hydra_args="
 hydra.run.dir=$output_dir \
@@ -52,7 +52,7 @@ hydra.run.dir=$output_dir \
 ++log_config.wandb_dir=$output_dir \
 ++log_config.wandb_entity_name=yanghaha \
 ++log_config.wandb_project_name=slam-llm \
-++log_config.wandb_exp_name=vicuna-7b-v1.5-WavLM-Large-hotwords \
+++log_config.wandb_exp_name=vicuna-7b-v1.5-WavLM-Large-ft-phn-hotwords \
 ++log_config.log_interval=5 \
 "
 
@@ -66,7 +66,7 @@ else
     torchrun \
         --nnodes 1 \
         --nproc_per_node 2 \
-        --master_port=29504 \
+        --master_port=29505 \
         $code_dir/finetune_asr.py \
         --config-path "conf" \
         --config-name "prompt.yaml" \
@@ -75,3 +75,4 @@ else
         ++train_config.use_fp16=true \
         $hydra_args
 fi
+

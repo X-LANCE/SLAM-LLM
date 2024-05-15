@@ -553,8 +553,8 @@ class MultiheadAttention(nn.Module):
                 self.out_proj.bias,
                 self.training,
                 # self.training or self.dropout_module.apply_during_inference,
-                # key_padding_mask,  # False False bool
-                key_padding_mask.float(),  #其实我觉得莫名他妈的奇妙
+                key_padding_mask,  # False False bool
+                # key_padding_mask.float(),  #其实我觉得莫名他妈的奇妙,这么改完性能非常差，what？
                 need_weights,
                 attn_mask_rel_pos, # 这个穿进去就是attn_mask 是float md
                 use_separate_proj_weight=True,
