@@ -136,6 +136,9 @@ def main(kwargs: DictConfig):
 				pred.write(key + "\t" + text.replace("\n", " ") + "\n")
 				gt.write(key + "\t" + target + "\n")
 
+	if dataset_config.infer_type=="filter":
+		logger.info("total_hotwords_num: %d, miss_hotwords_num: %d", dataset_test.hotwords_num, dataset_test.miss_words_num)
+
 
 if __name__ == "__main__":
 	main_hydra()

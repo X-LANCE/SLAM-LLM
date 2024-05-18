@@ -1,18 +1,18 @@
 #!/bin/bash
 #export PYTHONPATH=/root/whisper:$PYTHONPATH
-export CUDA_VISIBLE_DEVICES=3
+export CUDA_VISIBLE_DEVICES=1
 export TOKENIZERS_PARALLELISM=false
 # export CUDA_LAUNCH_BLOCKING=1
 
 run_dir=/root/SLAM-LLM
 cd $run_dir
-code_dir=examples/hotwords_librispeech
+code_dir=examples/asr_librispeech
 
-speech_encoder_path=/nfs/yangguanrou.ygr/ckpts/wavlm_large_finetune_librispeech_phoneme/wavlm_large_finetune_librispeech_phoneme.pt
+speech_encoder_path=/nfs/maziyang.mzy/models/wavlm/WavLM-Large.pt
 llm_path=/nfs/maziyang.mzy/models/vicuna-7b-v1.5
 
-output_dir=/nfs/yangguanrou.ygr/experiments_librispeech/vicuna-7b-v1.5-WavLM-Large-ft-phn-20240512
-ckpt_path=$output_dir/asr_epoch_3_step_7780
+output_dir=/nfs/yangguanrou.ygr/experiments_librispeech/vicuna-7b-v1.5-WavLM-Large-20240509
+ckpt_path=$output_dir/asr_epoch_3_step_9780
 split=librispeech_test_other
 val_data_path=/nfs/maziyang.mzy/data/librispeech/${split}.jsonl
 decode_log=$ckpt_path/decode_${split}_beam4

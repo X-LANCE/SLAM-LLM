@@ -129,6 +129,10 @@ class HotwordsInferDataset(torch.utils.data.Dataset):
                 for line in finfer:
                     self.infer_list.append(line.strip())
 
+        # analyze
+        self.hotwords_num=0
+        self.miss_words_num=0
+
 
     def get_source_len(self, data_dict):
         return data_dict["source_len"]
@@ -181,20 +185,27 @@ class HotwordsInferDataset(torch.utils.data.Dataset):
             sorted_dict = sorted(scores.items(), key=lambda item: item[1],  reverse=True)
             high_score_items = [(k, value) for k, value in sorted_dict if value > 0.9] 
             if len(high_score_items) < 15:
-                high_score_items = sorted_dict [:15]
+                high_score_items = sorted_dict[:15]
             keys_list = [k for k, _ in high_score_items]
-            if len(high_score_items)>15:
-                logger.info(len(high_score_items))
-
-            # valid 实际没用
-            for name in gt:
-                if name not in keys_list:
-                    logger.info("sentence: %s",infer_sentence)
-                    logger.info("name: %s",name)
-                    logger.info("gt: %s",gt)
-                    logger.info("keys_list: %s", keys_list)
             ocr = " ".join(keys_list)
+            if len(high_score_items)>15:
+                logger.info("longer than 15 candidates, cand_num: %d", len(high_score_items))
 
+            # ======== count recall
+            miss=False
+            for name in gt:
+                self.hotwords_num+=1
+                if name not in keys_list:
+                    self.miss_words_num+=1
+                    miss=True
+            if miss:
+                logger.info("key: %s", key)
+                logger.info("infer sentence: %s",infer_sentence)
+                logger.info("target sentence: %s", target)
+                logger.info("name: %s, gt: %s, keys_list: %s", name, gt, keys_list)
+                # logger.info("total_hotwords_num: %d, miss_hotwords_num: %d", self.hotwords_num, self.miss_words_num)
+            # ========
+            
 
         prompt = "Transcribe speech to text. Some hotwords might help. The hotwords are \"{}\". "
         prompt = prompt.format(ocr)

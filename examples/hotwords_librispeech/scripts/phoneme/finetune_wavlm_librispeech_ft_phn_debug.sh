@@ -14,7 +14,6 @@ train_data_path=/nfs/maziyang.mzy/data/librispeech/librispeech_train_960h.jsonl
 val_data_path=/nfs/maziyang.mzy/data/librispeech/librispeech_dev_other.jsonl
 
 output_dir=/nfs/yangguanrou.ygr/experiments_librispeech/debug
- 
 
 hydra_args="
 hydra.run.dir=$output_dir \
@@ -32,10 +31,8 @@ hydra.run.dir=$output_dir \
 ++dataset_config.train_data_path=$train_data_path \
 ++dataset_config.val_data_path=$val_data_path \
 ++dataset_config.input_type=raw \
-++dataset_config.dataset=hotwords_dataset \
-++dataset_config.file=src/slam_llm/datasets/hotwords_dataset.py:get_speech_dataset \
 ++train_config.model_name=asr \
-++train_config.num_epochs=10 \
+++train_config.num_epochs=5 \
 ++train_config.freeze_encoder=true \
 ++train_config.freeze_llm=true \
 ++train_config.batching_strategy=custom \
@@ -61,7 +58,7 @@ else
     torchrun \
         --nnodes 1 \
         --nproc_per_node 2 \
-        --master_port=29505 \
+        --master_port=29503 \
         $code_dir/finetune_asr.py \
         --config-path "conf" \
         --config-name "prompt.yaml" \
@@ -70,4 +67,3 @@ else
         ++train_config.use_fp16=true \
         $hydra_args
 fi
-

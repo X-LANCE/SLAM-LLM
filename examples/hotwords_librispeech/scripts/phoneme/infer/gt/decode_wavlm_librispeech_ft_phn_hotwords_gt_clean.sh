@@ -1,6 +1,6 @@
 #!/bin/bash
 #export PYTHONPATH=/root/whisper:$PYTHONPATH
-export CUDA_VISIBLE_DEVICES=2
+export CUDA_VISIBLE_DEVICES=0
 export TOKENIZERS_PARALLELISM=false
 # export CUDA_LAUNCH_BLOCKING=1
 
@@ -11,14 +11,14 @@ code_dir=examples/hotwords_librispeech
 speech_encoder_path=/nfs/yangguanrou.ygr/ckpts/wavlm_large_finetune_librispeech_phoneme/wavlm_large_finetune_librispeech_phoneme.pt
 llm_path=/nfs/maziyang.mzy/models/vicuna-7b-v1.5
 
-output_dir=/nfs/yangguanrou.ygr/experiments_librispeech/vicuna-7b-v1.5-WavLM-Large-ft-phn-20240512
-ckpt_path=$output_dir/asr_epoch_3_step_7780
+output_dir=/nfs/yangguanrou.ygr/experiments_librispeech/vicuna-7b-v1.5-WavLM-Large-ft-phn-hotwords-again-20240513
+ckpt_path=$output_dir/asr_epoch_3_step_19780
 split=librispeech_test_clean
 val_data_path=/nfs/maziyang.mzy/data/librispeech/${split}.jsonl
-decode_log=$ckpt_path/decode_${split}_beam4_debug
+decode_log=$ckpt_path/decode_${split}_beam4_gt
 
 # -m debugpy --listen 5678 --wait-for-client
-python -m debugpy --listen 5678 --wait-for-client $code_dir/inference_asr_batch.py \
+python $code_dir/inference_asr_batch.py \
         --config-path "conf" \
         --config-name "prompt.yaml" \
         hydra.run.dir=$ckpt_path \
@@ -36,6 +36,10 @@ python -m debugpy --listen 5678 --wait-for-client $code_dir/inference_asr_batch.
         ++dataset_config.val_data_path=$val_data_path \
         ++dataset_config.input_type=raw \
         ++dataset_config.inference_mode=true \
+        ++dataset_config.infer_type=gt \
+        ++dataset_config.dataset=hotwordsinfer_dataset \
+        ++dataset_config.file=src/slam_llm/datasets/hotwordsinfer_dataset.py:get_speech_dataset \
+        ++dataset_config.infer_file=/nfs/yangguanrou.ygr/data/fbai-speech/is21_deep_bias/my_ref/test-clean.biasing_100.tsv \
         ++train_config.model_name=asr \
         ++train_config.freeze_encoder=true \
         ++train_config.freeze_llm=true \
