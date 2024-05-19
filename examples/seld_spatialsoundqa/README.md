@@ -31,7 +31,7 @@ bash examples/seld_spatialsoundqa/scripts/decode_spatial-ast_qformer_llama_2_7b.
 
 ## TODO
 - [x] Decode with checkpoints
-- [ ] Upload SpatialSoundQA dataset
+- [x] Upload SpatialSoundQA dataset
 - [ ] Upload pretrained checkpoints
 - [ ] Update model performance
 
