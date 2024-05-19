@@ -121,3 +121,24 @@ class HfTextEncoder:
         from transformers import AutoModel
         model = AutoModel.from_pretrained(model_config.encoder_path)
         return model
+
+class MusicFMEncoder(nn.Module):
+    def __init__(self, config, model):
+        super().__init__()
+        self.config = config
+        self.model = model
+
+    @classmethod
+    def load(cls, model_config):
+        from .musicfm.model.musicfm_25hz import MusicFM25Hz
+        model = MusicFM25Hz(
+            stat_path = model_config.encoder_stat_path,
+            model_path = model_config.encoder_path,
+            w2v2_config_path = model_config.get('encoder_config_path', "facebook/wav2vec2-conformer-rope-large-960h-ft")
+        )
+        return cls(model_config, model)
+
+    def extract_features(self, source, padding_mask=None):
+        _, hidden_states = self.model.get_predictions(source)
+        out = hidden_states[self.config.encoder_layer_idx]
+        return out
