@@ -1,6 +1,6 @@
 #!/bin/bash
 #export PYTHONPATH=/root/whisper:$PYTHONPATH
-export CUDA_VISIBLE_DEVICES=0
+export CUDA_VISIBLE_DEVICES=2
 export TOKENIZERS_PARALLELISM=false
 # export CUDA_LAUNCH_BLOCKING=1
 
@@ -18,7 +18,7 @@ llm_path=/mnt/lustre/hpc_stor03/sjtu_pub/cxgroup/model/Llama-2-7b-hf
 
 split=eval
 output_dir=/mnt/lustre/hpc_stor03/sjtu_home/zhisheng.zheng/SLAM-LLM/outputs/bat-llama-2-spatialAST-8qformer-steplrwarmupkeep1e-4-stage1-clsdoa-20240519/
-ckpt_path=$output_dir/bat_epoch_1_step_4000
+ckpt_path=$output_dir/bat_epoch_3_step_3288
 decode_log=$ckpt_path/decode_${split}_beam4
 
 # -m debugpy --listen 5678 --wait-for-client
@@ -43,7 +43,7 @@ python -u $code_dir/inference_seld_batch.py \
         ++train_config.batching_strategy=custom \
         ++train_config.num_epochs=1 \
         ++train_config.val_batch_size=8 \
-        ++train_config.num_workers_dataloader=1 \
+        ++train_config.num_workers_dataloader=2 \
         ++train_config.output_dir=$output_dir \
         ++train_config.use_peft=true \
         ++peft_config.peft_method=llama_adapter \

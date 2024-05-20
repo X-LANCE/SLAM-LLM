@@ -17,11 +17,12 @@ code_dir=examples/seld_spatialsoundqa
 audio_encoder_path=/mnt/lustre/hpc_stor03/sjtu_home/zhisheng.zheng/models/SpatialAST/SpatialAST.pth
 llm_path=/mnt/lustre/hpc_stor03/sjtu_pub/cxgroup/model/Llama-2-7b-hf
 
-stage=stage1-clsdoa
+stage=stage2-single
 qa_data_root=/mnt/lustre/hpc_stor03/sjtu_home/zhisheng.zheng/data/SpatialAudio/closed-end
 reverb_data_root=/mnt/lustre/hpc_stor03/sjtu_home/zhisheng.zheng/data/SpatialAudio/reverb/mp3d
 anechoic_data_root=/mnt/lustre/hpc_stor03/sjtu_home/zhisheng.zheng/data/AudioSet
 
+ckpt_path=/mnt/lustre/hpc_stor03/sjtu_home/zhisheng.zheng/SLAM-LLM/outputs/bat-llama-2-spatialAST-8qformer-steplrwarmupkeep1e-4-stage1-clsdoa-20240519/bat_epoch_3_step_3288
 output_dir=${SLAM_DIR}/outputs/bat-llama-2-spatialAST-8qformer-steplrwarmupkeep1e-4-${stage}-$(date +"%Y%m%d")
 
 hydra_args="
@@ -54,6 +55,7 @@ hydra.run.dir=$output_dir \
 ++peft_config.peft_method=llama_adapter \
 ++metric=acc \
 ++log_config.log_file=$output_dir/log.txt \
+++ckpt_path=$ckpt_path/model.pt \
 "
 
 # -m debugpy --listen 5678 --wait-for-client

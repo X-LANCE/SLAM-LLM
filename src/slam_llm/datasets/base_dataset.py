@@ -12,9 +12,9 @@ class BaseDataset(Dataset):
     
     def __getitem__(self, sample):
         """
-        Args: sample (tuple): (audio, prompt, answer)
+        Args: sample (tuple): (audio, audio_mel, prompt, answer)
         """
-        audio, prompt, answer = sample
+        audio, audio_mel, prompt, answer = sample
         example = prompt + answer
 
         if self.fix_length_audio > 0:
@@ -34,9 +34,10 @@ class BaseDataset(Dataset):
             example_mask = example_ids.ge(-1)  # [True,True]
 
             return {
+                "audio": audio,
+                "audio_mel": audio_mel,
                 "input_ids": example_ids,
                 "attention_mask": example_mask,
-                "audio": audio,
                 "audio_length": audio_length,
                 "prompt_length": prompt_length,
             }
@@ -56,6 +57,7 @@ class BaseDataset(Dataset):
 
         return {
             "audio": audio,
+            "audio_mel": audio_mel,
             "input_ids": example_ids,
             "labels": labels_ids,
             "attention_mask": example_mask,
@@ -116,8 +118,6 @@ class BaseDataset(Dataset):
             ) for index in range(len(samples))
         ])
 
-        audio = torch.stack([s['audio'] for s in samples])
-
         modality_mask = torch.zeros_like(attention_mask)
         for index in range(len(samples)):
             padding_left = input_prompt_max_length - input_prompt_lengths[index]
@@ -127,7 +127,6 @@ class BaseDataset(Dataset):
             return {
                 "input_ids": input_ids,
                 "attention_mask": attention_mask,
-                "audio": audio,
                 "modality_mask": modality_mask,
                 "keys": [s['key'] for s in samples],
                 "targets": [s['target'] for s in samples]
@@ -144,6 +143,5 @@ class BaseDataset(Dataset):
             "input_ids": input_ids,
             "labels": labels,
             "attention_mask": attention_mask,
-            "audio": audio,
             "modality_mask": modality_mask
         }

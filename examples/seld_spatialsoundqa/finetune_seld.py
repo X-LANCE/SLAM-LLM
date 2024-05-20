@@ -16,6 +16,9 @@ class RunConfig:
     peft_config: PeftConfig = field(default_factory=PeftConfig)
     debug: bool = field(default=False, metadata={"help": "Use pdb when true"})
     metric: str = field(default="acc", metadata={"help": "The metric for evaluation"})
+    ckpt_path: str = field(
+        default="output/model.pt", metadata={"help": "The path to projector checkpoint"}
+    )
 
 @hydra.main(config_name=None, version_base=None)
 def main_hydra(cfg: DictConfig):

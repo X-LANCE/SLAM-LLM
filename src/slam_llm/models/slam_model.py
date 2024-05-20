@@ -362,11 +362,13 @@ class slam_model(nn.Module):
                     inputs_embeds = self.llm.model.model.model.embed_tokens(input_ids)
 
         if modality_mask is not None:
-            encoder_padding_length_left = (modality_mask == True).float().argmax(dim=1)
+            modality_unmask_start = (modality_mask == True).float().argmax(dim=1)
 
             encoder_outs_pad = torch.zeros_like(inputs_embeds)
             for i in range(encoder_outs.shape[0]):
-                encoder_outs_pad[i, encoder_padding_length_left[i]:encoder_padding_length_left[i]+encoder_outs[i].shape[0]] = encoder_outs[i]
+                encoder_outs_pad[
+                    i, modality_unmask_start[i]:modality_unmask_start[i]+modality_mask[i].sum().item()
+                ] = encoder_outs[i]
             
             inputs_embeds = encoder_outs_pad + inputs_embeds * (~modality_mask[:, :, None])
 

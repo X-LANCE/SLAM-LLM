@@ -75,7 +75,7 @@ class TrainConfig:
 @dataclass
 class DataConfig:
     dataset: str = "spatial_audio_dataset"
-    file: str = "src/slam_llm/datasets/spatial_audio_dataset.py:get_spatial_audio_dataset"
+    file: str = "examples/seld_spatialsoundqa/dataset/spatial_audio_dataset.py:get_spatial_audio_dataset"
     ext_audio: str = ".wav"
     train_split: str = "train"
     test_split: str = "eval"

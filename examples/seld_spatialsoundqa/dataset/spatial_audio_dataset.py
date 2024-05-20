@@ -77,9 +77,9 @@ class SpatialAudioDatasetJsonl(BaseDataset):
         answer = sample['answer']        
         
         if not self.inference_mode:
-            return super().__getitem__((waveforms, prompt, answer))
+            return super().__getitem__((waveforms, None, prompt, answer))
         else:
-            base_sample = super().__getitem__((waveforms, prompt, answer))
+            base_sample = super().__getitem__((waveforms, None, prompt, answer))
             base_sample.update({
                 "key": f"{sample['question_type']}-{sample['question_id']}",
                 "target": sample['answer']
@@ -139,44 +139,13 @@ class SpatialAudioDatasetJsonl(BaseDataset):
             waveform = (waveform + waveform2) / 2
         return waveform
 
-
-
-    # def collator(self, samples):
-    #     assert samples is not None
-    #     input_ids_max_length = max([s['input_ids'].shape[0] for s in samples])
-    #     input_ids = torch.stack([
-    #         self.padding(s['input_ids'], input_ids_max_length, self.tokenizer.pad_token_id, padding_side='left') for s in samples])
-    #     attention_mask = torch.stack([
-    #         self.padding(s['attention_mask'], input_ids_max_length, False, padding_side='left') for s in samples])
-
-    #     audio = torch.stack([s['audio'] for s in samples])
-
-    #     modality_mask = torch.zeros_like(attention_mask)
-    #     for line, sample in enumerate(samples):
-    #         modality_mask[line, :sample['audio_length']] = 1
-
-    #     if self.inference_mode:
-    #         keys = [s['key'] for s in samples]
-    #         targets = [s['target'] for s in samples]
-
-    #         return {
-    #             "input_ids": input_ids,
-    #             "attention_mask": attention_mask,
-    #             "audio": audio,
-    #             "modality_mask": modality_mask,
-    #             "keys": keys,
-    #             "targets": targets,
-    #         }
-
-    #     labels = torch.stack([self.padding(s['labels'], input_ids_max_length, self.IGNORE_INDEX)
-    #                           for s in samples])
-    #     return {
-    #         "input_ids": input_ids,
-    #         "labels": labels,
-    #         "attention_mask": attention_mask,
-    #         "audio": audio,
-    #         "modality_mask": modality_mask
-    #     }
+    def collator(self, samples):
+        audio = torch.stack([s['audio'] for s in samples])
+        
+        collated = super().collator(samples)
+        collated['audio'] = audio
+        
+        return collated
 
 def get_spatial_audio_dataset(dataset_config, tokenizer, split):
     dataset = SpatialAudioDatasetJsonl(dataset_config, tokenizer, split)
