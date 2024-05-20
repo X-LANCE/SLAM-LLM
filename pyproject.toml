@@ -5,12 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "slam-llm"
 version = "0.0.1"
-authors = [
-  { name="Hamid Shojanazeri", email="hamidnazeri@meta.com" },
-  { name="Matthias Reso", email="mreso@meta.com" },
-  { name="Geeta Chauhan", email="gchauhan@meta.com" },
-]
-description = "To be done"
+description = "SLAM-LLM is a deep learning toolkit that allows researchers and developers to train custom multimodal large language model (MLLM), focusing on Speech, Language, Audio, Music processing. We provide detailed recipes for training and high-performance checkpoints for inference."
 readme = "README.md"
 requires-python = ">=3.8"
 classifiers = [
@@ -26,8 +21,8 @@ tests = ["pytest-mock"]
 auditnlg = ["auditnlg"]
 
 [project.urls]
-"Homepage" = "https://github.com/facebookresearch/llama-recipes/"
-"Bug Tracker" = "https://github.com/facebookresearch/llama-recipes/issues"
+"Homepage" = "https://github.com/ddlBoJack/SLAM-LLM"
+"Bug Tracker" = "https://github.com/ddlBoJack/SLAM-LLM/issues"
 
 [tool.hatch.build]
 exclude = [

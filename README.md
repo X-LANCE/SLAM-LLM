@@ -27,6 +27,7 @@ developers to train custom multimodal large language model (MLLM), focusing on <
 5. [Acknowledge](#acknowledge)
 
 # News
+- [Update May. 20, 2024] Recipes for [music caption (MC)](examples/mc_musiccaps/README.md) has been supported. 
 - [Update May. 8, 2024] Recipes for [visual speech recognition (VSR)](examples/vsr_LRS3/README.md) has been supported. 
 - [Update May. 4, 2024] Recipes for [zero-shot text-to-speech (TTS)](examples/vallex/README.md) has been supported. 
 - [Update Apr. 28, 2024] Recipes for [automated audio captioning (AAC)](examples/aac_audiocaps/README.md) has been supported. 
@@ -66,6 +67,8 @@ We provide reference implementations of various LLM-based speech, audio, and mus
     - [Visual Speech Recognition (VSR)](examples/vsr_LRS3/README.md)
 - **Audio Task**
     - [Automated Audio Captioning (AAC)](examples/aac_audiocaps/README.md)
+- **Music Task**
+    - [Music Caption (MC)](examples/mc_musiccaps/README.md)
 
 ## Configuration Priority
 We provide hierarchical configuration inheritance relationships as follows:
