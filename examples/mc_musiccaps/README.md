@@ -1,9 +1,9 @@
-# Music Caption
+# MC_MusicCaps
 
 ## Performance and checkpoints
 Here is a recipe for music captioning, using MusicFM as encoder. We only train the linear projector. For more about MusicFM and its checkpoints, please refer to [this repository](https://github.com/minzwon/musicfm).
 
-The following results are obtained by training on the LP-MusicCaps-MC training set and evaluating on the LP-MusicCaps-MC test set.
+The following results are obtained by training on the [LP-MusicCaps-MC](https://huggingface.co/datasets/seungheondoh/LP-MusicCaps-MC) training set and evaluating on the [LP-MusicCaps-MC](https://huggingface.co/datasets/seungheondoh/LP-MusicCaps-MC) test set.
 Encoder | Projector | LLM | BLEU-1 | METEOR | SPICE | SPIDER 
 |---|---|---|---|---|---|---
 [MusicFM(pretrained with MSD)](https://huggingface.co/minzwon/MusicFM/resolve/main/pretrained_msd.pt) | [Linear](https://drive.google.com/file/d/1-9pob6QvJRoq5Dy-LZbiDfF6Q7QRO8Au/view?usp=sharing)(~18.88M) | [vicuna-7b-v1.5](https://huggingface.co/lmsys/vicuna-7b-v1.5) | 25.6 | 10.0 | 8.7 | 6.9
