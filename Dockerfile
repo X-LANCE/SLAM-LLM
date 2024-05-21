@@ -28,13 +28,13 @@ RUN git clone https://github.com/huggingface/peft.git \
     && git checkout tags/v0.6.0 \
     && pip install --no-cache-dir -e .
 
+RUN git clone https://github.com/pytorch/fairseq \
+    && cd fairseq \
+    && pip install --no-cache-dir --editable ./
+
 RUN git clone https://github.com/ddlBoJack/SLAM-LLM.git \
     && cd SLAM-LLM \
     && pip install --no-cache-dir -e .
-
-# RUN git clone https://github.com/pytorch/fairseq \
-#     && cd fairseq \
-#     && pip install --editable ./
 
 ENV SHELL=/bin/bash
 
