@@ -6,7 +6,7 @@ export TOKENIZERS_PARALLELISM=false
 
 run_dir=$PWD
 cd $run_dir
-code_dir=examples/music_caption
+code_dir=examples/mc_musiccaps
 
 
 music_encoder_path=path/to/pretrained/musicfm/pretrained_msd.pt
