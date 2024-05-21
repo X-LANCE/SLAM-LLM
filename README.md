@@ -43,7 +43,7 @@ pip install -e .
 cd ..
 git clone https://github.com/huggingface/peft.git
 cd peft
-git checkout tags/V0.6.0
+git checkout tags/v0.6.0
 pip install -e .
 cd ..
 pip install torch==2.0.1 torchvision==0.15.2 torchaudio==2.0.2 --index-url https://download.pytorch.org/whl/cu118
