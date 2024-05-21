@@ -16,23 +16,27 @@ RUN set -x \
 RUN pip install --no-cache-dir packaging editdistance gpustat wandb einops debugpy tqdm soundfile matplotlib scipy sentencepiece pandas \
     && pip install --no-cache-dir torchaudio==2.1.0 --index-url https://download.pytorch.org/whl/cu118
 
-WORKDIR /workspace
+WORKDIR /tmp
 
-RUN git clone https://github.com/huggingface/transformers.git \
+RUN git clone https://github.com/huggingface/transformers \
     && cd transformers \
     && git checkout tags/v4.35.2 \
-    && pip install --no-cache-dir -e .
+    && pip install --no-cache-dir -e . \
+    && cd ..
 
-RUN git clone https://github.com/huggingface/peft.git \
+RUN git clone https://github.com/huggingface/peft\
     && cd peft \
     && git checkout tags/v0.6.0 \
-    && pip install --no-cache-dir -e .
+    && pip install --no-cache-dir -e . \
+    && cd ..
 
 RUN git clone https://github.com/pytorch/fairseq \
     && cd fairseq \
-    && pip install --no-cache-dir --editable ./
+    && pip install --no-cache-dir --editable ./ \
+    && cd ..
 
-RUN git clone https://github.com/ddlBoJack/SLAM-LLM.git \
+WORKDIR /workspace
+RUN git clone https://github.com/ddlBoJack/SLAM-LLM \
     && cd SLAM-LLM \
     && pip install --no-cache-dir -e .
 
