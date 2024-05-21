@@ -54,11 +54,19 @@ pip install  -e .
 
 For some examples, you may need to use `fairseq`, the command line is as follows:
 ```
+# you need to install fairseq before SLAM-LLM
 git clone https://github.com/pytorch/fairseq
 cd fairseq
 pip install --editable ./
 ```
+We also provide a docker image for convenience:
+```shell
+# build docker image
+docker build -t slam-llm:latest .
 
+# run docker image with gpu
+docker run -it --gpus all --name slam --shm-size=256g slam-llm:latest /bin/bash
+```
 # Usage
 ## List of Recipes
 We provide reference implementations of various LLM-based speech, audio, and music tasks: 
