@@ -1,6 +1,6 @@
 #!/bin/bash
 export PYTHONPATH=/root/fairseq:$PYTHONPATH
-export CUDA_VISIBLE_DEVICES=3
+export CUDA_VISIBLE_DEVICES=1,2
 export TOKENIZERS_PARALLELISM=false
 # export CUDA_LAUNCH_BLOCKING=1
 export OMP_NUM_THREADS=1
@@ -8,12 +8,12 @@ export OMP_NUM_THREADS=1
 cd /root/SLAM-LLM
 code_dir=examples/hotwords_librispeech
 
-speech_encoder_path=/nfs/yangguanrou.ygr/ckpts/wavlm_large_finetune_librispeech/wavlm_large_finetune_librispeech.pt
+speech_encoder_path=/nfs/maziyang.mzy/models/wavlm/WavLM-Large.pt
 llm_path=/nfs/maziyang.mzy/models/vicuna-7b-v1.5
-train_data_path=/nfs/maziyang.mzy/data/librispeech/librispeech_train_960h.jsonl
-val_data_path=/nfs/maziyang.mzy/data/librispeech/librispeech_dev_other.jsonl
+train_data_path=/nfs/maziyang.mzy/data/gigaspeech/gigaspeech_train_1000h.jsonl
+val_data_path=/nfs/maziyang.mzy/data/gigaspeech/gigaspeech_dev.jsonl
 
-output_dir=/nfs/yangguanrou.ygr/experiments_librispeech/debug
+output_dir=/nfs/yangguanrou.ygr/experiments_librispeech/vicuna-7b-v1.5-WavLM-Large-gigaspeech-$(date +"%Y%m%d")
 
 hydra_args="
 hydra.run.dir=$output_dir \
@@ -39,18 +39,24 @@ hydra.run.dir=$output_dir \
 ++train_config.warmup_steps=1000 \
 ++train_config.total_steps=100000 \
 ++train_config.lr=1e-4 \
-++train_config.validation_interval=6000 \
+++train_config.validation_interval=2000 \
 ++train_config.val_batch_size=4 \
 ++train_config.batch_size_training=4 \
 ++train_config.num_workers_dataloader=2 \
 ++train_config.output_dir=$output_dir \
 ++metric=acc \
 ++log_config.log_file=/$output_dir/train.log \
+++log_config.use_wandb=true \
+++log_config.wandb_dir=$output_dir \
+++log_config.wandb_entity_name=yanghaha \
+++log_config.wandb_project_name=slam-llm \
+++log_config.wandb_exp_name=vicuna-7b-v1.5-WavLM-Large-gigaspeech \
+++log_config.log_interval=5 \
 "
 
 # -m debugpy --listen 5678 --wait-for-client
 if [[ $CUDA_VISIBLE_DEVICES != *","* ]]; then
-    python -m debugpy --listen 5679 --wait-for-client $code_dir/finetune_asr.py \
+    python -m debugpy --listen 5678 --wait-for-client $code_dir/finetune_asr.py \
         --config-path "conf" \
         --config-name "prompt.yaml" \
         $hydra_args

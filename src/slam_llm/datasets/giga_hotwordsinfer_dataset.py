@@ -1,27 +1,19 @@
-import os.path as osp
-import random
-import json, yaml
-import copy
-
-import numpy as np
-from scipy import signal
-import soundfile as sf
-
 import torch
-import torchaudio
 from torch.utils.data import Dataset
 import whisper
-from slam_llm.utils.compute_utils import calculate_output_length_1d
-
+import kaldiio
+import copy
+import numpy as np
+from tqdm import tqdm
 
 import logging
 logger = logging.getLogger(__name__)
+
 
 import difflib
 from functools import lru_cache
 from tqdm import tqdm
 import Levenshtein
-
 
 def build_ngram_index(names, n=2):
     """构建N-Gram倒排索引"""
@@ -40,31 +32,12 @@ def find_candidate_names(sentence, ngram_index, n=2):
         candidates.update(ngram_index.get(ngram, []))       
     return candidates
 
-def build_ngram_index_phn(names, n=2):
-    """构建N-Gram倒排索引"""
-    index = {}
-    for name in names:
-        phonemes = name.split()
-        for i in range(len(phonemes) - n + 1):
-            ngram = ' '.join(phonemes[i:i+n]).lower()
-            index.setdefault(ngram, set()).add(name)
-    return index
-
-def find_candidate_names_phn(phonemes, ngram_index, n=2):
-    """通过N-Gram倒排索引找到候选人名"""
-    candidates = set()
-    phonemes = phonemes.split()
-    for i in range(len(phonemes) - n + 1):
-        ngram = ' '.join(phonemes[i:i+n]).lower()
-        candidates.update(ngram_index.get(ngram, []))       
-    return candidates
-
 # @lru_cache(maxsize=None)
 @lru_cache(maxsize=100000)
 def similarity(name, sentence):
     return Levenshtein.ratio(name, sentence)  #速度主要来源于这个函数的更换
 
-def generate_ngrams(sentence, n):
+def generate_ngrams(sentence, n): #一样的
     """生成长度为n的n-grams"""
     sentence = sentence.split()
     return [' '.join(sentence[i:i+n]) for i in range(len(sentence)-n+1)]
@@ -73,7 +46,7 @@ def calculate_similarity_score(name, sentence, length_tolerance=3):
     max_similarity = 0
     name_sentence = name.split()
     name_length = len(name_sentence)
-    sentence_ngrams = generate_ngrams(sentence, name_length) #9
+    sentence_ngrams = generate_ngrams(sentence, name_length) #9  一样的
     
     for ngram in sentence_ngrams:
         if abs(len(ngram) - len(name)) <= length_tolerance:
@@ -81,7 +54,7 @@ def calculate_similarity_score(name, sentence, length_tolerance=3):
             max_similarity = max(max_similarity, sim)
     return max_similarity
 
-def score_candidates(candidates, sentence):
+def score_candidates(candidates, sentence):  #一样的
     """为候选人名计算得分"""
     scores = {}
     for candidate in candidates:
@@ -90,9 +63,8 @@ def score_candidates(candidates, sentence):
     return scores
 
 
+class GigaHotwordsInferDataset(Dataset):
 
-class HotwordsInferDataset(torch.utils.data.Dataset):
-    
     def __init__(self,
                  dataset_config,
                  tokenizer=None,
@@ -117,36 +89,34 @@ class HotwordsInferDataset(torch.utils.data.Dataset):
         assert self.input_type in ["raw", "mel"], "input_type must be one of [raw, mel]" 
 
         self.data_list = []
-        if split == "train":
-            with open(dataset_config.train_data_path, encoding='utf-8') as fin:
-                for line in fin:
-                    data_dict = json.loads(line.strip())
-                    self.data_list.append(data_dict)
-        else:
-            with open(dataset_config.val_data_path, encoding='utf-8') as fin:
-                for line in fin:
-                    data_dict = json.loads(line.strip())
-                    self.data_list.append(data_dict)
+        self.label_list = []
+        self.key_list = []
+        self.line_name_list =[]
+        self.name_list=[]
 
-        # 
-        self.hotwords_list=[]
-        self.biaswords_list=[]
-        with open(dataset_config.infer_file,'r') as fref:
-            for line in fref:
-                line=line.strip().split('\t')
-                # id = line[0]
-                # label = line[1]
-                hotwords = line[2]
-                biaswords= line[3]
-                self.hotwords_list.append(hotwords)
-                self.biaswords_list.append(biaswords)
-        
+        with open("/nfs/yangguanrou.ygr/data/ner/giga_name_test/2/giga_ner_wsplit.txt",'r') as f:
+            for line in f:
+                line = line.strip().split('\t')
+
+                self.key_list.append(line[0])
+                self.data_list.append(line[1])
+                self.label_list.append(line[2]) 
+                self.line_name_list.append(line[3]) 
+
+        with open("/nfs/yangguanrou.ygr/data/ner/giga_name_test/person_uniq_my",'r') as f:
+            for line in f:
+                line = line.strip()
+                self.name_list.append(line)
+        self.ngram_index = build_ngram_index(self.name_list)
+
+
         self.infer_type=dataset_config.infer_type
         if self.infer_type=="filter":
             self.infer_list=[]
             with open(dataset_config.ctc_file,'r') as finfer:
                 for line in finfer:
                     self.infer_list.append(line.strip())
+
 
         # analyze
         self.hotwords_num=0
@@ -159,18 +129,15 @@ class HotwordsInferDataset(torch.utils.data.Dataset):
         return data_dict["source_len"]
 
     def get_target_len(self, data_dict):
-    
         return data_dict["target_len"] if "target_len" in data_dict else 0
     
     def __len__(self):
         return len(self.data_list)
-    
+
     def __getitem__(self, index):
-        data_dict = self.data_list[index]
-        audio_path = data_dict.get("source")
-        target = data_dict.get("target", None)
-        task = data_dict.get("prompt", "ASR")
-        key = data_dict.get("key", None)
+        audio_path = self.data_list[index]
+        target = self.label_list[index] #'KIM WAS NOT DOWN WITH THE CRITIQUE'
+        key = self.key_list[index] #'1012-133424-0005'
 
         audio_raw = whisper.load_audio(audio_path)
         if self.input_type == "raw":
@@ -193,28 +160,21 @@ class HotwordsInferDataset(torch.utils.data.Dataset):
         if self.infer_type=="nobias":
             ocr=""
         elif self.infer_type=="gt":
-            ocr=eval(self.hotwords_list[index])
-            ocr=" ".join(ocr)
-            ocr = ocr.upper()
+            ocr=self.line_name_list[index]
+            ocr = ocr.replace('|',' ')
         elif self.infer_type=="filter":
-            gt=eval(self.hotwords_list[index])
-            infer_sentence=self.infer_list[index].lower()
-            biaswords=eval(self.biaswords_list[index])
-            if self.filter_type=="char":
-                ngram_index=build_ngram_index(biaswords)
-                candidates = find_candidate_names(infer_sentence, ngram_index) #第一个len11
-            elif self.filter_type=="phn":
-                ngram_index=build_ngram_index_phn(biaswords)
-                candidates = find_candidate_names_phn(infer_sentence, ngram_index) #第一个len11
+            gt = self.line_name_list[index]
+            infer_sentence = self.infer_list[index]
+            candidates = find_candidate_names(infer_sentence, self.ngram_index) #第一个len11
             scores = score_candidates(candidates, infer_sentence)
             sorted_dict = sorted(scores.items(), key=lambda item: item[1],  reverse=True)
             high_score_items = [(k, value) for k, value in sorted_dict if value > 0.9] 
-            if len(high_score_items) < 15:
-                high_score_items = sorted_dict[:15]
+            if len(high_score_items) < 20:
+                high_score_items = sorted_dict [:20]
             keys_list = [k for k, _ in high_score_items]
             ocr = " ".join(keys_list)
-            if len(high_score_items)>15:
-                logger.info("longer than 15 candidates, cand_num: %d", len(high_score_items))
+            if len(high_score_items)>20:
+                logger.info("longer than 20 candidates, cand_num: %d", len(high_score_items))
 
             # ======== count recall
             miss=False
@@ -276,7 +236,8 @@ class HotwordsInferDataset(torch.utils.data.Dataset):
             "audio": audio_raw if self.input_type == "raw" else None,
             "audio_mel": audio_mel if self.input_type == "mel" else None,
             "audio_length": audio_length,
-        }
+        }   
+
 
     def pad(self, sequence, max_length, padding_idx=0):
         if isinstance(sequence, (int, list, tuple)):
@@ -358,6 +319,6 @@ class HotwordsInferDataset(torch.utils.data.Dataset):
 
 
 def get_speech_dataset(dataset_config, tokenizer, split):
-    dataset = HotwordsInferDataset(dataset_config, tokenizer, split)
+    dataset = GigaHotwordsInferDataset(dataset_config, tokenizer, split)
 
     return dataset

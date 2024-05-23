@@ -1,6 +1,6 @@
 #!/bin/bash
 #export PYTHONPATH=/root/whisper:$PYTHONPATH
-export CUDA_VISIBLE_DEVICES=2
+export CUDA_VISIBLE_DEVICES=0
 export TOKENIZERS_PARALLELISM=false
 # export CUDA_LAUNCH_BLOCKING=1
 
@@ -13,9 +13,9 @@ llm_path=/nfs/maziyang.mzy/models/vicuna-7b-v1.5
 
 output_dir=/nfs/yangguanrou.ygr/experiments_librispeech/vicuna-7b-v1.5-WavLM-Large-ft-phn-hotwords-again-20240513
 ckpt_path=$output_dir/asr_epoch_3_step_19780
-split=librispeech_test_clean_debug
+split=librispeech_test_other
 val_data_path=/nfs/maziyang.mzy/data/librispeech/${split}.jsonl
-decode_log=$ckpt_path/decode_${split}_beam4_filter_N100
+decode_log=$ckpt_path/decode_${split}_beam4_filter_addgt_N1000
 
 # -m debugpy --listen 5678 --wait-for-client
 python $code_dir/inference_asr_batch.py \
@@ -37,17 +37,17 @@ python $code_dir/inference_asr_batch.py \
         ++dataset_config.input_type=raw \
         ++dataset_config.inference_mode=true \
         ++dataset_config.infer_type=filter \
-        ++dataset_config.dataset=hotwordsinfer_dataset \
-        ++dataset_config.file=src/slam_llm/datasets/hotwordsinfer_dataset.py:get_speech_dataset \
-        ++dataset_config.infer_file=/nfs/yangguanrou.ygr/data/fbai-speech/is21_deep_bias/my_ref/test-clean.biasing_100.tsv \
-        ++dataset_config.ctc_file=/nfs/yangguanrou.ygr/data/librispeech_my_infer/wavlm_large_libri_test_clean_char.txt \
+        ++dataset_config.dataset=hotwordsinferaddgt_dataset \
+        ++dataset_config.file=src/slam_llm/datasets/hotwordsinferaddgt_dataset.py:get_speech_dataset \
+        ++dataset_config.infer_file=/nfs/yangguanrou.ygr/data/fbai-speech/is21_deep_bias/my_ref/test-other.biasing_1000.tsv \
+        ++dataset_config.ctc_file=/nfs/yangguanrou.ygr/data/librispeech_my_infer/wavlm_large_libri_test_other_char.txt \
         ++train_config.model_name=asr \
         ++train_config.freeze_encoder=true \
         ++train_config.freeze_llm=true \
         ++train_config.batching_strategy=custom \
         ++train_config.num_epochs=1 \
         ++train_config.val_batch_size=4 \
-        ++train_config.num_workers_dataloader=1 \
+        ++train_config.num_workers_dataloader=0 \
         ++train_config.output_dir=$output_dir \
         ++decode_log=$decode_log \
         ++ckpt_path=$ckpt_path/model.pt \
@@ -61,3 +61,7 @@ python $code_dir/inference_asr_batch.py \
 python src/slam_llm/utils/whisper_tn.py ${decode_log}_gt ${decode_log}_gt.proc
 python src/slam_llm/utils/whisper_tn.py ${decode_log}_pred ${decode_log}_pred.proc
 python src/slam_llm/utils/compute_wer.py ${decode_log}_gt.proc ${decode_log}_pred.proc ${decode_log}.proc.wer
+
+
+
+# bash examples/hotwords_librispeech/scripts/phoneme/filter_addgt/decode_wavlm_librispeech_ft_char_hotwords_filter_other_addgt_N1000.sh > examples/hotwords_librispeech/scripts/phoneme/filter_addgt/decode_wavlm_librispeech_ft_char_hotwords_filter_other_addgt_N1000.log

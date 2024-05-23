@@ -40,25 +40,6 @@ def find_candidate_names(sentence, ngram_index, n=2):
         candidates.update(ngram_index.get(ngram, []))       
     return candidates
 
-def build_ngram_index_phn(names, n=2):
-    """构建N-Gram倒排索引"""
-    index = {}
-    for name in names:
-        phonemes = name.split()
-        for i in range(len(phonemes) - n + 1):
-            ngram = ' '.join(phonemes[i:i+n]).lower()
-            index.setdefault(ngram, set()).add(name)
-    return index
-
-def find_candidate_names_phn(phonemes, ngram_index, n=2):
-    """通过N-Gram倒排索引找到候选人名"""
-    candidates = set()
-    phonemes = phonemes.split()
-    for i in range(len(phonemes) - n + 1):
-        ngram = ' '.join(phonemes[i:i+n]).lower()
-        candidates.update(ngram_index.get(ngram, []))       
-    return candidates
-
 # @lru_cache(maxsize=None)
 @lru_cache(maxsize=100000)
 def similarity(name, sentence):
@@ -91,7 +72,7 @@ def score_candidates(candidates, sentence):
 
 
 
-class HotwordsInferDataset(torch.utils.data.Dataset):
+class HotwordsInferAddgtDataset(torch.utils.data.Dataset):
     
     def __init__(self,
                  dataset_config,
@@ -152,8 +133,6 @@ class HotwordsInferDataset(torch.utils.data.Dataset):
         self.hotwords_num=0
         self.miss_words_num=0
 
-        self.filter_type=dataset_config.filter_type
-
 
     def get_source_len(self, data_dict):
         return data_dict["source_len"]
@@ -200,19 +179,15 @@ class HotwordsInferDataset(torch.utils.data.Dataset):
             gt=eval(self.hotwords_list[index])
             infer_sentence=self.infer_list[index].lower()
             biaswords=eval(self.biaswords_list[index])
-            if self.filter_type=="char":
-                ngram_index=build_ngram_index(biaswords)
-                candidates = find_candidate_names(infer_sentence, ngram_index) #第一个len11
-            elif self.filter_type=="phn":
-                ngram_index=build_ngram_index_phn(biaswords)
-                candidates = find_candidate_names_phn(infer_sentence, ngram_index) #第一个len11
+            ngram_index=build_ngram_index(biaswords)
+            candidates = find_candidate_names(infer_sentence, ngram_index) #第一个len11
             scores = score_candidates(candidates, infer_sentence)
             sorted_dict = sorted(scores.items(), key=lambda item: item[1],  reverse=True)
             high_score_items = [(k, value) for k, value in sorted_dict if value > 0.9] 
             if len(high_score_items) < 15:
                 high_score_items = sorted_dict[:15]
             keys_list = [k for k, _ in high_score_items]
-            ocr = " ".join(keys_list)
+           
             if len(high_score_items)>15:
                 logger.info("longer than 15 candidates, cand_num: %d", len(high_score_items))
 
@@ -221,16 +196,20 @@ class HotwordsInferDataset(torch.utils.data.Dataset):
             for name in gt:
                 self.hotwords_num+=1
                 if name not in keys_list:
+                    # !!!!!!
+                    # keys_list.append(name)
+                    keys_list.insert(0,name)
                     self.miss_words_num+=1
                     miss=True
             if miss:
                 logger.info("key: %s", key)
                 logger.info("infer sentence: %s",infer_sentence)
                 logger.info("target sentence: %s", target)
-                logger.info("name: %s, gt: %s, keys_list: %s", name, gt, keys_list)
+                logger.info("gt: %s, keys_list: %s", gt, keys_list)
+                # logger.info("total_hotwords_num: %d, miss_hotwords_num: %d", self.hotwords_num, self.miss_words_num)
             # ========
             
-
+        ocr = " ".join(keys_list)
         prompt = "Transcribe speech to text. Some hotwords might help. The hotwords are \"{}\". "
         prompt = prompt.format(ocr)
         prompt = self.prompt_template.format(prompt)
@@ -358,6 +337,6 @@ class HotwordsInferDataset(torch.utils.data.Dataset):
 
 
 def get_speech_dataset(dataset_config, tokenizer, split):
-    dataset = HotwordsInferDataset(dataset_config, tokenizer, split)
+    dataset = HotwordsInferAddgtDataset(dataset_config, tokenizer, split)
 
     return dataset

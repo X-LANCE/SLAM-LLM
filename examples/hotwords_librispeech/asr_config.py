@@ -105,7 +105,8 @@ class DataConfig:
     infer_type: str = "bias"
     infer_file: str = "/nfs/yangguanrou.ygr/data/fbai-speech/is21_deep_bias/my_ref/test-clean.biasing_100.tsv"
     ctc_file: str = "/nfs/yangguanrou.ygr/data/librispeech_my_infer/wavlm_large_libri_test_other_char.txt"     
-
+    filter_type: str = "char"
+    
 @dataclass
 class FSDPConfig:
     mixed_precision: bool = True

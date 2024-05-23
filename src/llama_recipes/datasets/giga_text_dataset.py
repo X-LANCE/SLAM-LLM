@@ -37,7 +37,7 @@ def find_candidate_names(sentence, ngram_index, n=2):
 def similarity(name, sentence):
     return Levenshtein.ratio(name, sentence)  #速度主要来源于这个函数的更换
 
-def generate_ngrams(sentence, n):
+def generate_ngrams(sentence, n): #一样的
     """生成长度为n的n-grams"""
     sentence = sentence.split()
     return [' '.join(sentence[i:i+n]) for i in range(len(sentence)-n+1)]
@@ -46,7 +46,7 @@ def calculate_similarity_score(name, sentence, length_tolerance=3):
     max_similarity = 0
     name_sentence = name.split()
     name_length = len(name_sentence)
-    sentence_ngrams = generate_ngrams(sentence, name_length) #9
+    sentence_ngrams = generate_ngrams(sentence, name_length) #9  一样的
     
     for ngram in sentence_ngrams:
         if abs(len(ngram) - len(name)) <= length_tolerance:
@@ -54,7 +54,7 @@ def calculate_similarity_score(name, sentence, length_tolerance=3):
             max_similarity = max(max_similarity, sim)
     return max_similarity
 
-def score_candidates(candidates, sentence):
+def score_candidates(candidates, sentence):  #一样的
     """为候选人名计算得分"""
     scores = {}
     for candidate in candidates:

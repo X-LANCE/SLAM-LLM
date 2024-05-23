@@ -1,0 +1,2 @@
+dataset_config:
+  prompt: 'Transcribe speech to text. '
