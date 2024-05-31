@@ -11,7 +11,7 @@ export OMP_NUM_THREADS=1
 
 run_dir=$PWD
 cd $run_dir
-code_dir=examples/music_caption
+code_dir=examples/mc_musiccaps
 
 music_encoder_path=path/to/pretrained/musicfm/pretrained_msd.pt
 music_encoder_stat_path=path/to/pretrained/musicfm/msd_stats.json

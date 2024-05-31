@@ -145,6 +145,20 @@ def main(kwargs: DictConfig):
     parameters = filter(lambda p: p.requires_grad, model.parameters())
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+    # If you are facing problem from limited memory(<=256GB), you can try to replace the above code with the following code
+    # for i in range(rank):
+    #     while not os.path.isfile(f".{i}.done"):
+    #         pass
+    # assert not os.path.isfile(f".{rank}.done"), f".{rank}.done already exists!"
+    # model_factory = get_custom_model_factory(model_config, logger)
+    # model, tokenizer = model_factory(train_config, model_config, **kwargs)
+    # parameters = filter(lambda p: p.requires_grad, model.parameters())
+    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # model.half()
+    # with open(f".{rank}.done", "w"):
+    #     pass
+
+
     # Initialize the optimizer and learning rate scheduler
     model_engine, _, _, _ = deepspeed.initialize(
         model=model, model_parameters=parameters, config=deepspeed_config

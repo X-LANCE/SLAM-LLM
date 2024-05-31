@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from typing import Optional, List
 @dataclass
 class ModelConfig:
-    file: str = "examples/music_caption/model/slam_model_mir.py:model_factory"
+    file: str = "examples/mc_musiccaps/model/slam_model_mir.py:model_factory"
     llm_name: str = "vicuna-13b-v1.5"
     llm_path: str = "PATH/to/LLAMA/7B"
     llm_type: str = "decoder_only"

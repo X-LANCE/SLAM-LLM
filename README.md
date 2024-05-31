@@ -44,22 +44,30 @@ pip install -e .
 cd ..
 git clone https://github.com/huggingface/peft.git
 cd peft
-git checkout tags/0.6.0
+git checkout tags/v0.6.0
 pip install -e .
 cd ..
 pip install torch==2.0.1 torchvision==0.15.2 torchaudio==2.0.2 --index-url https://download.pytorch.org/whl/cu118
-git clone git@github.com:ddlBoJack/SLAM-LLM.git
+git clone https://github.com/ddlBoJack/SLAM-LLM.git
 cd SLAM-LLM
 pip install  -e .
 ```
 
 For some examples, you may need to use `fairseq`, the command line is as follows:
 ```
+# you need to install fairseq before SLAM-LLM
 git clone https://github.com/pytorch/fairseq
 cd fairseq
 pip install --editable ./
 ```
+We also provide a docker image for convenience:
+```shell
+# build docker image
+docker build -t slam-llm:latest .
 
+# run docker image with gpu
+docker run -it --gpus all --name slam --shm-size=256g slam-llm:latest /bin/bash
+```
 # Usage
 ## List of Recipes
 We provide reference implementations of various LLM-based speech, audio, and music tasks: 
