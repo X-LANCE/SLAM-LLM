@@ -27,6 +27,7 @@ developers to train custom multimodal large language model (MLLM), focusing on <
 5. [Acknowledge](#acknowledge)
 
 # News
+- **[CALL FOR EXAMPLE]** We sincerely invite developers and researchers to develop new applications, conduct academic research based on SLAM-LLM, and pull request your examples! We also acknowledge engineering PR (such as improving and speeding up multi-node training). 
 - [Update May. 22, 2024] Please join [slack](https://join.slack.com/t/slam-llm/shared_invite/zt-2jbuiyqgi-O83DteBG36xYWcjCNcLWqQ) or [WeChat group](./docs/Wechat.jpg). We will sync our updates and Q&A here. 
 - [Update May. 21, 2024] Recipes for [Spatial Audio Understanding](examples/seld_spatialsoundqa/README.md) has been supported. 
 - [Update May. 20, 2024] Recipes for [music caption (MC)](examples/mc_musiccaps/README.md) has been supported. 
