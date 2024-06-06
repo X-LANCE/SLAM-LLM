@@ -56,7 +56,7 @@ class EncoderProjectorQFormer(nn.Module):
         from transformers import Blip2QFormerConfig, Blip2QFormerModel
         configuration = Blip2QFormerConfig()
         configuration.encoder_hidden_size = self.encoder_dim
-        configuration.num_hidden_layers = 2
+        configuration.num_hidden_layers = 8
 
         self.query_len = 64
         self.query = nn.Parameter(torch.zeros(1, self.query_len, configuration.hidden_size))

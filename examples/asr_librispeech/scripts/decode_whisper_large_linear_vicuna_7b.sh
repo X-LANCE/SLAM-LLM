@@ -51,7 +51,3 @@ python $code_dir/inference_asr_batch.py \
         # ++dataset_config.normalize=true \
         # ++model_config.encoder_projector=q-former \
         # ++dataset_config.fix_length_audio=64 \
-
-python src/slam_llm/utils/whisper_tn.py ${decode_log}_gt ${decode_log}_gt.proc
-python src/slam_llm/utils/whisper_tn.py ${decode_log}_pred ${decode_log}_pred.proc
-python src/slam_llm/utils/compute_wer.py ${decode_log}_gt.proc ${decode_log}_pred.proc ${decode_log}.proc.wer

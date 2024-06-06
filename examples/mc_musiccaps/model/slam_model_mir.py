@@ -25,7 +25,7 @@ def model_factory(train_config, model_config, **kwargs):
     encoder_projector = setup_encoder_projector(
         train_config, model_config, **kwargs
     )
-    model = slam_model_asr(
+    model = slam_model_mir(
         encoder,
         llm,
         encoder_projector,
@@ -38,6 +38,7 @@ def model_factory(train_config, model_config, **kwargs):
     ckpt_path = kwargs.get(
         "ckpt_path", None
     )  # FIX(MZY): load model ckpt(mainly projector, related to model_checkpointing/checkpoint_handler.py: save_model_checkpoint_peft)
+    
     if ckpt_path is not None:
         logger.info("loading other parts from: {}".format(ckpt_path))
         ckpt_dict = torch.load(ckpt_path, map_location="cpu")
@@ -55,7 +56,7 @@ def model_factory(train_config, model_config, **kwargs):
     return model, tokenizer
 
 
-class slam_model_asr(slam_model):
+class slam_model_mir(slam_model):
     def __init__(
         self,
         encoder,

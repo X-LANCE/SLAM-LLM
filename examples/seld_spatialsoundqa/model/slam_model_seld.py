@@ -1,6 +1,8 @@
-import torch
 import os
 import logging
+
+import torch
+
 from slam_llm.models.slam_model import (
     slam_model,
     setup_tokenizer,
@@ -25,7 +27,7 @@ def model_factory(train_config, model_config, **kwargs):
     encoder_projector = setup_encoder_projector(
         train_config, model_config, **kwargs
     )
-    model = slam_model_asr(
+    model = slam_model_seld(
         encoder,
         llm,
         encoder_projector,
@@ -54,8 +56,7 @@ def model_factory(train_config, model_config, **kwargs):
     )
     return model, tokenizer
 
-
-class slam_model_asr(slam_model):
+class slam_model_seld(slam_model):
     def __init__(
         self,
         encoder,
@@ -75,3 +76,24 @@ class slam_model_asr(slam_model):
             model_config,
             **kwargs,
         )
+
+    @torch.no_grad()
+    def inference(
+        self,
+        wav_path=None,
+        reverb_path=None,
+        prompt=None,
+        generation_config=None,
+        logits_processor=None,
+        stopping_criteria=None,
+        prefix_allowed_tokens_fn=None,
+        synced_gpus=None,
+        assistant_model=None,
+        streamer=None,
+        negative_prompt_ids=None,
+        negative_prompt_attention_mask=None,
+        **kwargs,
+    ):
+        #!TODO: 
+        # inference for SELD model
+        pass

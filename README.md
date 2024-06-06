@@ -27,8 +27,14 @@ developers to train custom multimodal large language model (MLLM), focusing on <
 5. [Acknowledge](#acknowledge)
 
 # News
-- [Update Apr. 28, 2024] Recipes for automated audio captioning (AAC) with SOTA performance has been supported. 
-- [Update Mar. 31, 2024] Recipes for automatic speech recognition (ASR) with SOTA performance has been supported. 
+- **[CALL FOR EXAMPLE]** We sincerely invite developers and researchers to develop new applications, conduct academic research based on SLAM-LLM, and pull request your examples! We also acknowledge engineering PR (such as improving and speeding up multi-node training). 
+- [Update May. 22, 2024] Please join [slack](https://join.slack.com/t/slam-llm/shared_invite/zt-2jbuiyqgi-O83DteBG36xYWcjCNcLWqQ) or [WeChat group](./docs/Wechat.jpg). We will sync our updates and Q&A here. 
+- [Update May. 21, 2024] Recipes for [Spatial Audio Understanding](examples/seld_spatialsoundqa/README.md) has been supported. 
+- [Update May. 20, 2024] Recipes for [music caption (MC)](examples/mc_musiccaps/README.md) has been supported. 
+- [Update May. 8, 2024] Recipes for [visual speech recognition (VSR)](examples/vsr_LRS3/README.md) has been supported. 
+- [Update May. 4, 2024] Recipes for [zero-shot text-to-speech (TTS)](examples/vallex/README.md) has been supported. 
+- [Update Apr. 28, 2024] Recipes for [automated audio captioning (AAC)](examples/aac_audiocaps/README.md) has been supported. 
+- [Update Mar. 31, 2024] Recipes for [automatic speech recognition (ASR)](examples/asr_librispeech/README.md) has been supported. 
 
 # Installation
 ```bash
@@ -39,30 +45,42 @@ pip install -e .
 cd ..
 git clone https://github.com/huggingface/peft.git
 cd peft
-git checkout tags/0.6.0
+git checkout tags/v0.6.0
 pip install -e .
 cd ..
 pip install torch==2.0.1 torchvision==0.15.2 torchaudio==2.0.2 --index-url https://download.pytorch.org/whl/cu118
-git clone git@github.com:ddlBoJack/SLAM-LLM.git
+git clone https://github.com/ddlBoJack/SLAM-LLM.git
 cd SLAM-LLM
 pip install  -e .
 ```
 
 For some examples, you may need to use `fairseq`, the command line is as follows:
 ```
+# you need to install fairseq before SLAM-LLM
 git clone https://github.com/pytorch/fairseq
 cd fairseq
 pip install --editable ./
 ```
+We also provide a docker image for convenience:
+```shell
+# build docker image
+docker build -t slam-llm:latest .
 
+# run docker image with gpu
+docker run -it --gpus all --name slam --shm-size=256g slam-llm:latest /bin/bash
+```
 # Usage
 ## List of Recipes
 We provide reference implementations of various LLM-based speech, audio, and music tasks: 
 - **Speech Task**
     - [Automatic Speech Recognition (ASR)](examples/asr_librispeech/README.md)
     - [Text-to-Speech (TTS)](examples/vallex/README.md)
+    - [Visual Speech Recognition (VSR)](examples/vsr_LRS3/README.md)
 - **Audio Task**
     - [Automated Audio Captioning (AAC)](examples/aac_audiocaps/README.md)
+    - [Spatial Audio Understanding](examples/seld_spatialsoundqa/README.md)
+- **Music Task**
+    - [Music Caption (MC)](examples/mc_musiccaps/README.md)
 
 ## Configuration Priority
 We provide hierarchical configuration inheritance relationships as follows:

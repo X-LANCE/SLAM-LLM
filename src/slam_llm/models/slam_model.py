@@ -80,6 +80,9 @@ def setup_encoder(train_config, model_config, **kwargs):
         if encoder_name == "eat":
             from slam_llm.models.encoder import EATEncoder
             encoder = EATEncoder.load(model_config)
+        if encoder_name == "SpatialAST":
+            from slam_llm.models.encoder import SpatialASTEncoder
+            encoder = SpatialASTEncoder.load(model_config)
         if encoder_name == "wavlm":
             from slam_llm.models.encoder import WavLMEncoder
             encoder = WavLMEncoder.load(model_config)
@@ -89,6 +92,9 @@ def setup_encoder(train_config, model_config, **kwargs):
         if encoder_name == "hubert":
             from slam_llm.models.encoder import HubertEncoder
             encoder = HubertEncoder.load(model_config)
+        if encoder_name == "musicfm":
+            from slam_llm.models.encoder import MusicFMEncoder
+            encoder = MusicFMEncoder.load(model_config)
 
         if "llama" in encoder_name.lower():
             from slam_llm.models.encoder import HfTextEncoder
@@ -302,12 +308,17 @@ class slam_model(nn.Module):
 
         encoder_outs = None
         if audio_mel is not None or audio is not None or visual is not None:
+            if self.train_config.freeze_encoder: # freeze encoder
+                self.encoder.eval()
+
             if self.model_config.encoder_name == "whisper":
                 encoder_outs = self.encoder.extract_variable_length_features(audio_mel.permute(0, 2, 1)) # bs*seq*dim
             if self.model_config.encoder_name == "beats":
                 encoder_outs, audio_mel_post_mask = self.encoder.extract_features(audio_mel, audio_mel_mask) # bs*seq*dim
             if self.model_config.encoder_name == "eat":
                 encoder_outs = self.encoder.model.extract_features(audio_mel.unsqueeze(dim=1), padding_mask = None, mask=False, remove_extra_tokens = False)['x']
+            if self.model_config.encoder_name == "SpatialAST":
+                encoder_outs = self.encoder(audio) # output: [bs, seq_len=3+512, dim=768]
             if self.model_config.encoder_name == "wavlm":
                 encoder_outs = self.encoder.extract_features(audio, 1 - audio_mask) #(FIX:MZY): 1-audio_mask is needed for wavlm as the padding mask
             if self.model_config.encoder_name == "hubert":
@@ -322,6 +333,8 @@ class slam_model(nn.Module):
                 encoder_outs, audio_mel_post_mask = results["encoder_out"], results["padding_mask"]
                 encoder_outs = encoder_outs.transpose(0, 1)
                 audio_mel_post_mask = (~audio_mel_post_mask).float()
+            if self.model_config.encoder_name == 'musicfm':
+                encoder_outs = self.encoder.extract_features(audio, padding_mask = None) # MusicFM doesn't support padding mask 
             if self.encoder is None:
                 encoder_outs = audio_mel if audio_mel is not None else audio
 
@@ -341,7 +354,6 @@ class slam_model(nn.Module):
             if self.model_config.encoder_projector == "linear":
                 encoder_outs = self.encoder_projector(encoder_outs)
 
-
         if input_ids is not None:
             input_ids[input_ids == -1] = 0
             if isinstance(self.llm, T5ForConditionalGeneration):
@@ -355,10 +367,16 @@ class slam_model(nn.Module):
                     inputs_embeds = self.llm.model.model.model.embed_tokens(input_ids)
 
         if modality_mask is not None:
-            batch_size, token_num, dims = inputs_embeds.shape
-            _, l, _ = encoder_outs.shape
-            encoder_outs_pad = F.pad(encoder_outs, (0, 0, 0, token_num-l, 0, 0), value=0.0)
-            inputs_embeds = encoder_outs_pad * modality_mask[:, :, None] + inputs_embeds * (~modality_mask[:, :, None])
+            modality_mask_start_indices = (modality_mask == True).float().argmax(dim=1)
+            modality_lengths = torch.clamp(modality_mask.sum(dim=1), max=encoder_outs.shape[1]).tolist()
+
+            encoder_outs_pad = torch.zeros_like(inputs_embeds)
+            for i in range(encoder_outs.shape[0]):
+                encoder_outs_pad[
+                    i, modality_mask_start_indices[i]:modality_mask_start_indices[i]+modality_lengths[i]
+                ] = encoder_outs[i][:modality_lengths[i]]
+            
+            inputs_embeds = encoder_outs_pad + inputs_embeds * (~modality_mask[:, :, None])
 
         if kwargs.get("inference_mode", False):
             return inputs_embeds, attention_mask

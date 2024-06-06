@@ -6,7 +6,7 @@ body:
     attributes:
       value: >
         #### Before submitting a bug, please make sure the issue hasn't been already addressed by searching through [the
-        existing and past issues](https://github.com/facebookresearch/llama-recipes/issues), the [FAQ](https://github.com/facebookresearch/llama-recipes/blob/main/docs/FAQ.md) 
+        existing and past issues](https://github.com/ddlBoJack/SLAM-LLM/issues).
 
   - type: textarea
     id: system-info
