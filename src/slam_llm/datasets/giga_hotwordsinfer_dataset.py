@@ -123,6 +123,9 @@ class GigaHotwordsInferDataset(Dataset):
         self.miss_words_num=0
 
         self.filter_type=dataset_config.filter_type
+        
+        self.prompt_word_num=8
+        logger.info("prompt_word_num: %s", self.prompt_word_num)
 
 
     def get_source_len(self, data_dict):
@@ -169,18 +172,19 @@ class GigaHotwordsInferDataset(Dataset):
             scores = score_candidates(candidates, infer_sentence)
             sorted_dict = sorted(scores.items(), key=lambda item: item[1],  reverse=True)
             high_score_items = [(k, value) for k, value in sorted_dict if value > 0.9] 
-            if len(high_score_items) < 20:
-                high_score_items = sorted_dict [:20]
+            if len(high_score_items) < self.prompt_word_num:
+                high_score_items = sorted_dict [:self.prompt_word_num]
             keys_list = [k for k, _ in high_score_items]
             ocr = " ".join(keys_list)
-            if len(high_score_items)>20:
-                logger.info("longer than 20 candidates, cand_num: %d", len(high_score_items))
+            if len(high_score_items)>self.prompt_word_num:
+                logger.info("longer than %d candidates, cand_num: %d", self.prompt_word_num,len(high_score_items))
 
             # ======== count recall
             miss=False
-            for name in gt:
+            for name in gt.split('|'):
                 self.hotwords_num+=1
                 if name not in keys_list:
+                    logger.info("miss name: %s", name)
                     self.miss_words_num+=1
                     miss=True
             if miss:

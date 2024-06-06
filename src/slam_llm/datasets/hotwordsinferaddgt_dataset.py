@@ -196,20 +196,18 @@ class HotwordsInferAddgtDataset(torch.utils.data.Dataset):
             for name in gt:
                 self.hotwords_num+=1
                 if name not in keys_list:
-                    # !!!!!!
-                    # keys_list.append(name)
-                    keys_list.insert(0,name)
+                    logger.info("miss name: %s", name)
+                    keys_list.insert(0,name)      # !!!!!!
                     self.miss_words_num+=1
                     miss=True
             if miss:
                 logger.info("key: %s", key)
                 logger.info("infer sentence: %s",infer_sentence)
                 logger.info("target sentence: %s", target)
-                logger.info("gt: %s, keys_list: %s", gt, keys_list)
-                # logger.info("total_hotwords_num: %d, miss_hotwords_num: %d", self.hotwords_num, self.miss_words_num)
+                logger.info("name: %s, gt: %s, keys_list: %s", name, gt, keys_list)
             # ========
             
-        ocr = " ".join(keys_list)
+        ocr = " ".join(keys_list).upper()
         prompt = "Transcribe speech to text. Some hotwords might help. The hotwords are \"{}\". "
         prompt = prompt.format(ocr)
         prompt = self.prompt_template.format(prompt)

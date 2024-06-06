@@ -1,6 +1,6 @@
 #!/bin/bash
 #export PYTHONPATH=/root/whisper:$PYTHONPATH
-export CUDA_VISIBLE_DEVICES=2
+export CUDA_VISIBLE_DEVICES=0
 export TOKENIZERS_PARALLELISM=false
 # export CUDA_LAUNCH_BLOCKING=1
 
@@ -8,14 +8,14 @@ run_dir=/root/SLAM-LLM
 cd $run_dir
 code_dir=examples/hotwords_librispeech
 
-speech_encoder_path=/nfs/yangguanrou.ygr/ckpts/wavlm_large_finetune_librispeech/wavlm_large_finetune_librispeech.pt
+speech_encoder_path=/nfs/yangguanrou.ygr/ckpts/wavlm_large_ft_libri960_char/wavlm_large_ft_libri960_char.pt
 llm_path=/nfs/maziyang.mzy/models/vicuna-7b-v1.5
 
-output_dir=/nfs/yangguanrou.ygr/experiments_librispeech/vicuna-7b-v1.5-WavLM-Large-ft-char-20240510
-ckpt_path=$output_dir/asr_epoch_3_step_7780
+output_dir=/nfs/yangguanrou.ygr/experiments_librispeech/vicuna-7b-v1.5-WavLM-Large-libri960-ft-char-hotwords-20240521
+ckpt_path=$output_dir/asr_epoch_3_step_25780
 split=librispeech_test_clean
 val_data_path=/nfs/maziyang.mzy/data/librispeech/${split}.jsonl
-decode_log=$ckpt_path/decode_${split}_beam4
+decode_log=$ckpt_path/decode_${split}_beam4_gt
 
 # -m debugpy --listen 5678 --wait-for-client
 # python $code_dir/inference_asr_batch.py \
@@ -36,6 +36,10 @@ decode_log=$ckpt_path/decode_${split}_beam4
 #         ++dataset_config.val_data_path=$val_data_path \
 #         ++dataset_config.input_type=raw \
 #         ++dataset_config.inference_mode=true \
+#         ++dataset_config.infer_type=gt \
+#         ++dataset_config.dataset=hotwordsinfer_dataset \
+#         ++dataset_config.file=src/slam_llm/datasets/hotwordsinfer_dataset.py:get_speech_dataset \
+#         ++dataset_config.infer_file=/nfs/yangguanrou.ygr/data/fbai-speech/is21_deep_bias/my_ref/test_clean.biasing_100.tsv \
 #         ++train_config.model_name=asr \
 #         ++train_config.freeze_encoder=true \
 #         ++train_config.freeze_llm=true \
@@ -46,17 +50,18 @@ decode_log=$ckpt_path/decode_${split}_beam4
 #         ++train_config.output_dir=$output_dir \
 #         ++decode_log=$decode_log \
 #         ++ckpt_path=$ckpt_path/model.pt \
-#         # ++peft_ckpt=$ckpt_path \
+        # ++peft_ckpt=$ckpt_path \
         # ++train_config.use_peft=true \
         # ++train_config.peft_config.r=32 \
         # ++dataset_config.normalize=true \
         # ++model_config.encoder_projector=q-former \
         # ++dataset_config.fix_length_audio=64 \
 
+N=100
 python src/slam_llm/utils/whisper_tn.py ${decode_log}_gt ${decode_log}_gt.proc
-python src/slam_llm/utils/llm_tn.py ${decode_log}_pred ${decode_log}_pred.proc
+python src/slam_llm/utils/whisper_tn.py ${decode_log}_pred ${decode_log}_pred.proc
 python src/slam_llm/utils/compute_wer.py ${decode_log}_gt.proc ${decode_log}_pred.proc ${decode_log}.proc.wer
-# python /nfs/yangguanrou.ygr/data/fbai-speech/is21_deep_bias/my_score.py \
-#         --refs /nfs/yangguanrou.ygr/data/fbai-speech/is21_deep_bias/ref_score/${ref_split}.biasing_${N}.tsv \
-#         --hyps ${decode_log}_pred.proc \
-#         --output_file ${decode_log}.proc.wer
+python /nfs/yangguanrou.ygr/data/fbai-speech/is21_deep_bias/my_score.py \
+        --refs /nfs/yangguanrou.ygr/data/fbai-speech/is21_deep_bias/ref_score/${ref_split}.biasing_${N}.tsv \
+        --hyps ${decode_log}_pred.proc \
+        --output_file ${decode_log}.proc.wer

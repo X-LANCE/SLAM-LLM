@@ -1,61 +1,36 @@
-import os.path as osp
-import random
-import json, yaml
-import copy
-
-import numpy as np
-from scipy import signal
-import soundfile as sf
-
 import torch
-import torchaudio
 from torch.utils.data import Dataset
 import whisper
-from slam_llm.utils.compute_utils import calculate_output_length_1d
-
+import kaldiio
+import copy
+import numpy as np
+from tqdm import tqdm
 
 import logging
 logger = logging.getLogger(__name__)
+
 
 import difflib
 from functools import lru_cache
 from tqdm import tqdm
 import Levenshtein
 
-
 def build_ngram_index(names, n=2):
-    """构建N-Gram倒排索引"""
-    index = {}
-    for name in names:
-        for i in range(len(name) - n + 1):
-            ngram = name[i:i+n].lower()
-            index.setdefault(ngram, set()).add(name)
-    return index
-
-def find_candidate_names(sentence, ngram_index, n=2):
-    """通过N-Gram倒排索引找到候选人名"""
-    candidates = set()
-    for i in range(len(sentence) - n + 1):
-        ngram = sentence[i:i+n].lower()
-        candidates.update(ngram_index.get(ngram, []))       
-    return candidates
-
-def build_ngram_index_phn(names, n=2):
     """构建N-Gram倒排索引"""
     index = {}
     for name in names:
         phonemes = name.split()
         for i in range(len(phonemes) - n + 1):
-            ngram = ' '.join(phonemes[i:i+n])  # 不用小写
+            ngram = ' '.join(phonemes[i:i+n]).lower()
             index.setdefault(ngram, set()).add(name)
     return index
 
-def find_candidate_names_phn(phonemes, ngram_index, n=2):
+def find_candidate_names(phonemes, ngram_index, n=2):
     """通过N-Gram倒排索引找到候选人名"""
     candidates = set()
     phonemes = phonemes.split()
     for i in range(len(phonemes) - n + 1):
-        ngram = ' '.join(phonemes[i:i+n])
+        ngram = ' '.join(phonemes[i:i+n]).lower()
         candidates.update(ngram_index.get(ngram, []))       
     return candidates
 
@@ -64,7 +39,7 @@ def find_candidate_names_phn(phonemes, ngram_index, n=2):
 def similarity(name, sentence):
     return Levenshtein.ratio(name, sentence)  #速度主要来源于这个函数的更换
 
-def generate_ngrams(sentence, n):
+def generate_ngrams(sentence, n): #一样的
     """生成长度为n的n-grams"""
     sentence = sentence.split()
     return [' '.join(sentence[i:i+n]) for i in range(len(sentence)-n+1)]
@@ -73,7 +48,7 @@ def calculate_similarity_score(name, sentence, length_tolerance=3):
     max_similarity = 0
     name_sentence = name.split()
     name_length = len(name_sentence)
-    sentence_ngrams = generate_ngrams(sentence, name_length) #9
+    sentence_ngrams = generate_ngrams(sentence, name_length) #9  一样的
     
     for ngram in sentence_ngrams:
         if abs(len(ngram) - len(name)) <= length_tolerance:
@@ -81,7 +56,7 @@ def calculate_similarity_score(name, sentence, length_tolerance=3):
             max_similarity = max(max_similarity, sim)
     return max_similarity
 
-def score_candidates(candidates, sentence):
+def score_candidates(candidates, sentence):  #一样的
     """为候选人名计算得分"""
     scores = {}
     for candidate in candidates:
@@ -90,9 +65,8 @@ def score_candidates(candidates, sentence):
     return scores
 
 
+class GigaHotwordsInferPhnDataset(Dataset):
 
-class HotwordsInferDataset(torch.utils.data.Dataset):
-    
     def __init__(self,
                  dataset_config,
                  tokenizer=None,
@@ -117,30 +91,36 @@ class HotwordsInferDataset(torch.utils.data.Dataset):
         assert self.input_type in ["raw", "mel"], "input_type must be one of [raw, mel]" 
 
         self.data_list = []
-        if split == "train":
-            with open(dataset_config.train_data_path, encoding='utf-8') as fin:
-                for line in fin:
-                    data_dict = json.loads(line.strip())
-                    self.data_list.append(data_dict)
-        else:
-            with open(dataset_config.val_data_path, encoding='utf-8') as fin:
-                for line in fin:
-                    data_dict = json.loads(line.strip())
-                    self.data_list.append(data_dict)
+        self.label_list = []
+        self.key_list = []
+        self.line_name_list =[]
+        self.name_list=[]
+        self.phn_to_name_dict={}
 
-        # 
-        self.hotwords_list=[]
-        self.biaswords_list=[]
-        with open(dataset_config.infer_file,'r') as fref:
-            for line in fref:
-                line=line.strip().split('\t')
-                # id = line[0]
-                # label = line[1]
-                hotwords = line[2]
-                biaswords= line[3]
-                self.hotwords_list.append(hotwords)
-                self.biaswords_list.append(biaswords)
-        
+        with open("/nfs/yangguanrou.ygr/data/ner/giga_name_test/g2p/giga_ner_phone_wsplit",'r') as f:
+            for line in f:
+                line = line.strip().split('\t')
+
+                self.key_list.append(line[0])
+                self.data_list.append(line[1])
+                self.label_list.append(line[2])
+                self.line_name_list.append(line[-1]) 
+
+        with open("/nfs/yangguanrou.ygr/data/ner/giga_name_test/g2p/name_to_phone_g2p",'r') as f:
+            for line in f:
+                line = line.strip().split('\t')
+                name=line[0]
+                phone=line[1]
+
+                self.name_list.append(phone)
+                if phone in self.phn_to_name_dict:
+                    self.phn_to_name_dict[phone].append(name)
+                else:
+                    self.phn_to_name_dict[phone]=[name]
+
+        self.name_list = list(set(self.name_list))  #len(self.name_list) 1366 -> 1347
+        self.ngram_index = build_ngram_index(self.name_list)
+
         self.infer_type=dataset_config.infer_type
         if self.infer_type=="filter":
             self.infer_list=[]
@@ -148,33 +128,30 @@ class HotwordsInferDataset(torch.utils.data.Dataset):
                 for line in finfer:
                     self.infer_list.append(line.strip())
 
+
         # analyze
         self.hotwords_num=0
         self.miss_words_num=0
 
         self.filter_type=dataset_config.filter_type
 
-        if self.filter_type=="phn":
-            with open( dataset_config.phn_to_name_dict, 'r') as file:
-                self.phn_to_name_dict = json.load(file)
+        self.prompt_word_num=8
+        logger.info("prompt_word_num: %s", self.prompt_word_num)
 
 
     def get_source_len(self, data_dict):
         return data_dict["source_len"]
 
     def get_target_len(self, data_dict):
-    
         return data_dict["target_len"] if "target_len" in data_dict else 0
     
     def __len__(self):
         return len(self.data_list)
-    
+
     def __getitem__(self, index):
-        data_dict = self.data_list[index]
-        audio_path = data_dict.get("source")
-        target = data_dict.get("target", None)
-        task = data_dict.get("prompt", "ASR")
-        key = data_dict.get("key", None)
+        audio_path = self.data_list[index]
+        target = self.label_list[index] #'KIM WAS NOT DOWN WITH THE CRITIQUE'
+        key = self.key_list[index] #'1012-133424-0005'
 
         audio_raw = whisper.load_audio(audio_path)
         if self.input_type == "raw":
@@ -197,36 +174,25 @@ class HotwordsInferDataset(torch.utils.data.Dataset):
         if self.infer_type=="nobias":
             ocr=""
         elif self.infer_type=="gt":
-            ocr=eval(self.hotwords_list[index])
-            ocr=" ".join(ocr)
-            ocr = ocr.upper()
+            ocr=self.line_name_list[index]
+            ocr = ocr.replace('|',' ')
         elif self.infer_type=="filter":
-            gt=eval(self.hotwords_list[index])  #['B R UW1 Z D', 'K AE1 R AH0 T S', 'F AE1 T AH0 N D', 'L EY1 D AH0 L D', 'M AH1 T AH0 N', 'P EH1 P ER0 D', 'S T UW1', 'T ER1 N AH0 P S']
-            if self.filter_type=="char":
-                infer_sentence=self.infer_list[index].lower()
-            else:
-                infer_sentence=self.infer_list[index]  #'HH IY1 HH OW1 P T DH EH1 R W UH1 D B IY1 S T UW1 F AO1 R D IH1 N ER0 T ER1 N AH0 P S AH0 N D K AE1 R AH0 T S AH0 N D B R UW1 Z D P AH0 T EY1 T OW0 Z AH0 N D F AE1 T M AH1 T AH0 N P IY1 S AH0 Z T UW1 B IY1 L EY1 D AH0 L D AW1 T IH0 N TH IH1 K P EH1 P ER0 D F L AW1 ER0 F AE1 T AH0 N D S AO1 S'
-            # infer_sentence=self.infer_list[index].lower()
-            biaswords=eval(self.biaswords_list[index]) #['AH0 B AE1 T IH0 S', 'AE1 SH M IY2 D', 'AH0 T R EH1 M IH0 NG L', 'AA2 Z ER0 B AY0 JH AA1 N', 'B IH1 TH AO0 R', 'B R UW1 Z D', 'K EY1 D', 'K AH0 D UW1 T OW0', 'K AE1 R AH0 T S', 'K AE1 R UW0 TH', 'K AO1 SH AH0 N IH0 NG', 'S AH0 L IY1 N', 'CH AE1 G F ER0 D', 'K R AA1 B AH0 L', 'S IH1 N AH0 D AA2 N', 'D EH1 B AH0 T', 'D IH0 L IY1 T', 'D AA1 JH IY0', 'D AA1 L F IH0 N', 'D AH1 S T IH0 NG', 'IH0 L EH1 K T R AH0 M', 'EH1 M AH0 N EY2 T', 'IH0 N G R EY1 V IH0 NG Z', 'IY1 S AO2', 'IH0 G Z AE1 K SH AH0 N Z', 'IH0 K S T ER2 M AH0 N EY1 SH AH0 N', 'F AE1 T AH0 N D', 'F ER1 M ER0', 'F EH1 V R AH0 S', 'F IH1 SH M AE2 N', 'F L AE0 M B OW1 Z', 'F R AE1 T IH0 JH', 'G ER0 AA1 ZH', 'G L EH1 N K EH2 R N', 'G AO1 R SH K AO2 V', 'G R EY1 S T IY2 L', 'G AH1 S IH0 V', 'HH AE1 S K IH0 T', 'HH ER1 K Y AH0 L', 'Y ER0 S IH1 N IY0 AH0 N', 'HH EH1 V AH0 N', 'HH IH1 L T AA2 P S', 'HH AA1 B Z', 'AY0 S L AE1 N D IH0 K', 'IH0 N OW0 CH EH1 N CH IY0 OW0', 'IH0 R AH0 P R EH1 S T AH0 B AH0 L Z', 'IH1 S M AA0 R S', 'JH AO1 R S', 'K ER0 EH1 R IY0', 'K IH1 JH IH0 N', 'L EY1 D AH0 L D', 'L EH1 G Z', 'L EH1 K W EH0 L', 'L AO1 R S IY0', 'L AO0 R EH0 N Z UW1 N IY0', 'L UW1 S AH0 F ER0 Z', 'M EH1 R IY0 AH0 N Z', 'M AE1 T IY0', 'M IY1 N S T', ...]
-            if self.filter_type=="char":
-                ngram_index=build_ngram_index(biaswords)
-                candidates = find_candidate_names(infer_sentence, ngram_index) #第一个len11
-            elif self.filter_type=="phn":
-                ngram_index=build_ngram_index_phn(biaswords)
-                candidates = find_candidate_names_phn(infer_sentence, ngram_index) #第一个len11
+            gt = self.line_name_list[index]
+            infer_sentence = self.infer_list[index]
+            candidates = find_candidate_names(infer_sentence, self.ngram_index) #第一个len11
             scores = score_candidates(candidates, infer_sentence)
             sorted_dict = sorted(scores.items(), key=lambda item: item[1],  reverse=True)
             high_score_items = [(k, value) for k, value in sorted_dict if value > 0.9] 
-            if len(high_score_items) < 9:
-                high_score_items = sorted_dict[:9]
+            if len(high_score_items) < self.prompt_word_num:
+                high_score_items = sorted_dict [:self.prompt_word_num]
             keys_list = [k for k, _ in high_score_items]
-
-            if len(high_score_items)>9:
-                logger.info("longer than 9 candidates, cand_num: %d", len(high_score_items))
+    
+            if len(high_score_items)>self.prompt_word_num:
+                logger.info("longer than %d candidates, cand_num: %d", self.prompt_word_num,len(high_score_items))
 
             # ======== count recall
             miss=False
-            for name in gt:
+            for name in gt.split('|'):
                 self.hotwords_num+=1
                 if name not in keys_list:
                     logger.info("miss name: %s", name)
@@ -238,11 +204,12 @@ class HotwordsInferDataset(torch.utils.data.Dataset):
                 logger.info("target sentence: %s", target)
                 logger.info("name: %s, gt: %s, keys_list: %s", name, gt, keys_list)
             # ========
-            if self.filter_type=="phn":
-                keys_list = [self.phn_to_name_dict[phn] for phn in keys_list]
-                keys_list = [item for sublist in keys_list for item in sublist]
 
-            ocr = " ".join(keys_list).upper()
+        ocr=[]
+        for k in keys_list:
+            name_text = self.phn_to_name_dict[k]
+            ocr = ocr + name_text
+        ocr = " ".join(ocr) 
 
         prompt = "Transcribe speech to text. Some hotwords might help. The hotwords are \"{}\". "
         prompt = prompt.format(ocr)
@@ -289,7 +256,8 @@ class HotwordsInferDataset(torch.utils.data.Dataset):
             "audio": audio_raw if self.input_type == "raw" else None,
             "audio_mel": audio_mel if self.input_type == "mel" else None,
             "audio_length": audio_length,
-        }
+        }   
+
 
     def pad(self, sequence, max_length, padding_idx=0):
         if isinstance(sequence, (int, list, tuple)):
@@ -371,6 +339,6 @@ class HotwordsInferDataset(torch.utils.data.Dataset):
 
 
 def get_speech_dataset(dataset_config, tokenizer, split):
-    dataset = HotwordsInferDataset(dataset_config, tokenizer, split)
+    dataset = GigaHotwordsInferPhnDataset(dataset_config, tokenizer, split)
 
     return dataset
