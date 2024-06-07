@@ -15,8 +15,8 @@ class RunConfig:
     fsdp_config: FSDPConfig = field(default_factory=FSDPConfig)
     debug: bool = field(default=False, metadata={"help": "Use pdb when true"})
     metric: str = field(default="acc", metadata={"help": "The metric for evaluation"})
-    ckpt_path: str = field(
-        default="output/model.pt", metadata={"help": "The path to projector checkpoint"}
+    ckpt_path: Optional[str] = field(
+        default=None, metadata={"help": "The path to projector checkpoint"}
     )
 
 @hydra.main(config_name=None, version_base=None)
