@@ -79,10 +79,6 @@ def main(kwargs: DictConfig):
                                                                           kwargs.dataset_config
     
     fsdp_config.use_fp16 = train_config.use_fp16
-<<<<<<< HEAD
-    # if model_config.encoder_name=="av_hubert":
-=======
->>>>>>> origin/main
     OmegaConf.set_struct(kwargs,False)
     del kwargs["train_config"]
     del kwargs["fsdp_config"]
@@ -90,15 +86,6 @@ def main(kwargs: DictConfig):
     del kwargs["log_config"]
     del kwargs["dataset_config"]
     OmegaConf.set_struct(kwargs,True)
-<<<<<<< HEAD
-    # else:
-    #     del kwargs.train_config
-    #     del kwargs.fsdp_config
-    #     del kwargs.model_config
-    #     del kwargs.log_config
-    #     del kwargs.dataset_config
-=======
->>>>>>> origin/main
     
     # Set log
     if not os.path.exists(os.path.dirname(log_config.log_file)):
