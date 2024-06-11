@@ -22,3 +22,14 @@ Modify the path including `speech_encoder_path`, `llm_path`, `output_dir`, `ckpt
 ```
 bash finetune_MaLa-ASR_withkeywords_L95.sh
 ```
+
+##  Citation
+You can refer to the paper for more results. 
+```
+@inproceedings{yang2024malaasr,
+      title={MaLa-ASR: Multimedia-Assisted LLM-Based ASR}, 
+      author={Guanrou Yang and Ziyang Ma and Fan Yu and Zhifu Gao and Shiliang Zhang and Xie Chen},
+      booktitle={Proc. INTERSPEECH},
+      year={2024},
+}
+```

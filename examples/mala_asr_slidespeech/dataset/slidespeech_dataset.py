@@ -94,7 +94,7 @@ class SlidespeechDataset(Dataset):
                         else:
                             self.ocr_list.append(line)
 
-        elif split == "test":  # 3188  只有prev用这个 不用ground truth 用解码   可以考虑要不要删了
+        elif split == "test":
             with open(dataset_config.test_scp_file_path + "my_wav.scp",'r') as f:
                 for line in f:
                     line = line.strip().split()
@@ -238,7 +238,7 @@ class SlidespeechDataset(Dataset):
             'audio_length': audio_length,
         }             
 
-    def pad(self, sequence, max_length, padding_idx=0):
+    def pad(self, sequence, max_length, padding_idx=0):#
         if isinstance(sequence, (int, list, tuple)):
             if len(sequence) < max_length:
                 sequence = sequence + [padding_idx] * (max_length - len(sequence))

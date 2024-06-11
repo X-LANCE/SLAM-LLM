@@ -82,7 +82,7 @@ class TrainConfig:
 @dataclass
 class DataConfig:
     dataset: str = "slidespeech_dataset"
-    file: str = "src/slam_llm/datasets/slidespeech_dataset.py:get_speech_dataset"
+    file: str = "examples/mala_asr_slidespeech/dataset/slidespeech_dataset.py:get_speech_dataset"
     train_scp_file_path: str = "/nfs/yangguanrou.ygr/slidespeech/train_L_95/"
     dev_scp_file_path: str = "/nfs/yangguanrou.ygr/slidespeech/dev_oracle_v1/"
     test_scp_file_path: str = "/nfs/yangguanrou.ygr/slidespeech/test_oracle_v1/"
