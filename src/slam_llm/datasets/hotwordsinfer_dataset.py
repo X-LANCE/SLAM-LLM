@@ -158,6 +158,10 @@ class HotwordsInferDataset(torch.utils.data.Dataset):
             with open( dataset_config.phn_to_name_dict, 'r') as file:
                 self.phn_to_name_dict = json.load(file)
 
+        self.probability_threshold = 0.95
+        self.word_num=5
+        logger.info("word_num: %d", self.word_num)
+        logger.info("probability_threshold: %f", self.probability_threshold)
 
     def get_source_len(self, data_dict):
         return data_dict["source_len"]
@@ -216,13 +220,14 @@ class HotwordsInferDataset(torch.utils.data.Dataset):
                 candidates = find_candidate_names_phn(infer_sentence, ngram_index) #第一个len11
             scores = score_candidates(candidates, infer_sentence)
             sorted_dict = sorted(scores.items(), key=lambda item: item[1],  reverse=True)
-            high_score_items = [(k, value) for k, value in sorted_dict if value > 0.9] 
-            if len(high_score_items) < 9:
-                high_score_items = sorted_dict[:9]
+
+            high_score_items = [(k, value) for k, value in sorted_dict if value > self.probability_threshold] 
+            if len(high_score_items) < self.word_num:
+                high_score_items = sorted_dict[:self.word_num]
             keys_list = [k for k, _ in high_score_items]
 
-            if len(high_score_items)>9:
-                logger.info("longer than 9 candidates, cand_num: %d", len(high_score_items))
+            if len(high_score_items)>self.word_num:
+                logger.info("longer than %d candidates, cand_num: %d", self.word_num,len(high_score_items))
 
             # ======== count recall
             miss=False

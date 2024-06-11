@@ -198,7 +198,7 @@ class HotwordsDataset(torch.utils.data.Dataset):
                 label = s['target']
                 if random.random() < self.Pkeep: 
                     words = label.split()
-                    n = min(random.randint(1, self.Norder),len(words)) #(0,3) [0,1,2,3]
+                    n = min(random.randint(1, self.Norder),len(words)) #[1,2,3,4]
                     
                     if len(words) >= n:
                         start_index = random.randint(0,len(words)-n)

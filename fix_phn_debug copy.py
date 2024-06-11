@@ -33,7 +33,7 @@ logging.basicConfig(
 logger = logging.getLogger()  
 logger.setLevel(logging.INFO)
 
-file_handler = logging.FileHandler(filename="fix.log", mode='w')
+file_handler = logging.FileHandler(filename="debug.log", mode='w')
 file_handler.setLevel(logging.INFO)
 file_formatter = logging.Formatter('[%(asctime)s][%(name)s][%(levelname)s] - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 file_handler.setFormatter(file_formatter)
@@ -116,13 +116,13 @@ word_num=5
 logger.info("word_num: %d", word_num)
 logger.info("probability_threshold: %f", probability_threshold)
 
-filter_type="char"
+filter_type="phn"
 for N in [100,500,1000,2000]:
     for ref_split in ["test_clean","test_other"]:
         logger.info(str(N)+'\t'+ref_split)
         val_data_path="/nfs/maziyang.mzy/data/librispeech/librispeech_{}.jsonl".format(ref_split)
-        infer_file="/nfs/yangguanrou.ygr/data/fbai-speech/is21_deep_bias/my_ref/{}.biasing_{}.tsv".format(ref_split,N)
-        ctc_file="/nfs/yangguanrou.ygr/data/librispeech_my_infer/wavlm_ft_libri960_{}_char.txt".format(ref_split)
+        infer_file="/nfs/yangguanrou.ygr/data/fbai-speech/is21_deep_bias/my_ref_phn/{}.biasing_{}.tsv".format(ref_split,N)
+        ctc_file="/nfs/yangguanrou.ygr/data/librispeech_my_infer/wavlm_ft_libri960_{}_phn.txt".format(ref_split)
 
 
         data_list = []
@@ -200,8 +200,27 @@ for N in [100,500,1000,2000]:
         logger.info("total_hotwords_num: %d, miss_hotwords_num: %d", hotwords_num, miss_words_num)
         logger.info("not_in_infer_num: %d", not_in_infer_num)
         logger.info("======================================================================================================================================================")
-
+        exit()
 
 
 
 # python fix.py > fix.log
+
+
+# [2024-05-27 16:19:58][root][INFO] - 100 test_clean
+# 128it [00:13, 64.90it/s][2024-05-27 16:20:12][root][INFO] - longer than 15 candidates, cand_num: 19
+# 469it [00:18, 109.27it/s][2024-05-27 16:20:18][root][INFO] - miss name: ER0
+# [2024-05-27 16:20:18][root][INFO] - key: 1995-1836-0012
+# [2024-05-27 16:20:18][root][INFO] - infer sentence: B AH1 T W IY1 R N AA1 T ER0 IH0 G Z AE1 K T L IY0 W EH1 L K AH0 M D
+# [2024-05-27 16:20:18][root][INFO] - target sentence: BUT WE'RE NOT ER EXACTLY WELCOMED
+# [2024-05-27 16:20:18][root][INFO] - name: ER0, gt: ['ER0'], keys_list: ['B AH1 T', 'V AA1 T ER0 IH0 S', 'Y AA1 R D L IY0', 'P AO1 L T ER0', 'N AA1 M B R AH0', 'AE1 K AH0 S T S', 'F L AH1 T ER0 NG', 'HH EH1 L M IY0', 'F AA1 R N S W ER0 TH', 'M EH0 L IH0 F IY1 K AH0', 'K AE1 N AH0 S T ER0', 'B L AE1 K SH IY2 P', 'D IY1 P L IY0', 'D IH0 S HH AA1 R T IH0 NG T L IY0', 'R OW0 Z AE1 N AH0']
+# 2089it [00:42, 77.17it/s][2024-05-27 16:20:41][root][INFO] - miss name: OW1
+# [2024-05-27 16:20:41][root][INFO] - key: 7127-75946-0002
+# [2024-05-27 16:20:41][root][INFO] - infer sentence: L EH1 T HH IH1 M K AH1 M IH0 N DH EH1 N S EH1 D DH AH0 K IH1 NG AH0 N D AE1 Z IH1 F K OW1 L B ER0 T HH AE1 D B IH1 N L IH1 S AH0 N IH0 NG AE1 T DH AH0 D AO1 R F AO1 R DH AH0 P ER1 P AH0 S AH1 V K IY1 P IH0 NG HH IH0 M S EH1 L F OW1 K UH1 R AH0 N T W IH1 DH DH AH0 K AA2 N V ER0 S EY1 SH AH0 N HH IY1 EH1 N T ER0 D AE1 Z S UW1 N AE1 Z DH AH0 K IH1 NG HH AE1 D P R AH0 N AW1 N S T HH IH1 Z N EY1 M T UW1 DH AH0 T UW1 K AO1 R T IY0 ER0 Z
+# [2024-05-27 16:20:41][root][INFO] - target sentence: LET HIM COME IN THEN SAID THE KING AND AS IF COLBERT HAD BEEN LISTENING AT THE DOOR FOR THE PURPOSE OF KEEPING HIMSELF AU COURANT WITH THE CONVERSATION HE ENTERED AS SOON AS THE KING HAD PRONOUNCED HIS NAME TO THE TWO COURTIERS
+# [2024-05-27 16:20:41][root][INFO] - name: K AO1 R T IY0 ER0 Z, gt: ['OW1', 'K OW1 L B ER0 T', 'K UH1 R AH0 N T', 'K AO1 R T IY0 ER0 Z'], keys_list: ['K OW1 L B ER0 T', 'K UH1 R AH0 N T', 'K AO1 R T IY0 ER0 Z', 'K AE1 SH AH0 N', 'L EH1 N', 'S UW1 Z', 'L UW1 SH AH0 S', 'B EH1 L D AH0 M', 'K Y UH1 R IH0 NG', 'M EH1 K AH0 N IH0 K', 'IH1 L IH0 G AH0 N', 'T UW1 TH L AH0 S', 'HH AE1 M P ER0 Z', 'S AH0 L IH1 N Y AH0 N T', 'S IH1 M AH0 N S IH0 Z']
+# 2620it [00:51, 50.47it/s]
+# [2024-05-27 16:20:50][root][INFO] - total_hotwords_num: 5692, miss_hotwords_num: 2
+# [2024-05-27 16:20:50][root][INFO] - ======================================================================================================================================================
+
+# 只要infer的phoneme是对的，就肯定能匹配出来
