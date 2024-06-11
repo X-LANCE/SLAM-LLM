@@ -238,7 +238,7 @@ class SlidespeechDataset(Dataset):
             'audio_length': audio_length,
         }             
 
-    def pad(self, sequence, max_length, padding_idx=0):#
+    def pad(self, sequence, max_length, padding_idx=0):
         if isinstance(sequence, (int, list, tuple)):
             if len(sequence) < max_length:
                 sequence = sequence + [padding_idx] * (max_length - len(sequence))
