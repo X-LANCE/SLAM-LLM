@@ -1,5 +1,11 @@
 # ASR_Librispeech
 
+## Model Architecture
+
+The proposed SLAM-ASR provides a clean setup and little task-specific design, where only the linear projector is trained. Refer to the [**paper**](https://arxiv.org/abs/2402.08846) for more details. 
+
+![](docs/model.png)
+
 ## Performance and checkpoints
 We only train the linear projector in this recipe.
 Encoder | Projector | LLM | test-clean | test-other
