@@ -1,5 +1,17 @@
 # MALA-ASR_SLIDESPEECH
 
+## Guides
+
+[MaLa-ASR](https://www.arxiv.org/abs/2406.05839) is an LLM-based ASR model that can integrate textual keywords extracted from presentation slides to improve recognition of conference content. 
+
+![](docs/demo.png)
+
+## Model Architecture
+
+We use the official WavLM-Large model as our speech encoder, the public Vicuna 7B as our large language model decoder, and a simple-structured linear projector, consisting of a 1-D convolution layer and two linear layers as our projector. Refer to the [paper](https://www.arxiv.org/abs/2406.05839) for more details.
+
+![](docs/model.png)
+
 ## Performance and checkpoints
 We only train the linear projector in this recipe.
 Encoder | Projector | LLM | dev | test
