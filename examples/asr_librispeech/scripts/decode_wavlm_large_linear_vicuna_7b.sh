@@ -4,12 +4,12 @@ export CUDA_VISIBLE_DEVICES=0
 export TOKENIZERS_PARALLELISM=false
 # export CUDA_LAUNCH_BLOCKING=1
 
-run_dir=/root/SLAM-LLM
+run_dir=/home/data2/jindaznb/jslpnb/mllm/SLAM-LLM/
 cd $run_dir
 code_dir=examples/asr_librispeech
 
-speech_encoder_path=/nfs/maziyang.mzy/models/wavlm/WavLM-Large.pt
-llm_path=/nfs/maziyang.mzy/models/vicuna-7b-v1.5
+speech_encoder_path=/home/data2/jindaznb/jslpnb/mllm/models/WavLM-Large.pt
+llm_path=/home/data2/jindaznb/jslpnb/mllm/models/vicuna-7b-v1.5
 
 output_dir=/root/tmp/vicuna-7b-v1.5-librispeech-linear-steplrwarmupkeep1e-4-wavlm-large-20240426
 ckpt_path=$output_dir/asr_epoch_1_step_1000
