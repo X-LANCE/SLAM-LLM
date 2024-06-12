@@ -1,10 +1,11 @@
 from slam_llm.pipeline.finetune import main as train
+from typing import Optional
 
 import hydra
 import logging
 from dataclasses import dataclass, field
 from omegaconf import DictConfig, ListConfig, OmegaConf
-from asr_config import ModelConfig, TrainConfig, DataConfig, LogConfig, FSDPConfig
+from mala_asr_config import ModelConfig, TrainConfig, DataConfig, LogConfig, FSDPConfig
 
 @dataclass
 class RunConfig:
