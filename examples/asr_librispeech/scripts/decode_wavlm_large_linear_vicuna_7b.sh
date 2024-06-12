@@ -16,7 +16,7 @@ ckpt_path=$output_dir/asr_epoch_1_step_1000
 split=librispeech_test_clean
 val_data_path=/nfs/maziyang.mzy/data/librispeech/${split}.jsonl
 decode_log=$ckpt_path/decode_${split}_beam4
-
+ 
 # -m debugpy --listen 5678 --wait-for-client
 python $code_dir/inference_asr_batch.py \
         --config-path "conf" \

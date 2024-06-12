@@ -33,7 +33,7 @@ logging.basicConfig(
 logger = logging.getLogger()  
 logger.setLevel(logging.INFO)
 
-file_handler = logging.FileHandler(filename="debug.log", mode='w')
+file_handler = logging.FileHandler(filename="fix_phn_5_0.95.log", mode='w')
 file_handler.setLevel(logging.INFO)
 file_formatter = logging.Formatter('[%(asctime)s][%(name)s][%(levelname)s] - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 file_handler.setFormatter(file_formatter)
