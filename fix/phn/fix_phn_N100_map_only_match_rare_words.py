@@ -15,11 +15,12 @@ from slam_llm.utils.compute_utils import calculate_output_length_1d
 
 
 # config
-probability_threshold = 0.95
-word_num=5
-filter_type="char"
+probability_threshold = 0.9
+word_num=15
+filter_type="phn"
 dis_list=[100]
-log_filename = "fix/char/fix_char_{}_{}_{}_only_match_rare_words.log".format(dis_list, word_num, probability_threshold)
+log_filename = "fix/phn/fix_phn_{}_{}_{}_map_only_match_rare_words.log".format(dis_list, word_num, probability_threshold)
+prompt_word_num=0
 
 
 import logging
@@ -106,7 +107,14 @@ def calculate_similarity_score(name, sentence, length_tolerance=3):
     
     for ngram in sentence_ngrams:
         if abs(len(ngram) - len(name)) <= length_tolerance:
-            sim = similarity(name.lower(), ngram.lower())
+            # sim = similarity(name.lower(), ngram.lower())
+            name1 = "".join([phn_dict[phn] for phn in name.split()])
+            ngram1 = "".join([phn_dict[phn] for phn in ngram.split()])
+            # try:
+            #     ngram1 = "".join([phn_dict[phn] for phn in ngram.split()])
+            # except:
+            #     print("debug")
+            sim = similarity(name1, ngram1)
             max_similarity = max(max_similarity, sim)
     return max_similarity
 
@@ -118,14 +126,29 @@ def score_candidates(candidates, sentence):
         scores[candidate] = score
     return scores
 
-mismatch=0
-chongfu=0
+# mismatch=0
+# chongfu=0
 
 common_words_5k=set()
-with open("/nfs/yangguanrou.ygr/data/fbai-speech/is21_deep_bias/words/common_words_5k.txt") as f:
+with open("/nfs/yangguanrou.ygr/data/fbai-speech/is21_deep_bias/phn/common_words_5k_phn.txt") as f:
     for line in f:
         word = line.strip()
-        common_words_5k.add(word)
+        if len(word.split())>=5:
+            common_words_5k.add(word)
+common_words_5k = list(common_words_5k)
+common_words_5k = sorted(common_words_5k, key=lambda item: len(item.split()), reverse=True)
+# 只留5个及以上
+
+
+phn_dict={}
+i=0
+with open("/root/fairseq/data/resource/dict.phn.txt",'r') as f:
+    for line in f:
+        line = line.strip().split()
+        phn_item = line[0]
+        phn_dict[phn_item ]= chr(33+i)
+        i+=1
+
 
 logger.info("word_num: %d", word_num)
 logger.info("probability_threshold: %f", probability_threshold)
@@ -133,8 +156,8 @@ for N in dis_list:
     for ref_split in ["test_clean","test_other"]:
         logger.info(str(N)+'\t'+ref_split)
         val_data_path="/nfs/maziyang.mzy/data/librispeech/librispeech_{}.jsonl".format(ref_split)
-        infer_file="/nfs/yangguanrou.ygr/data/fbai-speech/is21_deep_bias/my_ref/{}.biasing_{}.tsv".format(ref_split,N)
-        ctc_file="/nfs/yangguanrou.ygr/data/librispeech_my_infer/wavlm_ft_libri960_{}_char.txt".format(ref_split)
+        infer_file="/nfs/yangguanrou.ygr/data/fbai-speech/is21_deep_bias/my_ref_phn/{}.biasing_{}.tsv".format(ref_split,N)
+        ctc_file="/nfs/yangguanrou.ygr/data/librispeech_my_infer/wavlm_ft_libri960_{}_phn.txt".format(ref_split)
 
 
         data_list = []
@@ -176,18 +199,26 @@ for N in dis_list:
             # infer_sentence=infer_list[index].lower()
 
             # ================  处理一下 infer_sentence =============
-            words_list = infer_sentence.split()
-            filtered_words = [word for word in words_list if word not in common_words_5k]
-            infer_sentence = ' '.join(filtered_words)
-            if len(gt)!=len(filtered_words):
-                mismatch+=1
-                if set(gt)==set(filtered_words):
-                    chongfu+=1
-                else:
-                    logger.info("gt: %s", str(gt))
-                    logger.info("filtered_words: %s", str(filtered_words))
-                    logger.info("infer_sentence_list: %s", " ".join(words_list))
+            # words_list = infer_sentence.split()
+            # filtered_words = [word for word in words_list if word not in common_words_5k]
+            # infer_sentence = ' '.join(filtered_words)
+            # if len(gt)!=len(filtered_words):
+            #     mismatch+=1
+            #     if set(gt)==set(filtered_words):
+            #         chongfu+=1
+            #     else:
+            #         logger.info("gt: %s", str(gt))
+            #         logger.info("filtered_words: %s", str(filtered_words))
+            #         logger.info("infer_sentence_list: %s", " ".join(words_list))
             # ================  处理一下 infer_sentence =============
+
+            len1=len(infer_sentence.split())
+            for phn_seq in common_words_5k:
+                if " "+phn_seq+" " in infer_sentence:
+                    infer_sentence = infer_sentence.replace(" "+phn_seq+" ", " ")
+            # infer_sentence.replace("  "," ")
+            len2=len(infer_sentence.split())
+            # logger.info("filter out phn num: %d", len1-len2)
 
             biaswords=eval(biaswords_list[index]) #['AH0 B AE1 T IH0 S', 'AE1 SH M IY2 D', 'AH0 T R EH1 M IH0 NG L', 'AA2 Z ER0 B AY0 JH AA1 N', 'B IH1 TH AO0 R', 'B R UW1 Z D', 'K EY1 D', 'K AH0 D UW1 T OW0', 'K AE1 R AH0 T S', 'K AE1 R UW0 TH', 'K AO1 SH AH0 N IH0 NG', 'S AH0 L IY1 N', 'CH AE1 G F ER0 D', 'K R AA1 B AH0 L', 'S IH1 N AH0 D AA2 N', 'D EH1 B AH0 T', 'D IH0 L IY1 T', 'D AA1 JH IY0', 'D AA1 L F IH0 N', 'D AH1 S T IH0 NG', 'IH0 L EH1 K T R AH0 M', 'EH1 M AH0 N EY2 T', 'IH0 N G R EY1 V IH0 NG Z', 'IY1 S AO2', 'IH0 G Z AE1 K SH AH0 N Z', 'IH0 K S T ER2 M AH0 N EY1 SH AH0 N', 'F AE1 T AH0 N D', 'F ER1 M ER0', 'F EH1 V R AH0 S', 'F IH1 SH M AE2 N', 'F L AE0 M B OW1 Z', 'F R AE1 T IH0 JH', 'G ER0 AA1 ZH', 'G L EH1 N K EH2 R N', 'G AO1 R SH K AO2 V', 'G R EY1 S T IY2 L', 'G AH1 S IH0 V', 'HH AE1 S K IH0 T', 'HH ER1 K Y AH0 L', 'Y ER0 S IH1 N IY0 AH0 N', 'HH EH1 V AH0 N', 'HH IH1 L T AA2 P S', 'HH AA1 B Z', 'AY0 S L AE1 N D IH0 K', 'IH0 N OW0 CH EH1 N CH IY0 OW0', 'IH0 R AH0 P R EH1 S T AH0 B AH0 L Z', 'IH1 S M AA0 R S', 'JH AO1 R S', 'K ER0 EH1 R IY0', 'K IH1 JH IH0 N', 'L EY1 D AH0 L D', 'L EH1 G Z', 'L EH1 K W EH0 L', 'L AO1 R S IY0', 'L AO0 R EH0 N Z UW1 N IY0', 'L UW1 S AH0 F ER0 Z', 'M EH1 R IY0 AH0 N Z', 'M AE1 T IY0', 'M IY1 N S T', ...]
             if filter_type=="char":
@@ -198,9 +229,17 @@ for N in dis_list:
                 candidates = find_candidate_names_phn(infer_sentence, ngram_index) #第一个len11
             scores = score_candidates(candidates, infer_sentence)
             sorted_dict = sorted(scores.items(), key=lambda item: item[1],  reverse=True)
+
+            # 处理一下  这样是无效的！
+            # len1=len(sorted_dict)
+            # sorted_dict = [item for item in sorted_dict if item[0] not in common_words_5k]
+            # len2=len(sorted_dict)
+            # logger.info("filter out word num: %d", len1-len2)
+
             high_score_items = [(k, value) for k, value in sorted_dict if value > probability_threshold] 
             if len(high_score_items) < word_num:
                 high_score_items = sorted_dict[:word_num]
+            prompt_word_num += len(high_score_items)
             keys_list = [k for k, _ in high_score_items]
 
             if len(high_score_items)>word_num:
@@ -226,5 +265,5 @@ for N in dis_list:
 
         logger.info("total_hotwords_num: %d, miss_hotwords_num: %d", hotwords_num, miss_words_num)
         logger.info("not_in_infer_num: %d", not_in_infer_num)
-        logger.info("mismatch: %d, chongfu: %d", mismatch, chongfu)
+        logger.info("avg_prompt_word_num: %f", float(prompt_word_num)/len(data_list))
         logger.info("======================================================================================================================================================")

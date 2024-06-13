@@ -197,7 +197,7 @@ class HotwordsInferAddgtDataset(torch.utils.data.Dataset):
                 self.hotwords_num+=1
                 if name not in keys_list:
                     logger.info("miss name: %s", name)
-                    keys_list.insert(0,name)      # !!!!!!
+                    keys_list.insert(0,name)      # !!!!!!  没识别到的会被插到最前面 但识别到的基本也排前面了
                     self.miss_words_num+=1
                     miss=True
             if miss:

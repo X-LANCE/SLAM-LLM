@@ -107,7 +107,12 @@ class DataConfig:
     ctc_file: str = "/nfs/yangguanrou.ygr/data/librispeech_my_infer/wavlm_large_libri_test_other_char.txt"     
     filter_type: str = "char"
     phn_to_name_dict: str = "/nfs/yangguanrou.ygr/data/librispeech_my_infer/wavlm_ft_libri960_${ref_split}_phn.json"
-    
+    probability_threshold : float = 0.9
+    word_num : int = 15
+    filter_infer_sentence : bool = False
+    filter_infer_sentence_few : bool = False
+    first : int = 1
+
 @dataclass
 class FSDPConfig:
     mixed_precision: bool = True

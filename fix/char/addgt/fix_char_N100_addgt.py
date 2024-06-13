@@ -15,11 +15,11 @@ from slam_llm.utils.compute_utils import calculate_output_length_1d
 
 
 # config
-probability_threshold = 0.95
-word_num=5
-filter_type="phn"
-dis_list=[100]
-log_filename = "fix/phn/fix_phn_{}_{}_{}.log".format(dis_list, word_num, probability_threshold)
+probability_threshold = 0.9
+word_num=15
+filter_type="char"
+dis_list=[2000]
+log_filename = "fix/char/addgt/fix_char_{}_{}_{}_addgt.log".format(dis_list, word_num, probability_threshold)
 prompt_word_num=0
 
 
@@ -125,8 +125,8 @@ for N in dis_list:
     for ref_split in ["test_clean","test_other"]:
         logger.info(str(N)+'\t'+ref_split)
         val_data_path="/nfs/maziyang.mzy/data/librispeech/librispeech_{}.jsonl".format(ref_split)
-        infer_file="/nfs/yangguanrou.ygr/data/fbai-speech/is21_deep_bias/my_ref_phn/{}.biasing_{}.tsv".format(ref_split,N)
-        ctc_file="/nfs/yangguanrou.ygr/data/librispeech_my_infer/wavlm_ft_libri960_{}_phn.txt".format(ref_split)
+        infer_file="/nfs/yangguanrou.ygr/data/fbai-speech/is21_deep_bias/my_ref/{}.biasing_{}.tsv".format(ref_split,N)
+        ctc_file="/nfs/yangguanrou.ygr/data/librispeech_my_infer/wavlm_ft_libri960_{}_char.txt".format(ref_split)
 
 
         data_list = []
@@ -178,7 +178,7 @@ for N in dis_list:
             high_score_items = [(k, value) for k, value in sorted_dict if value > probability_threshold] 
             if len(high_score_items) < word_num:
                 high_score_items = sorted_dict[:word_num]
-            prompt_word_num += len(high_score_items)
+            
             keys_list = [k for k, _ in high_score_items]
 
             if len(high_score_items)>word_num:
@@ -192,6 +192,7 @@ for N in dis_list:
                 if name not in keys_list:
                     logger.info("miss name: %s", name)
                     miss_words_num+=1
+                    keys_list.insert(0,name)
                     miss=True
                     if name not in infer_sentence:
                         not_in_infer_num+=1
@@ -201,6 +202,8 @@ for N in dis_list:
                 logger.info("infer sentence: %s",infer_sentence)
                 logger.info("target sentence: %s", target)
                 logger.info("name: %s, gt: %s, keys_list: %s", name, gt, keys_list)
+            
+            prompt_word_num += len(keys_list)
 
         logger.info("total_hotwords_num: %d, miss_hotwords_num: %d", hotwords_num, miss_words_num)
         logger.info("not_in_infer_num: %d", not_in_infer_num)

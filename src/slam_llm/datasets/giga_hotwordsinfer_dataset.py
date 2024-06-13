@@ -32,7 +32,6 @@ def find_candidate_names(sentence, ngram_index, n=2):
         candidates.update(ngram_index.get(ngram, []))       
     return candidates
 
-# @lru_cache(maxsize=None)
 @lru_cache(maxsize=100000)
 def similarity(name, sentence):
     return Levenshtein.ratio(name, sentence)  #速度主要来源于这个函数的更换
@@ -121,11 +120,11 @@ class GigaHotwordsInferDataset(Dataset):
         # analyze
         self.hotwords_num=0
         self.miss_words_num=0
-
         self.filter_type=dataset_config.filter_type
-        
-        self.prompt_word_num=8
-        logger.info("prompt_word_num: %s", self.prompt_word_num)
+        self.prompt_word_num=0
+        self.probability_threshold = dataset_config.probability_threshold
+        self.word_num = dataset_config.word_num
+
 
 
     def get_source_len(self, data_dict):

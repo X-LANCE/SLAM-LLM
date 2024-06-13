@@ -138,6 +138,7 @@ def main(kwargs: DictConfig):
 
 	if dataset_config.infer_type=="filter":
 		logger.info("total_hotwords_num: %d, miss_hotwords_num: %d", dataset_test.hotwords_num, dataset_test.miss_words_num)
+		logger.info("avg_prompt_word_num: %f", float(dataset_test.prompt_word_num)/len(dataset_test.data_list))
 
 
 if __name__ == "__main__":

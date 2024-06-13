@@ -59,7 +59,7 @@ def find_candidate_names_phn(phonemes, ngram_index, n=2):
         candidates.update(ngram_index.get(ngram, []))       
     return candidates
 
-# @lru_cache(maxsize=None)
+
 @lru_cache(maxsize=100000)
 def similarity(name, sentence):
     return Levenshtein.ratio(name, sentence)  #速度主要来源于这个函数的更换
@@ -158,10 +158,23 @@ class HotwordsInferDataset(torch.utils.data.Dataset):
             with open( dataset_config.phn_to_name_dict, 'r') as file:
                 self.phn_to_name_dict = json.load(file)
 
-        self.probability_threshold = 0.95
-        self.word_num=5
+        self.probability_threshold = dataset_config.get("probability_threshold", 0.95)
+        self.word_num = dataset_config.get("word_num", 15)
+        self.prompt_word_num = 0
         logger.info("word_num: %d", self.word_num)
         logger.info("probability_threshold: %f", self.probability_threshold)
+
+        self.filter_infer_sentence = dataset_config.get("filter_infer_sentence", False)
+        self.filter_infer_sentence_few = dataset_config.get("filter_infer_sentence_few", False)
+        if self.filter_infer_sentence:
+            self.common_words_5k=set()
+            with open("/nfs/yangguanrou.ygr/data/fbai-speech/is21_deep_bias/words/common_words_5k.txt") as f:
+                for line in f:
+                    word = line.strip()
+                    self.common_words_5k.add(word)
+            if self.filter_infer_sentence_few:
+                self.first = dataset_config.get("first",1)
+                logger.info("first: %d", self.first)
 
     def get_source_len(self, data_dict):
         return data_dict["source_len"]
@@ -211,6 +224,21 @@ class HotwordsInferDataset(torch.utils.data.Dataset):
             else:
                 infer_sentence=self.infer_list[index]  #'HH IY1 HH OW1 P T DH EH1 R W UH1 D B IY1 S T UW1 F AO1 R D IH1 N ER0 T ER1 N AH0 P S AH0 N D K AE1 R AH0 T S AH0 N D B R UW1 Z D P AH0 T EY1 T OW0 Z AH0 N D F AE1 T M AH1 T AH0 N P IY1 S AH0 Z T UW1 B IY1 L EY1 D AH0 L D AW1 T IH0 N TH IH1 K P EH1 P ER0 D F L AW1 ER0 F AE1 T AH0 N D S AO1 S'
             # infer_sentence=self.infer_list[index].lower()
+
+            # ================  处理一下 infer_sentence =============
+            words_list = infer_sentence.split()
+            filtered_words = [word for word in words_list if word not in self.common_words_5k]
+            infer_sentence = ' '.join(filtered_words)
+            # if len(gt)!=len(filtered_words):
+            #     mismatch+=1
+            #     if set(gt)==set(filtered_words):
+            #         chongfu+=1
+            #     else:
+            #         logger.info("gt: %s", str(gt))
+            #         logger.info("filtered_words: %s", str(filtered_words))
+            #         logger.info("infer_sentence_list: %s", " ".join(words_list))
+            # ================  处理一下 infer_sentence =============
+
             biaswords=eval(self.biaswords_list[index]) #['AH0 B AE1 T IH0 S', 'AE1 SH M IY2 D', 'AH0 T R EH1 M IH0 NG L', 'AA2 Z ER0 B AY0 JH AA1 N', 'B IH1 TH AO0 R', 'B R UW1 Z D', 'K EY1 D', 'K AH0 D UW1 T OW0', 'K AE1 R AH0 T S', 'K AE1 R UW0 TH', 'K AO1 SH AH0 N IH0 NG', 'S AH0 L IY1 N', 'CH AE1 G F ER0 D', 'K R AA1 B AH0 L', 'S IH1 N AH0 D AA2 N', 'D EH1 B AH0 T', 'D IH0 L IY1 T', 'D AA1 JH IY0', 'D AA1 L F IH0 N', 'D AH1 S T IH0 NG', 'IH0 L EH1 K T R AH0 M', 'EH1 M AH0 N EY2 T', 'IH0 N G R EY1 V IH0 NG Z', 'IY1 S AO2', 'IH0 G Z AE1 K SH AH0 N Z', 'IH0 K S T ER2 M AH0 N EY1 SH AH0 N', 'F AE1 T AH0 N D', 'F ER1 M ER0', 'F EH1 V R AH0 S', 'F IH1 SH M AE2 N', 'F L AE0 M B OW1 Z', 'F R AE1 T IH0 JH', 'G ER0 AA1 ZH', 'G L EH1 N K EH2 R N', 'G AO1 R SH K AO2 V', 'G R EY1 S T IY2 L', 'G AH1 S IH0 V', 'HH AE1 S K IH0 T', 'HH ER1 K Y AH0 L', 'Y ER0 S IH1 N IY0 AH0 N', 'HH EH1 V AH0 N', 'HH IH1 L T AA2 P S', 'HH AA1 B Z', 'AY0 S L AE1 N D IH0 K', 'IH0 N OW0 CH EH1 N CH IY0 OW0', 'IH0 R AH0 P R EH1 S T AH0 B AH0 L Z', 'IH1 S M AA0 R S', 'JH AO1 R S', 'K ER0 EH1 R IY0', 'K IH1 JH IH0 N', 'L EY1 D AH0 L D', 'L EH1 G Z', 'L EH1 K W EH0 L', 'L AO1 R S IY0', 'L AO0 R EH0 N Z UW1 N IY0', 'L UW1 S AH0 F ER0 Z', 'M EH1 R IY0 AH0 N Z', 'M AE1 T IY0', 'M IY1 N S T', ...]
             if self.filter_type=="char":
                 ngram_index=build_ngram_index(biaswords)
@@ -218,16 +246,21 @@ class HotwordsInferDataset(torch.utils.data.Dataset):
             elif self.filter_type=="phn":
                 ngram_index=build_ngram_index_phn(biaswords)
                 candidates = find_candidate_names_phn(infer_sentence, ngram_index) #第一个len11
-            scores = score_candidates(candidates, infer_sentence)
-            sorted_dict = sorted(scores.items(), key=lambda item: item[1],  reverse=True)
+            if not self.filter_infer_sentence_few:
+                scores = score_candidates(candidates, infer_sentence)
+                sorted_dict = sorted(scores.items(), key=lambda item: item[1],  reverse=True)
+                high_score_items = [(k, value) for k, value in sorted_dict if value > self.probability_threshold] 
+                if len(high_score_items) < self.word_num:
+                    high_score_items = sorted_dict[:self.word_num]
+                self.prompt_word_num += len(high_score_items)
+                keys_list = [k for k, _ in high_score_items]
 
-            high_score_items = [(k, value) for k, value in sorted_dict if value > self.probability_threshold] 
-            if len(high_score_items) < self.word_num:
-                high_score_items = sorted_dict[:self.word_num]
-            keys_list = [k for k, _ in high_score_items]
+                if len(high_score_items)>self.word_num:
+                    logger.info("longer than %d candidates, cand_num: %d", self.word_num,len(high_score_items))
+            else:
+                keys_list = self.score_candidates_for_each_word(candidates, infer_sentence)
+                self.prompt_word_num += len(keys_list)                
 
-            if len(high_score_items)>self.word_num:
-                logger.info("longer than %d candidates, cand_num: %d", self.word_num,len(high_score_items))
 
             # ======== count recall
             miss=False
@@ -241,7 +274,7 @@ class HotwordsInferDataset(torch.utils.data.Dataset):
                 logger.info("key: %s", key)
                 logger.info("infer sentence: %s",infer_sentence)
                 logger.info("target sentence: %s", target)
-                logger.info("name: %s, gt: %s, keys_list: %s", name, gt, keys_list)
+                logger.info("gt: %s, keys_list: %s", gt, keys_list)
             # ========
             if self.filter_type=="phn":
                 keys_list = [self.phn_to_name_dict[phn] for phn in keys_list]
@@ -373,6 +406,17 @@ class HotwordsInferDataset(torch.utils.data.Dataset):
             "modality_mask": modality_mask
         }
 
+    def score_candidates_for_each_word(self,candidates, sentence):
+        keys_list = []
+        for word in sentence.split():
+            scores = {}
+            for candidate in candidates:
+                score = similarity(word,candidate)
+                scores[candidate] = score
+            sorted_items = sorted(scores.items(), key=lambda item: item[1], reverse=True)
+            first_two_items =  sorted_items[:self.first]
+            keys_list.extend([item[0] for item in first_two_items])
+        return keys_list
 
 
 def get_speech_dataset(dataset_config, tokenizer, split):

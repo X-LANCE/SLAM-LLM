@@ -15,10 +15,11 @@ from slam_llm.utils.compute_utils import calculate_output_length_1d
 
 
 # config
-first=3
+first=1
 filter_type="char"
 dis_list=[100]
 log_filename = "fix/char/fix_char_{}_{}_only_match_rare_words_match_for_each_word.log".format(dis_list, first)
+prompt_word_num=0
 
 
 import logging
@@ -213,9 +214,10 @@ for N in dis_list:
             # high_score_items = [(k, value) for k, value in sorted_dict if value > probability_threshold] 
             # if len(high_score_items) < word_num:
             #     high_score_items = sorted_dict[:word_num]
-            # keys_list = [k for k, _ in high_score_items]
-
+            # keys_list = [k for k, _ in high_score_items]  
+            
             keys_list = score_candidates_for_each_word(candidates, infer_sentence)
+            prompt_word_num += len(keys_list)
 
             # if len(high_score_items)>word_num:
             #     logger.info("longer than %d candidates, cand_num: %d", word_num,len(high_score_items))
@@ -240,5 +242,5 @@ for N in dis_list:
 
         logger.info("total_hotwords_num: %d, miss_hotwords_num: %d", hotwords_num, miss_words_num)
         logger.info("not_in_infer_num: %d", not_in_infer_num)
-        logger.info("mismatch: %d, chongfu: %d", mismatch, chongfu)
+        logger.info("avg_prompt_word_num: %f", float(prompt_word_num)/len(data_list))
         logger.info("======================================================================================================================================================")
