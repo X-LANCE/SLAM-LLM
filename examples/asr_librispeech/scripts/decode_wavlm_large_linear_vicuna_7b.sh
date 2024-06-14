@@ -11,9 +11,9 @@ code_dir=examples/asr_librispeech
 speech_encoder_path=/home/data2/jindaznb/jslpnb/mllm/models/WavLM-Large.pt
 llm_path=/home/data2/jindaznb/jslpnb/mllm/models/vicuna-7b-v1.5
 
-output_dir=/root/tmp/vicuna-7b-v1.5-librispeech-linear-steplrwarmupkeep1e-4-wavlm-large-20240426
-ckpt_path=$output_dir/asr_epoch_1_step_1000
-split=librispeech_test_clean
+output_dir=/home/data2/jindaznb/jslpnb/mllm/SLAM-LLM/vicuna-7b-v1.5-librispeech-linear-steplrwarmupkeep1e-4-wavlm-large-20240426
+ckpt_path='/home/data2/jindaznb/jslpnb/mllm/models/model.pt'
+split=test
 val_data_path=/nfs/maziyang.mzy/data/librispeech/${split}.jsonl
 decode_log=$ckpt_path/decode_${split}_beam4
 
