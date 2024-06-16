@@ -81,8 +81,8 @@ def compute_wer(ref_file,
             rst['Snt'] += 1
             if out_item['wrong'] > 0:
                 rst['wrong_sentences'] += 1
-            # if out_item['nwords']!=0:
-            cer_detail_writer.write(hyp_key + print_cer_detail(out_item) + '\n')
+            if out_item['nwords']!=0:
+                cer_detail_writer.write(hyp_key + print_cer_detail(out_item) + '\n')
             cer_detail_writer.write("ref:" + '\t' + " ".join(list(map(lambda x: x.lower(), ref_dict[hyp_key]))) + '\n')
             cer_detail_writer.write("hyp:" + '\t' + " ".join(list(map(lambda x: x.lower(), hyp_dict[hyp_key]))) + '\n')
             cer_detail_writer.write("diff:" + '\t' + build_diff(ref_dict[hyp_key], hyp_dict[hyp_key], out_item['path']) + '\n')

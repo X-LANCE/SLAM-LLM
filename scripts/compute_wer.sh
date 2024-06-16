@@ -90,8 +90,35 @@ preds=/nfs/yangguanrou.ygr/experiments_librispeech/vicuna-7b-v1.5-WavLM-Large-gi
 trans=/nfs/yangguanrou.ygr/experiments_librispeech/vicuna-7b-v1.5-WavLM-Large-giga1000-ft-phn-hotwords-20240528/asr_epoch_1_step_48000/decode_test_name_beam4_filter_gt
 preds=/nfs/yangguanrou.ygr/experiments_librispeech/vicuna-7b-v1.5-WavLM-Large-giga1000-ft-phn-hotwords-20240528/asr_epoch_1_step_48000/decode_test_name_beam4_filter_pred
 
+
+trans=/root/SLAM-LLM/examples/hotwords_librispeech/scripts_giga1000/whisperv3/whisperv3_gigaspeech_dev_gt
+preds=/root/SLAM-LLM/examples/hotwords_librispeech/scripts_giga1000/whisperv3/whisperv3_gigaspeech_dev_pred
+
+trans=/root/SLAM-LLM/examples/hotwords_librispeech/scripts_giga1000/whisperv3/whisperv3_gigaspeech_test_gt
+preds=/root/SLAM-LLM/examples/hotwords_librispeech/scripts_giga1000/whisperv3/whisperv3_gigaspeech_test_pred
+
+trans=/root/SLAM-LLM/examples/hotwords_librispeech/scripts_giga1000/whisperv3/whisperv3_name_gt
+preds=/root/SLAM-LLM/examples/hotwords_librispeech/scripts_giga1000/whisperv3/whisperv3_name_pred
+
+trans=/root/SALMONN/SALMONN_librispeech_test_clean.log_gt
+preds=/root/SALMONN/SALMONN_librispeech_test_clean.log_pred
+
+trans=/root/SALMONN/test_other/SALMONN_librispeech_test_other.log_gt
+preds=/root/SALMONN/test_other/SALMONN_librispeech_test_other.log_pred
+
+trans=/root/SALMONN/giga_dev/SALMONN_gigaspeech_dev.log_gt
+preds=/root/SALMONN/giga_dev/SALMONN_gigaspeech_dev.log_pred
+
+trans=/root/SALMONN/giga_test/SALMONN_gigaspeech_test.log_gt
+preds=/root/SALMONN/giga_test/SALMONN_gigaspeech_test.log_pred
+
 python src/llama_recipes/utils/whisper_tn.py ${trans} ${trans}.proc
 python src/llama_recipes/utils/llm_tn.py ${preds} ${preds}.proc
 python src/llama_recipes/utils/compute_wer.py ${trans}.proc ${preds}.proc ${preds}.proc.wer
+
+# python src/slam_llm/utils/whisper_tn.py ${trans} ${trans}.proc
+# python src/slam_llm/utils/whisper_tn.py ${preds} ${preds}.proc
+# python src/slam_llm/utils/compute_wer.py ${trans}.proc ${preds}.proc ${preds}.proc.wer
+
 
 tail -3 ${preds}.proc.wer

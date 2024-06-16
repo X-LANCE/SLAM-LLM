@@ -9,7 +9,6 @@ from tqdm import tqdm
 import logging
 logger = logging.getLogger(__name__)
 
-
 import difflib
 from functools import lru_cache
 from tqdm import tqdm
@@ -36,7 +35,7 @@ def find_candidate_names(sentence, ngram_index, n=2):
 def similarity(name, sentence):
     return Levenshtein.ratio(name, sentence)  #速度主要来源于这个函数的更换
 
-def generate_ngrams(sentence, n): #一样的
+def generate_ngrams(sentence, n):
     """生成长度为n的n-grams"""
     sentence = sentence.split()
     return [' '.join(sentence[i:i+n]) for i in range(len(sentence)-n+1)]
@@ -45,7 +44,7 @@ def calculate_similarity_score(name, sentence, length_tolerance=3):
     max_similarity = 0
     name_sentence = name.split()
     name_length = len(name_sentence)
-    sentence_ngrams = generate_ngrams(sentence, name_length) #9  一样的
+    sentence_ngrams = generate_ngrams(sentence, name_length)
     
     for ngram in sentence_ngrams:
         if abs(len(ngram) - len(name)) <= length_tolerance:
@@ -53,7 +52,7 @@ def calculate_similarity_score(name, sentence, length_tolerance=3):
             max_similarity = max(max_similarity, sim)
     return max_similarity
 
-def score_candidates(candidates, sentence):  #一样的
+def score_candidates(candidates, sentence):
     """为候选人名计算得分"""
     scores = {}
     for candidate in candidates:
@@ -116,12 +115,11 @@ class GigaHotwordsInferDataset(Dataset):
                 for line in finfer:
                     self.infer_list.append(line.strip())
 
-
         # analyze
         self.hotwords_num=0
         self.miss_words_num=0
         self.filter_type=dataset_config.filter_type
-        self.prompt_word_num=0
+        self.prompt_word_num=8
         self.probability_threshold = dataset_config.probability_threshold
         self.word_num = dataset_config.word_num
 
@@ -190,7 +188,7 @@ class GigaHotwordsInferDataset(Dataset):
                 logger.info("key: %s", key)
                 logger.info("infer sentence: %s",infer_sentence)
                 logger.info("target sentence: %s", target)
-                logger.info("name: %s, gt: %s, keys_list: %s", name, gt, keys_list)
+                logger.info("gt: %s, keys_list: %s", gt, keys_list)
             # ========
             
 
@@ -239,8 +237,7 @@ class GigaHotwordsInferDataset(Dataset):
             "audio": audio_raw if self.input_type == "raw" else None,
             "audio_mel": audio_mel if self.input_type == "mel" else None,
             "audio_length": audio_length,
-        }   
-
+        }
 
     def pad(self, sequence, max_length, padding_idx=0):
         if isinstance(sequence, (int, list, tuple)):

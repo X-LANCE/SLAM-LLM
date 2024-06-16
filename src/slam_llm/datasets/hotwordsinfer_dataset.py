@@ -73,7 +73,7 @@ def calculate_similarity_score(name, sentence, length_tolerance=3):
     max_similarity = 0
     name_sentence = name.split()
     name_length = len(name_sentence)
-    sentence_ngrams = generate_ngrams(sentence, name_length) #9
+    sentence_ngrams = generate_ngrams(sentence, name_length)
     
     for ngram in sentence_ngrams:
         if abs(len(ngram) - len(name)) <= length_tolerance:
@@ -90,9 +90,8 @@ def score_candidates(candidates, sentence):
     return scores
 
 
-
 class HotwordsInferDataset(torch.utils.data.Dataset):
-    
+
     def __init__(self,
                  dataset_config,
                  tokenizer=None,
@@ -128,7 +127,7 @@ class HotwordsInferDataset(torch.utils.data.Dataset):
                     data_dict = json.loads(line.strip())
                     self.data_list.append(data_dict)
 
-        # 
+        
         self.hotwords_list=[]
         self.biaswords_list=[]
         with open(dataset_config.infer_file,'r') as fref:

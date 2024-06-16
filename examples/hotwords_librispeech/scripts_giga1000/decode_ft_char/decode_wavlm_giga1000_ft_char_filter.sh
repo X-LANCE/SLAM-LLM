@@ -24,7 +24,7 @@ for ref_split in test_name; do
                 ++model_config.llm_name="vicuna-7b-v1.5" \
                 ++model_config.llm_path=$llm_path \
                 ++model_config.llm_dim=4096 \
-                ++model_config.encoder_name=wavlm \
+                ++model_config.encoder_name=wavlm  \
                 ++model_config.normalize=true \
                 ++dataset_config.normalize=true \
                 ++model_config.encoder_projector_ds_rate=5 \

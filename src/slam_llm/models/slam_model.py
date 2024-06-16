@@ -302,6 +302,9 @@ class slam_model(nn.Module):
 
         encoder_outs = None
         if audio_mel is not None or audio is not None or visual is not None:
+            if self.train_config.freeze_encoder: # freeze encoder
+                self.encoder.eval()
+
             if self.model_config.encoder_name == "whisper":
                 encoder_outs = self.encoder.extract_variable_length_features(audio_mel.permute(0, 2, 1)) # bs*seq*dim
             if self.model_config.encoder_name == "beats":
@@ -341,7 +344,6 @@ class slam_model(nn.Module):
             if self.model_config.encoder_projector == "linear":
                 encoder_outs = self.encoder_projector(encoder_outs)
 
-
         if input_ids is not None:
             input_ids[input_ids == -1] = 0
             if isinstance(self.llm, T5ForConditionalGeneration):
@@ -355,10 +357,16 @@ class slam_model(nn.Module):
                     inputs_embeds = self.llm.model.model.model.embed_tokens(input_ids)
 
         if modality_mask is not None:
-            batch_size, token_num, dims = inputs_embeds.shape
-            _, l, _ = encoder_outs.shape
-            encoder_outs_pad = F.pad(encoder_outs, (0, 0, 0, token_num-l, 0, 0), value=0.0)
-            inputs_embeds = encoder_outs_pad * modality_mask[:, :, None] + inputs_embeds * (~modality_mask[:, :, None])
+            modality_mask_start_indices = (modality_mask == True).float().argmax(dim=1)
+            modality_lengths = torch.clamp(modality_mask.sum(dim=1), max=encoder_outs.shape[1]).tolist()
+
+            encoder_outs_pad = torch.zeros_like(inputs_embeds)
+            for i in range(encoder_outs.shape[0]):
+                encoder_outs_pad[
+                    i, modality_mask_start_indices[i]:modality_mask_start_indices[i]+modality_lengths[i]
+                ] = encoder_outs[i][:modality_lengths[i]]
+
+            inputs_embeds = encoder_outs_pad + inputs_embeds * (~modality_mask[:, :, None])
 
         if kwargs.get("inference_mode", False):
             return inputs_embeds, attention_mask
@@ -410,7 +418,6 @@ class slam_model(nn.Module):
             # max_length=kwargs.get("max_length", 200),
             max_new_tokens=kwargs.get("max_new_tokens", 200),
             num_beams=kwargs.get("num_beams", 4),
-            # num_beams=kwargs.get("num_beams", 1),
             do_sample=kwargs.get("do_sample", False),
             min_length=kwargs.get("min_length", 1),
             top_p=kwargs.get("top_p", 1.0),

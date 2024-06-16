@@ -1,0 +1,2304 @@
+POD1000000005_S0000000(nwords=20,cor=20,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	hey friends i do not know about you but when i was a kid i knew absolutely nothing about money
+hyp:	hey friends i do not know about you but when i was a kid i knew absolutely nothing about money
+diff:	hey friends i do not know about you but when i was a kid i knew absolutely nothing about money
+POD1000000005_S0000001(nwords=17,cor=17,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	well there is a new show from marketplace and brains on that will help address just that
+hyp:	well there is a new show from marketplace and brains on that will help address just that
+diff:	well there is a new show from marketplace and brains on that will help address just that
+POD1000000005_S0000002(nwords=15,cor=13,ins=1,del=0,sub=2) corr:86.67%,cer:20.00%
+ref:	1000000s bazillions is new podcast for kids and their families it is all about money
+hyp:	1000000 bazillion is a new podcast for kids and their families it is all about money
+diff:	(1000000s bazillions->1000000 bazillion) is (*->a) new podcast for kids and their families it is all about money
+POD1000000005_S0000003(nwords=22,cor=22,ins=1,del=0,sub=0) corr:100.00%,cer:4.55%
+ref:	how it works how we use it where comes from and how we could all get a little bit smarter about it
+hyp:	how it works how we use it where it comes from and how we could all get a little bit smarter about it
+diff:	how it works how we use it where (*->it) comes from and how we could all get a little bit smarter about it
+POD1000000005_S0000004(nwords=25,cor=25,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	but in a fun way 1000000 bazillion helping dollars make more sense this podcast is presented in partnership with greenlight the debit card for kids
+hyp:	but in a fun way 1000000 bazillion helping dollars make more sense this podcast is presented in partnership with greenlight the debit card for kids
+diff:	but in a fun way 1000000 bazillion helping dollars make more sense this podcast is presented in partnership with greenlight the debit card for kids
+POD1000000005_S0000005(nwords=8,cor=7,ins=0,del=0,sub=1) corr:87.50%,cer:12.50%
+ref:	listen and subscribe wherever you get your podcast
+hyp:	listen and subscribe wherever you get your podcasts
+diff:	listen and subscribe wherever you get your (podcast->podcasts)
+POD1000000005_S0000006(nwords=15,cor=13,ins=0,del=1,sub=1) corr:86.67%,cer:13.33%
+ref:	like so many new americans dae jae kim came to this country on a quest
+hyp:	like so many new americans daejae kim came to this country on a quest
+diff:	like so many new americans (dae jae->daejae) kim came to this country on a quest
+POD1000000005_S0000007(nwords=9,cor=9,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	i have a dream to realize for american dream
+hyp:	i have a dream to realize for american dream
+diff:	i have a dream to realize for american dream
+POD1000000005_S0000008(nwords=13,cor=13,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	after settling in los angeles the korean born kim did the immigrant hustle
+hyp:	after settling in los angeles the korean born kim did the immigrant hustle
+diff:	after settling in los angeles the korean born kim did the immigrant hustle
+POD1000000005_S0000009(nwords=30,cor=30,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	working all kinds of jobs he delivered laundry sold cars finally he landed a gig working in the city is korean american apparel industry which locals call the jobber market
+hyp:	working all kinds of jobs he delivered laundry sold cars finally he landed a gig working in the city is korean american apparel industry which locals call the jobber market
+diff:	working all kinds of jobs he delivered laundry sold cars finally he landed a gig working in the city is korean american apparel industry which locals call the jobber market
+POD1000000005_S0000010(nwords=12,cor=10,ins=0,del=1,sub=1) corr:83.33%,cer:16.67%
+ref:	i have a uncle who has ah one fabric company in korea
+hyp:	i have an uncle who has one fabric company in korea
+diff:	i have (a->an) uncle who has (ah->*) one fabric company in korea
+POD1000000005_S0000011(nwords=7,cor=7,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	he always export fabric to united states
+hyp:	he always export fabric to united states
+diff:	he always export fabric to united states
+POD1000000005_S0000012(nwords=16,cor=14,ins=1,del=0,sub=2) corr:87.50%,cer:18.75%
+ref:	then he recommended to go to the jobber area and get the job in fabric salesforce
+hyp:	then he recommended to go to the java area and get the job in fabric sales 1st
+diff:	then he recommended to go to the (jobber->java) area and get the job in fabric (salesforce->sales 1st)
+POD1000000005_S0000013(nwords=5,cor=5,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	so i followed his advice
+hyp:	so i followed his advice
+diff:	so i followed his advice
+POD1000000005_S0000014(nwords=13,cor=13,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	his uncle is advice paid off kim worked for a decade selling fabric
+hyp:	his uncle is advice paid off kim worked for a decade selling fabric
+diff:	his uncle is advice paid off kim worked for a decade selling fabric
+POD1000000005_S0000015(nwords=14,cor=14,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	then in 2000 he and his wife started a garment business of their own
+hyp:	then in 2000 he and his wife started a garment business of their own
+diff:	then in 2000 he and his wife started a garment business of their own
+POD1000000005_S0000016(nwords=5,cor=3,ins=0,del=1,sub=1) corr:60.00%,cer:40.00%
+ref:	they called it tres bien
+hyp:	they called it trebiennes
+diff:	they called it (tres bien->trebiennes)
+POD1000000005_S0000017(nwords=3,cor=3,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	and they sold
+hyp:	and they sold
+diff:	and they sold
+POD1000000005_S0000018(nwords=2,cor=2,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	fashion basic
+hyp:	fashion basic
+diff:	fashion basic
+POD1000000005_S0000019(nwords=2,cor=2,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	fashion basic
+hyp:	fashion basic
+diff:	fashion basic
+POD1000000005_S0000020(nwords=5,cor=5,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	can wear anytime and anywhere
+hyp:	can wear anytime and anywhere
+diff:	can wear anytime and anywhere
+POD1000000005_S0000021(nwords=19,cor=19,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	kim is company sold a bunch of wholesale separates t shirts sweaters little skirts and such to clothing boutiques
+hyp:	kim is company sold a bunch of wholesale separates t shirts sweaters little skirts and such to clothing boutiques
+diff:	kim is company sold a bunch of wholesale separates t shirts sweaters little skirts and such to clothing boutiques
+POD1000000005_S0000022(nwords=23,cor=21,ins=0,del=0,sub=2) corr:91.30%,cer:8.70%
+ref:	and all of it was made right there in l a is garment district where we visited mister kim in tres bien showroom
+hyp:	and all of it was made right there in l a is garment district where we visited mister kim in travian is showroom
+diff:	and all of it was made right there in l a is garment district where we visited mister kim in (tres bien->travian is) showroom
+POD1000000005_S0000023(nwords=24,cor=16,ins=1,del=5,sub=3) corr:66.67%,cer:37.50%
+ref:	i always said to my customer i have a back u s a background made in u s a is that is a brand
+hyp:	i always say to my customer i have a usa background made in usa is that it is a brand
+diff:	i always (said->say) to my customer i have a (back u s a->usa) background made in (u s a->usa) is that (*->it) is a brand
+POD1000000005_S0000024(nwords=32,cor=30,ins=0,del=1,sub=1) corr:93.75%,cer:6.25%
+ref:	in the early days of tres bien when kim and his wife were still chasing their american dream they got an order from a small clothing boutique run by another korean couple
+hyp:	in the early days of tribune when kim and his wife were still chasing their american dream they got an order from a small clothing boutique run by another korean couple
+diff:	in the early days of (tres bien->tribune) when kim and his wife were still chasing their american dream they got an order from a small clothing boutique run by another korean couple
+POD1000000005_S0000025(nwords=5,cor=5,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	it was called forever 21
+hyp:	it was called forever 21
+diff:	it was called forever 21
+POD1000000005_S0000026(nwords=9,cor=9,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	kim happily supplied them with clothes until one day
+hyp:	kim happily supplied them with clothes until one day
+diff:	kim happily supplied them with clothes until one day
+POD1000000005_S0000027(nwords=10,cor=8,ins=0,del=2,sub=0) corr:80.00%,cer:20.00%
+ref:	ah they cut me out ah over 18 years ago
+hyp:	they cut me out over 18 years ago
+diff:	(ah->*) they cut me out (ah->*) over 18 years ago
+POD1000000005_S0000029(nwords=4,cor=4,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	they cut you out
+hyp:	they cut you out
+diff:	they cut you out
+POD1000000005_S0000030(nwords=1,cor=1,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	yeah
+hyp:	yeah
+diff:	yeah
+POD1000000005_S0000031(nwords=1,cor=1,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	why
+hyp:	why
+diff:	why
+POD1000000005_S0000032(nwords=10,cor=10,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	because their business system is not a match with mine
+hyp:	because their business system is not a match with mine
+diff:	because their business system is not a match with mine
+POD1000000005_S0000033(nwords=32,cor=31,ins=0,del=1,sub=0) corr:96.88%,cer:3.12%
+ref:	basically here is what went down kim got a complaint from the warehouse that the sleeves on one of the 3 quarter tops he sold them were a quarter inch too long
+hyp:	basically here is what went down kim got a complaint from the warehouse the sleeves on one of the 3 quarter tops he sold them were a quarter inch too long
+diff:	basically here is what went down kim got a complaint from the warehouse (that->*) the sleeves on one of the 3 quarter tops he sold them were a quarter inch too long
+POD1000000005_S0000034(nwords=7,cor=7,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	kim was not down with the critique
+hyp:	kim was not down with the critique
+diff:	kim was not down with the critique
+POD1000000005_S0000035(nwords=13,cor=11,ins=0,del=0,sub=2) corr:84.62%,cer:15.38%
+ref:	i am not tailor i said i told him i am not tailor
+hyp:	i am not taylor i said i told him i am not taylor
+diff:	i am not (tailor->taylor) i said i told him i am not (tailor->taylor)
+POD1000000005_S0000036(nwords=8,cor=8,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	and you can guess how that went over
+hyp:	and you can guess how that went over
+diff:	and you can guess how that went over
+POD1000000005_S0000037(nwords=13,cor=13,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	he told me that he cannot do business if i said like that
+hyp:	he told me that he cannot do business if i said like that
+diff:	he told me that he cannot do business if i said like that
+POD1000000005_S0000038(nwords=13,cor=11,ins=0,del=1,sub=1) corr:84.62%,cer:15.38%
+ref:	so i say okay let us stop the business 0 that is it
+hyp:	so i said okay let us stop the business that is it
+diff:	so i (say->said) okay let us stop the business (0->*) that is it
+POD1000000005_S0000040(nwords=35,cor=35,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	had kim known that the company he was mouthing off to would grow to become one of the largest fast fashion clothing brands in the world perhaps he would have fixed that quarter inch whoopsies
+hyp:	had kim known that the company he was mouthing off to would grow to become one of the largest fast fashion clothing brands in the world perhaps he would have fixed that quarter inch whoopsies
+diff:	had kim known that the company he was mouthing off to would grow to become one of the largest fast fashion clothing brands in the world perhaps he would have fixed that quarter inch whoopsies
+POD1000000005_S0000041(nwords=14,cor=14,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	that little extra bit of sleeve cost him a slice of his american dream
+hyp:	that little extra bit of sleeve cost him a slice of his american dream
+diff:	that little extra bit of sleeve cost him a slice of his american dream
+POD1000000005_S0000042(nwords=10,cor=9,ins=0,del=1,sub=0) corr:90.00%,cer:10.00%
+ref:	for 18 years i could not get ah any order
+hyp:	for 18 years i could not get any order
+diff:	for 18 years i could not get (ah->*) any order
+POD1000000005_S0000044(nwords=3,cor=0,ins=3,del=0,sub=3) corr:0.00%,cer:200.00%
+ref:	and i regret
+hyp:	i really could have done it
+diff:	(and i regret->i really could have done it)
+POD1000000005_S0000046(nwords=5,cor=5,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	did you say you regret
+hyp:	did you say you regret
+diff:	did you say you regret
+POD1000000005_S0000047(nwords=6,cor=6,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	yeah i regret until last year
+hyp:	yeah i regret until last year
+diff:	yeah i regret until last year
+POD1000000005_S0000049(nwords=5,cor=4,ins=0,del=0,sub=1) corr:80.00%,cer:20.00%
+ref:	because the order was huge
+hyp:	because their order was huge
+diff:	because (the->their) order was huge
+POD1000000005_S0000050(nwords=18,cor=18,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	a lot of folks from the korean jobber market made a lot of money off of forever 21
+hyp:	a lot of folks from the korean jobber market made a lot of money off of forever 21
+diff:	a lot of folks from the korean jobber market made a lot of money off of forever 21
+POD1000000005_S0000051(nwords=22,cor=22,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	the teen brand synonymous with $3 camisoles nonsensical graphic tees and festival wear for people who will never make it to coachella
+hyp:	the teen brand synonymous with $3 camisoles nonsensical graphic tees and festival wear for people who will never make it to coachella
+diff:	the teen brand synonymous with $3 camisoles nonsensical graphic tees and festival wear for people who will never make it to coachella
+POD1000000005_S0000052(nwords=19,cor=19,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	but in the end maybe it is okay that kim did not hitch his wagon to the clothing giant
+hyp:	but in the end maybe it is okay that kim did not hitch his wagon to the clothing giant
+diff:	but in the end maybe it is okay that kim did not hitch his wagon to the clothing giant
+POD1000000005_S0000053(nwords=10,cor=10,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	forever 21 is rise to fast fashion dominance was dizzying
+hyp:	forever 21 is rise to fast fashion dominance was dizzying
+diff:	forever 21 is rise to fast fashion dominance was dizzying
+POD1000000005_S0000054(nwords=22,cor=21,ins=0,del=0,sub=1) corr:95.45%,cer:4.55%
+ref:	but the brand is unbridled expansion mom and pop management approach and weak e commerce game set it up to fall hard
+hyp:	but the brand is unbridled expansion mom and pop management approach and weak e commerce games set it up to fall hard
+diff:	but the brand is unbridled expansion mom and pop management approach and weak e commerce (game->games) set it up to fall hard
+POD1000000005_S0000055(nwords=4,cor=3,ins=0,del=0,sub=1) corr:75.00%,cer:25.00%
+ref:	despite those 499 leggings
+hyp:	despite those $4.99 leggings
+diff:	despite those (499->$4.99) leggings
+POD1000000005_S0000056(nwords=28,cor=28,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	i am lauren ober and from american public media this is spectacular failures the show that looks cute even though failure is always trying to jack our style
+hyp:	i am lauren ober and from american public media this is spectacular failures the show that looks cute even though failure is always trying to jack our style
+diff:	i am lauren ober and from american public media this is spectacular failures the show that looks cute even though failure is always trying to jack our style
+POD1000000005_S0000058(nwords=24,cor=24,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	there is a neighborhood in los angeles about 3 miles west of downtown that is the beating heart of the city is korean community
+hyp:	there is a neighborhood in los angeles about 3 miles west of downtown that is the beating heart of the city is korean community
+diff:	there is a neighborhood in los angeles about 3 miles west of downtown that is the beating heart of the city is korean community
+POD1000000005_S0000059(nwords=16,cor=16,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	it has got everything korean karaoke bars and korean barbecue joints boba tea shops and banks
+hyp:	it has got everything korean karaoke bars and korean barbecue joints boba tea shops and banks
+diff:	it has got everything korean karaoke bars and korean barbecue joints boba tea shops and banks
+POD1000000005_S0000060(nwords=10,cor=9,ins=0,del=0,sub=1) corr:90.00%,cer:10.00%
+ref:	there is also like beauty treatment beauty makeup the spas
+hyp:	there is also like beauty treatment beauty makeup the spa
+diff:	there is also like beauty treatment beauty makeup the (spas->spa)
+POD1000000005_S0000062(nwords=7,cor=7,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	i mean you do have amazing skin
+hyp:	i mean you do have amazing skin
+diff:	i mean you do have amazing skin
+POD1000000005_S0000064(nwords=1,cor=1,ins=3,del=0,sub=0) corr:100.00%,cer:300.00%
+ref:	so
+hyp:	i am so happy
+diff:	(*->i am) so (*->happy)
+POD1000000005_S0000065(nwords=10,cor=6,ins=0,del=2,sub=2) corr:60.00%,cer:40.00%
+ref:	i i accept though i am not sure of it
+hyp:	i accept i am not sure but .
+diff:	(i->*) i accept (though->*) i am not sure (of it->but .)
+POD1000000005_S0000066(nwords=12,cor=10,ins=0,del=0,sub=2) corr:83.33%,cer:16.67%
+ref:	i came to get a tour of the neighborhood from hyepin im
+hyp:	i came to get a tour of the neighborhood from hapen m
+diff:	i came to get a tour of the neighborhood from (hyepin im->hapen m)
+POD1000000005_S0000067(nwords=9,cor=9,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	she is a leader in the korean community here
+hyp:	she is a leader in the korean community here
+diff:	she is a leader in the korean community here
+POD1000000005_S0000068(nwords=12,cor=10,ins=0,del=1,sub=1) corr:83.33%,cer:16.67%
+ref:	she runs faith and community empowerment which is a local non profit
+hyp:	she runs faith and community empowerment which is a local nonprofit
+diff:	she runs faith and community empowerment which is a local (non profit->nonprofit)
+POD1000000005_S0000069(nwords=3,cor=3,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	come this way
+hyp:	come this way
+diff:	come this way
+POD1000000005_S0000071(nwords=7,cor=7,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	this neighborhood is by koreans for koreans
+hyp:	this neighborhood is by koreans for koreans
+diff:	this neighborhood is by koreans for koreans
+POD1000000005_S0000072(nwords=22,cor=22,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	though a hefty number of non koreans come for the aforementioned spas and the k pop shops and the mouth numbing kimchi
+hyp:	though a hefty number of non koreans come for the aforementioned spas and the k pop shops and the mouth numbing kimchi
+diff:	though a hefty number of non koreans come for the aforementioned spas and the k pop shops and the mouth numbing kimchi
+POD1000000005_S0000073(nwords=21,cor=20,ins=0,del=1,sub=0) corr:95.24%,cer:4.76%
+ref:	so it is really for us it is kind of like the ah political social headquarters or center for our community
+hyp:	so it is really for us it is kind of like the political social headquarters or center for our community
+diff:	so it is really for us it is kind of like the (ah->*) political social headquarters or center for our community
+POD1000000005_S0000074(nwords=16,cor=9,ins=0,del=2,sub=5) corr:56.25%,cer:43.75%
+ref:	and also koreatown l a in essence is the headquarter for korean america u s a
+hyp:	and also koreatown la in essence is the headquarter for korea and america usa
+diff:	and also koreatown (l a->la) in essence is the headquarter for (korean america u s a->korea and america usa)
+POD1000000005_S0000075(nwords=14,cor=14,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	los angeles has the largest korean community of any city in the u s
+hyp:	los angeles has the largest korean community of any city in the u s
+diff:	los angeles has the largest korean community of any city in the u s
+POD1000000005_S0000076(nwords=15,cor=15,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	but because of language and cultural barriers im says her community has often felt isolated
+hyp:	but because of language and cultural barriers im says her community has often felt isolated
+diff:	but because of language and cultural barriers im says her community has often felt isolated
+POD1000000005_S0000077(nwords=6,cor=5,ins=1,del=0,sub=1) corr:83.33%,cer:33.33%
+ref:	this neighborhood though is a homebase
+hyp:	this neighborhood though is a home base
+diff:	this neighborhood though is a (homebase->home base)
+POD1000000005_S0000078(nwords=41,cor=40,ins=0,del=1,sub=0) corr:97.56%,cer:2.44%
+ref:	but in essence like as a korean american knowing there is koreatown and all the people that i have been able to meet because this space allows our communities to come together and to be visible i do not feel alone
+hyp:	but in essence as a korean american knowing there is koreatown and all the people that i have been able to meet because this space allows our communities to come together and to be visible i do not feel alone
+diff:	but in essence (like->*) as a korean american knowing there is koreatown and all the people that i have been able to meet because this space allows our communities to come together and to be visible i do not feel alone
+POD1000000005_S0000079(nwords=32,cor=32,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	i wanted to better understand how this place with its tight knit korean churches and its ever youthful k beauty boutiques birthed one of the largest fast fashion brands in the world
+hyp:	i wanted to better understand how this place with its tight knit korean churches and its ever youthful k beauty boutiques birthed one of the largest fast fashion brands in the world
+diff:	i wanted to better understand how this place with its tight knit korean churches and its ever youthful k beauty boutiques birthed one of the largest fast fashion brands in the world
+POD1000000005_S0000081(nwords=22,cor=22,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	after the u s and korea established official diplomatic ties in 1882 the 1st wave of korean immigration began to roll in
+hyp:	after the u s and korea established official diplomatic ties in 1882 the 1st wave of korean immigration began to roll in
+diff:	after the u s and korea established official diplomatic ties in 1882 the 1st wave of korean immigration began to roll in
+POD1000000005_S0000082(nwords=7,cor=7,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	1st to hawaii then to los angeles
+hyp:	1st to hawaii then to los angeles
+diff:	1st to hawaii then to los angeles
+POD1000000005_S0000083(nwords=11,cor=11,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	it was followed by a 2nd surge after the korean war
+hyp:	it was followed by a 2nd surge after the korean war
+diff:	it was followed by a 2nd surge after the korean war
+POD1000000005_S0000084(nwords=15,cor=13,ins=0,del=1,sub=1) corr:86.67%,cer:13.33%
+ref:	the watts riots of 1965 pushed a lot of koreans to the l a suburbs
+hyp:	the watts riots of 1965 pushed a lot of koreans to the la suburbs
+diff:	the watts riots of 1965 pushed a lot of koreans to the (l a->la) suburbs
+POD1000000005_S0000085(nwords=22,cor=22,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	but the number of new arrivals to the city from south korea continued to grow thanks to a loosening of immigration laws
+hyp:	but the number of new arrivals to the city from south korea continued to grow thanks to a loosening of immigration laws
+diff:	but the number of new arrivals to the city from south korea continued to grow thanks to a loosening of immigration laws
+POD1000000005_S0000086(nwords=19,cor=17,ins=0,del=1,sub=1) corr:89.47%,cer:10.53%
+ref:	by the time im arrived in the u s in 1974 the community was already on the way up
+hyp:	by the time im arrived in the us in 1974 the community was already on the way up
+diff:	by the time im arrived in the (u s->us) in 1974 the community was already on the way up
+POD1000000005_S0000087(nwords=20,cor=20,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	thanks to some hustling by a few local korean businessmen koreatown got its own official blue neighborhood signs in 1980
+hyp:	thanks to some hustling by a few local korean businessmen koreatown got its own official blue neighborhood signs in 1980
+diff:	thanks to some hustling by a few local korean businessmen koreatown got its own official blue neighborhood signs in 1980
+POD1000000005_S0000088(nwords=7,cor=7,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	so there was kind of that signage
+hyp:	so there was kind of that signage
+diff:	so there was kind of that signage
+POD1000000005_S0000089(nwords=26,cor=23,ins=0,del=2,sub=1) corr:88.46%,cer:11.54%
+ref:	0 although already there was the church and the grocery stores you know started to anchor the rest of the community right and the restaurants so
+hyp:	although already there was the church and the grocery stores you know started to anchor the rest of the community right and the restaurant
+diff:	(0->*) although already there was the church and the grocery stores you know started to anchor the rest of the community right and the (restaurants so->restaurant)
+POD1000000005_S0000090(nwords=17,cor=16,ins=0,del=0,sub=1) corr:94.12%,cer:5.88%
+ref:	just after koreatown became legit a couple named do won and jin sook chang emigrated from seoul
+hyp:	just after koreatown became legit a couple named do won and jin suk chang emigrated from seoul
+diff:	just after koreatown became legit a couple named do won and jin (sook->suk) chang emigrated from seoul
+POD1000000005_S0000091(nwords=18,cor=16,ins=0,del=1,sub=1) corr:88.89%,cer:11.11%
+ref:	they came in search of the same thing our pal dae jae kim was after the american dream
+hyp:	they came in search of the same thing our pal dj kim was after the american dream
+diff:	they came in search of the same thing our pal (dae jae->dj) kim was after the american dream
+POD1000000005_S0000092(nwords=12,cor=12,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	in south korea mister chang ran a coffee and juice delivery business
+hyp:	in south korea mister chang ran a coffee and juice delivery business
+diff:	in south korea mister chang ran a coffee and juice delivery business
+POD1000000005_S0000093(nwords=22,cor=20,ins=0,del=1,sub=1) corr:90.91%,cer:9.09%
+ref:	missus chang was a hairdresser when they moved to l a they took a series of menial jobs to make ends meet
+hyp:	missus chang was a hairdresser when they moved to la they took a series of menial jobs to make ends meet
+diff:	missus chang was a hairdresser when they moved to (l a->la) they took a series of menial jobs to make ends meet
+POD1000000005_S0000094(nwords=13,cor=13,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	mister chang has talked about how he worked as a gas station attendant
+hyp:	mister chang has talked about how he worked as a gas station attendant
+diff:	mister chang has talked about how he worked as a gas station attendant
+POD1000000005_S0000095(nwords=4,cor=4,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	he did janitorial work
+hyp:	he did janitorial work
+diff:	he did janitorial work
+POD1000000005_S0000096(nwords=14,cor=14,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	that is sapna maheshwari she is a business reporter at the new york times
+hyp:	that is sapna maheshwari she is a business reporter at the new york times
+diff:	that is sapna maheshwari she is a business reporter at the new york times
+POD1000000005_S0000097(nwords=31,cor=30,ins=0,del=1,sub=0) corr:96.77%,cer:3.23%
+ref:	and the legend has it that he was working at a gas station and as he saw people with these really nice cars he would always ask them what they did
+hyp:	the legend has it that he was working at a gas station and as he saw people with these really nice cars he would always ask them what they did
+diff:	(and->*) the legend has it that he was working at a gas station and as he saw people with these really nice cars he would always ask them what they did
+POD1000000005_S0000098(nwords=14,cor=14,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	and he noticed the people with the nicest cars worked in the garment industry
+hyp:	and he noticed the people with the nicest cars worked in the garment industry
+diff:	and he noticed the people with the nicest cars worked in the garment industry
+POD1000000005_S0000099(nwords=27,cor=25,ins=0,del=1,sub=1) corr:92.59%,cer:7.41%
+ref:	okay now i would think that the people with the nicest cars in l a were like jack nicholson and mel gibson but what do i know
+hyp:	okay now i would think that the people with the nicest cars in la were like jack nicholson and mel gibson but what do i know
+diff:	okay now i would think that the people with the nicest cars in (l a->la) were like jack nicholson and mel gibson but what do i know
+POD1000000005_S0000100(nwords=22,cor=22,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	for some reason the garment trade just became fixed in mister chang is mind so he and his wife went for it
+hyp:	for some reason the garment trade just became fixed in mister chang is mind so he and his wife went for it
+diff:	for some reason the garment trade just became fixed in mister chang is mind so he and his wife went for it
+POD1000000005_S0000101(nwords=21,cor=21,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	the 2 of them put together their savings and they decided to open a store that was 1st called fashion 21
+hyp:	the 2 of them put together their savings and they decided to open a store that was 1st called fashion 21
+diff:	the 2 of them put together their savings and they decided to open a store that was 1st called fashion 21
+POD1000000005_S0000102(nwords=36,cor=35,ins=0,del=0,sub=1) corr:97.22%,cer:2.78%
+ref:	and they figured out what the garment manufacturing in los angeles how to deliver fashions that people wanted and to come up with a way of selling clothes that churned through styles made an exciting environment
+hyp:	and they figured out with the garment manufacturing in los angeles how to deliver fashions that people wanted and to come up with a way of selling clothes that churned through styles made an exciting environment
+diff:	and they figured out (what->with) the garment manufacturing in los angeles how to deliver fashions that people wanted and to come up with a way of selling clothes that churned through styles made an exciting environment
+POD1000000005_S0000103(nwords=18,cor=18,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	and really created the type of place where you had to come in to see what was new
+hyp:	and really created the type of place where you had to come in to see what was new
+diff:	and really created the type of place where you had to come in to see what was new
+POD1000000005_S0000104(nwords=7,cor=7,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	now this might not seem very revolutionary
+hyp:	now this might not seem very revolutionary
+diff:	now this might not seem very revolutionary
+POD1000000005_S0000105(nwords=22,cor=20,ins=0,del=1,sub=1) corr:90.91%,cer:9.09%
+ref:	especially today when consumers can get knock offs of the latest luxury fashions seemingly before the models have strutted off the catwalk
+hyp:	especially today when consumers can get knockoffs of the latest luxury fashions seemingly before the models have strutted off the catwalk
+diff:	especially today when consumers can get (knock offs->knockoffs) of the latest luxury fashions seemingly before the models have strutted off the catwalk
+POD1000000005_S0000106(nwords=12,cor=12,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	but in the 80s that was not really how fashion was done
+hyp:	but in the 80s that was not really how fashion was done
+diff:	but in the 80s that was not really how fashion was done
+POD1000000005_S0000107(nwords=23,cor=23,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	they hit on something as happens in retail they hit upon a formula that resonated with shoppers and they quickly became a success
+hyp:	they hit on something as happens in retail they hit upon a formula that resonated with shoppers and they quickly became a success
+diff:	they hit on something as happens in retail they hit upon a formula that resonated with shoppers and they quickly became a success
+POD1000000005_S0000108(nwords=20,cor=20,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	in 1984 the changs opened fashion 21 a 900 square foot boutique in the heart of the highland park neighborhood
+hyp:	in 1984 the changs opened fashion 21 a 900 square foot boutique in the heart of the highland park neighborhood
+diff:	in 1984 the changs opened fashion 21 a 900 square foot boutique in the heart of the highland park neighborhood
+POD1000000005_S0000109(nwords=25,cor=25,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	they packed it with cheap skimpy teen clothes that they bought from l a is korean american garment manufacturers like the kind mister kim sold
+hyp:	they packed it with cheap skimpy teen clothes that they bought from l a is korean american garment manufacturers like the kind mister kim sold
+diff:	they packed it with cheap skimpy teen clothes that they bought from l a is korean american garment manufacturers like the kind mister kim sold
+POD1000000005_S0000110(nwords=33,cor=33,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	i think one of the things that definitely helped them was the fact that they were in los angeles and took advantage of the other korean american garment manufacturers in that city specifically
+hyp:	i think one of the things that definitely helped them was the fact that they were in los angeles and took advantage of the other korean american garment manufacturers in that city specifically
+diff:	i think one of the things that definitely helped them was the fact that they were in los angeles and took advantage of the other korean american garment manufacturers in that city specifically
+POD1000000005_S0000111(nwords=12,cor=12,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	so i think that very much was a propeller of their success
+hyp:	so i think that very much was a propeller of their success
+diff:	so i think that very much was a propeller of their success
+POD1000000005_S0000112(nwords=4,cor=4,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	remember the jobber market
+hyp:	remember the jobber market
+diff:	remember the jobber market
+POD1000000005_S0000113(nwords=9,cor=4,ins=0,del=2,sub=3) corr:44.44%,cer:55.56%
+ref:	jobber j 0 b b e r jobber market
+hyp:	java j 0 p b java market
+diff:	(jobber->java) j 0 (b->p) b (e r jobber->java) market
+POD1000000005_S0000114(nwords=21,cor=21,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	kim explains that the jobber market came about around 35 years ago with the arrival of korean immigrants from south america
+hyp:	kim explains that the jobber market came about around 35 years ago with the arrival of korean immigrants from south america
+diff:	kim explains that the jobber market came about around 35 years ago with the arrival of korean immigrants from south america
+POD1000000005_S0000115(nwords=31,cor=31,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	he came from bolivia many of the other folks had worked in brazil in that country is massive garment industry and they all brought that experience with them to l a
+hyp:	he came from bolivia many of the other folks had worked in brazil in that country is massive garment industry and they all brought that experience with them to l a
+diff:	he came from bolivia many of the other folks had worked in brazil in that country is massive garment industry and they all brought that experience with them to l a
+POD1000000005_S0000116(nwords=13,cor=13,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	they bought wholesale closeout garments and went to work opening their own stores
+hyp:	they bought wholesale closeout garments and went to work opening their own stores
+diff:	they bought wholesale closeout garments and went to work opening their own stores
+POD1000000005_S0000117(nwords=7,cor=5,ins=0,del=1,sub=1) corr:71.43%,cer:28.57%
+ref:	ah people started to sell that merchandise
+hyp:	people started to sell dead merchandise
+diff:	(ah->*) people started to sell (that->dead) merchandise
+POD1000000005_S0000118(nwords=16,cor=12,ins=1,del=3,sub=1) corr:75.00%,cer:31.25%
+ref:	but the people come from the brazil they started the making manufacturing their own brand apparel
+hyp:	but the people come from brazil they start manufacturing their own brand of apparel
+diff:	but the people come from (the->*) brazil they (started the making->start) manufacturing their own brand (*->of) apparel
+POD1000000005_S0000119(nwords=19,cor=19,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	by the time the changs got to l a the korean american apparel industry was already in full swing
+hyp:	by the time the changs got to l a the korean american apparel industry was already in full swing
+diff:	by the time the changs got to l a the korean american apparel industry was already in full swing
+POD1000000005_S0000120(nwords=23,cor=23,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	the couple worked with manufacturers in the jobber market to fill up fashion 21 with inexpensive styles that could be turned over quickly
+hyp:	the couple worked with manufacturers in the jobber market to fill up fashion 21 with inexpensive styles that could be turned over quickly
+diff:	the couple worked with manufacturers in the jobber market to fill up fashion 21 with inexpensive styles that could be turned over quickly
+POD1000000005_S0000122(nwords=12,cor=12,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	my producer whitney and i decided to see where it all began
+hyp:	my producer whitney and i decided to see where it all began
+diff:	my producer whitney and i decided to see where it all began
+POD1000000005_S0000123(nwords=18,cor=18,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	so we took a trip to 5637 north figueroa street and cruised around the shop for a bit
+hyp:	so we took a trip to 5637 north figueroa street and cruised around the shop for a bit
+diff:	so we took a trip to 5637 north figueroa street and cruised around the shop for a bit
+POD1000000005_S0000125(nwords=18,cor=18,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	the sign on the front of the building still reads fashion 21 an homage to its humble roots
+hyp:	the sign on the front of the building still reads fashion 21 an homage to its humble roots
+diff:	the sign on the front of the building still reads fashion 21 an homage to its humble roots
+POD1000000005_S0000126(nwords=10,cor=10,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	but it is a forever 21 store through and through
+hyp:	but it is a forever 21 store through and through
+diff:	but it is a forever 21 store through and through
+POD1000000005_S0000127(nwords=6,cor=6,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	see styles from one body suits
+hyp:	see styles from one body suits
+diff:	see styles from one body suits
+POD1000000005_S0000129(nwords=9,cor=9,ins=1,del=0,sub=0) corr:100.00%,cer:11.11%
+ref:	bodysuit in there for 8 bucks if you want
+hyp:	a bodysuit in there for 8 bucks if you want
+diff:	(*->a) bodysuit in there for 8 bucks if you want
+POD1000000005_S0000130(nwords=10,cor=10,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	i have got all the bodysuits i need right now
+hyp:	i have got all the bodysuits i need right now
+diff:	i have got all the bodysuits i need right now
+POD1000000005_S0000131(nwords=4,cor=4,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	well that is debatable
+hyp:	well that is debatable
+diff:	well that is debatable
+POD1000000005_S0000132(nwords=8,cor=8,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	we pop inside and it looks pretty classy
+hyp:	we pop inside and it looks pretty classy
+diff:	we pop inside and it looks pretty classy
+POD1000000005_S0000133(nwords=9,cor=9,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	like maybe it is more for adults than teens
+hyp:	like maybe it is more for adults than teens
+diff:	like maybe it is more for adults than teens
+POD1000000005_S0000134(nwords=15,cor=15,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	we head to a rack of graphic tees and i am kind of into them
+hyp:	we head to a rack of graphic tees and i am kind of into them
+diff:	we head to a rack of graphic tees and i am kind of into them
+POD1000000005_S0000135(nwords=9,cor=8,ins=0,del=1,sub=0) corr:88.89%,cer:11.11%
+ref:	i mean i would want 100% wear that actually
+hyp:	i mean i would 100% wear that actually
+diff:	i mean i would (want->*) 100% wear that actually
+POD1000000005_S0000137(nwords=2,cor=1,ins=0,del=0,sub=1) corr:50.00%,cer:50.00%
+ref:	bad shirt
+hyp:	bad shoe
+diff:	bad (shirt->shoe)
+POD1000000005_S0000138(nwords=13,cor=12,ins=0,del=0,sub=1) corr:92.31%,cer:7.69%
+ref:	if they have that in like a large i would totally wear that
+hyp:	if they had that in like a large i would totally wear that
+diff:	if they (have->had) that in like a large i would totally wear that
+POD1000000005_S0000139(nwords=6,cor=6,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	can not stop will not stop
+hyp:	can not stop will not stop
+diff:	can not stop will not stop
+POD1000000005_S0000140(nwords=14,cor=7,ins=0,del=4,sub=3) corr:50.00%,cer:50.00%
+ref:	well it is right that is right you can not stop will not stop
+hyp:	well that is right you can not step on stuff
+diff:	well (it is right->*) that is right you can not (stop will not stop->step on stuff)
+POD1000000005_S0000141(nwords=10,cor=10,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	alas we left empty handed no $8 bodysuits for whitney
+hyp:	alas we left empty handed no $8 bodysuits for whitney
+diff:	alas we left empty handed no $8 bodysuits for whitney
+POD1000000005_S0000143(nwords=32,cor=31,ins=1,del=0,sub=1) corr:96.88%,cer:6.25%
+ref:	if the fashion 21 store on figueroa was representative of what the changs business was in the early days it seems like it would have been a nice little life for them
+hyp:	if the fashion 21 store on figueroa was representative of what the chang is business was in the early days it seems like it would have been a nice little life for them
+diff:	if the fashion 21 store on figueroa was representative of what the (changs->chang is) business was in the early days it seems like it would have been a nice little life for them
+POD1000000005_S0000144(nwords=9,cor=9,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	in its 1st year the store pulled in $700000
+hyp:	in its 1st year the store pulled in $700000
+diff:	in its 1st year the store pulled in $700000
+POD1000000005_S0000145(nwords=9,cor=9,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	and that was largely thanks to other korean immigrants
+hyp:	and that was largely thanks to other korean immigrants
+diff:	and that was largely thanks to other korean immigrants
+POD1000000005_S0000146(nwords=11,cor=10,ins=0,del=1,sub=0) corr:90.91%,cer:9.09%
+ref:	but then ah they realized how successful this business model was
+hyp:	but then they realized how successful this business model was
+diff:	but then (ah->*) they realized how successful this business model was
+POD1000000005_S0000147(nwords=6,cor=6,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	and they started opening new stores
+hyp:	and they started opening new stores
+diff:	and they started opening new stores
+POD1000000005_S0000148(nwords=12,cor=11,ins=0,del=0,sub=1) corr:91.67%,cer:8.33%
+ref:	that is ludovica cesareo she is a marketing professor at lehigh university
+hyp:	that is ludovica cesario she is a marketing professor at lehigh university
+diff:	that is ludovica (cesareo->cesario) she is a marketing professor at lehigh university
+POD1000000005_S0000149(nwords=31,cor=30,ins=0,del=1,sub=0) corr:96.77%,cer:3.23%
+ref:	they then changed the name to forever 21 with the idea that they are selling clothes for anyone who wants to be trendy or fresh or just young ah more generally
+hyp:	they then changed the name to forever 21 with the idea that they are selling clothes for anyone who wants to be trendy or fresh or just young more generally
+diff:	they then changed the name to forever 21 with the idea that they are selling clothes for anyone who wants to be trendy or fresh or just young (ah->*) more generally
+POD1000000005_S0000150(nwords=30,cor=29,ins=0,del=0,sub=1) corr:96.67%,cer:3.33%
+ref:	this business model selling cheap trendy clothes that could be manufactured quickly and turned over frequently so the stores always felt new and fresh that was the changs secret weapon
+hyp:	this business model selling cheap trendy clothes that could be manufactured quickly and turned over frequently so the stores always felt new and fresh that was the chang secret weapon
+diff:	this business model selling cheap trendy clothes that could be manufactured quickly and turned over frequently so the stores always felt new and fresh that was the (changs->chang) secret weapon
+POD1000000005_S0000151(nwords=24,cor=23,ins=0,del=1,sub=0) corr:95.83%,cer:4.17%
+ref:	today we call this approach fast fashion and lots of global brands do it h and m zara and asos to name a few
+hyp:	today we call this approach fast fashion and lots of global brands do it h m zara and asos to name a few
+diff:	today we call this approach fast fashion and lots of global brands do it h (and->*) m zara and asos to name a few
+POD1000000005_S0000152(nwords=5,cor=5,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	but forever 21 perfected it
+hyp:	but forever 21 perfected it
+diff:	but forever 21 perfected it
+POD1000000005_S0000153(nwords=24,cor=24,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	for a definition of fast fashion here is the washington post fashion critic i am sorry the pulitzer prize winning fashion critic robin givhan
+hyp:	for a definition of fast fashion here is the washington post fashion critic i am sorry the pulitzer prize winning fashion critic robin givhan
+diff:	for a definition of fast fashion here is the washington post fashion critic i am sorry the pulitzer prize winning fashion critic robin givhan
+POD1000000005_S0000154(nwords=26,cor=24,ins=0,del=1,sub=1) corr:92.31%,cer:7.69%
+ref:	i mean it is generally clothing that is produced very quickly very much leaping on to a trend of the moment and not meant to last
+hyp:	i mean it is generally clothing that is produced very quickly very much leaping onto a trend of the moment and not meant to last
+diff:	i mean it is generally clothing that is produced very quickly very much leaping (on to->onto) a trend of the moment and not meant to last
+POD1000000005_S0000155(nwords=17,cor=16,ins=0,del=1,sub=0) corr:94.12%,cer:5.88%
+ref:	ah meaning the design is not meant to last or the clothing is not meant to last
+hyp:	meaning the design is not meant to last or the clothing is not meant to last
+diff:	(ah->*) meaning the design is not meant to last or the clothing is not meant to last
+POD1000000005_S0000156(nwords=38,cor=35,ins=0,del=1,sub=2) corr:92.11%,cer:7.89%
+ref:	both the idea is that if you want to participate in a trend and a fad and one that is most likely a fleeting fad fast fashion allows you to glom on to that as soon as possible
+hyp:	both the idea is that if you want to participate in a trend in a fad and one that is most likely a fleeting fad fast fashion allows you to glom onto that as soon as possible
+diff:	both the idea is that if you want to participate in a trend (and->in) a fad and one that is most likely a fleeting fad fast fashion allows you to glom (on to->onto) that as soon as possible
+POD1000000005_S0000157(nwords=9,cor=9,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	it allows you to grasp it for minimal cost
+hyp:	it allows you to grasp it for minimal cost
+diff:	it allows you to grasp it for minimal cost
+POD1000000005_S0000158(nwords=5,cor=5,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	wear it a few times
+hyp:	wear it a few times
+diff:	wear it a few times
+POD1000000005_S0000159(nwords=10,cor=10,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	savor the moment literally the moment and then move on
+hyp:	savor the moment literally the moment and then move on
+diff:	savor the moment literally the moment and then move on
+POD1000000005_S0000160(nwords=8,cor=7,ins=0,del=0,sub=1) corr:87.50%,cer:12.50%
+ref:	and fast fashion trades in fomo says cesareo
+hyp:	and fast fashion trades in fomo says cesario
+diff:	and fast fashion trades in fomo says (cesareo->cesario)
+POD1000000005_S0000161(nwords=37,cor=35,ins=0,del=2,sub=0) corr:94.59%,cer:5.41%
+ref:	there is this almost fear of missing out ah that if you do not go to the store as soon as the shipment arrives ah you might not be able to find that product in your size
+hyp:	there is this almost fear of missing out that if you do not go to the store as soon as the shipment arrives you might not be able to find that product in your size
+diff:	there is this almost fear of missing out (ah->*) that if you do not go to the store as soon as the shipment arrives (ah->*) you might not be able to find that product in your size
+POD1000000005_S0000162(nwords=23,cor=20,ins=0,del=3,sub=0) corr:86.96%,cer:13.04%
+ref:	and so it creates this sense of urgency basically in consumers to want to make them keep coming back ah to the store
+hyp:	and so it creates this sense of urgency basically in consumers to make them keep coming back to the store
+diff:	and so it creates this sense of urgency basically in consumers (to want->*) to make them keep coming back (ah->*) to the store
+POD1000000005_S0000163(nwords=5,cor=5,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	that and insanely cheap prices
+hyp:	that and insanely cheap prices
+diff:	that and insanely cheap prices
+POD1000000005_S0000164(nwords=7,cor=5,ins=0,del=1,sub=1) corr:71.43%,cer:28.57%
+ref:	like clothes for under $10 a piece
+hyp:	like clothes for under $10 apiece
+diff:	like clothes for under $10 (a piece->apiece)
+POD1000000005_S0000165(nwords=22,cor=22,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	this business model plus a manageable number of stores meant that the chang is operation was profitable and everything was pretty decent
+hyp:	this business model plus a manageable number of stores meant that the chang is operation was profitable and everything was pretty decent
+diff:	this business model plus a manageable number of stores meant that the chang is operation was profitable and everything was pretty decent
+POD1000000005_S0000166(nwords=9,cor=9,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	but the changs were not interested in pretty decent
+hyp:	but the changs were not interested in pretty decent
+diff:	but the changs were not interested in pretty decent
+POD1000000005_S0000167(nwords=8,cor=8,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	they were chasing their big bold american dream
+hyp:	they were chasing their big bold american dream
+diff:	they were chasing their big bold american dream
+POD1000000005_S0000168(nwords=17,cor=17,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	i think that mister chang at least in this period where he started expanding into department stores
+hyp:	i think that mister chang at least in this period where he started expanding into department stores
+diff:	i think that mister chang at least in this period where he started expanding into department stores
+POD1000000005_S0000169(nwords=19,cor=19,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	also thought that forever 21 could be more than where college girls got a new outfit for saturday night
+hyp:	also thought that forever 21 could be more than where college girls got a new outfit for saturday night
+diff:	also thought that forever 21 could be more than where college girls got a new outfit for saturday night
+POD1000000005_S0000170(nwords=16,cor=16,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	he thought that maybe they could be a place where the whole family could be outfitted
+hyp:	he thought that maybe they could be a place where the whole family could be outfitted
+diff:	he thought that maybe they could be a place where the whole family could be outfitted
+POD1000000005_S0000171(nwords=20,cor=20,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	where you would really trust this store to provide you with a lot of the clothing for your everyday life
+hyp:	where you would really trust this store to provide you with a lot of the clothing for your everyday life
+diff:	where you would really trust this store to provide you with a lot of the clothing for your everyday life
+POD1000000005_S0000173(nwords=32,cor=32,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	12 miles from the 1st forever 21 property is the beverly center a sprawling shopping mall that one angeleno told me is quote one of the most hated malls in l a
+hyp:	12 miles from the 1st forever 21 property is the beverly center a sprawling shopping mall that one angeleno told me is quote one of the most hated malls in l a
+diff:	12 miles from the 1st forever 21 property is the beverly center a sprawling shopping mall that one angeleno told me is quote one of the most hated malls in l a
+POD1000000005_S0000174(nwords=12,cor=12,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	it is more than 800000 square feet of prada fendi and balenciaga
+hyp:	it is more than 800000 square feet of prada fendi and balenciaga
+diff:	it is more than 800000 square feet of prada fendi and balenciaga
+POD1000000005_S0000175(nwords=22,cor=19,ins=0,del=2,sub=1) corr:86.36%,cer:13.64%
+ref:	tucked into a corner on level 8 is x x i forever which i guess is forever 21 but make it luxury
+hyp:	tucked into a corner on level 8 is xxi forever which i guess is forever 21 but make it luxury
+diff:	tucked into a corner on level 8 is (x x i->xxi) forever which i guess is forever 21 but make it luxury
+POD1000000005_S0000176(nwords=20,cor=20,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	the store occupies more than an acre of real estate and is not meant for people over a certain age
+hyp:	the store occupies more than an acre of real estate and is not meant for people over a certain age
+diff:	the store occupies more than an acre of real estate and is not meant for people over a certain age
+POD1000000005_S0000177(nwords=15,cor=15,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	it is bright and loud and the seemingly never ending selection of clothes is disorienting
+hyp:	it is bright and loud and the seemingly never ending selection of clothes is disorienting
+diff:	it is bright and loud and the seemingly never ending selection of clothes is disorienting
+POD1000000005_S0000178(nwords=14,cor=14,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	honestly i felt like i needed a xanax and a nap after we visited
+hyp:	honestly i felt like i needed a xanax and a nap after we visited
+diff:	honestly i felt like i needed a xanax and a nap after we visited
+POD1000000005_S0000179(nwords=19,cor=18,ins=0,del=0,sub=1) corr:94.74%,cer:5.26%
+ref:	but this was what the changs were after they were planting their flag with huge stores in fancy malls
+hyp:	but this was what the chiangs were after they were planting their flag with huge stores in fancy malls
+diff:	but this was what the (changs->chiangs) were after they were planting their flag with huge stores in fancy malls
+POD1000000005_S0000180(nwords=6,cor=6,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	this was their american dream realized
+hyp:	this was their american dream realized
+diff:	this was their american dream realized
+POD1000000005_S0000181(nwords=13,cor=13,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	and they built it largely on top of the ashes of fallen retailers
+hyp:	and they built it largely on top of the ashes of fallen retailers
+diff:	and they built it largely on top of the ashes of fallen retailers
+POD1000000005_S0000182(nwords=31,cor=29,ins=0,del=1,sub=1) corr:93.55%,cer:6.45%
+ref:	it was really in the early 2000s that you saw them sort of burst on to the national scene and that really emerged with the acquisition of stores owned by gadzooks
+hyp:	it was really in the early 2000s that you saw them sort of burst onto the national scene and that really emerged with the acquisition of stores owned by gadzooks
+diff:	it was really in the early 2000s that you saw them sort of burst (on to->onto) the national scene and that really emerged with the acquisition of stores owned by gadzooks
+POD1000000005_S0000183(nwords=5,cor=5,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	do you remember that retailer
+hyp:	do you remember that retailer
+diff:	do you remember that retailer
+POD1000000005_S0000184(nwords=16,cor=14,ins=0,del=1,sub=1) corr:87.50%,cer:12.50%
+ref:	gadzooks was a teen clothing company with 100s of stores and malls across the u s
+hyp:	gadzooks was a teen clothing company with 100s of stores and malls across the us
+diff:	gadzooks was a teen clothing company with 100s of stores and malls across the (u s->us)
+POD1000000005_S0000185(nwords=6,cor=6,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	in 2004 it filed for bankruptcy
+hyp:	in 2004 it filed for bankruptcy
+diff:	in 2004 it filed for bankruptcy
+POD1000000005_S0000186(nwords=22,cor=22,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	and so there is all these stores and other assets that were up for purchase and forever 21 bid on those successfully
+hyp:	and so there is all these stores and other assets that were up for purchase and forever 21 bid on those successfully
+diff:	and so there is all these stores and other assets that were up for purchase and forever 21 bid on those successfully
+POD1000000005_S0000187(nwords=20,cor=20,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	and with that they really expanded their store base and also became a national player in a whole new way
+hyp:	and with that they really expanded their store base and also became a national player in a whole new way
+diff:	and with that they really expanded their store base and also became a national player in a whole new way
+POD1000000005_S0000188(nwords=11,cor=11,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	in 2005 forever 21 began a period of mind blowing expansion
+hyp:	in 2005 forever 21 began a period of mind blowing expansion
+diff:	in 2005 forever 21 began a period of mind blowing expansion
+POD1000000005_S0000189(nwords=22,cor=21,ins=1,del=0,sub=1) corr:95.45%,cer:9.09%
+ref:	when mall chains like mervyns and sears and others were toppling under their own weight forever 21 was snatching up their scraps
+hyp:	when mall chains like mervin is and sears and others were toppling under their own weight forever 21 was snatching up their scraps
+diff:	when mall chains like (mervyns->mervin is) and sears and others were toppling under their own weight forever 21 was snatching up their scraps
+POD1000000005_S0000190(nwords=19,cor=17,ins=0,del=0,sub=2) corr:89.47%,cer:10.53%
+ref:	when the global recession hit in 2008 the changs looked at it as an opportunity to push even harder
+hyp:	when the global recession hit in 2008 chang is looked at it as an opportunity to push even harder
+diff:	when the global recession hit in 2008 (the changs->chang is) looked at it as an opportunity to push even harder
+POD1000000005_S0000191(nwords=13,cor=13,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	nothing like hitting the gas when your competitors are slamming into the guardrails
+hyp:	nothing like hitting the gas when your competitors are slamming into the guardrails
+diff:	nothing like hitting the gas when your competitors are slamming into the guardrails
+POD1000000005_S0000192(nwords=15,cor=15,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	by 2011 forever 21 had almost 500 stores around the country and employed 35000 people
+hyp:	by 2011 forever 21 had almost 500 stores around the country and employed 35000 people
+diff:	by 2011 forever 21 had almost 500 stores around the country and employed 35000 people
+POD1000000005_S0000193(nwords=14,cor=14,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	within just a few years after that the company had expanded to 47 countries
+hyp:	within just a few years after that the company had expanded to 47 countries
+diff:	within just a few years after that the company had expanded to 47 countries
+POD1000000005_S0000194(nwords=35,cor=33,ins=0,del=0,sub=2) corr:94.29%,cer:5.71%
+ref:	so that meant that tweens in the philippines or romania or macao could all rock a boxy shirred flounce cuff top or leopard drawstring lounge shorts for less than the price of a movie ticket
+hyp:	so that meant that tweens in the philippines or romania or macau could all rock a boxy shirt flounce cuff top or leopard drawstring lounge shorts for less than the price of a movie ticket
+diff:	so that meant that tweens in the philippines or romania or (macao->macau) could all rock a boxy (shirred->shirt) flounce cuff top or leopard drawstring lounge shorts for less than the price of a movie ticket
+POD1000000005_S0000195(nwords=6,cor=6,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	2015 was forever 21 is peak
+hyp:	2015 was forever 21 is peak
+diff:	2015 was forever 21 is peak
+POD1000000005_S0000196(nwords=7,cor=7,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	it did $4400000000 in sales that year
+hyp:	it did $4400000000 in sales that year
+diff:	it did $4400000000 in sales that year
+POD1000000005_S0000197(nwords=18,cor=16,ins=3,del=0,sub=2) corr:88.89%,cer:27.78%
+ref:	which means that they sold a helluva lot of $10 minidresses and bralettes and whatever dolphin shorts are
+hyp:	which means that they sold a hell of a lot of $10 mini dresses and bralettes and whatever dolphin shorts are
+diff:	which means that they sold a (helluva->hell of a) lot of $10 (minidresses->mini dresses) and bralettes and whatever dolphin shorts are
+POD1000000005_S0000198(nwords=22,cor=20,ins=0,del=0,sub=2) corr:90.91%,cer:9.09%
+ref:	but even though forever 21 had grown into a multibillion dollar business the changs ran it like a mom and pop operation
+hyp:	but even though forever 21 had grown into a multi $1000000000 business the changs ran it like a mom and pop operation
+diff:	but even though forever 21 had grown into a (multibillion dollar->multi $1000000000) business the changs ran it like a mom and pop operation
+POD1000000005_S0000199(nwords=35,cor=35,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	they owned 99% of the company and had never taken on investors which meant that there was and i can not stress this enough no real board of directors they had to run decisions by
+hyp:	they owned 99% of the company and had never taken on investors which meant that there was and i can not stress this enough no real board of directors they had to run decisions by
+diff:	they owned 99% of the company and had never taken on investors which meant that there was and i can not stress this enough no real board of directors they had to run decisions by
+POD1000000005_S0000200(nwords=8,cor=8,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	or at least not in the traditional sense
+hyp:	or at least not in the traditional sense
+diff:	or at least not in the traditional sense
+POD1000000005_S0000201(nwords=15,cor=15,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	the board consisted of mister chang one of his daughters and another forever 21 executive
+hyp:	the board consisted of mister chang one of his daughters and another forever 21 executive
+diff:	the board consisted of mister chang one of his daughters and another forever 21 executive
+POD1000000005_S0000202(nwords=33,cor=33,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	they felt that they were building something of an empire they were in charge mister and missus chang were in charge and they were going to pass this business on to their daughters
+hyp:	they felt that they were building something of an empire they were in charge mister and missus chang were in charge and they were going to pass this business on to their daughters
+diff:	they felt that they were building something of an empire they were in charge mister and missus chang were in charge and they were going to pass this business on to their daughters
+POD1000000005_S0000203(nwords=10,cor=10,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	and it was only going to grow and become bigger
+hyp:	and it was only going to grow and become bigger
+diff:	and it was only going to grow and become bigger
+POD1000000005_S0000204(nwords=19,cor=19,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	the fact that they owned everything also meant that there is not much publicly available information about the company
+hyp:	the fact that they owned everything also meant that there is not much publicly available information about the company
+diff:	the fact that they owned everything also meant that there is not much publicly available information about the company
+POD1000000005_S0000205(nwords=11,cor=11,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	and the family is not real into talking to the press
+hyp:	and the family is not real into talking to the press
+diff:	and the family is not real into talking to the press
+POD1000000005_S0000206(nwords=15,cor=14,ins=0,del=0,sub=1) corr:93.33%,cer:6.67%
+ref:	they 100% would not talk to us for this story though we did reach out
+hyp:	they 100% would not talk to us for the story though we did reach out
+diff:	they 100% would not talk to us for (this->the) story though we did reach out
+POD1000000005_S0000207(nwords=35,cor=35,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	what we do know is that mister chang oversaw business operations and strategy while missus chang ran the merchandising side of things one floor below their adult daughters linda and esther served as their deputies
+hyp:	what we do know is that mister chang oversaw business operations and strategy while missus chang ran the merchandising side of things one floor below their adult daughters linda and esther served as their deputies
+diff:	what we do know is that mister chang oversaw business operations and strategy while missus chang ran the merchandising side of things one floor below their adult daughters linda and esther served as their deputies
+POD1000000005_S0000208(nwords=12,cor=12,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	they kind of oversaw their own fiefdoms within the forever 21 business
+hyp:	they kind of oversaw their own fiefdoms within the forever 21 business
+diff:	they kind of oversaw their own fiefdoms within the forever 21 business
+POD1000000005_S0000209(nwords=33,cor=31,ins=0,del=1,sub=1) corr:93.94%,cer:6.06%
+ref:	mister chang had to review every single real estate contract and was involved with the opening of every new store which at the pace that they are expanding is is a huge responsibility
+hyp:	mister chang had to review every single real estate contract and was involved with the opening of every new store which at the pace that they were expanding is a huge responsibility
+diff:	mister chang had to review every single real estate contract and was involved with the opening of every new store which at the pace that they (are->were) expanding (is->*) is a huge responsibility
+POD1000000005_S0000210(nwords=7,cor=7,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	missus chang had her own hands full
+hyp:	missus chang had her own hands full
+diff:	missus chang had her own hands full
+POD1000000005_S0000211(nwords=19,cor=19,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	overseeing 1000s and 1000s of styles and garments and approving each of those individually before they appeared in stores
+hyp:	overseeing 1000s and 1000s of styles and garments and approving each of those individually before they appeared in stores
+diff:	overseeing 1000s and 1000s of styles and garments and approving each of those individually before they appeared in stores
+POD1000000005_S0000212(nwords=27,cor=27,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	i mean in many ways it is flabbergasting that these 2 people could have taken on this amount of responsibility especially at a company of this size
+hyp:	i mean in many ways it is flabbergasting that these 2 people could have taken on this amount of responsibility especially at a company of this size
+diff:	i mean in many ways it is flabbergasting that these 2 people could have taken on this amount of responsibility especially at a company of this size
+POD1000000005_S0000213(nwords=27,cor=26,ins=0,del=0,sub=1) corr:96.30%,cer:3.70%
+ref:	one minute they would be overseeing new real estate purchases or clothing designs and the next minute they would be approving expenses for business lunches or ubers
+hyp:	one minute they would be overseeing new real estate purchases or clothing designs and the next minute they would be approving expenses for business launches or ubers
+diff:	one minute they would be overseeing new real estate purchases or clothing designs and the next minute they would be approving expenses for business (lunches->launches) or ubers
+POD1000000005_S0000214(nwords=8,cor=8,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	which seems like the very definition of micromanaging
+hyp:	which seems like the very definition of micromanaging
+diff:	which seems like the very definition of micromanaging
+POD1000000005_S0000215(nwords=20,cor=17,ins=0,del=2,sub=1) corr:85.00%,cer:15.00%
+ref:	no billionaire c e os are approving timesheets or even what buttons or zippers should be used on new designs
+hyp:	no billionaire ceos are approving timesheets or even what buttons or zippers should be used on new designs
+diff:	no billionaire (c e os->ceos) are approving timesheets or even what buttons or zippers should be used on new designs
+POD1000000005_S0000216(nwords=19,cor=18,ins=0,del=0,sub=1) corr:94.74%,cer:5.26%
+ref:	kevin fegans was forever 21 is global communications director during the time of the brand is rapid international expansion
+hyp:	kevin fagans was forever 21 is global communications director during the time of the brand is rapid international expansion
+diff:	kevin (fegans->fagans) was forever 21 is global communications director during the time of the brand is rapid international expansion
+POD1000000005_S0000217(nwords=33,cor=33,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	he says while having your hand in every pot might not be the most efficient way to run a business it did mean that the changs knew what their brand was all about
+hyp:	he says while having your hand in every pot might not be the most efficient way to run a business it did mean that the changs knew what their brand was all about
+diff:	he says while having your hand in every pot might not be the most efficient way to run a business it did mean that the changs knew what their brand was all about
+POD1000000005_S0000218(nwords=13,cor=11,ins=0,del=2,sub=0) corr:84.62%,cer:15.38%
+ref:	well i think the one thing they understood was you know brand personality
+hyp:	well i think the one thing they understood was brand personality
+diff:	well i think the one thing they understood was (you know->*) brand personality
+POD1000000005_S0000219(nwords=8,cor=7,ins=0,del=1,sub=0) corr:87.50%,cer:12.50%
+ref:	so they knew their customer incredibly well so
+hyp:	so they knew their customer incredibly well
+diff:	so they knew their customer incredibly well (so->*)
+POD1000000005_S0000220(nwords=21,cor=16,ins=0,del=4,sub=1) corr:76.19%,cer:23.81%
+ref:	you know knowing and at least i say that domestically i mean in the u s they knew who she was
+hyp:	and at least i say that domestically i mean in the us they knew who she was
+diff:	(you know knowing->*) and at least i say that domestically i mean in the (u s->us) they knew who she was
+POD1000000005_S0000221(nwords=5,cor=5,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	they knew what she liked
+hyp:	they knew what she liked
+diff:	they knew what she liked
+POD1000000005_S0000222(nwords=8,cor=6,ins=0,del=2,sub=0) corr:75.00%,cer:25.00%
+ref:	they knew you know when she wanted things
+hyp:	they knew when she wanted things
+diff:	they knew (you know->*) when she wanted things
+POD1000000005_S0000223(nwords=10,cor=10,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	so it is like back to school it is christmas
+hyp:	so it is like back to school it is christmas
+diff:	so it is like back to school it is christmas
+POD1000000005_S0000224(nwords=18,cor=11,ins=0,del=6,sub=1) corr:61.11%,cer:38.89%
+ref:	it is it is you know or holiday it is you know festival season which is huge obviously
+hyp:	it is our holiday it is festival season which is huge obviously
+diff:	(it is->*) it is (you know or->our) holiday it is (you know->*) festival season which is huge obviously
+POD1000000005_S0000225(nwords=24,cor=23,ins=0,del=0,sub=1) corr:95.83%,cer:4.17%
+ref:	while it is important to understand product and who is buying it it is equally important to understand the market you are operating it
+hyp:	while it is important to understand product and who is buying it it is equally important to understand the market you are operating in
+diff:	while it is important to understand product and who is buying it it is equally important to understand the market you are operating (it->in)
+POD1000000005_S0000226(nwords=17,cor=15,ins=1,del=0,sub=2) corr:88.24%,cer:17.65%
+ref:	i think the challenge with running and operating a global business is that you know seasonalities change
+hyp:	i think the challenge with running and operating a global business is that you know seasonality has changed
+diff:	i think the challenge with running and operating a global business is that you know (seasonalities change->seasonality has changed)
+POD1000000005_S0000227(nwords=4,cor=3,ins=0,del=1,sub=0) corr:75.00%,cer:25.00%
+ref:	the cultural mindsets change
+hyp:	cultural mindsets change
+diff:	(the->*) cultural mindsets change
+POD1000000005_S0000228(nwords=13,cor=13,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	so you know what the french customer wants the german customer does not
+hyp:	so you know what the french customer wants the german customer does not
+diff:	so you know what the french customer wants the german customer does not
+POD1000000005_S0000229(nwords=17,cor=15,ins=0,del=1,sub=1) corr:88.24%,cer:11.76%
+ref:	you know what and someone in australia is wearing well 1st of all they are counter seasonal
+hyp:	you know what someone in australia is weighing well 1st of all they are counter seasonal
+diff:	you know what (and->*) someone in australia is (wearing->weighing) well 1st of all they are counter seasonal
+POD1000000005_S0000230(nwords=20,cor=20,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	so you know it is when you are shipping that product you can not ship them coats in january right
+hyp:	so you know it is when you are shipping that product you can not ship them coats in january right
+diff:	so you know it is when you are shipping that product you can not ship them coats in january right
+POD1000000005_S0000231(nwords=13,cor=13,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	in forever 21 is race to global domination they spread themselves too thin
+hyp:	in forever 21 is race to global domination they spread themselves too thin
+diff:	in forever 21 is race to global domination they spread themselves too thin
+POD1000000005_S0000232(nwords=14,cor=14,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	with nearly 800 stores worldwide they could not really manage all those physical spaces
+hyp:	with nearly 800 stores worldwide they could not really manage all those physical spaces
+diff:	with nearly 800 stores worldwide they could not really manage all those physical spaces
+POD1000000005_S0000233(nwords=30,cor=30,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	now if you know anything about retail trends you will know this managing 1000000s of square feet of retail space is a mega challenge in the age of the internet
+hyp:	now if you know anything about retail trends you will know this managing 1000000s of square feet of retail space is a mega challenge in the age of the internet
+diff:	now if you know anything about retail trends you will know this managing 1000000s of square feet of retail space is a mega challenge in the age of the internet
+POD1000000005_S0000234(nwords=9,cor=9,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	shoppers are increasingly buying online and having stuff delivered
+hyp:	shoppers are increasingly buying online and having stuff delivered
+diff:	shoppers are increasingly buying online and having stuff delivered
+POD1000000005_S0000235(nwords=12,cor=10,ins=0,del=1,sub=1) corr:83.33%,cer:16.67%
+ref:	or they are using your store simply as a pick up location
+hyp:	or they are using your store simply as a pickup location
+diff:	or they are using your store simply as a (pick up->pickup) location
+POD1000000005_S0000236(nwords=20,cor=20,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	the days of teens bopping around a mall for the afternoon in search of the hottest new looks are over
+hyp:	the days of teens bopping around a mall for the afternoon in search of the hottest new looks are over
+diff:	the days of teens bopping around a mall for the afternoon in search of the hottest new looks are over
+POD1000000005_S0000237(nwords=8,cor=8,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	we are going to take a quick break
+hyp:	we are going to take a quick break
+diff:	we are going to take a quick break
+POD1000000005_S0000238(nwords=11,cor=11,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	when we come back how a $1000000000 business goes bankrupt overnight
+hyp:	when we come back how a $1000000000 business goes bankrupt overnight
+diff:	when we come back how a $1000000000 business goes bankrupt overnight
+POD1000000005_S0000239(nwords=17,cor=17,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	plus i bop around a real life mall for the afternoon with a real life teen fun
+hyp:	plus i bop around a real life mall for the afternoon with a real life teen fun
+diff:	plus i bop around a real life mall for the afternoon with a real life teen fun
+POD1000000005_S0000241(nwords=6,cor=4,ins=0,del=0,sub=2) corr:66.67%,cer:33.33%
+ref:	spectecular failures received support from netsuite
+hyp:	spectacular failures receives support from netsuite
+diff:	(spectecular->spectacular) failures (received->receives) support from netsuite
+POD1000000005_S0000242(nwords=7,cor=7,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	smart companies run on netsuite by oracle
+hyp:	smart companies run on netsuite by oracle
+diff:	smart companies run on netsuite by oracle
+POD1000000005_S0000243(nwords=8,cor=8,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	the world is number one cloud business system
+hyp:	the world is number one cloud business system
+diff:	the world is number one cloud business system
+POD1000000005_S0000244(nwords=18,cor=16,ins=0,del=1,sub=1) corr:88.89%,cer:11.11%
+ref:	with netsuite you will have visibility and control over your financials h r inventory e commerce and more
+hyp:	with netsuite you will have visibility and control over your financials hr inventory e commerce and more
+diff:	with netsuite you will have visibility and control over your financials (h r->hr) inventory e commerce and more
+POD1000000005_S0000245(nwords=16,cor=16,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	all in one place whether you are doing a 1000000 in business or 100s of 1000000s
+hyp:	all in one place whether you are doing a 1000000 in business or 100s of 1000000s
+diff:	all in one place whether you are doing a 1000000 in business or 100s of 1000000s
+POD1000000005_S0000246(nwords=9,cor=7,ins=0,del=1,sub=1) corr:77.78%,cer:22.22%
+ref:	netsuite let us you manage every penny with precision
+hyp:	netsuite lets you manage every penny with precision
+diff:	netsuite (let us->lets) you manage every penny with precision
+POD1000000005_S0000247(nwords=21,cor=21,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	you will have the agility to compete with anyone work from anywhere and run your whole company right from your phone
+hyp:	you will have the agility to compete with anyone work from anywhere and run your whole company right from your phone
+diff:	you will have the agility to compete with anyone work from anywhere and run your whole company right from your phone
+POD1000000005_S0000248(nwords=24,cor=21,ins=0,del=1,sub=2) corr:87.50%,cer:12.50%
+ref:	recently netsuite surveyed 100s of business leaders and assembled a playable of the top strategies they are using as america re open for business
+hyp:	recently netsuite surveyed 100s of business leaders and assembled a playbook of the top strategies they are using as america reopens for business
+diff:	recently netsuite surveyed 100s of business leaders and assembled a (playable->playbook) of the top strategies they are using as america (re open->reopens) for business
+POD1000000005_S0000249(nwords=23,cor=22,ins=0,del=1,sub=0) corr:95.65%,cer:4.35%
+ref:	receive your free guide 7 actions businesses need to take now and schedule your free product tour at netsuite dot com slash spectacular
+hyp:	receive your free guide 7 actions businesses need to take now and schedule your free product tour at netsuite com slash spectacular
+diff:	receive your free guide 7 actions businesses need to take now and schedule your free product tour at netsuite (dot->*) com slash spectacular
+POD1000000005_S0000250(nwords=18,cor=15,ins=0,del=3,sub=0) corr:83.33%,cer:16.67%
+ref:	get your free guide and schedule your free product tour right now at netsuite dot com slash spectacular
+hyp:	get your free guide and schedule your free product tour right now at netsuite com
+diff:	get your free guide and schedule your free product tour right now at netsuite (dot->*) com (slash spectacular->*)
+POD1000000005_S0000251(nwords=7,cor=6,ins=0,del=1,sub=0) corr:85.71%,cer:14.29%
+ref:	that is netsuite dot com slash spectacular
+hyp:	that is netsuite com slash spectacular
+diff:	that is netsuite (dot->*) com slash spectacular
+POD1000000005_S0000252(nwords=17,cor=14,ins=1,del=1,sub=2) corr:82.35%,cer:23.53%
+ref:	hey friends even though i think knew everything i am a big fan of life long learning
+hyp:	hey friends even though i think i know everything i am a big fan of lifelong learning
+diff:	hey friends even though i think (knew->i know) everything i am a big fan of (life long->lifelong) learning
+POD1000000005_S0000253(nwords=13,cor=13,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	i love being curious and expanding my cultural horizons and improving my memory
+hyp:	i love being curious and expanding my cultural horizons and improving my memory
+diff:	i love being curious and expanding my cultural horizons and improving my memory
+POD1000000005_S0000254(nwords=13,cor=13,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	and the great courses plus is the perfect tool for all of those
+hyp:	and the great courses plus is the perfect tool for all of those
+diff:	and the great courses plus is the perfect tool for all of those
+POD1000000005_S0000255(nwords=10,cor=10,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	the classes are taught by big deal professors and experts
+hyp:	the classes are taught by big deal professors and experts
+diff:	the classes are taught by big deal professors and experts
+POD1000000005_S0000256(nwords=20,cor=20,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	you can explore topics like linguistics the stock market or you could even learn to watercolor paint if you wanted
+hyp:	you can explore topics like linguistics the stock market or you could even learn to watercolor paint if you wanted
+diff:	you can explore topics like linguistics the stock market or you could even learn to watercolor paint if you wanted
+POD1000000005_S0000257(nwords=19,cor=19,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	a class of particular interest to me was black capital african americans in washington d c where i live
+hyp:	a class of particular interest to me was black capital african americans in washington d c where i live
+diff:	a class of particular interest to me was black capital african americans in washington d c where i live
+POD1000000005_S0000258(nwords=12,cor=11,ins=0,del=0,sub=1) corr:91.67%,cer:8.33%
+ref:	it is taught by e applebert miller legendary poet and literary activist
+hyp:	it is taught by e ethelbert miller legendary poet and literary activist
+diff:	it is taught by e (applebert->ethelbert) miller legendary poet and literary activist
+POD1000000005_S0000259(nwords=28,cor=26,ins=0,del=0,sub=2) corr:92.86%,cer:7.14%
+ref:	continue your journey as life long learner sign up for the great courses plus they are offering my listeners a free month of access to the entire library
+hyp:	continue your journey as a lifelong learner sign up for the great courses plus they are offering my listeners a free month of access to the entire library
+diff:	continue your journey as (life long->a lifelong) learner sign up for the great courses plus they are offering my listeners a free month of access to the entire library
+POD1000000005_S0000260(nwords=11,cor=6,ins=0,del=4,sub=1) corr:54.55%,cer:45.45%
+ref:	sign up at the great courses plus dot com slash spectacular
+hyp:	sign up at thegreatcoursesplus com slash spectacular
+diff:	sign up at (the great courses plus dot->thegreatcoursesplus) com slash spectacular
+POD1000000005_S0000261(nwords=13,cor=8,ins=0,del=4,sub=1) corr:61.54%,cer:38.46%
+ref:	start your free month at the great courses plus dot com slash spectacular
+hyp:	start your free month at thegreatcoursesplus com slash spectacular
+diff:	start your free month at (the great courses plus dot->thegreatcoursesplus) com slash spectacular
+POD1000000005_S0000262(nwords=10,cor=5,ins=0,del=4,sub=1) corr:50.00%,cer:50.00%
+ref:	that is the great courses plus dot com slash spectacular
+hyp:	that is thegreatcoursesplus com slash spectacular
+diff:	that is (the great courses plus dot->thegreatcoursesplus) com slash spectacular
+POD1000000005_S0000263(nwords=6,cor=5,ins=0,del=0,sub=1) corr:83.33%,cer:16.67%
+ref:	spectacular failures get support from fiverr
+hyp:	spectacular failures gets support from fiverr
+diff:	spectacular failures (get->gets) support from fiverr
+POD1000000005_S0000264(nwords=11,cor=11,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	we all know the way we work together seemingly changed overnight
+hyp:	we all know the way we work together seemingly changed overnight
+diff:	we all know the way we work together seemingly changed overnight
+POD1000000005_S0000265(nwords=16,cor=16,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	i mean i just got off a video conference call that i took in my closet
+hyp:	i mean i just got off a video conference call that i took in my closet
+diff:	i mean i just got off a video conference call that i took in my closet
+POD1000000005_S0000266(nwords=10,cor=9,ins=0,del=0,sub=1) corr:90.00%,cer:10.00%
+ref:	so we have all have to become adaptable and nimble
+hyp:	so we have all had to become adaptable and nimble
+diff:	so we have all (have->had) to become adaptable and nimble
+POD1000000005_S0000267(nwords=16,cor=16,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	and one thing that makes that easier is having access to all the resources you need
+hyp:	and one thing that makes that easier is having access to all the resources you need
+diff:	and one thing that makes that easier is having access to all the resources you need
+POD1000000005_S0000268(nwords=9,cor=9,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	especially services like graphic design copywriting and web programming
+hyp:	especially services like graphic design copywriting and web programming
+diff:	especially services like graphic design copywriting and web programming
+POD1000000005_S0000269(nwords=30,cor=27,ins=0,del=0,sub=3) corr:90.00%,cer:10.00%
+ref:	that is where you call in fiverr whether you are launching your 1st busi scaling your current busi or in need of a little extra boost to finish the project
+hyp:	that is where you call in fiverr whether you are launching your 1st biz scaling your current biz or in need of a little extra boost to finish a project
+diff:	that is where you call in fiverr whether you are launching your 1st (busi->biz) scaling your current (busi->biz) or in need of a little extra boost to finish (the->a) project
+POD1000000005_S0000270(nwords=13,cor=13,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	fiverr is global network of on demand freelance talent is there to help
+hyp:	fiverr is global network of on demand freelance talent is there to help
+diff:	fiverr is global network of on demand freelance talent is there to help
+POD1000000005_S0000271(nwords=11,cor=10,ins=1,del=0,sub=1) corr:90.91%,cer:18.18%
+ref:	it is easy all you do is putting your search criteria
+hyp:	it is easy all you do is put in your search criteria
+diff:	it is easy all you do is (putting->put in) your search criteria
+POD1000000005_S0000272(nwords=7,cor=7,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	service deadline price seller reviews and boom
+hyp:	service deadline price seller reviews and boom
+diff:	service deadline price seller reviews and boom
+POD1000000005_S0000273(nwords=26,cor=25,ins=0,del=1,sub=0) corr:96.15%,cer:3.85%
+ref:	you get hooked up with someone who can help check out fiverr dot com and receive 10% off your 1st order by using my code spectacular
+hyp:	you get hooked up with someone who can help check out fiverr com and receive 10% off your 1st order by using my code spectacular
+diff:	you get hooked up with someone who can help check out fiverr (dot->*) com and receive 10% off your 1st order by using my code spectacular
+POD1000000005_S0000274(nwords=21,cor=20,ins=0,del=1,sub=0) corr:95.24%,cer:4.76%
+ref:	find all the digital services you need in one place at f i v e r r dot com code spectacular
+hyp:	find all the digital services you need in one place at f i v e r r com code spectacular
+diff:	find all the digital services you need in one place at f i v e r r (dot->*) com code spectacular
+POD1000000005_S0000275(nwords=8,cor=7,ins=0,del=1,sub=0) corr:87.50%,cer:12.50%
+ref:	again that is fiverr dot com code spectacular
+hyp:	again that is fiverr com code spectacular
+diff:	again that is fiverr (dot->*) com code spectacular
+POD1000000005_S0000277(nwords=27,cor=27,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	in order to better understand how one of the world is biggest fast fashion brands fell apart i decided to go to the source a teen girl
+hyp:	in order to better understand how one of the world is biggest fast fashion brands fell apart i decided to go to the source a teen girl
+diff:	in order to better understand how one of the world is biggest fast fashion brands fell apart i decided to go to the source a teen girl
+POD1000000005_S0000278(nwords=18,cor=17,ins=0,del=0,sub=1) corr:94.44%,cer:5.56%
+ref:	eden goldblum is a 16 year old high school junior who lives just outside of washington d c
+hyp:	eden goldbloom is a 16 year old high school junior who lives just outside of washington d c
+diff:	eden (goldblum->goldbloom) is a 16 year old high school junior who lives just outside of washington d c
+POD1000000005_S0000279(nwords=17,cor=17,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	she used to shop at forever 21 a lot she said until they quote stopped being cute
+hyp:	she used to shop at forever 21 a lot she said until they quote stopped being cute
+diff:	she used to shop at forever 21 a lot she said until they quote stopped being cute
+POD1000000005_S0000280(nwords=19,cor=19,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	they are cheap they are not in good shape they break fast and some of them are really tacky
+hyp:	they are cheap they are not in good shape they break fast and some of them are really tacky
+diff:	they are cheap they are not in good shape they break fast and some of them are really tacky
+POD1000000005_S0000281(nwords=13,cor=11,ins=0,del=1,sub=1) corr:84.62%,cer:15.38%
+ref:	we are on our way to montgomery mall right outside of d c
+hyp:	we are on our way to montgomery mall right outside of dc
+diff:	we are on our way to montgomery mall right outside of (d c->dc)
+POD1000000005_S0000282(nwords=8,cor=7,ins=0,del=1,sub=0) corr:87.50%,cer:12.50%
+ref:	explain explain what that means to me explain
+hyp:	explain what that means to me explain
+diff:	(explain->*) explain what that means to me explain
+POD1000000005_S0000283(nwords=22,cor=22,ins=2,del=0,sub=0) corr:100.00%,cer:9.09%
+ref:	and you will see like a normal shirt and then you will turn around and it says something like weird on it
+hyp:	and then you will see like a normal shirt and then you will turn it around and it says something like weird on it
+diff:	and (*->then) you will see like a normal shirt and then you will turn (*->it) around and it says something like weird on it
+POD1000000005_S0000285(nwords=5,cor=4,ins=1,del=0,sub=1) corr:80.00%,cer:40.00%
+ref:	that is a real disappointment
+hyp:	and it is a real disappointment
+diff:	(that->and it) is a real disappointment
+POD1000000005_S0000286(nwords=15,cor=15,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	before i go into the 3rd forever 21 of this story i issued a challenge
+hyp:	before i go into the 3rd forever 21 of this story i issued a challenge
+diff:	before i go into the 3rd forever 21 of this story i issued a challenge
+POD1000000005_S0000287(nwords=11,cor=11,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	each of us had to find one cute thing to buy
+hyp:	each of us had to find one cute thing to buy
+diff:	each of us had to find one cute thing to buy
+POD1000000005_S0000288(nwords=9,cor=9,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	but after many minutes of browsing the enormous store
+hyp:	but after many minutes of browsing the enormous store
+diff:	but after many minutes of browsing the enormous store
+POD1000000005_S0000289(nwords=9,cor=9,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	i do not think i can do the challenge
+hyp:	i do not think i can do the challenge
+diff:	i do not think i can do the challenge
+POD1000000005_S0000290(nwords=10,cor=10,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	i do not think i can do the challenge either
+hyp:	i do not think i can do the challenge either
+diff:	i do not think i can do the challenge either
+POD1000000005_S0000291(nwords=6,cor=5,ins=0,del=1,sub=0) corr:83.33%,cer:16.67%
+ref:	because cause it is overwhelming actually
+hyp:	because it is overwhelming actually
+diff:	because (cause->*) it is overwhelming actually
+POD1000000005_S0000292(nwords=5,cor=1,ins=1,del=0,sub=4) corr:20.00%,cer:100.00%
+ref:	anything very cute here okay
+hyp:	anything that i can do here
+diff:	anything (very cute here okay->that i can do here)
+POD1000000005_S0000293(nwords=13,cor=13,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	now it makes sense that i could not find anything cute for me
+hyp:	now it makes sense that i could not find anything cute for me
+diff:	now it makes sense that i could not find anything cute for me
+POD1000000005_S0000294(nwords=9,cor=9,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	i mean the store is not called forever 41
+hyp:	i mean the store is not called forever 41
+diff:	i mean the store is not called forever 41
+POD1000000005_S0000295(nwords=28,cor=26,ins=0,del=1,sub=1) corr:92.86%,cer:7.14%
+ref:	ah but it should trouble the company that a member of its target demographic can not find anything she likes in this store the size of a mcmansion
+hyp:	but it should trouble the company that a member of its target demographic can not find anything she likes in a store the size of a mcmansion
+diff:	(ah->*) but it should trouble the company that a member of its target demographic can not find anything she likes in (this->a) store the size of a mcmansion
+POD1000000005_S0000296(nwords=3,cor=3,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	okay so basic
+hyp:	okay so basic
+diff:	okay so basic
+POD1000000005_S0000298(nwords=11,cor=6,ins=0,del=5,sub=0) corr:54.55%,cer:45.45%
+ref:	it is like a norm it is like a normal material
+hyp:	it is like a normal material
+diff:	(it is like a norm->*) it is like a normal material
+POD1000000005_S0000299(nwords=1,cor=1,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	yeah
+hyp:	yeah
+diff:	yeah
+POD1000000005_S0000300(nwords=18,cor=18,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	finally after some serious hunting eden landed on the one thing in the entire store she would wear
+hyp:	finally after some serious hunting eden landed on the one thing in the entire store she would wear
+diff:	finally after some serious hunting eden landed on the one thing in the entire store she would wear
+POD1000000005_S0000301(nwords=1,cor=0,ins=1,del=0,sub=1) corr:0.00%,cer:200.00%
+ref:	alright
+hyp:	all right
+diff:	(alright->all right)
+POD1000000005_S0000302(nwords=5,cor=4,ins=1,del=0,sub=1) corr:80.00%,cer:40.00%
+ref:	you can hold onto that
+hyp:	you can hold on to that
+diff:	you can hold (onto->on to) that
+POD1000000005_S0000303(nwords=1,cor=0,ins=1,del=0,sub=1) corr:0.00%,cer:200.00%
+ref:	alright
+hyp:	all right
+diff:	(alright->all right)
+POD1000000005_S0000304(nwords=11,cor=11,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	then it was up to me to find something i liked
+hyp:	then it was up to me to find something i liked
+diff:	then it was up to me to find something i liked
+POD1000000005_S0000305(nwords=16,cor=16,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	i tried on a crop windbreaker and that went about as well as could be expected
+hyp:	i tried on a crop windbreaker and that went about as well as could be expected
+diff:	i tried on a crop windbreaker and that went about as well as could be expected
+POD1000000005_S0000306(nwords=14,cor=13,ins=0,del=1,sub=0) corr:92.86%,cer:7.14%
+ref:	it is very snug around here like is it supposed to fit like this
+hyp:	it is very snug around here is it supposed to fit like this
+diff:	it is very snug around here (like->*) is it supposed to fit like this
+POD1000000005_S0000308(nwords=30,cor=23,ins=0,del=7,sub=0) corr:76.67%,cer:23.33%
+ref:	hey guys i am just going to go out for a jog and then i am going to go to the i am going to go to the club afterwards
+hyp:	hey guys i am just going to go out for a jog and then i am going to go to the club afterwards
+diff:	hey guys i am just going to go out for a jog and then (i am going to go to the->*) i am going to go to the club afterwards
+POD1000000005_S0000309(nwords=21,cor=21,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	finally i landed on my item a plain black baseball cap with the words dangerous but fun written on the crown
+hyp:	finally i landed on my item a plain black baseball cap with the words dangerous but fun written on the crown
+diff:	finally i landed on my item a plain black baseball cap with the words dangerous but fun written on the crown
+POD1000000005_S0000310(nwords=3,cor=3,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	dangerous but fun
+hyp:	dangerous but fun
+diff:	dangerous but fun
+POD1000000005_S0000311(nwords=5,cor=3,ins=0,del=2,sub=0) corr:60.00%,cer:40.00%
+ref:	i am dangerous but fun
+hyp:	dangerous but fun
+diff:	(i am->*) dangerous but fun
+POD1000000005_S0000312(nwords=6,cor=6,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	i think you should get that
+hyp:	i think you should get that
+diff:	i think you should get that
+POD1000000005_S0000313(nwords=5,cor=5,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	do you think i should
+hyp:	do you think i should
+diff:	do you think i should
+POD1000000005_S0000314(nwords=4,cor=4,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	i think you should
+hyp:	i think you should
+diff:	i think you should
+POD1000000005_S0000315(nwords=3,cor=3,ins=1,del=0,sub=0) corr:100.00%,cer:33.33%
+ref:	do you think
+hyp:	do you think so
+diff:	do you think (*->so)
+POD1000000005_S0000316(nwords=12,cor=12,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	now i can tell you that i looked neither dangerous nor fun
+hyp:	now i can tell you that i looked neither dangerous nor fun
+diff:	now i can tell you that i looked neither dangerous nor fun
+POD1000000005_S0000317(nwords=19,cor=19,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	but i bought the hat and eden bought the little skirt and we both fulfilled our forever 21 challenge
+hyp:	but i bought the hat and eden bought the little skirt and we both fulfilled our forever 21 challenge
+diff:	but i bought the hat and eden bought the little skirt and we both fulfilled our forever 21 challenge
+POD1000000005_S0000318(nwords=3,cor=3,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	great job us
+hyp:	great job us
+diff:	great job us
+POD1000000005_S0000319(nwords=3,cor=2,ins=0,del=0,sub=1) corr:66.67%,cer:33.33%
+ref:	are we dunzo
+hyp:	are we donezo
+diff:	are we (dunzo->donezo)
+POD1000000005_S0000320(nwords=3,cor=2,ins=1,del=0,sub=1) corr:66.67%,cer:66.67%
+ref:	are we dunzo
+hyp:	are we done zoe
+diff:	are we (dunzo->done zoe)
+POD1000000005_S0000321(nwords=7,cor=6,ins=1,del=0,sub=1) corr:85.71%,cer:28.57%
+ref:	do you feel like we are dunzo
+hyp:	do you feel like we are done sarah
+diff:	do you feel like we are (dunzo->done sarah)
+POD1000000005_S0000322(nwords=6,cor=5,ins=0,del=0,sub=1) corr:83.33%,cer:16.67%
+ref:	i feel like we are dunzo
+hyp:	i feel like we are donezo
+diff:	i feel like we are (dunzo->donezo)
+POD1000000005_S0000323(nwords=3,cor=2,ins=0,del=0,sub=1) corr:66.67%,cer:33.33%
+ref:	we were dunzo
+hyp:	we were donezo
+diff:	we were (dunzo->donezo)
+POD1000000005_S0000324(nwords=25,cor=24,ins=1,del=0,sub=1) corr:96.00%,cer:8.00%
+ref:	i left forever $2115.50 lighter and perhaps more confused than i had been before about how the brand is business model could possibly make sense
+hyp:	i left forever 21 $15.50 lighter and perhaps more confused than i had been before about how the brand is business model could possibly make sense
+diff:	i left forever ($2115.50->21 $15.50) lighter and perhaps more confused than i had been before about how the brand is business model could possibly make sense
+POD1000000005_S0000325(nwords=27,cor=27,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	there were hardly any shoppers in any of the stores i went to and those who were there seemed more like old millennials than general z tastemakers
+hyp:	there were hardly any shoppers in any of the stores i went to and those who were there seemed more like old millennials than general z tastemakers
+diff:	there were hardly any shoppers in any of the stores i went to and those who were there seemed more like old millennials than general z tastemakers
+POD1000000005_S0000326(nwords=12,cor=12,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	i could not figure out what this giant store was all about
+hyp:	i could not figure out what this giant store was all about
+diff:	i could not figure out what this giant store was all about
+POD1000000005_S0000327(nwords=9,cor=9,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	or how fast fashion is even supposed to work
+hyp:	or how fast fashion is even supposed to work
+diff:	or how fast fashion is even supposed to work
+POD1000000005_S0000328(nwords=6,cor=5,ins=0,del=0,sub=1) corr:83.33%,cer:16.67%
+ref:	i figured robin givhan could help
+hyp:	i figured robin gavon could help
+diff:	i figured robin (givhan->gavon) could help
+POD1000000005_S0000329(nwords=24,cor=24,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	in addition to reporting on the runways of paris and new york givhan often writes about what fashion says about how we live now
+hyp:	in addition to reporting on the runways of paris and new york givhan often writes about what fashion says about how we live now
+diff:	in addition to reporting on the runways of paris and new york givhan often writes about what fashion says about how we live now
+POD1000000005_S0000330(nwords=18,cor=18,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	and she thinks a lot about fast fashion and its impact on our culture esthetically socially and environmentally
+hyp:	and she thinks a lot about fast fashion and its impact on our culture esthetically socially and environmentally
+diff:	and she thinks a lot about fast fashion and its impact on our culture esthetically socially and environmentally
+POD1000000005_S0000331(nwords=9,cor=9,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	surprisingly she is not totally down on fast fashion
+hyp:	surprisingly she is not totally down on fast fashion
+diff:	surprisingly she is not totally down on fast fashion
+POD1000000005_S0000332(nwords=18,cor=18,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	i do think that fast fashion has kind of allowed everyone to have access to esthetically thoughtful clothing
+hyp:	i do think that fast fashion has kind of allowed everyone to have access to esthetically thoughtful clothing
+diff:	i do think that fast fashion has kind of allowed everyone to have access to esthetically thoughtful clothing
+POD1000000005_S0000333(nwords=9,cor=9,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	does not mean we are all dressing better though
+hyp:	does not mean we are all dressing better though
+diff:	does not mean we are all dressing better though
+POD1000000005_S0000334(nwords=8,cor=8,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	notice i said to have access to it
+hyp:	notice i said to have access to it
+diff:	notice i said to have access to it
+POD1000000005_S0000336(nwords=16,cor=16,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	in a way givhan says fast fashion is kind of brilliant when it is done right
+hyp:	in a way givhan says fast fashion is kind of brilliant when it is done right
+diff:	in a way givhan says fast fashion is kind of brilliant when it is done right
+POD1000000005_S0000337(nwords=14,cor=14,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	for the vast majority of people they are not going into the designer boutique
+hyp:	for the vast majority of people they are not going into the designer boutique
+diff:	for the vast majority of people they are not going into the designer boutique
+POD1000000005_S0000338(nwords=11,cor=11,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	they are going into a department store or a mass merchant
+hyp:	they are going into a department store or a mass merchant
+diff:	they are going into a department store or a mass merchant
+POD1000000005_S0000339(nwords=52,cor=51,ins=0,del=1,sub=0) corr:98.08%,cer:1.92%
+ref:	and you know those stores look at trend reports and they look at what is on the runway and part of their great ah skill in both marketing and manufacturing is being able to take those ideas and turn them around at just a rapid fire pace and get them into stores
+hyp:	and you know those stores look at trend reports and they look at what is on the runway and part of their great skill in both marketing and manufacturing is being able to take those ideas and turn them around at just a rapid fire pace and get them into stores
+diff:	and you know those stores look at trend reports and they look at what is on the runway and part of their great (ah->*) skill in both marketing and manufacturing is being able to take those ideas and turn them around at just a rapid fire pace and get them into stores
+POD1000000005_S0000340(nwords=17,cor=17,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	and there is not just one delivery that happens at the beginning of a season no no
+hyp:	and there is not just one delivery that happens at the beginning of a season no no
+diff:	and there is not just one delivery that happens at the beginning of a season no no
+POD1000000005_S0000341(nwords=7,cor=7,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	it is a constant stream of newness
+hyp:	it is a constant stream of newness
+diff:	it is a constant stream of newness
+POD1000000005_S0000342(nwords=18,cor=16,ins=0,del=2,sub=0) corr:88.89%,cer:11.11%
+ref:	and when and when i say constant i mean like every 2 weeks for some of these places
+hyp:	and when i say constant i mean like every 2 weeks for some of these places
+diff:	(and when->*) and when i say constant i mean like every 2 weeks for some of these places
+POD1000000005_S0000343(nwords=26,cor=26,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	so givhan says that at its best fast fashion means that new stylish clothes are not just for fancies with the cash to shop haute couture
+hyp:	so givhan says that at its best fast fashion means that new stylish clothes are not just for fancies with the cash to shop haute couture
+diff:	so givhan says that at its best fast fashion means that new stylish clothes are not just for fancies with the cash to shop haute couture
+POD1000000005_S0000344(nwords=12,cor=12,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	but i am going to let you in on a little secret
+hyp:	but i am going to let you in on a little secret
+diff:	but i am going to let you in on a little secret
+POD1000000005_S0000345(nwords=22,cor=22,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	it is impossible for clothing designers to go from original idea to brand spanking new product on the rack in 2 weeks
+hyp:	it is impossible for clothing designers to go from original idea to brand spanking new product on the rack in 2 weeks
+diff:	it is impossible for clothing designers to go from original idea to brand spanking new product on the rack in 2 weeks
+POD1000000005_S0000346(nwords=16,cor=16,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	especially not at the volume that forever 21 needed to fill all of their bazillion stores
+hyp:	especially not at the volume that forever 21 needed to fill all of their bazillion stores
+diff:	especially not at the volume that forever 21 needed to fill all of their bazillion stores
+POD1000000005_S0000347(nwords=8,cor=8,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	so the company had to find some shortcuts
+hyp:	so the company had to find some shortcuts
+diff:	so the company had to find some shortcuts
+POD1000000005_S0000348(nwords=15,cor=15,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	copying other designers ideas was part of forever 21 is business model from the beginning
+hyp:	copying other designers ideas was part of forever 21 is business model from the beginning
+diff:	copying other designers ideas was part of forever 21 is business model from the beginning
+POD1000000005_S0000349(nwords=22,cor=22,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	susan scafidi is the founder of the fashion law institute at fordham university and she basically invented the field of fashion law
+hyp:	susan scafidi is the founder of the fashion law institute at fordham university and she basically invented the field of fashion law
+diff:	susan scafidi is the founder of the fashion law institute at fordham university and she basically invented the field of fashion law
+POD1000000005_S0000350(nwords=31,cor=31,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	and she will be the 1st one to tell you that while forever 21 is practice of copying other designers ideas is not a cute look it is generally totally legal
+hyp:	and she will be the 1st one to tell you that while forever 21 is practice of copying other designers ideas is not a cute look it is generally totally legal
+diff:	and she will be the 1st one to tell you that while forever 21 is practice of copying other designers ideas is not a cute look it is generally totally legal
+POD1000000005_S0000351(nwords=12,cor=12,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	fashion is not recognized as an art form in the united states
+hyp:	fashion is not recognized as an art form in the united states
+diff:	fashion is not recognized as an art form in the united states
+POD1000000005_S0000352(nwords=27,cor=27,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	so it does not get copyright protection in large part because a 100 years ago the copyright office decided that fashion no matter how fanciful was utilitarian
+hyp:	so it does not get copyright protection in large part because a 100 years ago the copyright office decided that fashion no matter how fanciful was utilitarian
+diff:	so it does not get copyright protection in large part because a 100 years ago the copyright office decided that fashion no matter how fanciful was utilitarian
+POD1000000005_S0000353(nwords=10,cor=10,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	only a couple areas of fashion are protected from copying
+hyp:	only a couple areas of fashion are protected from copying
+diff:	only a couple areas of fashion are protected from copying
+POD1000000005_S0000354(nwords=26,cor=26,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	we have a tiny bit of copyright protection at least since the 1960s for 2 dimensional elements of fashion things like fabric prints or lace designs
+hyp:	we have a tiny bit of copyright protection at least since the 1960s for 2 dimensional elements of fashion things like fabric prints or lace designs
+diff:	we have a tiny bit of copyright protection at least since the 1960s for 2 dimensional elements of fashion things like fabric prints or lace designs
+POD1000000005_S0000355(nwords=34,cor=31,ins=0,del=2,sub=1) corr:91.18%,cer:8.82%
+ref:	over on the patent side we have had historically a little bit of protection for some functional elements of fashion things like zippers and velcro and kevlar ah and space suits or hazmat suits
+hyp:	over on the patent side we have had historically a little bit of protection for some functional elements of fashion things like zippers and velcro and kevlar and spacesuits or hazmat suits
+diff:	over on the patent side we have had historically a little bit of protection for some functional elements of fashion things like zippers and velcro and kevlar (ah->*) and (space suits->spacesuits) or hazmat suits
+POD1000000005_S0000356(nwords=19,cor=17,ins=0,del=1,sub=1) corr:89.47%,cer:10.53%
+ref:	ah and then at the end of the day what fashion really has to rely on is trademark protection
+hyp:	and then at the end of the day what fashion really has to rely on is trademark protections
+diff:	(ah->*) and then at the end of the day what fashion really has to rely on is trademark (protection->protections)
+POD1000000005_S0000357(nwords=8,cor=8,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	that is protection for the logo or label
+hyp:	that is protection for the logo or label
+diff:	that is protection for the logo or label
+POD1000000005_S0000358(nwords=20,cor=20,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	so basically the polo pony on your chest or the giant double g on your belt buckle those are protected
+hyp:	so basically the polo pony on your chest or the giant double g on your belt buckle those are protected
+diff:	so basically the polo pony on your chest or the giant double g on your belt buckle those are protected
+POD1000000005_S0000359(nwords=16,cor=16,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	the design of the shirt and belt themselves are not original prints are generally also protected
+hyp:	the design of the shirt and belt themselves are not original prints are generally also protected
+diff:	the design of the shirt and belt themselves are not original prints are generally also protected
+POD1000000005_S0000360(nwords=17,cor=17,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	while there are not a ton of copyright and trademark protections for fashion in the u s
+hyp:	while there are not a ton of copyright and trademark protections for fashion in the u s
+diff:	while there are not a ton of copyright and trademark protections for fashion in the u s
+POD1000000005_S0000361(nwords=27,cor=27,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	forever 21 has still found itself involved in many many many intellectual property lawsuits scafidi says they are one of the most egregious offenders in the game
+hyp:	forever 21 has still found itself involved in many many many intellectual property lawsuits scafidi says they are one of the most egregious offenders in the game
+diff:	forever 21 has still found itself involved in many many many intellectual property lawsuits scafidi says they are one of the most egregious offenders in the game
+POD1000000005_S0000362(nwords=25,cor=25,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	gucci puma adidas anna sui diane von furstenberg and gwen stefani have all pursued legal action against forever 21 alleging various forms of copyright infringement
+hyp:	gucci puma adidas anna sui diane von furstenberg and gwen stefani have all pursued legal action against forever 21 alleging various forms of copyright infringement
+diff:	gucci puma adidas anna sui diane von furstenberg and gwen stefani have all pursued legal action against forever 21 alleging various forms of copyright infringement
+POD1000000005_S0000363(nwords=17,cor=17,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	many smaller brands have also claimed their prints or designs were ripped off by the mega retailer
+hyp:	many smaller brands have also claimed their prints or designs were ripped off by the mega retailer
+diff:	many smaller brands have also claimed their prints or designs were ripped off by the mega retailer
+POD1000000005_S0000364(nwords=14,cor=14,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	but most did not have the resources to go against a multi $1000000000 mammoth
+hyp:	but most did not have the resources to go against a multi $1000000000 mammoth
+diff:	but most did not have the resources to go against a multi $1000000000 mammoth
+POD1000000005_S0000365(nwords=12,cor=12,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	and scafidi says fast fashion brands like forever 21 bank on that
+hyp:	and scafidi says fast fashion brands like forever 21 bank on that
+diff:	and scafidi says fast fashion brands like forever 21 bank on that
+POD1000000005_S0000366(nwords=17,cor=16,ins=0,del=1,sub=0) corr:94.12%,cer:5.88%
+ref:	a certain amount of copying is is baked into the business model of every fast fashion company
+hyp:	a certain amount of copying is baked into the business model of every fast fashion company
+diff:	a certain amount of copying (is->*) is baked into the business model of every fast fashion company
+POD1000000005_S0000367(nwords=17,cor=17,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	the only question is how literally they are copying and how much they are changing it up
+hyp:	the only question is how literally they are copying and how much they are changing it up
+diff:	the only question is how literally they are copying and how much they are changing it up
+POD1000000005_S0000368(nwords=21,cor=21,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	in forever 21 is case they would often barely bother to change anything about the original design they were ripping off
+hyp:	in forever 21 is case they would often barely bother to change anything about the original design they were ripping off
+diff:	in forever 21 is case they would often barely bother to change anything about the original design they were ripping off
+POD1000000005_S0000369(nwords=14,cor=14,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	and some of their fabric prints were just a straight cut and copy job
+hyp:	and some of their fabric prints were just a straight cut and copy job
+diff:	and some of their fabric prints were just a straight cut and copy job
+POD1000000005_S0000370(nwords=24,cor=22,ins=0,del=2,sub=0) corr:91.67%,cer:8.33%
+ref:	and maybe on the back end you get caught and have to pay out the occasional settlement ah or or pay some legal fees
+hyp:	and maybe on the back end you get caught and have to pay out the occasional settlement or pay some legal fees
+diff:	and maybe on the back end you get caught and have to pay out the occasional settlement (ah or->*) or pay some legal fees
+POD1000000005_S0000371(nwords=16,cor=15,ins=0,del=1,sub=0) corr:93.75%,cer:6.25%
+ref:	but usually that is cheaper ah than actually hiring designers and engaging in innovative product research
+hyp:	but usually that is cheaper than actually hiring designers and engaging in innovative product research
+diff:	but usually that is cheaper (ah->*) than actually hiring designers and engaging in innovative product research
+POD1000000005_S0000372(nwords=12,cor=12,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	copying clothing designs has not been forever 21 is only questionable move
+hyp:	copying clothing designs has not been forever 21 is only questionable move
+diff:	copying clothing designs has not been forever 21 is only questionable move
+POD1000000005_S0000373(nwords=28,cor=26,ins=0,del=0,sub=2) corr:92.86%,cer:7.14%
+ref:	in 2001 a workers advocacy center or filed lawsuit on behalf of employees who said they were made to work insane hours for way less than minimum wage
+hyp:	in 2001 a workers advocacy center filed a lawsuit on behalf of employees who said they were made to work insane hours for way less than minimum wage
+diff:	in 2001 a workers advocacy center (or filed->filed a) lawsuit on behalf of employees who said they were made to work insane hours for way less than minimum wage
+POD1000000005_S0000374(nwords=23,cor=23,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	in 2012 the u s department of labor sued the retailer for failing to pay federal minimum wage to its manufacturers and contractors
+hyp:	in 2012 the u s department of labor sued the retailer for failing to pay federal minimum wage to its manufacturers and contractors
+diff:	in 2012 the u s department of labor sued the retailer for failing to pay federal minimum wage to its manufacturers and contractors
+POD1000000005_S0000375(nwords=14,cor=14,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	and in 2019 pop star ariana grande slapped forever 21 with a $10000000 lawsuit
+hyp:	and in 2019 pop star ariana grande slapped forever 21 with a $10000000 lawsuit
+diff:	and in 2019 pop star ariana grande slapped forever 21 with a $10000000 lawsuit
+POD1000000005_S0000376(nwords=17,cor=16,ins=0,del=0,sub=1) corr:94.12%,cer:5.88%
+ref:	the company used a model in this ad campaign that looks an awful lot like ariana grande
+hyp:	the company used a model in this ad campaign that looked an awful lot like ariana grande
+diff:	the company used a model in this ad campaign that (looks->looked) an awful lot like ariana grande
+POD1000000005_S0000377(nwords=13,cor=13,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	she claims they did this to confuse consumers that she had endorsed them
+hyp:	she claims they did this to confuse consumers that she had endorsed them
+diff:	she claims they did this to confuse consumers that she had endorsed them
+POD1000000005_S0000378(nwords=9,cor=9,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	and that ariana grande lookalike was me just kidding
+hyp:	and that ariana grande lookalike was me just kidding
+diff:	and that ariana grande lookalike was me just kidding
+POD1000000005_S0000379(nwords=11,cor=11,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	a behemoth like forever 21 rarely fails because of one misstep
+hyp:	a behemoth like forever 21 rarely fails because of one misstep
+diff:	a behemoth like forever 21 rarely fails because of one misstep
+POD1000000005_S0000380(nwords=9,cor=9,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	how did it falter let us count the ways
+hyp:	how did it falter let us count the ways
+diff:	how did it falter let us count the ways
+POD1000000005_S0000381(nwords=29,cor=29,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	how about routine legal troubles leasing too much expensive retail space screwy merchandising that gummed up their supply chain and no traditional board of directors to pump the brakes
+hyp:	how about routine legal troubles leasing too much expensive retail space screwy merchandising that gummed up their supply chain and no traditional board of directors to pump the brakes
+diff:	how about routine legal troubles leasing too much expensive retail space screwy merchandising that gummed up their supply chain and no traditional board of directors to pump the brakes
+POD1000000005_S0000382(nwords=19,cor=19,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	and with retail moving more and more online forever 21 is weak e commerce game did not help matters
+hyp:	and with retail moving more and more online forever 21 is weak e commerce game did not help matters
+diff:	and with retail moving more and more online forever 21 is weak e commerce game did not help matters
+POD1000000005_S0000383(nwords=22,cor=21,ins=0,del=0,sub=1) corr:95.45%,cer:4.55%
+ref:	in recent years there has been one other major issue tugging at forever 21 is flouncy hem sustainability cause sustainable it aint
+hyp:	in recent years there has been one other major issue tugging at forever 21 is flouncy hem sustainability because sustainable it aint
+diff:	in recent years there has been one other major issue tugging at forever 21 is flouncy hem sustainability (cause->because) sustainable it aint
+POD1000000005_S0000384(nwords=21,cor=21,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	i wonder is fast fashion if we are talking about sustainability like is that just as bad as it can get
+hyp:	i wonder is fast fashion if we are talking about sustainability like is that just as bad as it can get
+diff:	i wonder is fast fashion if we are talking about sustainability like is that just as bad as it can get
+POD1000000005_S0000385(nwords=29,cor=27,ins=0,del=2,sub=0) corr:93.10%,cer:6.90%
+ref:	well i am i am hesitant to say the worst but i would be hard pressed to think of another realm of the fashion industry that is as bad
+hyp:	well i am hesitant to say the worst but i would be hard pressed to think of another realm of the fashion industry that is as bad
+diff:	well (i am->*) i am hesitant to say the worst but i would be hard pressed to think of another realm of the fashion industry that is as bad
+POD1000000005_S0000386(nwords=8,cor=8,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	because fast fashion has as its fundamental purpose
+hyp:	because fast fashion has as its fundamental purpose
+diff:	because fast fashion has as its fundamental purpose
+POD1000000005_S0000387(nwords=2,cor=2,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	quick disposability
+hyp:	quick disposability
+diff:	quick disposability
+POD1000000005_S0000388(nwords=19,cor=19,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	you know the $25 handbag that is a knockoff of some you know item that came down the runway
+hyp:	you know the $25 handbag that is a knockoff of some you know item that came down the runway
+diff:	you know the $25 handbag that is a knockoff of some you know item that came down the runway
+POD1000000005_S0000389(nwords=29,cor=29,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	that is really meant to be used for a few months and then you know chucked into the trash well that is going to end up in a landfill
+hyp:	that is really meant to be used for a few months and then you know chucked into the trash well that is going to end up in a landfill
+diff:	that is really meant to be used for a few months and then you know chucked into the trash well that is going to end up in a landfill
+POD1000000005_S0000390(nwords=15,cor=15,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	as opposed to say an hermes handbag that is the price of a small car
+hyp:	as opposed to say an hermes handbag that is the price of a small car
+diff:	as opposed to say an hermes handbag that is the price of a small car
+POD1000000005_S0000391(nwords=6,cor=6,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	that is not getting tossed out
+hyp:	that is not getting tossed out
+diff:	that is not getting tossed out
+POD1000000005_S0000392(nwords=13,cor=13,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	that is going in a safe deposit box as insurance for the apocalypse
+hyp:	that is going in a safe deposit box as insurance for the apocalypse
+diff:	that is going in a safe deposit box as insurance for the apocalypse
+POD1000000005_S0000393(nwords=12,cor=12,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	sustainability in fashion is not just about buying more durable classic handbags
+hyp:	sustainability in fashion is not just about buying more durable classic handbags
+diff:	sustainability in fashion is not just about buying more durable classic handbags
+POD1000000005_S0000394(nwords=28,cor=28,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	the rise of online consignment shopping as well as clothing rental startups like rent the runway means consumers are increasingly trying to buy used and own less stuff
+hyp:	the rise of online consignment shopping as well as clothing rental startups like rent the runway means consumers are increasingly trying to buy used and own less stuff
+diff:	the rise of online consignment shopping as well as clothing rental startups like rent the runway means consumers are increasingly trying to buy used and own less stuff
+POD1000000005_S0000395(nwords=14,cor=14,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	a clothing brand that banks on disposability is not long for this new world
+hyp:	a clothing brand that banks on disposability is not long for this new world
+diff:	a clothing brand that banks on disposability is not long for this new world
+POD1000000005_S0000396(nwords=13,cor=13,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	by september 2019 it had all become just too much for forever 21
+hyp:	by september 2019 it had all become just too much for forever 21
+diff:	by september 2019 it had all become just too much for forever 21
+POD1000000005_S0000397(nwords=19,cor=19,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	the company built by immigrants from a single storefront in l a into a $4000000000 colossus filed for bankruptcy
+hyp:	the company built by immigrants from a single storefront in l a into a $4000000000 colossus filed for bankruptcy
+diff:	the company built by immigrants from a single storefront in l a into a $4000000000 colossus filed for bankruptcy
+POD1000000005_S0000398(nwords=7,cor=7,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	it is the end of an era
+hyp:	it is the end of an era
+diff:	it is the end of an era
+POD1000000005_S0000399(nwords=19,cor=19,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	if you are a fan of forever 21 you may have to say goodbye to a store near you
+hyp:	if you are a fan of forever 21 you may have to say goodbye to a store near you
+diff:	if you are a fan of forever 21 you may have to say goodbye to a store near you
+POD1000000005_S0000400(nwords=20,cor=20,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	over the weekend the retailer filed for chapter 11 bankruptcy all this in hopes of salvaging the company is brand
+hyp:	over the weekend the retailer filed for chapter 11 bankruptcy all this in hopes of salvaging the company is brand
+diff:	over the weekend the retailer filed for chapter 11 bankruptcy all this in hopes of salvaging the company is brand
+POD1000000005_S0000401(nwords=9,cor=7,ins=0,del=1,sub=1) corr:77.78%,cer:22.22%
+ref:	naturally the internet was a buzz at the news
+hyp:	naturally the internet was abuzz at the news
+diff:	naturally the internet was (a buzz->abuzz) at the news
+POD1000000005_S0000402(nwords=20,cor=20,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	tons of youtubers raced out to forever 21 shops to get some deals deals deals and naturally they made videos
+hyp:	tons of youtubers raced out to forever 21 shops to get some deals deals deals and naturally they made videos
+diff:	tons of youtubers raced out to forever 21 shops to get some deals deals deals and naturally they made videos
+POD1000000005_S0000403(nwords=8,cor=8,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	like this one from beauty vlogger lauren giraldo
+hyp:	like this one from beauty vlogger lauren giraldo
+diff:	like this one from beauty vlogger lauren giraldo
+POD1000000005_S0000404(nwords=33,cor=32,ins=0,del=0,sub=1) corr:96.97%,cer:3.03%
+ref:	okay honestly not going to lie i was expecting things to look different and the 1st one i thought it was going to be like everything must go signs and stuff you know
+hyp:	okay honestly not going to lie i was expecting things to look different in the 1st one i thought it was going to be like everything must go signs and stuff you know
+diff:	okay honestly not going to lie i was expecting things to look different (and->in) the 1st one i thought it was going to be like everything must go signs and stuff you know
+POD1000000005_S0000405(nwords=23,cor=22,ins=0,del=0,sub=1) corr:95.65%,cer:4.35%
+ref:	i mean i feel like you can tell what i was expecting but a little bit of it seems like business is usual
+hyp:	i mean i feel like you can tell what i was expecting but a little bit of it seems like business as usual
+diff:	i mean i feel like you can tell what i was expecting but a little bit of it seems like business (is->as) usual
+POD1000000005_S0000406(nwords=32,cor=31,ins=0,del=0,sub=1) corr:96.88%,cer:3.12%
+ref:	so i am like hello are the headlines like do they mean any i do not know let us go in and see if we can get some bankrupt deals or not
+hyp:	so i am like hello are the headlines like do they mean it i do not know let us go in and see if we can get some bankrupt deals or not
+diff:	so i am like hello are the headlines like do they mean (any->it) i do not know let us go in and see if we can get some bankrupt deals or not
+POD1000000005_S0000407(nwords=9,cor=8,ins=0,del=0,sub=1) corr:88.89%,cer:11.11%
+ref:	let us just go see what the d is
+hyp:	let us just go see what the tea is
+diff:	let us just go see what the (d->tea) is
+POD1000000005_S0000408(nwords=12,cor=9,ins=0,del=2,sub=1) corr:75.00%,cer:25.00%
+ref:	f y i she did not actually buy anything at forever 21
+hyp:	fyi she did not actually buy anything at forever 21
+diff:	(f y i->fyi) she did not actually buy anything at forever 21
+POD1000000005_S0000409(nwords=18,cor=18,ins=1,del=0,sub=0) corr:100.00%,cer:5.56%
+ref:	but she did put together some looks and filmed herself wearing them the dressing room so close enough
+hyp:	but she did put together some looks and filmed herself wearing them in the dressing room so close enough
+diff:	but she did put together some looks and filmed herself wearing them (*->in) the dressing room so close enough
+POD1000000005_S0000410(nwords=5,cor=5,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	deals are great and all
+hyp:	deals are great and all
+diff:	deals are great and all
+POD1000000005_S0000411(nwords=28,cor=27,ins=0,del=0,sub=1) corr:96.43%,cer:3.57%
+ref:	but forever 21 is former global communications director kevin fegans said the bankruptcy news felt like a surprise gut punch even though he had already left the company
+hyp:	but forever 21 is former global communications director kevin fagans said the bankruptcy news felt like a surprise gut punch even though he had already left the company
+diff:	but forever 21 is former global communications director kevin (fegans->fagans) said the bankruptcy news felt like a surprise gut punch even though he had already left the company
+POD1000000005_S0000412(nwords=8,cor=8,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	i really was not aware of the challenges
+hyp:	i really was not aware of the challenges
+diff:	i really was not aware of the challenges
+POD1000000005_S0000413(nwords=33,cor=32,ins=0,del=0,sub=1) corr:96.97%,cer:3.03%
+ref:	i mean i would hear obviously and you would kind of think that certain markets were not doing well and maybe we needed to kind of push or help promote in those markets
+hyp:	i mean i would hear obviously and you would kind of think that certain markets were not doing well and maybe we need to kind of push or help promote in those markets
+diff:	i mean i would hear obviously and you would kind of think that certain markets were not doing well and maybe we (needed->need) to kind of push or help promote in those markets
+POD1000000005_S0000414(nwords=53,cor=48,ins=0,del=4,sub=1) corr:90.57%,cer:9.43%
+ref:	i e kind of drive more p r see how we can kind of you know increase foot traffic but never was i aware that things were really kind of starting to come to a halt or at least you know where bankruptcy was going to be in the in the foreseeable future
+hyp:	i kind of drive more pr see how we can kind of you know increase foot traffic but never was i aware that things were really kind of starting to come to a halt or at least you know where bankruptcy was going to be in the foreseeable future
+diff:	i (e->*) kind of drive more (p r->pr) see how we can kind of you know increase foot traffic but never was i aware that things were really kind of starting to come to a halt or at least you know where bankruptcy was going to be (in the->*) in the foreseeable future
+POD1000000005_S0000415(nwords=11,cor=9,ins=2,del=0,sub=2) corr:81.82%,cer:36.36%
+ref:	its chapter 11 filing really leaned into the changs immigrant story
+hyp:	it is chapter 11 filing really leaned into the chang is immigrant story
+diff:	(its->it is) chapter 11 filing really leaned into the (changs->chang is) immigrant story
+POD1000000005_S0000416(nwords=24,cor=24,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	under the subheading forever dreaming a roadmap to the american dream it read forever 21 is a story about family and the american dream
+hyp:	under the subheading forever dreaming a roadmap to the american dream it read forever 21 is a story about family and the american dream
+diff:	under the subheading forever dreaming a roadmap to the american dream it read forever 21 is a story about family and the american dream
+POD1000000005_S0000417(nwords=35,cor=35,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	in an age when retail as most americans know it is under assault forever 21 intends to use these proceedings to remain viable and write a different ending from so many retail companies before it
+hyp:	in an age when retail as most americans know it is under assault forever 21 intends to use these proceedings to remain viable and write a different ending from so many retail companies before it
+diff:	in an age when retail as most americans know it is under assault forever 21 intends to use these proceedings to remain viable and write a different ending from so many retail companies before it
+POD1000000005_S0000418(nwords=22,cor=22,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	the goal of these chapter 11 cases is clear emerge with a viable and feasible standalone business and keep the dream alive
+hyp:	the goal of these chapter 11 cases is clear emerge with a viable and feasible standalone business and keep the dream alive
+diff:	the goal of these chapter 11 cases is clear emerge with a viable and feasible standalone business and keep the dream alive
+POD1000000005_S0000419(nwords=32,cor=32,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	as a part of its restructuring plan the company announced that it intended to streamline its retail operation pump up its e commerce game and shut down a whole lot of stores
+hyp:	as a part of its restructuring plan the company announced that it intended to streamline its retail operation pump up its e commerce game and shut down a whole lot of stores
+diff:	as a part of its restructuring plan the company announced that it intended to streamline its retail operation pump up its e commerce game and shut down a whole lot of stores
+POD1000000005_S0000420(nwords=19,cor=19,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	nearly all of its international locations and more than 100 underperforming u s stores were on the chopping block
+hyp:	nearly all of its international locations and more than 100 underperforming u s stores were on the chopping block
+diff:	nearly all of its international locations and more than 100 underperforming u s stores were on the chopping block
+POD1000000005_S0000421(nwords=10,cor=10,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	that is more than 40% of their physical retail locations
+hyp:	that is more than 40% of their physical retail locations
+diff:	that is more than 40% of their physical retail locations
+POD1000000005_S0000422(nwords=7,cor=7,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	but those plans were all for naught
+hyp:	but those plans were all for naught
+diff:	but those plans were all for naught
+POD1000000005_S0000423(nwords=29,cor=29,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	in february a group of buyers including some of forever 21 is biggest landlords put in an offer to buy the brand for the bargain basement price of $81000000
+hyp:	in february a group of buyers including some of forever 21 is biggest landlords put in an offer to buy the brand for the bargain basement price of $81000000
+diff:	in february a group of buyers including some of forever 21 is biggest landlords put in an offer to buy the brand for the bargain basement price of $81000000
+POD1000000005_S0000424(nwords=7,cor=7,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	a judge approved the deal and boom
+hyp:	a judge approved the deal and boom
+diff:	a judge approved the deal and boom
+POD1000000005_S0000425(nwords=13,cor=13,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	clothing retailer forever 21 has been sold after declaring bankruptcy late last year
+hyp:	clothing retailer forever 21 has been sold after declaring bankruptcy late last year
+diff:	clothing retailer forever 21 has been sold after declaring bankruptcy late last year
+POD1000000005_S0000426(nwords=12,cor=12,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	sale includes all of forever 21 is assets including its remaining stores
+hyp:	sale includes all of forever 21 is assets including its remaining stores
+diff:	sale includes all of forever 21 is assets including its remaining stores
+POD1000000005_S0000427(nwords=6,cor=6,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	just like that the dream died
+hyp:	just like that the dream died
+diff:	just like that the dream died
+POD1000000005_S0000428(nwords=14,cor=14,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	after 35 years control of forever 21 slipped through the chang family is hands
+hyp:	after 35 years control of forever 21 slipped through the chang family is hands
+diff:	after 35 years control of forever 21 slipped through the chang family is hands
+POD1000000005_S0000429(nwords=21,cor=21,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	while the changs are no longer billionaires it is impossible to say they did not reach some type of american dream
+hyp:	while the changs are no longer billionaires it is impossible to say they did not reach some type of american dream
+diff:	while the changs are no longer billionaires it is impossible to say they did not reach some type of american dream
+POD1000000005_S0000430(nwords=14,cor=14,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	their aspirations of upward mobility clout and prestige were realized a 1000 times over
+hyp:	their aspirations of upward mobility clout and prestige were realized a 1000 times over
+diff:	their aspirations of upward mobility clout and prestige were realized a 1000 times over
+POD1000000005_S0000431(nwords=11,cor=11,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	their children achieved ivy league educations and never wanted for anything
+hyp:	their children achieved ivy league educations and never wanted for anything
+diff:	their children achieved ivy league educations and never wanted for anything
+POD1000000005_S0000432(nwords=12,cor=12,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	their distinctive yellow shopping bags were ubiquitous in malls around the world
+hyp:	their distinctive yellow shopping bags were ubiquitous in malls around the world
+diff:	their distinctive yellow shopping bags were ubiquitous in malls around the world
+POD1000000005_S0000433(nwords=4,cor=4,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	they truly made it
+hyp:	they truly made it
+diff:	they truly made it
+POD1000000005_S0000434(nwords=13,cor=13,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	perhaps we can even say that bankruptcy is part of that american dream
+hyp:	perhaps we can even say that bankruptcy is part of that american dream
+diff:	perhaps we can even say that bankruptcy is part of that american dream
+POD1000000005_S0000435(nwords=21,cor=20,ins=0,del=0,sub=1) corr:95.24%,cer:4.76%
+ref:	the part that lets people pull themselves up off the ground dust off their sleeveless wide legged jumpsuits and try again
+hyp:	the part that lets people pull themselves up off the ground dust off their sleeveless wide leg jumpsuits and try again
+diff:	the part that lets people pull themselves up off the ground dust off their sleeveless wide (legged->leg) jumpsuits and try again
+POD1000000005_S0000437(nwords=21,cor=20,ins=0,del=0,sub=1) corr:95.24%,cer:4.76%
+ref:	spectacular failures is a production of american public media it is written and hosted by me corruptor top aficionado lauren ober
+hyp:	spectacular failures is a production of american public media it is written and hosted by me corrupt top aficionado lauren ober
+diff:	spectacular failures is a production of american public media it is written and hosted by me (corruptor->corrupt) top aficionado lauren ober
+POD1000000005_S0000438(nwords=9,cor=9,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	runway model whitney jones is the show is producer
+hyp:	runway model whitney jones is the show is producer
+diff:	runway model whitney jones is the show is producer
+POD1000000005_S0000439(nwords=7,cor=7,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	our editor is bargain hunter phyllis fletcher
+hyp:	our editor is bargain hunter phyllis fletcher
+diff:	our editor is bargain hunter phyllis fletcher
+POD1000000005_S0000440(nwords=8,cor=7,ins=0,del=0,sub=1) corr:87.50%,cer:12.50%
+ref:	clothing wearer david zha is our assistant producer
+hyp:	clothing wearer david jha is our assistant producer
+diff:	clothing wearer david (zha->jha) is our assistant producer
+POD1000000005_S0000441(nwords=9,cor=9,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	our theme music is by the delightful david schulman
+hyp:	our theme music is by the delightful david schulman
+diff:	our theme music is by the delightful david schulman
+POD1000000005_S0000442(nwords=11,cor=10,ins=0,del=0,sub=1) corr:90.91%,cer:9.09%
+ref:	other music this season comes from jenn champion and michael cormier
+hyp:	other music this season comes from jen champion and michael cormier
+diff:	other music this season comes from (jenn->jen) champion and michael cormier
+POD1000000005_S0000443(nwords=16,cor=12,ins=0,del=2,sub=2) corr:75.00%,cer:25.00%
+ref:	kristina lopez is our audience engagement editor and lauren d e e is our executive producer
+hyp:	christina lopez is our audience engagement editor and lauren dee is our executive producer
+diff:	(kristina->christina) lopez is our audience engagement editor and lauren (d e e->dee) is our executive producer
+POD1000000005_S0000444(nwords=5,cor=5,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	concept developed by tracy mumford
+hyp:	concept developed by tracy mumford
+diff:	concept developed by tracy mumford
+POD1000000005_S0000445(nwords=11,cor=8,ins=0,del=2,sub=1) corr:72.73%,cer:27.27%
+ref:	the general manager of a p m studios is lily kim
+hyp:	the general manager of apm studios is lily kim
+diff:	the general manager of (a p m->apm) studios is lily kim
+POD1000000005_S0000446(nwords=17,cor=17,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	super special thanks to jess lazar for letting us bop around the mall with her daughter eden
+hyp:	super special thanks to jess lazar for letting us bop around the mall with her daughter eden
+diff:	super special thanks to jess lazar for letting us bop around the mall with her daughter eden
+POD1000000005_S0000447(nwords=25,cor=22,ins=0,del=2,sub=1) corr:88.00%,cer:12.00%
+ref:	if you want to read forever 21 is very enlightening bankruptcy filing and why would not you go to our website spectacular failures dot org
+hyp:	if you want to read forever 21 is very enlightening bankruptcy filing and why would not you go to our website spectacularfailures org
+diff:	if you want to read forever 21 is very enlightening bankruptcy filing and why would not you go to our website (spectacular failures dot->spectacularfailures) org
+POD1000000005_S0000448(nwords=27,cor=26,ins=0,del=0,sub=1) corr:96.30%,cer:3.70%
+ref:	we have got a super fun list of source material and finally thanks to the ultra chic robin givhan for letting slobs like us in her office
+hyp:	we have got a super fun list of source material and finally thanks to the ultra chic robin gavon for letting slobs like us in her office
+diff:	we have got a super fun list of source material and finally thanks to the ultra chic robin (givhan->gavon) for letting slobs like us in her office
+POD1000000005_S0000449(nwords=18,cor=16,ins=1,del=2,sub=0) corr:88.89%,cer:16.67%
+ref:	what do you think whitney is out do you who looks better today me or whitney say me
+hyp:	what do you think of whitney is out who looks better today me or whitney say me
+diff:	what do you think (*->of) whitney is out (do you->*) who looks better today me or whitney say me
+POD1000000005_S0000450(nwords=6,cor=6,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	i have not come to judge
+hyp:	i have not come to judge
+diff:	i have not come to judge
+POD1000000005_S0000452(nwords=18,cor=18,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	but you are a critic that is your job so you are saying i look better thank you
+hyp:	but you are a critic that is your job so you are saying i look better thank you
+diff:	but you are a critic that is your job so you are saying i look better thank you
+POD1000000005_S0000453(nwords=6,cor=6,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	i do not judge my friends
+hyp:	i do not judge my friends
+diff:	i do not judge my friends
+POD1000000005_S0000455(nwords=16,cor=16,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	hey friends i want to tell you about another podcast you might want to check out
+hyp:	hey friends i want to tell you about another podcast you might want to check out
+diff:	hey friends i want to tell you about another podcast you might want to check out
+POD1000000005_S0000456(nwords=25,cor=25,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	it is called cautionary tales and it has returned with special episodes about how the world came to be turned upside down by covid 19
+hyp:	it is called cautionary tales and it has returned with special episodes about how the world came to be turned upside down by covid 19
+diff:	it is called cautionary tales and it has returned with special episodes about how the world came to be turned upside down by covid 19
+POD1000000005_S0000457(nwords=23,cor=23,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	why people behave the way they did during the pandemic and where we all might wind up in the difficult years to come
+hyp:	why people behave the way they did during the pandemic and where we all might wind up in the difficult years to come
+diff:	why people behave the way they did during the pandemic and where we all might wind up in the difficult years to come
+POD1000000005_S0000458(nwords=23,cor=21,ins=0,del=0,sub=2) corr:91.30%,cer:8.70%
+ref:	host tim harper draws from history and social science too vividly retell the stories of great crimes accidents and disasters of the past
+hyp:	host tim harford draws from history and social science to vividly retell the stories of great crimes accidents and disasters of the past
+diff:	host tim (harper->harford) draws from history and social science (too->to) vividly retell the stories of great crimes accidents and disasters of the past
+POD1000000005_S0000459(nwords=13,cor=13,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	pointing out valuable lessons for us all from the injustices death and destruction
+hyp:	pointing out valuable lessons for us all from the injustices death and destruction
+diff:	pointing out valuable lessons for us all from the injustices death and destruction
+POD1000000005_S0000460(nwords=12,cor=9,ins=0,del=0,sub=3) corr:75.00%,cer:25.00%
+ref:	you will witness massive evacuation as great waves washed away whole cities
+hyp:	you will witness mass evacuations as great waves wash away whole cities
+diff:	you will witness (massive evacuation->mass evacuations) as great waves (washed->wash) away whole cities
+POD1000000005_S0000461(nwords=14,cor=13,ins=0,del=0,sub=1) corr:92.86%,cer:7.14%
+ref:	sit in a crowded cabaret is flames creep closer and closer to the auditorium
+hyp:	sit in a crowded cabaret as flames creep closer and closer to the auditorium
+diff:	sit in a crowded cabaret (is->as) flames creep closer and closer to the auditorium
+POD1000000005_S0000462(nwords=17,cor=15,ins=0,del=0,sub=2) corr:88.24%,cer:11.76%
+ref:	and visit the plague hit town that lock the gates and waits death to save its neighbors
+hyp:	and visit the plague hit town that locks the gates and awaits death to save its neighbors
+diff:	and visit the plague hit town that (lock->locks) the gates and (waits->awaits) death to save its neighbors
+POD1000000005_S0000463(nwords=11,cor=11,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	subscribe to cautionary tales on apple podcasts or wherever you listen
+hyp:	subscribe to cautionary tales on apple podcasts or wherever you listen
+diff:	subscribe to cautionary tales on apple podcasts or wherever you listen
+POD1000000005_S0000464(nwords=6,cor=4,ins=0,del=0,sub=2) corr:66.67%,cer:33.33%
+ref:	for my pals at pushkin industries
+hyp:	from our pals at pushkin industries
+diff:	(for my->from our) pals at pushkin industries
+POD1000000011_S0000000(nwords=14,cor=14,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	aha greetings class and welcome to counting school where what you learn really counts
+hyp:	aha greetings class and welcome to counting school where what you learn really counts
+diff:	aha greetings class and welcome to counting school where what you learn really counts
+POD1000000011_S0000001(nwords=17,cor=17,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	so we want to start today with a little story about an old friend from sesame street
+hyp:	so we want to start today with a little story about an old friend from sesame street
+diff:	so we want to start today with a little story about an old friend from sesame street
+POD1000000011_S0000002(nwords=14,cor=14,ins=1,del=0,sub=0) corr:100.00%,cer:7.14%
+ref:	i am your teacher the count you know why they call me the count
+hyp:	i am your teacher the count do you know why they call me the count
+diff:	i am your teacher the count (*->do) you know why they call me the count
+POD1000000011_S0000003(nwords=6,cor=5,ins=0,del=0,sub=1) corr:83.33%,cer:16.67%
+ref:	because you love to count things
+hyp:	because i love to count things
+diff:	because (you->i) love to count things
+POD1000000011_S0000004(nwords=20,cor=19,ins=0,del=1,sub=0) corr:95.00%,cer:5.00%
+ref:	i love the count ah and ken scarborough knows him really well because he is head writer at sesame street
+hyp:	i love the count and ken scarborough knows him really well because he is head writer at sesame street
+diff:	i love the count (ah->*) and ken scarborough knows him really well because he is head writer at sesame street
+POD1000000011_S0000005(nwords=20,cor=19,ins=0,del=0,sub=1) corr:95.00%,cer:5.00%
+ref:	his whole identity is wrapped up in being the count and being a guy who knows his numbers really well
+hyp:	his whole identity is wrapped up in being a count and being a guy who knows his numbers really well
+diff:	his whole identity is wrapped up in being (the->a) count and being a guy who knows his numbers really well
+POD1000000011_S0000006(nwords=18,cor=18,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	now of course for the count that we all know and love numbers give him nothing but joy
+hyp:	now of course for the count that we all know and love numbers give him nothing but joy
+diff:	now of course for the count that we all know and love numbers give him nothing but joy
+POD1000000011_S0000007(nwords=4,cor=4,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	99 sandwiches all together
+hyp:	99 sandwiches all together
+diff:	99 sandwiches all together
+POD1000000011_S0000009(nwords=8,cor=8,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	but on this one day it is different
+hyp:	but on this one day it is different
+diff:	but on this one day it is different
+POD1000000011_S0000010(nwords=16,cor=15,ins=0,del=1,sub=0) corr:93.75%,cer:6.25%
+ref:	the count makes a mistake and he is sort of cannot believe it he is crushed
+hyp:	the count makes a mistake and he sort of cannot believe it he is crushed
+diff:	the count makes a mistake and he (is->*) sort of cannot believe it he is crushed
+POD1000000011_S0000012(nwords=5,cor=5,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	what number did he forget
+hyp:	what number did he forget
+diff:	what number did he forget
+POD1000000011_S0000013(nwords=20,cor=19,ins=0,del=1,sub=0) corr:95.00%,cer:5.00%
+ref:	well somebody interrupted him it is really not his fault he he was counting sandwiches he was really being helpful
+hyp:	well somebody interrupted him it is really not his fault he was counting sandwiches he was really being helpful
+diff:	well somebody interrupted him it is really not his fault (he->*) he was counting sandwiches he was really being helpful
+POD1000000011_S0000014(nwords=6,cor=5,ins=1,del=0,sub=1) corr:83.33%,cer:33.33%
+ref:	9 sandwiches are you sure count
+hyp:	9 10 inches are you sure count
+diff:	9 (sandwiches->10 inches) are you sure count
+POD1000000011_S0000015(nwords=12,cor=11,ins=0,del=1,sub=0) corr:91.67%,cer:8.33%
+ref:	0 but of course i am sure chris i am the count
+hyp:	but of course i am sure chris i am the count
+diff:	(0->*) but of course i am sure chris i am the count
+POD1000000011_S0000016(nwords=1,cor=0,ins=0,del=0,sub=1) corr:0.00%,cer:100.00%
+ref:	aha
+hyp:	haha
+diff:	(aha->haha)
+POD1000000011_S0000017(nwords=3,cor=1,ins=0,del=1,sub=1) corr:33.33%,cer:66.67%
+ref:	ah the count
+hyp:	the cat
+diff:	(ah->*) the (count->cat)
+POD1000000011_S0000018(nwords=1,cor=0,ins=0,del=1,sub=0) corr:0.00%,cer:100.00%
+ref:	hm
+hyp:	
+diff:	(hm->*)
+POD1000000011_S0000020(nwords=8,cor=8,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	elmo thinks the count made a little mistake
+hyp:	elmo thinks the count made a little mistake
+diff:	elmo thinks the count made a little mistake
+POD1000000011_S0000021(nwords=3,cor=1,ins=0,del=1,sub=1) corr:33.33%,cer:66.67%
+ref:	ah a mistake
+hyp:	the mistake
+diff:	(ah a->the) mistake
+POD1000000011_S0000022(nwords=4,cor=2,ins=0,del=1,sub=1) corr:50.00%,cer:50.00%
+ref:	ah huh yeah see
+hyp:	huh yeah sweet
+diff:	(ah->*) huh yeah (see->sweet)
+POD1000000011_S0000023(nwords=19,cor=17,ins=0,del=0,sub=2) corr:89.47%,cer:10.53%
+ref:	it really struck him to his his core he decided he was not going to be the count anymore
+hyp:	it really struck him to his core and he decided he was not going to be the count anymore
+diff:	it really struck him to his (his core->core and) he decided he was not going to be the count anymore
+POD1000000011_S0000024(nwords=10,cor=9,ins=0,del=0,sub=1) corr:90.00%,cer:10.00%
+ref:	wow so the count screws up he makes a mistake
+hyp:	whoa so the count screws up he makes a mistake
+diff:	(wow->whoa) so the count screws up he makes a mistake
+POD1000000011_S0000025(nwords=8,cor=8,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	yeah and he could not get over it
+hyp:	yeah and he could not get over it
+diff:	yeah and he could not get over it
+POD1000000011_S0000026(nwords=15,cor=14,ins=0,del=0,sub=1) corr:93.33%,cer:6.67%
+ref:	and you know what cory that means he is pretty similar to you and me
+hyp:	and you know what corey that means he is pretty similar to you and me
+diff:	and you know what (cory->corey) that means he is pretty similar to you and me
+POD1000000011_S0000027(nwords=8,cor=8,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	yeah because math anxiety is a real thing
+hyp:	yeah because math anxiety is a real thing
+diff:	yeah because math anxiety is a real thing
+POD1000000011_S0000029(nwords=13,cor=12,ins=0,del=0,sub=1) corr:92.31%,cer:7.69%
+ref:	estimates range up to 93% of american adults that is a lot cory
+hyp:	estimates range up to 93% of american adults that is a lot cori
+diff:	estimates range up to 93% of american adults that is a lot (cory->cori)
+POD1000000011_S0000030(nwords=17,cor=17,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	yeah i do not even need to know any math to know that that is a lot
+hyp:	yeah i do not even need to know any math to know that that is a lot
+diff:	yeah i do not even need to know any math to know that that is a lot
+POD1000000011_S0000031(nwords=15,cor=15,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	yeah 93% of american adults feel some degree of anxiety that is specific to math
+hyp:	yeah 93% of american adults feel some degree of anxiety that is specific to math
+diff:	yeah 93% of american adults feel some degree of anxiety that is specific to math
+POD1000000011_S0000032(nwords=17,cor=17,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	so if you avoid doing your budget or investing well we got a life kit for that
+hyp:	so if you avoid doing your budget or investing well we got a life kit for that
+diff:	so if you avoid doing your budget or investing well we got a life kit for that
+POD1000000011_S0000033(nwords=1,cor=1,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	yeah
+hyp:	yeah
+diff:	yeah
+POD1000000011_S0000034(nwords=11,cor=11,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	but also math anxiety could be part of the reason why
+hyp:	but also math anxiety could be part of the reason why
+diff:	but also math anxiety could be part of the reason why
+POD1000000011_S0000035(nwords=11,cor=10,ins=0,del=1,sub=0) corr:90.91%,cer:9.09%
+ref:	0 what should elmo and the count do next the count
+hyp:	what should elmo and the count do next the count
+diff:	(0->*) what should elmo and the count do next the count
+POD1000000011_S0000037(nwords=1,cor=1,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	nothing
+hyp:	nothing
+diff:	nothing
+POD1000000011_S0000038(nwords=1,cor=0,ins=0,del=0,sub=1) corr:0.00%,cer:100.00%
+ref:	ah
+hyp:	huh
+diff:	(ah->huh)
+POD1000000011_S0000039(nwords=8,cor=8,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	nada 0 zilch i shall never count again
+hyp:	nada 0 zilch i shall never count again
+diff:	nada 0 zilch i shall never count again
+POD1000000011_S0000040(nwords=1,cor=1,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	what
+hyp:	what
+diff:	what
+POD1000000011_S0000041(nwords=25,cor=25,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	and the count is not alone on tests math anxiety can cause students to perform as though they were a whole year behind in school
+hyp:	and the count is not alone on tests math anxiety can cause students to perform as though they were a whole year behind in school
+diff:	and the count is not alone on tests math anxiety can cause students to perform as though they were a whole year behind in school
+POD1000000011_S0000042(nwords=29,cor=29,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	yeah obviously this is a real problem for schools and for how we teach math but what can we as parents do to shape our kids attitude towards math
+hyp:	yeah obviously this is a real problem for schools and for how we teach math but what can we as parents do to shape our kids attitude towards math
+diff:	yeah obviously this is a real problem for schools and for how we teach math but what can we as parents do to shape our kids attitude towards math
+POD1000000011_S0000043(nwords=6,cor=4,ins=0,del=0,sub=2) corr:66.67%,cer:33.33%
+ref:	we sat down with rosemarie truglio
+hyp:	we sat down with rosemary trulio
+diff:	we sat down with (rosemarie truglio->rosemary trulio)
+POD1000000011_S0000044(nwords=3,cor=3,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	math is everywhere
+hyp:	math is everywhere
+diff:	math is everywhere
+POD1000000011_S0000045(nwords=22,cor=22,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	she is a senior vice president of curriculum and content at sesame workshop and i put the problem to her this way
+hyp:	she is a senior vice president of curriculum and content at sesame workshop and i put the problem to her this way
+diff:	she is a senior vice president of curriculum and content at sesame workshop and i put the problem to her this way
+POD1000000011_S0000046(nwords=15,cor=15,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	i feel like as a parent i understand pretty well how to promote early literacy
+hyp:	i feel like as a parent i understand pretty well how to promote early literacy
+diff:	i feel like as a parent i understand pretty well how to promote early literacy
+POD1000000011_S0000048(nwords=10,cor=10,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	reading bedtime stories supposed to be singing the alphabet song
+hyp:	reading bedtime stories supposed to be singing the alphabet song
+diff:	reading bedtime stories supposed to be singing the alphabet song
+POD1000000011_S0000049(nwords=18,cor=18,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	but when i think about the equivalent on the math side of things i just draw a blank
+hyp:	but when i think about the equivalent on the math side of things i just draw a blank
+diff:	but when i think about the equivalent on the math side of things i just draw a blank
+POD1000000011_S0000050(nwords=24,cor=24,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	and i want you guys to help me fill in that blank what does it mean to promote the love of math early on
+hyp:	and i want you guys to help me fill in that blank what does it mean to promote the love of math early on
+diff:	and i want you guys to help me fill in that blank what does it mean to promote the love of math early on
+POD1000000011_S0000051(nwords=16,cor=16,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	you are saying that we have to get them to love math they already love math
+hyp:	you are saying that we have to get them to love math they already love math
+diff:	you are saying that we have to get them to love math they already love math
+POD1000000011_S0000052(nwords=1,cor=1,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	what
+hyp:	what
+diff:	what
+POD1000000011_S0000053(nwords=11,cor=11,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	yes they are not coming into this world not liking math
+hyp:	yes they are not coming into this world not liking math
+diff:	yes they are not coming into this world not liking math
+POD1000000011_S0000055(nwords=14,cor=14,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	so let us figure out if we can solve this little math equation here
+hyp:	so let us figure out if we can solve this little math equation here
+diff:	so let us figure out if we can solve this little math equation here
+POD1000000011_S0000056(nwords=27,cor=24,ins=0,del=2,sub=1) corr:88.89%,cer:11.11%
+ref:	you are listening to n p r is life kit for parenting with sesame workshop i am anya kamenetz i am not afraid of a corny joke
+hyp:	you are listening to npr is life kit for parenting with sesame workshop i am anya kamenetz i am not afraid of a corny joke
+diff:	you are listening to (n p r->npr) is life kit for parenting with sesame workshop i am anya kamenetz i am not afraid of a corny joke
+POD1000000011_S0000057(nwords=25,cor=24,ins=0,del=0,sub=1) corr:96.00%,cer:4.00%
+ref:	i am cory turner and after the break we are going to give you some tips that you can use starting in the early years
+hyp:	i am corey turner and after the break we are going to give you some tips that you can use starting in the early years
+diff:	i am (cory->corey) turner and after the break we are going to give you some tips that you can use starting in the early years
+POD1000000011_S0000058(nwords=36,cor=35,ins=0,del=1,sub=0) corr:97.22%,cer:2.78%
+ref:	but also strategies you can keep returning to even when you are a grown up and no matter how old your kids are as well as what to never ever say to your kids about math
+hyp:	but also strategies you can keep returning to even when you are grown up and no matter how old your kids are as well as what to never ever say to your kids about math
+diff:	but also strategies you can keep returning to even when you are (a->*) grown up and no matter how old your kids are as well as what to never ever say to your kids about math
+POD1000000011_S0000060(nwords=31,cor=28,ins=0,del=2,sub=1) corr:90.32%,cer:9.68%
+ref:	support for this n p r podcast and the following message come from linkedin and the new linkedin learning which offers over 13000 online courses to help you achieve your goals
+hyp:	support for this npr podcast and the following message come from linkedin and the new linkedin learning which offers over 13000 online courses to help you achieve your goals
+diff:	support for this (n p r->npr) podcast and the following message come from linkedin and the new linkedin learning which offers over 13000 online courses to help you achieve your goals
+POD1000000011_S0000061(nwords=24,cor=24,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	you can take a course like mindfulness about the importance of listening thinking and communicating positively acting with compassion managing stress and much more
+hyp:	you can take a course like mindfulness about the importance of listening thinking and communicating positively acting with compassion managing stress and much more
+diff:	you can take a course like mindfulness about the importance of listening thinking and communicating positively acting with compassion managing stress and much more
+POD1000000011_S0000062(nwords=31,cor=29,ins=0,del=1,sub=1) corr:93.55%,cer:6.45%
+ref:	linkedin learning videos are short so you can fit a lesson in during your morning routine and apply it that afternoon and life kit listeners get a month of learning free
+hyp:	linkedin learning videos are short so you can fit a lesson in during your morning routine and apply it that afternoon and lifekit listeners get a month of learning free
+diff:	linkedin learning videos are short so you can fit a lesson in during your morning routine and apply it that afternoon and (life kit->lifekit) listeners get a month of learning free
+POD1000000011_S0000063(nwords=13,cor=7,ins=0,del=4,sub=2) corr:53.85%,cer:46.15%
+ref:	start your free trial at linkedin learning dot com slash n p r
+hyp:	start your free trial at linkedinlearning com slash npr
+diff:	start your free trial at (linkedin learning dot->linkedinlearning) com slash (n p r->npr)
+POD1000000011_S0000065(nwords=35,cor=35,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	you are listening to life kit for parenting with sesame workshop in this episode we are going to do the equivalent of flipping to the back of the book to look right at the answers
+hyp:	you are listening to life kit for parenting with sesame workshop in this episode we are going to do the equivalent of flipping to the back of the book to look right at the answers
+diff:	you are listening to life kit for parenting with sesame workshop in this episode we are going to do the equivalent of flipping to the back of the book to look right at the answers
+POD1000000011_S0000066(nwords=1,cor=1,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	yep
+hyp:	yep
+diff:	yep
+POD1000000011_S0000067(nwords=21,cor=21,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	because we know that by listening to this math episode you had to overcome some anxieties i bet of your own
+hyp:	because we know that by listening to this math episode you had to overcome some anxieties i bet of your own
+diff:	because we know that by listening to this math episode you had to overcome some anxieties i bet of your own
+POD1000000011_S0000068(nwords=22,cor=21,ins=0,del=0,sub=1) corr:95.45%,cer:4.55%
+ref:	yes so let us get right to our takeaways and number one do not let your math anxiety hold your kids back
+hyp:	yeah so let us get right to our takeaways and number one do not let your math anxiety hold your kids back
+diff:	(yes->yeah) so let us get right to our takeaways and number one do not let your math anxiety hold your kids back
+POD1000000011_S0000069(nwords=13,cor=13,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	math anxiety as we mentioned is a real phenomenon all over the world
+hyp:	math anxiety as we mentioned is a real phenomenon all over the world
+diff:	math anxiety as we mentioned is a real phenomenon all over the world
+POD1000000011_S0000070(nwords=41,cor=41,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	yeah and it is pretty clearly related to how we teach math in school things like timed practice and memorization and high stakes testing and 0 my gosh i am getting hot flashes and sweaty palms just thinking about fact tests
+hyp:	yeah and it is pretty clearly related to how we teach math in school things like timed practice and memorization and high stakes testing and 0 my gosh i am getting hot flashes and sweaty palms just thinking about fact tests
+diff:	yeah and it is pretty clearly related to how we teach math in school things like timed practice and memorization and high stakes testing and 0 my gosh i am getting hot flashes and sweaty palms just thinking about fact tests
+POD1000000011_S0000071(nwords=1,cor=1,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	ugh
+hyp:	ugh
+diff:	ugh
+POD1000000011_S0000072(nwords=16,cor=16,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	and here is the really upsetting thing is that math anxiety it is not equal opportunity
+hyp:	and here is the really upsetting thing is that math anxiety it is not equal opportunity
+diff:	and here is the really upsetting thing is that math anxiety it is not equal opportunity
+POD1000000011_S0000073(nwords=35,cor=34,ins=1,del=0,sub=1) corr:97.14%,cer:5.71%
+ref:	that is right it is tied to stereotypes race and especially gender research shows that mothers and preschool teachers who are overwhelmingly women they can pass that feeling onto their kids especially to their girls
+hyp:	that is right it is tied to stereotypes race and especially gender research shows that mothers and preschool teachers who are overwhelmingly women they can pass that feeling on to their kids especially to their girls
+diff:	that is right it is tied to stereotypes race and especially gender research shows that mothers and preschool teachers who are overwhelmingly women they can pass that feeling (onto->on to) their kids especially to their girls
+POD1000000011_S0000074(nwords=6,cor=6,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	but there is some good news
+hyp:	but there is some good news
+diff:	but there is some good news
+POD1000000011_S0000075(nwords=26,cor=26,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	children are not born with math anxiety all right it is passed on to them so i think that is why we have to check ourselves
+hyp:	children are not born with math anxiety all right it is passed on to them so i think that is why we have to check ourselves
+diff:	children are not born with math anxiety all right it is passed on to them so i think that is why we have to check ourselves
+POD1000000011_S0000076(nwords=7,cor=7,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	in when we are talking about math
+hyp:	in when we are talking about math
+diff:	in when we are talking about math
+POD1000000011_S0000077(nwords=38,cor=38,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	this was kind of a surprise for me because i thought that you know if my kid had a problem with math i could bond with him by saying hey you know it was tough for me too
+hyp:	this was kind of a surprise for me because i thought that you know if my kid had a problem with math i could bond with him by saying hey you know it was tough for me too
+diff:	this was kind of a surprise for me because i thought that you know if my kid had a problem with math i could bond with him by saying hey you know it was tough for me too
+POD1000000011_S0000078(nwords=4,cor=3,ins=1,del=0,sub=1) corr:75.00%,cer:50.00%
+ref:	but actually rosemarie says
+hyp:	but actually rosemary says .
+diff:	but actually (rosemarie->rosemary) says (*->.)
+POD1000000011_S0000079(nwords=18,cor=18,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	saying i do not like math i can not do math that will get conveyed to your children
+hyp:	saying i do not like math i can not do math that will get conveyed to your children
+diff:	saying i do not like math i can not do math that will get conveyed to your children
+POD1000000011_S0000080(nwords=9,cor=9,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	and the solution instead we need to reframe math
+hyp:	and the solution instead we need to reframe math
+diff:	and the solution instead we need to reframe math
+POD1000000011_S0000081(nwords=20,cor=19,ins=0,del=0,sub=1) corr:95.00%,cer:5.00%
+ref:	yeah rosemarie says think about the fun activities that can back up and reinforce what they are learning in school
+hyp:	yeah rosemary says think about the fun activities that can back up and reinforce what they are learning in school
+diff:	yeah (rosemarie->rosemary) says think about the fun activities that can back up and reinforce what they are learning in school
+POD1000000011_S0000082(nwords=14,cor=14,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	math is very much an integral part of your life do you love music
+hyp:	math is very much an integral part of your life do you love music
+diff:	math is very much an integral part of your life do you love music
+POD1000000011_S0000083(nwords=6,cor=6,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	i do i love to sing
+hyp:	i do i love to sing
+diff:	i do i love to sing
+POD1000000011_S0000084(nwords=17,cor=17,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	all right if you love music then you love math do you like to cook and bake
+hyp:	all right if you love music then you love math do you like to cook and bake
+diff:	all right if you love music then you love math do you like to cook and bake
+POD1000000011_S0000085(nwords=6,cor=6,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	i love to cook and bake
+hyp:	i love to cook and bake
+diff:	i love to cook and bake
+POD1000000011_S0000086(nwords=20,cor=20,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	okay then you love math because you can not do music and you can not cook and bake without math
+hyp:	okay then you love math because you can not do music and you can not cook and bake without math
+diff:	okay then you love math because you can not do music and you can not cook and bake without math
+POD1000000011_S0000087(nwords=32,cor=32,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	so i can not cook or bake really and i definitely cannot sing but i love baseball for example and my boys and i we talk about baseball statistics all the time
+hyp:	so i can not cook or bake really and i definitely cannot sing but i love baseball for example and my boys and i we talk about baseball statistics all the time
+diff:	so i can not cook or bake really and i definitely cannot sing but i love baseball for example and my boys and i we talk about baseball statistics all the time
+POD1000000011_S0000088(nwords=19,cor=18,ins=0,del=0,sub=1) corr:94.74%,cer:5.26%
+ref:	so what is important rosemarie says is recognizing math as part of many things that we like doing together
+hyp:	so what is important rosemary says is recognizing math as part of many things that we like doing together
+diff:	so what is important (rosemarie->rosemary) says is recognizing math as part of many things that we like doing together
+POD1000000011_S0000089(nwords=36,cor=35,ins=0,del=0,sub=1) corr:97.22%,cer:2.78%
+ref:	exactly and so to see more about how adults can weave math into our everyday moments of life even with really little kids you and i and our producer lauren migaki visited a really special preschool
+hyp:	exactly and so to see more about how adults can weave math into our everyday moments of life even with really little kids you and i and our producer lauren mcgackie visited a really special preschool
+diff:	exactly and so to see more about how adults can weave math into our everyday moments of life even with really little kids you and i and our producer lauren (migaki->mcgackie) visited a really special preschool
+POD1000000011_S0000091(nwords=7,cor=7,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	they came to watch us play today
+hyp:	they came to watch us play today
+diff:	they came to watch us play today
+POD1000000011_S0000092(nwords=1,cor=0,ins=0,del=0,sub=1) corr:0.00%,cer:100.00%
+ref:	hi
+hyp:	bye
+diff:	(hi->bye)
+POD1000000011_S0000093(nwords=27,cor=27,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	this is the center for early childhood education it is our research preschool at eastern connecticut state university the lobby has this giant super realistic oak tree
+hyp:	this is the center for early childhood education it is our research preschool at eastern connecticut state university the lobby has this giant super realistic oak tree
+diff:	this is the center for early childhood education it is our research preschool at eastern connecticut state university the lobby has this giant super realistic oak tree
+POD1000000011_S0000094(nwords=7,cor=7,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	yeah which i climbed inside very cool
+hyp:	yeah which i climbed inside very cool
+diff:	yeah which i climbed inside very cool
+POD1000000011_S0000095(nwords=6,cor=6,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	nice to see you good morning
+hyp:	nice to see you good morning
+diff:	nice to see you good morning
+POD1000000011_S0000096(nwords=18,cor=18,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	we should also say anya about a 3rd of the kids at this school speak spanish at home
+hyp:	we should also say anya about a 3rd of the kids at this school speak spanish at home
+diff:	we should also say anya about a 3rd of the kids at this school speak spanish at home
+POD1000000011_S0000097(nwords=34,cor=34,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	that is right and at the preschool we sat down with one of the lead researchers sudha swaminathan and she helped us understand a lot more about how to grow children who love math
+hyp:	that is right and at the preschool we sat down with one of the lead researchers sudha swaminathan and she helped us understand a lot more about how to grow children who love math
+diff:	that is right and at the preschool we sat down with one of the lead researchers sudha swaminathan and she helped us understand a lot more about how to grow children who love math
+POD1000000011_S0000098(nwords=22,cor=22,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	the minute we say math we try to think of the big picture you know big old theorems big old geometry concepts
+hyp:	the minute we say math we try to think of the big picture you know big old theorems big old geometry concepts
+diff:	the minute we say math we try to think of the big picture you know big old theorems big old geometry concepts
+POD1000000011_S0000099(nwords=26,cor=26,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	instead swaminathan says think small she is a professor in early childhood education at eastern connecticut state and her special focus is on early math learning
+hyp:	instead swaminathan says think small she is a professor in early childhood education at eastern connecticut state and her special focus is on early math learning
+diff:	instead swaminathan says think small she is a professor in early childhood education at eastern connecticut state and her special focus is on early math learning
+POD1000000011_S0000100(nwords=25,cor=24,ins=0,del=0,sub=1) corr:96.00%,cer:4.00%
+ref:	and sudha and her colleagues have done lots of research to see what kinds of childhood experiences lead to better performance in math later on
+hyp:	and suda and her colleagues have done lots of research to see what kinds of childhood experiences lead to better performance in math later on
+diff:	and (sudha->suda) and her colleagues have done lots of research to see what kinds of childhood experiences lead to better performance in math later on
+POD1000000011_S0000101(nwords=13,cor=13,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	and one of their answers makes up our 2nd takeaway takeaway number 2
+hyp:	and one of their answers makes up our 2nd takeaway takeaway number 2
+diff:	and one of their answers makes up our 2nd takeaway takeaway number 2
+POD1000000011_S0000102(nwords=8,cor=8,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	talk about math take this really ordinary moment
+hyp:	talk about math take this really ordinary moment
+diff:	talk about math take this really ordinary moment
+POD1000000011_S0000103(nwords=24,cor=23,ins=0,del=1,sub=0) corr:95.83%,cer:4.17%
+ref:	you ask them to put their books away and then say it does not fit in the shelf so why does not it fit
+hyp:	you ask them to put their books away and say it does not fit in the shelf so why does not it fit
+diff:	you ask them to put their books away and (then->*) say it does not fit in the shelf so why does not it fit
+POD1000000011_S0000104(nwords=10,cor=8,ins=0,del=2,sub=0) corr:80.00%,cer:20.00%
+ref:	maybe it is the book is too tall too big
+hyp:	maybe the book is too tall too big
+diff:	maybe (it is->*) the book is too tall too big
+POD1000000011_S0000105(nwords=14,cor=13,ins=0,del=0,sub=1) corr:92.86%,cer:7.14%
+ref:	sudha says you are actually talking about a math process it is problem solving
+hyp:	suda says you are actually talking about a math process it is problem solving
+diff:	(sudha->suda) says you are actually talking about a math process it is problem solving
+POD1000000011_S0000106(nwords=15,cor=15,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	yeah and we heard lots of this by the way math talk at the preschool
+hyp:	yeah and we heard lots of this by the way math talk at the preschool
+diff:	yeah and we heard lots of this by the way math talk at the preschool
+POD1000000011_S0000108(nwords=16,cor=16,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	does the duck fit in there too he did not fit when he was standing up
+hyp:	does the duck fit in there too he did not fit when he was standing up
+diff:	does the duck fit in there too he did not fit when he was standing up
+POD1000000011_S0000109(nwords=11,cor=11,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	so you decided to lay him down does he fit now
+hyp:	so you decided to lay him down does he fit now
+diff:	so you decided to lay him down does he fit now
+POD1000000011_S0000110(nwords=11,cor=10,ins=0,del=0,sub=1) corr:90.91%,cer:9.09%
+ref:	that is amie lopez the lead teacher for the toddler classroom
+hyp:	that is amy lopez the lead teacher for the toddler classroom
+diff:	that is (amie->amy) lopez the lead teacher for the toddler classroom
+POD1000000011_S0000111(nwords=17,cor=17,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	it is a sunny room with a cozy reading corner there is a play kitchen and blocks
+hyp:	it is a sunny room with a cozy reading corner there is a play kitchen and blocks
+diff:	it is a sunny room with a cozy reading corner there is a play kitchen and blocks
+POD1000000011_S0000112(nwords=36,cor=33,ins=1,del=1,sub=2) corr:91.67%,cer:11.11%
+ref:	and near the center the room there is this table and amie is sitting with the children they are building together with magna tiles which are these colorful plastic blocks with different shapes that stick together
+hyp:	and near the center of the room there is this table and amy is sitting with the children they are building together with magnetiles which are these colorful plastic blocks with different shapes that stick together
+diff:	and near the center (*->of) the room there is this table and (amie->amy) is sitting with the children they are building together with (magna tiles->magnetiles) which are these colorful plastic blocks with different shapes that stick together
+POD1000000011_S0000113(nwords=20,cor=20,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	and they also have little plastic farm animals and one of the kids is kind of putting together a house
+hyp:	and they also have little plastic farm animals and one of the kids is kind of putting together a house
+diff:	and they also have little plastic farm animals and one of the kids is kind of putting together a house
+POD1000000011_S0000114(nwords=7,cor=7,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	now you are using triangles and squares
+hyp:	now you are using triangles and squares
+diff:	now you are using triangles and squares
+POD1000000011_S0000116(nwords=18,cor=17,ins=0,del=0,sub=1) corr:94.44%,cer:5.56%
+ref:	naming the shapes in both english and in spanish when we played this tape for rosemarie she said
+hyp:	naming the shapes in both english and in spanish when we played this tape for rosemary she said
+diff:	naming the shapes in both english and in spanish when we played this tape for (rosemarie->rosemary) she said
+POD1000000011_S0000117(nwords=22,cor=22,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	what i heard there is the teacher using descriptive math language and that is so key for children to understand math concepts
+hyp:	what i heard there is the teacher using descriptive math language and that is so key for children to understand math concepts
+diff:	what i heard there is the teacher using descriptive math language and that is so key for children to understand math concepts
+POD1000000011_S0000118(nwords=9,cor=9,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	you can not understand the concepts without the language
+hyp:	you can not understand the concepts without the language
+diff:	you can not understand the concepts without the language
+POD1000000011_S0000119(nwords=26,cor=25,ins=0,del=0,sub=1) corr:96.15%,cer:3.85%
+ref:	yeah and amie is not building the blocks for the kids she is actually making observations and kind of like narrating their thoughts in real time
+hyp:	yeah and amy is not building the blocks for the kids she is actually making observations and kind of like narrating their thoughts in real time
+diff:	yeah and (amie->amy) is not building the blocks for the kids she is actually making observations and kind of like narrating their thoughts in real time
+POD1000000011_S0000120(nwords=23,cor=21,ins=0,del=0,sub=2) corr:91.30%,cer:8.70%
+ref:	the more blocks you add the longer it gets kohen i noticed that when you added more your line gotten longer and longer
+hyp:	the more blocks you add the longer it gets cohen i noticed that when you added more your line got longer and longer
+diff:	the more blocks you add the longer it gets (kohen->cohen) i noticed that when you added more your line (gotten->got) longer and longer
+POD1000000011_S0000121(nwords=18,cor=18,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	when she said more blocks to make it longer i mean longer is a complex word for children
+hyp:	when she said more blocks to make it longer i mean longer is a complex word for children
+diff:	when she said more blocks to make it longer i mean longer is a complex word for children
+POD1000000011_S0000122(nwords=19,cor=19,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	and they need to hear that language and they need to hear that language in a very concrete way
+hyp:	and they need to hear that language and they need to hear that language in a very concrete way
+diff:	and they need to hear that language and they need to hear that language in a very concrete way
+POD1000000011_S0000123(nwords=24,cor=24,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	she was not even afraid to use really technical words like when this little boy was trying to make his little corral stand up
+hyp:	she was not even afraid to use really technical words like when this little boy was trying to make his little corral stand up
+diff:	she was not even afraid to use really technical words like when this little boy was trying to make his little corral stand up
+POD1000000011_S0000124(nwords=13,cor=13,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	now you can put them all around the perimeter all around the edge
+hyp:	now you can put them all around the perimeter all around the edge
+diff:	now you can put them all around the perimeter all around the edge
+POD1000000011_S0000125(nwords=1,cor=1,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	perimeter
+hyp:	perimeter
+diff:	perimeter
+POD1000000011_S0000126(nwords=1,cor=1,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	yeah
+hyp:	yeah
+diff:	yeah
+POD1000000011_S0000127(nwords=14,cor=14,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	another great occasion to talk math as rosemarie said earlier is in music class
+hyp:	another great occasion to talk math as rosemarie said earlier is in music class
+diff:	another great occasion to talk math as rosemarie said earlier is in music class
+POD1000000011_S0000128(nwords=18,cor=18,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	i am going to give everybody 2 rhythm sticks one for each hand we have smooth rhythm sticks
+hyp:	i am going to give everybody 2 rhythm sticks one for each hand we have smooth rhythm sticks
+diff:	i am going to give everybody 2 rhythm sticks one for each hand we have smooth rhythm sticks
+POD1000000011_S0000129(nwords=6,cor=6,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	do you want to touch it
+hyp:	do you want to touch it
+diff:	do you want to touch it
+POD1000000011_S0000131(nwords=1,cor=1,ins=1,del=0,sub=0) corr:100.00%,cer:100.00%
+ref:	feel
+hyp:	i feel
+diff:	(*->i) feel
+POD1000000011_S0000132(nwords=1,cor=0,ins=0,del=0,sub=1) corr:0.00%,cer:100.00%
+ref:	that
+hyp:	yeah
+diff:	(that->yeah)
+POD1000000011_S0000133(nwords=2,cor=1,ins=0,del=1,sub=0) corr:50.00%,cer:50.00%
+ref:	yep and
+hyp:	yep
+diff:	yep (and->*)
+POD1000000011_S0000135(nwords=13,cor=11,ins=1,del=0,sub=2) corr:84.62%,cer:23.08%
+ref:	you probably remember the kind cory they are perfect for hitting your friends
+hyp:	you probably remember the kai and corey they are perfect for hitting your friends
+diff:	you probably remember the (kind cory->kai and corey) they are perfect for hitting your friends
+POD1000000011_S0000136(nwords=1,cor=1,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	yeah
+hyp:	yeah
+diff:	yeah
+POD1000000011_S0000137(nwords=7,cor=7,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	do we tap them on our friends
+hyp:	do we tap them on our friends
+diff:	do we tap them on our friends
+POD1000000011_S0000138(nwords=1,cor=1,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	no
+hyp:	no
+diff:	no
+POD1000000011_S0000139(nwords=7,cor=7,ins=1,del=0,sub=0) corr:100.00%,cer:14.29%
+ref:	do we bang them on the floor
+hyp:	how do we bang them on the floor
+diff:	(*->how) do we bang them on the floor
+POD1000000011_S0000140(nwords=1,cor=1,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	no
+hyp:	no
+diff:	no
+POD1000000011_S0000141(nwords=3,cor=3,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	what could happen
+hyp:	what could happen
+diff:	what could happen
+POD1000000011_S0000142(nwords=9,cor=9,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	and after this moment the children practice going faster
+hyp:	and after this moment the children practice going faster
+diff:	and after this moment the children practice going faster
+POD1000000011_S0000144(nwords=5,cor=5,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	and then they go slow
+hyp:	and then they go slow
+diff:	and then they go slow
+POD1000000011_S0000145(nwords=1,cor=1,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	one
+hyp:	one
+diff:	one
+POD1000000011_S0000147(nwords=13,cor=13,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	faster and slower are relational concepts these are math words related to rhythm
+hyp:	faster and slower are relational concepts these are math words related to rhythm
+diff:	faster and slower are relational concepts these are math words related to rhythm
+POD1000000011_S0000148(nwords=20,cor=18,ins=1,del=0,sub=2) corr:90.00%,cer:15.00%
+ref:	so when we were talking to rosemarie i had an epiphany anya that my all time favorite sesame street moment
+hyp:	so when we were talking to rosemary i had an epiphany on you that my all time favorite sesame street moment
+diff:	so when we were talking to (rosemarie->rosemary) i had an epiphany (anya->on you) that my all time favorite sesame street moment
+POD1000000011_S0000149(nwords=10,cor=10,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	and i watched a lot of sesame as a kid
+hyp:	and i watched a lot of sesame as a kid
+diff:	and i watched a lot of sesame as a kid
+POD1000000011_S0000150(nwords=4,cor=4,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	that is not obvious
+hyp:	that is not obvious
+diff:	that is not obvious
+POD1000000011_S0000152(nwords=13,cor=13,ins=0,del=0,sub=0) corr:100.00%,cer:0.00%
+ref:	it was a math moment and it is with my favorite character grover
+hyp:	it was a math moment and it is with my favorite character grover
+diff:	it was a math moment and it is with my favorite character grover

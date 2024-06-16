@@ -176,9 +176,9 @@ def save_model_checkpoint_deepspeed(model, cfg, checkpoint_name="checkpoint"):
       
 def save_model_checkpoint_peft(model, optimizer, rank, cfg, checkpoint_name="checkpoint", save_trainable_only=True):
     logger.info(f"--> saving model ...")
-    save_dir = os.path.join(cfg.output_dir, checkpoint_name)
+    save_dir = os.path.join(cfg.output_dir, checkpoint_name) #'/nfs/yangguanrou.ygr/experiments_gigaspeech_lora/ft_wavlm_giga1000_lora-20240616/asr_epoch_1_step_10'
     os.makedirs(save_dir, exist_ok=True)
-    save_full_path = os.path.join(save_dir, "model.pt")
+    save_full_path = os.path.join(save_dir, "model.pt") #'/nfs/yangguanrou.ygr/experiments_gigaspeech_lora/ft_wavlm_giga1000_lora-20240616/asr_epoch_1_step_10/model.pt'
     if cfg.enable_ddp:
         model = model.module
     cpu_state = model.state_dict()

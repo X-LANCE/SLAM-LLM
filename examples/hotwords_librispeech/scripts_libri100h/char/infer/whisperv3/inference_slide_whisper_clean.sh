@@ -9,7 +9,7 @@ run_dir=/root/SLAM-LLM
 cd $run_dir
 code_dir=examples/hotwords_librispeech
 
-speech_encoder_path=/nfs/maziyang.mzy/models/Whisper/large-v3.pt
+speech_encoder_path=/nfs/maziyang.mzy/models/Whisper/large-v2.pt
 llm_path=/nfs/maziyang.mzy/models/vicuna-7b-v1.5
 
 output_dir=/nfs/yangguanrou.ygr/experiments_slides_wavlm/slides-finetune-wavlm
@@ -17,7 +17,7 @@ ckpt_path=$output_dir/asr/3840
 
 split=librispeech_test_clean
 val_data_path=/nfs/maziyang.mzy/data/librispeech/${split}.jsonl
-decode_log=/root/SLAM-LLM/examples/hotwords_librispeech/scripts/infer/whisperv3/whisperv3_${split}
+decode_log=/root/SLAM-LLM/examples/hotwords_librispeech/scripts/infer/whisperv2/whisperv2_${split}
 
 # -m debugpy --listen 5678 --wait-for-client
 python $code_dir/inference_asr_batch_whisper.py \

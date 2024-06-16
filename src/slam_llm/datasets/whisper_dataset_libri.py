@@ -40,18 +40,6 @@ class WhisperDataset(Dataset):
         self.IGNORE_INDEX = -100  # The default setting in CrossEntropyLoss
         self.prompt = dataset_config.get("prompt", None)
         self.mel_size = dataset_config.get("mel_size", 80) # 80 for whisper large v1 and v2, 128 for large v3
-        # self.prompt_library = [
-        #     "Begin by converting the spoken words into written text. ",
-        #     "Can you transcribe the speech into a written format? ",
-        #     "Focus on translating the audible content into text. ",
-        #     "Transcribe the speech by carefully listening to it. ",
-        #     "Would you kindly write down the content of the speech? ",
-        #     "Analyze the speech and create a written transcription. ",
-        #     "Engage with the speech to produce a text-based version. ",
-        #     "Can you document the speech in written form? ",
-        #     "Transform the spoken words into text accurately. ",
-        #     "How about putting the speech's content into writing? "
-        # ]
         self.prompt_template = "USER: {}\n ASSISTANT:"
         self.answer_template = "{}"
         self.fix_length_audio = dataset_config.get("fix_length_audio", -1)
@@ -82,7 +70,7 @@ class WhisperDataset(Dataset):
 
         audio_raw = whisper.load_audio(audio_path)
         audio_raw = whisper.pad_or_trim(audio_raw)  #torch.Size([480000])
-        audio_mel = whisper.log_mel_spectrogram(audio_raw,128).permute(1, 0)   # 128 torch.Size([3000, 128])
+        audio_mel = whisper.log_mel_spectrogram(audio_raw, n_mels=self.mel_size).permute(1, 0)   # 128 torch.Size([3000, 128])
 
         return {
             'audio_mel': audio_mel,
