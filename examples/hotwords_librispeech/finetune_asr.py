@@ -4,7 +4,8 @@ import hydra
 import logging
 from dataclasses import dataclass, field
 from omegaconf import DictConfig, ListConfig, OmegaConf
-from asr_config import ModelConfig, TrainConfig, DataConfig, LogConfig, FSDPConfig
+from asr_config import ModelConfig, TrainConfig, DataConfig, LogConfig, FSDPConfig #, PeftConfig
+from typing import Optional, List
 
 @dataclass
 class RunConfig:
@@ -13,11 +14,12 @@ class RunConfig:
     train_config: TrainConfig = field(default_factory=TrainConfig)
     log_config: LogConfig = field(default_factory=LogConfig)
     fsdp_config: FSDPConfig = field(default_factory=FSDPConfig)
+    # peft_config: PeftConfig = field(default_factory=PeftConfig)
     debug: bool = field(default=False, metadata={"help": "Use pdb when true"})
     metric: str = field(default="acc", metadata={"help": "The metric for evaluation"})
-    # ckpt_path: str = field(
-    #     default="output/model.pt", metadata={"help": "The path to projector checkpoint"}
-    # )
+    ckpt_path: Optional[str] = field(
+        default=None, metadata={"help": "The path to projector checkpoint"}
+    )
 
 @hydra.main(config_name=None, version_base=None)
 def main_hydra(cfg: DictConfig):

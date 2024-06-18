@@ -119,9 +119,12 @@ class GigaHotwordsInferDataset(Dataset):
         self.hotwords_num=0
         self.miss_words_num=0
         self.filter_type=dataset_config.filter_type
-        self.prompt_word_num=8
-        self.probability_threshold = dataset_config.probability_threshold
-        self.word_num = dataset_config.word_num
+        
+        self.probability_threshold = dataset_config.get("probability_threshold", 0.95)
+        self.word_num = dataset_config.get("word_num", 5)
+        self.prompt_word_num = 0
+        logger.info("word_num: %d", self.word_num)
+        logger.info("probability_threshold: %f", self.probability_threshold)
 
 
 
@@ -168,13 +171,14 @@ class GigaHotwordsInferDataset(Dataset):
             candidates = find_candidate_names(infer_sentence, self.ngram_index) #第一个len11
             scores = score_candidates(candidates, infer_sentence)
             sorted_dict = sorted(scores.items(), key=lambda item: item[1],  reverse=True)
-            high_score_items = [(k, value) for k, value in sorted_dict if value > 0.9] 
-            if len(high_score_items) < self.prompt_word_num:
-                high_score_items = sorted_dict [:self.prompt_word_num]
+            high_score_items = [(k, value) for k, value in sorted_dict if value > self.probability_threshold] 
+            if len(high_score_items) < self.word_num:
+                high_score_items = sorted_dict [:self.word_num]
+            self.prompt_word_num += len(high_score_items)
             keys_list = [k for k, _ in high_score_items]
             ocr = " ".join(keys_list)
-            if len(high_score_items)>self.prompt_word_num:
-                logger.info("longer than %d candidates, cand_num: %d", self.prompt_word_num,len(high_score_items))
+            if len(high_score_items)>self.word_num:
+                logger.info("longer than %d candidates, cand_num: %d", self.word_num,len(high_score_items))
 
             # ======== count recall
             miss=False

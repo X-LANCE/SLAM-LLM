@@ -4,7 +4,7 @@ import hydra
 import logging
 from dataclasses import dataclass, field
 from omegaconf import DictConfig, ListConfig, OmegaConf
-from asr_config import ModelConfig, TrainConfig, DataConfig, LogConfig, FSDPConfig
+from asr_config import ModelConfig, TrainConfig, DataConfig, LogConfig, FSDPConfig, PeftConfig
 
 @dataclass
 class RunConfig:
