@@ -1,0 +1,23 @@
+[2024-06-16 18:37:32][root][INFO] - train_config: {'model_name': 'asr', 'enable_ddp': False, 'enable_deepspeed': False, 'enable_fsdp': False, 'low_cpu_fsdp': False, 'run_validation': True, 'batch_size_training': 4, 'batching_strategy': 'custom', 'context_length': 4096, 'gradient_accumulation_steps': 1, 'num_epochs': 1, 'num_workers_dataloader': 2, 'warmup_steps': 1000, 'total_steps': 100000, 'validation_interval': 1000, 'lr': 0.0001, 'weight_decay': 0.0, 'gamma': 0.85, 'seed': 42, 'use_fp16': False, 'mixed_precision': True, 'val_batch_size': 1, 'use_peft': False, 'peft_config': {'peft_method': 'lora', 'r': 8, 'lora_alpha': 32, 'target_modules': ['q_proj', 'v_proj'], 'bias': 'none', 'task_type': 'CAUSAL_LM', 'lora_dropout': 0.05, 'inference_mode': False}, 'output_dir': '/home/data2/jindaznb/jslpnb/mllm/SLAM-LLM/vicuna-7b-v1.5-librispeech-linear-steplrwarmupkeep1e-4-wavlm-large-20240426', 'freeze_layers': False, 'num_freeze_layers': 1, 'quantization': False, 'one_gpu': False, 'save_model': True, 'dist_checkpoint_root_folder': 'PATH/to/save/FSDP/model', 'dist_checkpoint_folder': 'fine-tuned', 'save_optimizer': False, 'use_fast_kernels': False, 'run_test_during_validation': False, 'run_test_during_validation_file': 'test.wav', 'run_test_during_validation_prompt': '<|ASR|>', 'freeze_llm': True, 'freeze_encoder': True}
+[2024-06-16 18:37:32][root][INFO] - fsdp_config: {'mixed_precision': True, 'use_fp16': False, 'sharding_strategy': 'NO_SHARD', 'checkpoint_type': 'SHARDED_STATE_DICT', 'fsdp_activation_checkpointing': True, 'fsdp_cpu_offload': False, 'pure_bf16': False, 'optimizer': 'AdamW'}
+[2024-06-16 18:37:32][root][INFO] - model_config: {'file': 'examples/asr_librispeech/model/slam_model_asr.py:model_factory', 'llm_name': 'vicuna-7b-v1.5', 'llm_path': '/home/data2/jindaznb/jslpnb/mllm/models/vicuna-7b-v1.5', 'llm_type': 'decoder_only', 'llm_dim': 4096, 'encoder_name': 'wavlm', 'encoder_ds_rate': 2, 'encoder_path': '/home/data2/jindaznb/jslpnb/mllm/models/WavLM-Large.pt', 'encoder_dim': 1024, 'encoder_projector': 'linear', 'encoder_projector_ds_rate': 5, 'modal': 'audio', 'normalize': True, 'encoder_type': 'finetune'}
+[2024-06-16 18:37:41][slam_llm.models.wavlm.WavLM][INFO] - WavLM Config: {'extractor_mode': 'layer_norm', 'encoder_layers': 24, 'encoder_embed_dim': 1024, 'encoder_ffn_embed_dim': 4096, 'encoder_attention_heads': 16, 'activation_fn': 'gelu', 'layer_norm_first': True, 'conv_feature_layers': '[(512,10,5)] + [(512,3,2)] * 4 + [(512,2,2)] * 2', 'conv_bias': False, 'feature_grad_mult': 1.0, 'normalize': True, 'dropout': 0.0, 'attention_dropout': 0.0, 'activation_dropout': 0.0, 'encoder_layerdrop': 0.0, 'dropout_input': 0.0, 'dropout_features': 0.0, 'mask_length': 10, 'mask_prob': 0.8, 'mask_selection': 'static', 'mask_other': 0.0, 'no_mask_overlap': False, 'mask_min_space': 1, 'mask_channel_length': 10, 'mask_channel_prob': 0.0, 'mask_channel_selection': 'static', 'mask_channel_other': 0.0, 'no_mask_channel_overlap': False, 'mask_channel_min_space': 1, 'conv_pos': 128, 'conv_pos_groups': 16, 'relative_position_embedding': True, 'num_buckets': 320, 'max_distance': 800, 'gru_rel_pos': True}
+[2024-06-16 18:37:47][slam_llm.utils.train_utils][INFO] - --> Module wavlm
+[2024-06-16 18:37:47][slam_llm.utils.train_utils][INFO] - --> wavlm has 315.45312 Million params
+
+[2024-06-16 18:37:47][slam_llm.utils.train_utils][INFO] - --> Module wavlm
+[2024-06-16 18:37:47][slam_llm.utils.train_utils][INFO] - --> wavlm has 0.0 Million params
+
+[2024-06-16 18:40:08][slam_llm.utils.train_utils][INFO] - --> Module vicuna-7b-v1.5
+[2024-06-16 18:40:09][slam_llm.utils.train_utils][INFO] - --> vicuna-7b-v1.5 has 6738.415616 Million params
+
+[2024-06-16 18:40:09][slam_llm.utils.train_utils][INFO] - --> Module vicuna-7b-v1.5
+[2024-06-16 18:40:09][slam_llm.utils.train_utils][INFO] - --> vicuna-7b-v1.5 has 0.0 Million params
+
+[2024-06-16 18:40:09][slam_llm.utils.train_utils][INFO] - --> Module linear
+[2024-06-16 18:40:09][slam_llm.utils.train_utils][INFO] - --> linear has 18.880512 Million params
+
+[2024-06-16 18:40:09][slam_model_asr.py][INFO] - loading other parts from: /home/data2/jindaznb/jslpnb/mllm/models/model.pt
+[2024-06-16 18:40:09][slam_llm.utils.train_utils][INFO] - --> Model asr
+[2024-06-16 18:40:09][slam_llm.utils.train_utils][INFO] - --> asr has 18.880512 Million params
+

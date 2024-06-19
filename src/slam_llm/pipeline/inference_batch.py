@@ -62,6 +62,8 @@ def main(kwargs: DictConfig):
 	del kwargs["dataset_config"]
 	OmegaConf.set_struct(kwargs,True)
 
+	log_config.log_file = "/home/data2/jindaznb/jslpnb/mllm/SLAM-LLM/examples/asr_librispeech/log.txt"
+
 	# Set log
 	if not os.path.exists(os.path.dirname(log_config.log_file)):
 		os.makedirs(os.path.dirname(log_config.log_file), exist_ok=True)
