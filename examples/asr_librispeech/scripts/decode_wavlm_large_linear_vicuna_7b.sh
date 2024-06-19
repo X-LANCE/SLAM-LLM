@@ -4,17 +4,24 @@ export CUDA_VISIBLE_DEVICES=0
 export TOKENIZERS_PARALLELISM=false
 # export CUDA_LAUNCH_BLOCKING=1
 
-run_dir=/home/data2/jindaznb/jslpnb/mllm/SLAM-LLM/
+module load anaconda3/2022.05
+module load ffmpeg/20190305 
+module unload cuda/11.2  
+module load cuda/11.8  
+source activate /work/van-speech-nlp/jindaznb/asrenv/
+nvcc --version
+
+run_dir=/work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm
 cd $run_dir
 code_dir=examples/asr_librispeech
 
-speech_encoder_path=/home/data2/jindaznb/jslpnb/mllm/models/WavLM-Large.pt
-llm_path=/home/data2/jindaznb/jslpnb/mllm/models/vicuna-7b-v1.5
+speech_encoder_path=/work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/models/WavLM-Large.pt
+llm_path=/work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/models/vicuna-7b-v1.5
 
-output_dir=/home/data2/jindaznb/jslpnb/mllm/SLAM-LLM/vicuna-7b-v1.5-librispeech-linear-steplrwarmupkeep1e-4-wavlm-large-20240426
-ckpt_path=/home/data2/jindaznb/jslpnb/mllm/models
+output_dir=/work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/out/vicuna-7b-v1.5-librispeech-linear-steplrwarmupkeep1e-4-wavlm-large-20240426
+ckpt_path=/work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/models
 split=test
-val_data_path=/nfs/maziyang.mzy/data/librispeech/${split}.jsonl
+val_data_path=/work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/examples/asr_librispeech/data/M03_${split}.jsonl
 decode_log=$ckpt_path/decode_${split}_beam4
 
 # -m debugpy --listen 5678 --wait-for-client
