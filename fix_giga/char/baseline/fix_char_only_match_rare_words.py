@@ -119,7 +119,6 @@ def score_candidates(candidates, sentence):
         scores[candidate] = score
     return scores
 
-
 logger.info("word_num: %d", word_num)
 logger.info("probability_threshold: %f", probability_threshold)
 

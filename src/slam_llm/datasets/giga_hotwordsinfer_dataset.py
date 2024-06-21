@@ -91,6 +91,7 @@ class GigaHotwordsInferDataset(Dataset):
         self.key_list = []
         self.line_name_list =[]
         self.name_list=[]
+        self.single_name_list=[]
 
         with open("/nfs/yangguanrou.ygr/data/ner/giga_name_test/2/giga_ner_wsplit.txt",'r') as f:
             for line in f:
@@ -105,8 +106,10 @@ class GigaHotwordsInferDataset(Dataset):
             for line in f:
                 line = line.strip()
                 self.name_list.append(line)
+                for word in line.split(): 
+                    self.single_name_list.append(word) #2122
         self.ngram_index = build_ngram_index(self.name_list)
-
+        self.single_name_list=list(set(self.single_name_list))
 
         self.infer_type=dataset_config.infer_type
         if self.infer_type=="filter":
@@ -126,7 +129,14 @@ class GigaHotwordsInferDataset(Dataset):
         logger.info("word_num: %d", self.word_num)
         logger.info("probability_threshold: %f", self.probability_threshold)
 
-
+        self.filter_infer_sentence = dataset_config.get("filter_infer_sentence", False)
+        if self.filter_infer_sentence:
+            self.common_words_5k=set()
+            with open("/nfs/yangguanrou.ygr/data/fbai-speech/is21_deep_bias/words/common_words_5k.txt") as f:
+                for line in f:
+                    word = line.strip().upper()
+                    if word not in self.single_name_list:
+                        self.common_words_5k.add(word)
 
     def get_source_len(self, data_dict):
         return data_dict["source_len"]
@@ -168,6 +178,10 @@ class GigaHotwordsInferDataset(Dataset):
         elif self.infer_type=="filter":
             gt = self.line_name_list[index]
             infer_sentence = self.infer_list[index]
+            words_list = infer_sentence.split()
+            filtered_words = [word for word in words_list if word not in self.common_words_5k]
+            infer_sentence = ' '.join(filtered_words)
+
             candidates = find_candidate_names(infer_sentence, self.ngram_index) #第一个len11
             scores = score_candidates(candidates, infer_sentence)
             sorted_dict = sorted(scores.items(), key=lambda item: item[1],  reverse=True)

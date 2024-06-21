@@ -19,7 +19,7 @@ probability_threshold = 0.95
 word_num=5
 filter_type="phn"
 
-log_filename = "fix_giga/phn/baseline/fix_phn_1_{}_{}.log".format(word_num, probability_threshold)
+log_filename = "fix_giga/phn_labelsplit/fix_phn_word_{}_{}.log".format(word_num, probability_threshold)
 prompt_word_num=0
 
 
@@ -66,6 +66,7 @@ def build_ngram_index(names, n=2):
 def find_candidate_names(sentence, ngram_index, n=2):
     """通过N-Gram倒排索引找到候选人名"""
     candidates = set()
+    # sentence = sentence.replace(" | ", " ")
     for i in range(len(sentence) - n + 1):
         ngram = sentence[i:i+n].lower()
         candidates.update(ngram_index.get(ngram, []))       
@@ -123,7 +124,7 @@ logger.info("word_num: %d", word_num)
 logger.info("probability_threshold: %f", probability_threshold)
 
         
-ctc_file="/nfs/yangguanrou.ygr/data/gigaspeech_my_infer/wavlm_ft_phn_giga1000.txt"
+ctc_file="/nfs/yangguanrou.ygr/data/gigaspeech_my_infer/wavlm_ft_phn_lablesplit_giga1000.txt"
 
 data_list = []
 label_list = []
@@ -155,7 +156,7 @@ with open("/nfs/yangguanrou.ygr/data/ner/giga_name_test/g2p/name_to_phone_g2p",'
 
 name_list = list(set(name_list))  #len(self.name_list) 1366 -> 1347
 
-ngram_index = build_ngram_index_phn(name_list)  #! 这里有问题  和之前那样结果一样
+ngram_index = build_ngram_index_phn(name_list)  #! 这里有问题
 
 infer_list=[]
 with open(ctc_file,'r') as finfer:
@@ -175,6 +176,7 @@ for index in tqdm(range(len(data_list))):
         infer_sentence=infer_list[index]
     else:
         infer_sentence=infer_list[index]  #'HH IY1 HH OW1 P T DH EH1 R W UH1 D B IY1 S T UW1 F AO1 R D IH1 N ER0 T ER1 N AH0 P S AH0 N D K AE1 R AH0 T S AH0 N D B R UW1 Z D P AH0 T EY1 T OW0 Z AH0 N D F AE1 T M AH1 T AH0 N P IY1 S AH0 Z T UW1 B IY1 L EY1 D AH0 L D AW1 T IH0 N TH IH1 K P EH1 P ER0 D F L AW1 ER0 F AE1 T AH0 N D S AO1 S'
+        infer_sentence = infer_sentence.replace(" | ", " ")
     candidates = find_candidate_names_phn(infer_sentence, ngram_index) #第一个len11
     scores = score_candidates(candidates, infer_sentence)
     sorted_dict = sorted(scores.items(), key=lambda item: item[1],  reverse=True)

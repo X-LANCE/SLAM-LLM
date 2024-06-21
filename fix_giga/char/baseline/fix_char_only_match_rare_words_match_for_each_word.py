@@ -15,10 +15,10 @@ from slam_llm.utils.compute_utils import calculate_output_length_1d
 import kaldiio
 
 # config
-first=3
+first=1
 filter_type="char"
 
-log_filename = "fix_giga/char/baseline/fix_char_{}_only_match_rare_words_match_for_each_word.log".format(first)
+log_filename = "fix_giga/char/baseline/fix_char_{}_only_match_rare_words_match_for_each_word_debug1_5000.log".format(first)
 prompt_word_num=0
 
 
@@ -58,7 +58,7 @@ def build_ngram_index(names, n=2):
     index = {}
     for name in names:
         for i in range(len(name) - n + 1):
-            ngram = name[i:i+n].lower()
+            ngram = name[i:i+n]#.lower()
             index.setdefault(ngram, set()).add(name)
     return index
 
@@ -66,7 +66,7 @@ def find_candidate_names(sentence, ngram_index, n=2):
     """通过N-Gram倒排索引找到候选人名"""
     candidates = set()
     for i in range(len(sentence) - n + 1):
-        ngram = sentence[i:i+n].lower()
+        ngram = sentence[i:i+n]#.lower()
         candidates.update(ngram_index.get(ngram, []))       
     return candidates
 
@@ -106,7 +106,7 @@ def calculate_similarity_score(name, sentence, length_tolerance=3):
     
     for ngram in sentence_ngrams:
         if abs(len(ngram) - len(name)) <= length_tolerance:
-            sim = similarity(name.lower(), ngram.lower())
+            sim = similarity(name, ngram) #sim = similarity(name.lower(), ngram.lower())
             max_similarity = max(max_similarity, sim)
     return max_similarity
 
@@ -118,16 +118,40 @@ def score_candidates(candidates, sentence):
         scores[candidate] = score
     return scores
 
+# def score_candidates_for_each_word(candidates, sentence):
+#     keys_list = []
+#     for word in sentence.split():
+#         scores = {}
+#         for candidate in candidates:
+#             # if word in candidate and candidate not in keys_list:   #不能是简单的in  要是其中一个词
+#             #     keys_list.append(candidate)
+#             #     continue
+#             if word in candidate.split() and candidate not in keys_list:   #不能是简单的in  要是其中一个词
+#                 keys_list.append(candidate)
+#                 continue
+#             score = similarity(word,candidate)
+#             scores[candidate] = score
+#         sorted_items = sorted(scores.items(), key=lambda item: item[1], reverse=True)
+#         first_two_items =  sorted_items[:first]
+#         keys_list.extend([item[0] for item in first_two_items])
+#         # if lenkeys_list
+#     return keys_list
+
 def score_candidates_for_each_word(candidates, sentence):
     keys_list = []
     for word in sentence.split():
         scores = {}
         for candidate in candidates:
-            score = similarity(word,candidate)
+            if word in candidate.split():   #不能是简单的in  要是其中一个词
+                score = calculate_similarity_score(candidate,sentence)
+            else:
+                score = similarity(word,candidate)
             scores[candidate] = score
         sorted_items = sorted(scores.items(), key=lambda item: item[1], reverse=True)
         first_two_items =  sorted_items[:first]
-        keys_list.extend([item[0] for item in first_two_items])
+        keys_list.extend([item[0] for item in first_two_items])  #这里还可以去重一下  infer_sentence 不好说
+    if len(keys_list) > len(sentence.split())*first:
+        logger.info("what")
     return keys_list
 
 
@@ -141,6 +165,7 @@ label_list = []
 key_list = []
 line_name_list =[]
 name_list=[]
+single_name_list=[]
 
 with open("/nfs/yangguanrou.ygr/data/ner/giga_name_test/2/giga_ner_wsplit.txt",'r') as f:
     for line in f:
@@ -155,21 +180,27 @@ with open("/nfs/yangguanrou.ygr/data/ner/giga_name_test/person_uniq_my",'r') as 
     for line in f:
         line = line.strip()
         name_list.append(line)
+
+        for word in line.split(): 
+            single_name_list.append(word) #2122
 ngram_index = build_ngram_index(name_list)
+single_name_list=list(set(single_name_list)) #1435
 
 infer_list=[]
 with open(ctc_file,'r') as finfer:
     for line in finfer:
         infer_list.append(line.strip())
 
+
+
 common_words_5k=set()
 # with open("/nfs/yangguanrou.ygr/data/fbai-speech/is21_deep_bias/words/common_words_5k.txt") as f:
 with open("/nfs/yangguanrou.ygr/data/fbai-speech/is21_deep_bias/words/common_words_10000.txt") as f:  
     for line in f:
         word = line.strip().upper()
-        if word not in name_list:
+        if word not in single_name_list:
             common_words_5k.add(word)
-print(len(common_words_5k))
+print(len(common_words_5k))  #4768
 
 
 
