@@ -19,7 +19,7 @@ probability_threshold = 0.95
 word_num=5
 filter_type="char"
 
-log_filename = "fix_giga/char/baseline/fix_char_{}_{}_only_match_rare_words_10000.log".format(word_num, probability_threshold)
+log_filename = "fix_giga/char/single/fix_char_{}_{}_only_match_rare_words_5000.log".format(word_num, probability_threshold)
 prompt_word_num=0
 
 
@@ -59,7 +59,7 @@ def build_ngram_index(names, n=2):
     index = {}
     for name in names:
         for i in range(len(name) - n + 1):
-            ngram = name[i:i+n].lower()
+            ngram = name[i:i+n]#.lower()
             index.setdefault(ngram, set()).add(name)
     return index
 
@@ -67,7 +67,7 @@ def find_candidate_names(sentence, ngram_index, n=2):
     """通过N-Gram倒排索引找到候选人名"""
     candidates = set()
     for i in range(len(sentence) - n + 1):
-        ngram = sentence[i:i+n].lower()
+        ngram = sentence[i:i+n]#.lower()
         candidates.update(ngram_index.get(ngram, []))       
     return candidates
 
@@ -107,7 +107,8 @@ def calculate_similarity_score(name, sentence, length_tolerance=3):
     
     for ngram in sentence_ngrams:
         if abs(len(ngram) - len(name)) <= length_tolerance:
-            sim = similarity(name.lower(), ngram.lower())
+            # sim = similarity(name.lower(), ngram.lower())
+            sim = similarity(name, ngram)
             max_similarity = max(max_similarity, sim)
     return max_similarity
 
@@ -118,6 +119,29 @@ def score_candidates(candidates, sentence):
         score = calculate_similarity_score(candidate, sentence)
         scores[candidate] = score
     return scores
+
+conversational_filler = ['UH', 'UHH', 'UM', 'EH', 'MM', 'HM', 'AH', 'HUH', 'HA', 'ER', 'OOF', 'HEE' , 'ACH', 'EEE', 'EW']
+unk_tags = ['<UNK>', '<unk>']
+gigaspeech_punctuations = ['<COMMA>', '<PERIOD>', '<QUESTIONMARK>', '<EXCLAMATIONPOINT>']
+gigaspeech_garbage_utterance_tags = ['<SIL>', '<NOISE>', '<MUSIC>', '<OTHER>']
+non_scoring_words = conversational_filler + unk_tags + gigaspeech_punctuations + gigaspeech_garbage_utterance_tags
+
+def asr_text_post_processing(text):
+    # 1. convert to uppercase
+    # text = text.upper()  #本来就是大写的
+
+    # 2. remove hyphen
+    #   "E-COMMERCE" -> "E COMMERCE", "STATE-OF-THE-ART" -> "STATE OF THE ART"
+    text = text.replace('-', ' ')
+
+    # 3. remove non-scoring words from evaluation
+    remaining_words = []
+    for word in text.split():
+        if word in non_scoring_words:
+            continue
+        remaining_words.append(word)
+
+    return ' '.join(remaining_words)
 
 logger.info("word_num: %d", word_num)
 logger.info("probability_threshold: %f", probability_threshold)
@@ -141,15 +165,14 @@ with open("/nfs/yangguanrou.ygr/data/ner/giga_name_test/2/giga_ner_wsplit.txt",'
         label_list.append(line[2]) 
         line_name_list.append(line[3]) 
 
-with open("/nfs/yangguanrou.ygr/data/ner/giga_name_test/person_uniq_my",'r') as f:
+with open("/nfs/yangguanrou.ygr/data/ner/giga_name_test/person_uniq_my_tn_single",'r') as f:
     for line in f:
         line = line.strip()
         name_list.append(line)
 
-        for word in line.split(): 
-            single_name_list.append(word) #2122
+name_list=list(set(name_list)) #1435
+logger.info(len(name_list))
 ngram_index = build_ngram_index(name_list)
-single_name_list=list(set(single_name_list)) #1435
 
 infer_list=[]
 with open(ctc_file,'r') as finfer:
@@ -163,9 +186,9 @@ with open("/nfs/yangguanrou.ygr/data/fbai-speech/is21_deep_bias/words/common_wor
 # with open("/nfs/yangguanrou.ygr/data/fbai-speech/is21_deep_bias/words/common_words_10000.txt") as f:  
     for line in f:
         word = line.strip().upper()
-        if word not in single_name_list:
+        if word not in name_list:
             common_words_5k.add(word)
-print(len(common_words_5k))  #9616
+logger.info(len(common_words_5k))  #9616
 
 
 
@@ -177,19 +200,17 @@ not_in_infer_num=0
 for index in tqdm(range(len(data_list))):
     target = label_list[index] #'KIM WAS NOT DOWN WITH THE CRITIQUE'
     key = key_list[index] #'1012-133424-0005'
-
     gt=line_name_list[index]  #['B R UW1 Z D', 'K AE1 R AH0 T S', 'F AE1 T AH0 N D', 'L EY1 D AH0 L D', 'M AH1 T AH0 N', 'P EH1 P ER0 D', 'S T UW1', 'T ER1 N AH0 P S']
     if filter_type=="char":
         infer_sentence=infer_list[index]
     else:
         infer_sentence=infer_list[index]  #'HH IY1 HH OW1 P T DH EH1 R W UH1 D B IY1 S T UW1 F AO1 R D IH1 N ER0 T ER1 N AH0 P S AH0 N D K AE1 R AH0 T S AH0 N D B R UW1 Z D P AH0 T EY1 T OW0 Z AH0 N D F AE1 T M AH1 T AH0 N P IY1 S AH0 Z T UW1 B IY1 L EY1 D AH0 L D AW1 T IH0 N TH IH1 K P EH1 P ER0 D F L AW1 ER0 F AE1 T AH0 N D S AO1 S'
     
+    infer_sentence = asr_text_post_processing(infer_sentence)
+
     words_list = infer_sentence.split()
     filtered_words = [word for word in words_list if word not in common_words_5k]
     infer_sentence = ' '.join(filtered_words)
-    
-    
-    
     
     candidates = find_candidate_names(infer_sentence, ngram_index) #第一个len11
     scores = score_candidates(candidates, infer_sentence)
@@ -205,8 +226,9 @@ for index in tqdm(range(len(data_list))):
         logger.info("longer than %d candidates, cand_num: %d", word_num,len(high_score_items))
 
     # ======== count recall
+    gt = gt.replace('|',' ')
     miss=False
-    for name in gt.split('|'):
+    for name in gt.split(' '):
         hotwords_num+=1
         if name not in keys_list:
             logger.info("miss name: %s", name)

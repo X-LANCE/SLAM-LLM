@@ -18,7 +18,7 @@ import kaldiio
 first=1
 filter_type="char"
 
-log_filename = "fix_giga/char/baseline/fix_char_{}_only_match_rare_words_match_for_each_word_debug1_5000.log".format(first)
+log_filename = "fix_giga/char/baseline/fix_char_{}_only_match_rare_words_match_for_each_word_debug1_5000_1.log".format(first)
 prompt_word_num=0
 
 
@@ -150,9 +150,34 @@ def score_candidates_for_each_word(candidates, sentence):
         sorted_items = sorted(scores.items(), key=lambda item: item[1], reverse=True)
         first_two_items =  sorted_items[:first]
         keys_list.extend([item[0] for item in first_two_items])  #这里还可以去重一下  infer_sentence 不好说
+        keys_list=list(set(keys_list))
     if len(keys_list) > len(sentence.split())*first:
         logger.info("what")
     return keys_list
+
+
+conversational_filler = ['UH', 'UHH', 'UM', 'EH', 'MM', 'HM', 'AH', 'HUH', 'HA', 'ER', 'OOF', 'HEE' , 'ACH', 'EEE', 'EW']
+unk_tags = ['<UNK>', '<unk>']
+gigaspeech_punctuations = ['<COMMA>', '<PERIOD>', '<QUESTIONMARK>', '<EXCLAMATIONPOINT>']
+gigaspeech_garbage_utterance_tags = ['<SIL>', '<NOISE>', '<MUSIC>', '<OTHER>']
+non_scoring_words = conversational_filler + unk_tags + gigaspeech_punctuations + gigaspeech_garbage_utterance_tags
+
+def asr_text_post_processing(text):
+    # 1. convert to uppercase
+    # text = text.upper()  #本来就是大写的
+
+    # 2. remove hyphen
+    #   "E-COMMERCE" -> "E COMMERCE", "STATE-OF-THE-ART" -> "STATE OF THE ART"
+    text = text.replace('-', ' ')
+
+    # 3. remove non-scoring words from evaluation
+    remaining_words = []
+    for word in text.split():
+        if word in non_scoring_words:
+            continue
+        remaining_words.append(word)
+
+    return ' '.join(remaining_words)
 
 
 logger.info("first: %d", first)
@@ -176,7 +201,8 @@ with open("/nfs/yangguanrou.ygr/data/ner/giga_name_test/2/giga_ner_wsplit.txt",'
         label_list.append(line[2]) 
         line_name_list.append(line[3]) 
 
-with open("/nfs/yangguanrou.ygr/data/ner/giga_name_test/person_uniq_my",'r') as f:
+# with open("/nfs/yangguanrou.ygr/data/ner/giga_name_test/person_uniq_my",'r') as f:
+with open("/nfs/yangguanrou.ygr/data/ner/giga_name_test/person_uniq_my_tn",'r') as f:
     for line in f:
         line = line.strip()
         name_list.append(line)
@@ -219,7 +245,9 @@ for index in tqdm(range(len(data_list))):
         infer_sentence=infer_list[index]
     else:
         infer_sentence=infer_list[index]  #'HH IY1 HH OW1 P T DH EH1 R W UH1 D B IY1 S T UW1 F AO1 R D IH1 N ER0 T ER1 N AH0 P S AH0 N D K AE1 R AH0 T S AH0 N D B R UW1 Z D P AH0 T EY1 T OW0 Z AH0 N D F AE1 T M AH1 T AH0 N P IY1 S AH0 Z T UW1 B IY1 L EY1 D AH0 L D AW1 T IH0 N TH IH1 K P EH1 P ER0 D F L AW1 ER0 F AE1 T AH0 N D S AO1 S'
-    
+
+     v
+
     words_list = infer_sentence.split()
     filtered_words = [word for word in words_list if word not in common_words_5k]
     infer_sentence = ' '.join(filtered_words)

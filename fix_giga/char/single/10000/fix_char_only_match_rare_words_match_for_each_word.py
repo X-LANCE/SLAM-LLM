@@ -15,11 +15,10 @@ from slam_llm.utils.compute_utils import calculate_output_length_1d
 import kaldiio
 
 # config
-probability_threshold = 0.95
-word_num=5
+first=1
 filter_type="char"
 
-log_filename = "fix_giga/char/baseline/fix_char_{}_{}_only_match_rare_words_10000.log".format(word_num, probability_threshold)
+log_filename = "fix_giga/char/single/fix_char_{}_only_match_rare_words_match_for_each_word_10000_remove_qianre.log".format(first)
 prompt_word_num=0
 
 
@@ -59,7 +58,7 @@ def build_ngram_index(names, n=2):
     index = {}
     for name in names:
         for i in range(len(name) - n + 1):
-            ngram = name[i:i+n].lower()
+            ngram = name[i:i+n]#.lower()
             index.setdefault(ngram, set()).add(name)
     return index
 
@@ -67,7 +66,7 @@ def find_candidate_names(sentence, ngram_index, n=2):
     """通过N-Gram倒排索引找到候选人名"""
     candidates = set()
     for i in range(len(sentence) - n + 1):
-        ngram = sentence[i:i+n].lower()
+        ngram = sentence[i:i+n]#.lower()
         candidates.update(ngram_index.get(ngram, []))       
     return candidates
 
@@ -107,7 +106,8 @@ def calculate_similarity_score(name, sentence, length_tolerance=3):
     
     for ngram in sentence_ngrams:
         if abs(len(ngram) - len(name)) <= length_tolerance:
-            sim = similarity(name.lower(), ngram.lower())
+            # sim = similarity(name.lower(), ngram.lower())
+            sim = similarity(name, ngram)
             max_similarity = max(max_similarity, sim)
     return max_similarity
 
@@ -119,8 +119,44 @@ def score_candidates(candidates, sentence):
         scores[candidate] = score
     return scores
 
-logger.info("word_num: %d", word_num)
-logger.info("probability_threshold: %f", probability_threshold)
+def score_candidates_for_each_word(candidates, sentence):
+    keys_list = []
+    for word in sentence.split():
+        scores = {}
+        for candidate in candidates:
+            score = similarity(word,candidate)
+            scores[candidate] = score
+        sorted_items = sorted(scores.items(), key=lambda item: item[1], reverse=True)
+        first_two_items =  sorted_items[:first]
+        keys_list.extend([item[0] for item in first_two_items])
+        keys_list=list(dict.fromkeys(keys_list))
+    return keys_list
+
+conversational_filler = ['UH', 'UHH', 'UM', 'EH', 'MM', 'HM', 'AH', 'HUH', 'HA', 'ER', 'OOF', 'HEE' , 'ACH', 'EEE', 'EW']
+unk_tags = ['<UNK>', '<unk>']
+gigaspeech_punctuations = ['<COMMA>', '<PERIOD>', '<QUESTIONMARK>', '<EXCLAMATIONPOINT>']
+gigaspeech_garbage_utterance_tags = ['<SIL>', '<NOISE>', '<MUSIC>', '<OTHER>']
+non_scoring_words = conversational_filler + unk_tags + gigaspeech_punctuations + gigaspeech_garbage_utterance_tags
+
+def asr_text_post_processing(text):
+    # 1. convert to uppercase
+    # text = text.upper()  #本来就是大写的
+
+    # 2. remove hyphen
+    #   "E-COMMERCE" -> "E COMMERCE", "STATE-OF-THE-ART" -> "STATE OF THE ART"
+    text = text.replace('-', ' ')
+
+    # 3. remove non-scoring words from evaluation
+    remaining_words = []
+    for word in text.split():
+        if word in non_scoring_words:
+            continue
+        remaining_words.append(word)
+
+    return ' '.join(remaining_words)
+
+
+logger.info("first: %d", first)
 
         
 ctc_file="/nfs/yangguanrou.ygr/data/gigaspeech_my_infer/wavlm_ft_char_giga1000.txt"
@@ -141,7 +177,7 @@ with open("/nfs/yangguanrou.ygr/data/ner/giga_name_test/2/giga_ner_wsplit.txt",'
         label_list.append(line[2]) 
         line_name_list.append(line[3]) 
 
-with open("/nfs/yangguanrou.ygr/data/ner/giga_name_test/person_uniq_my",'r') as f:
+with open("/nfs/yangguanrou.ygr/data/ner/giga_name_test/person_uniq_my_tn_single",'r') as f:
     for line in f:
         line = line.strip()
         name_list.append(line)
@@ -159,13 +195,14 @@ with open(ctc_file,'r') as finfer:
 
 
 common_words_5k=set()
-with open("/nfs/yangguanrou.ygr/data/fbai-speech/is21_deep_bias/words/common_words_5k.txt") as f:
-# with open("/nfs/yangguanrou.ygr/data/fbai-speech/is21_deep_bias/words/common_words_10000.txt") as f:  
+# with open("/nfs/yangguanrou.ygr/data/fbai-speech/is21_deep_bias/words/common_words_5k.txt") as f:
+with open("/nfs/yangguanrou.ygr/data/fbai-speech/is21_deep_bias/words/common_words_10000.txt") as f:  
     for line in f:
         word = line.strip().upper()
         if word not in single_name_list:
             common_words_5k.add(word)
-print(len(common_words_5k))  #9616
+print(len(common_words_5k))  #4768
+
 
 
 
@@ -183,30 +220,35 @@ for index in tqdm(range(len(data_list))):
         infer_sentence=infer_list[index]
     else:
         infer_sentence=infer_list[index]  #'HH IY1 HH OW1 P T DH EH1 R W UH1 D B IY1 S T UW1 F AO1 R D IH1 N ER0 T ER1 N AH0 P S AH0 N D K AE1 R AH0 T S AH0 N D B R UW1 Z D P AH0 T EY1 T OW0 Z AH0 N D F AE1 T M AH1 T AH0 N P IY1 S AH0 Z T UW1 B IY1 L EY1 D AH0 L D AW1 T IH0 N TH IH1 K P EH1 P ER0 D F L AW1 ER0 F AE1 T AH0 N D S AO1 S'
-    
+
+    infer_sentence = asr_text_post_processing(infer_sentence)
+
     words_list = infer_sentence.split()
     filtered_words = [word for word in words_list if word not in common_words_5k]
+
+    # filtered_words = list(dict.fromkeys(filtered_words))  效果不好
+
     infer_sentence = ' '.join(filtered_words)
     
-    
-    
-    
     candidates = find_candidate_names(infer_sentence, ngram_index) #第一个len11
-    scores = score_candidates(candidates, infer_sentence)
-    sorted_dict = sorted(scores.items(), key=lambda item: item[1],  reverse=True)
-    high_score_items = [(k, value) for k, value in sorted_dict if value > probability_threshold] 
-    if len(high_score_items) < word_num:
-        high_score_items = sorted_dict[:word_num]
-    prompt_word_num += len(high_score_items)
-    keys_list = [k for k, _ in high_score_items]
+    # scores = score_candidates(candidates, infer_sentence)
+    # sorted_dict = sorted(scores.items(), key=lambda item: item[1],  reverse=True)
+    # high_score_items = [(k, value) for k, value in sorted_dict if value > probability_threshold] 
+    # if len(high_score_items) < word_num:
+    #     high_score_items = sorted_dict[:word_num]
+    # prompt_word_num += len(high_score_items)
+    # keys_list = [k for k, _ in high_score_items]
 
+    keys_list = score_candidates_for_each_word(candidates, infer_sentence)
+    prompt_word_num += len(keys_list)
 
-    if len(high_score_items)>word_num:
-        logger.info("longer than %d candidates, cand_num: %d", word_num,len(high_score_items))
+    # if len(high_score_items)>word_num:
+    #     logger.info("longer than %d candidates, cand_num: %d", word_num,len(high_score_items))
 
     # ======== count recall
+    gt = gt.replace('|',' ')
     miss=False
-    for name in gt.split('|'):
+    for name in gt.split(' '):
         hotwords_num+=1
         if name not in keys_list:
             logger.info("miss name: %s", name)

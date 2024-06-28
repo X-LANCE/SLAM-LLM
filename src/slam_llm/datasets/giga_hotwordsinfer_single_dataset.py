@@ -14,6 +14,25 @@ from functools import lru_cache
 from tqdm import tqdm
 import Levenshtein
 
+conversational_filler = ['UH', 'UHH', 'UM', 'EH', 'MM', 'HM', 'AH', 'HUH', 'HA', 'ER', 'OOF', 'HEE' , 'ACH', 'EEE', 'EW']
+unk_tags = ['<UNK>', '<unk>']
+gigaspeech_punctuations = ['<COMMA>', '<PERIOD>', '<QUESTIONMARK>', '<EXCLAMATIONPOINT>']
+gigaspeech_garbage_utterance_tags = ['<SIL>', '<NOISE>', '<MUSIC>', '<OTHER>']
+non_scoring_words = conversational_filler + unk_tags + gigaspeech_punctuations + gigaspeech_garbage_utterance_tags
+def asr_text_post_processing(text):
+    # 1. convert to uppercase
+    # text = text.upper()  #本来就是大写的
+    # 2. remove hyphen
+    #   "E-COMMERCE" -> "E COMMERCE", "STATE-OF-THE-ART" -> "STATE OF THE ART"
+    text = text.replace('-', ' ')
+    # 3. remove non-scoring words from evaluation
+    remaining_words = []
+    for word in text.split():
+        if word in non_scoring_words:
+            continue
+        remaining_words.append(word)
+    return ' '.join(remaining_words)
+
 def build_ngram_index(names, n=2):
     """构建N-Gram倒排索引"""
     index = {}
@@ -48,8 +67,8 @@ def calculate_similarity_score(name, sentence, length_tolerance=3):
     
     for ngram in sentence_ngrams:
         if abs(len(ngram) - len(name)) <= length_tolerance:
-            sim = similarity(name, ngram)
             # sim = similarity(name.lower(), ngram.lower())
+            sim = similarity(name, ngram)
             max_similarity = max(max_similarity, sim)
     return max_similarity
 
@@ -60,7 +79,7 @@ def score_candidates(candidates, sentence):
         score = calculate_similarity_score(candidate, sentence)
         scores[candidate] = score
     return scores
-
+    
 
 class GigaHotwordsInferDataset(Dataset):
 
@@ -103,7 +122,7 @@ class GigaHotwordsInferDataset(Dataset):
                 self.label_list.append(line[2]) 
                 self.line_name_list.append(line[3]) 
 
-        with open("/nfs/yangguanrou.ygr/data/ner/giga_name_test/person_uniq_my",'r') as f:
+        with open("/nfs/yangguanrou.ygr/data/ner/giga_name_test/person_uniq_my_tn_single",'r') as f:
             for line in f:
                 line = line.strip()
                 self.name_list.append(line)
@@ -131,6 +150,7 @@ class GigaHotwordsInferDataset(Dataset):
         logger.info("probability_threshold: %f", self.probability_threshold)
 
         self.filter_infer_sentence = dataset_config.get("filter_infer_sentence", False)
+        self.filter_infer_sentence_few = dataset_config.get("filter_infer_sentence_few", False)
         if self.filter_infer_sentence:
             self.common_words_5k=set()
             with open("/nfs/yangguanrou.ygr/data/fbai-speech/is21_deep_bias/words/common_words_5k.txt") as f:
@@ -138,6 +158,9 @@ class GigaHotwordsInferDataset(Dataset):
                     word = line.strip().upper()
                     if word not in self.single_name_list:
                         self.common_words_5k.add(word)
+            if self.filter_infer_sentence_few:
+                self.first = dataset_config.get("first",1)
+                logger.info("first: %d", self.first)
 
     def get_source_len(self, data_dict):
         return data_dict["source_len"]
@@ -179,27 +202,33 @@ class GigaHotwordsInferDataset(Dataset):
         elif self.infer_type=="filter":
             gt = self.line_name_list[index]
             infer_sentence = self.infer_list[index]
-           
-            if self.filter_infer_sentence:
-                words_list = infer_sentence.split()
-                filtered_words = [word for word in words_list if word not in self.common_words_5k]
-                infer_sentence = ' '.join(filtered_words)
+            infer_sentence = asr_text_post_processing(infer_sentence)
+            words_list = infer_sentence.split()
+            filtered_words = [word for word in words_list if word not in self.common_words_5k]
+            infer_sentence = ' '.join(filtered_words)
 
             candidates = find_candidate_names(infer_sentence, self.ngram_index) #第一个len11
-            scores = score_candidates(candidates, infer_sentence)
-            sorted_dict = sorted(scores.items(), key=lambda item: item[1],  reverse=True)
-            high_score_items = [(k, value) for k, value in sorted_dict if value > self.probability_threshold] 
-            # if len(high_score_items) < self.word_num:
-            #     high_score_items = sorted_dict [:self.word_num]
-            self.prompt_word_num += len(high_score_items)
-            keys_list = [k for k, _ in high_score_items]
-            ocr = " ".join(keys_list)
-            # if len(high_score_items)>self.word_num:
-            #     logger.info("longer than %d candidates, cand_num: %d", self.word_num,len(high_score_items))
+
+            if not self.filter_infer_sentence_few:
+                scores = score_candidates(candidates, infer_sentence)
+                sorted_dict = sorted(scores.items(), key=lambda item: item[1],  reverse=True)
+                high_score_items = [(k, value) for k, value in sorted_dict if value > self.probability_threshold] 
+                if len(high_score_items) < self.word_num:
+                    high_score_items = sorted_dict [:self.word_num]
+                self.prompt_word_num += len(high_score_items)
+                keys_list = [k for k, _ in high_score_items]
+                ocr = " ".join(keys_list)
+                if len(high_score_items)>self.word_num:
+                    logger.info("longer than %d candidates, cand_num: %d", self.word_num,len(high_score_items))
+            else:
+                keys_list = self.score_candidates_for_each_word(candidates, infer_sentence)
+                self.prompt_word_num += len(keys_list) 
+                ocr = " ".join(keys_list)
 
             # ======== count recall
+            gt = gt.replace('|',' ')
             miss=False
-            for name in gt.split('|'):
+            for name in gt.split(' '):
                 self.hotwords_num+=1
                 if name not in keys_list:
                     logger.info("miss name: %s", name)
@@ -336,6 +365,19 @@ class GigaHotwordsInferDataset(Dataset):
             "audio_mel_post_mask": audio_mel_post_mask if self.input_type == "mel" else None,
             "modality_mask": modality_mask
         }
+
+    def score_candidates_for_each_word(self,candidates, sentence):
+        keys_list = []
+        for word in sentence.split():
+            scores = {}
+            for candidate in candidates:
+                score = similarity(word,candidate)
+                scores[candidate] = score
+            sorted_items = sorted(scores.items(), key=lambda item: item[1], reverse=True)
+            first_two_items =  sorted_items[:self.first]
+            keys_list.extend([item[0] for item in first_two_items])
+            keys_list=list(dict.fromkeys(keys_list))
+        return keys_list
 
 
 

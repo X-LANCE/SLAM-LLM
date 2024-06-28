@@ -14,6 +14,25 @@ from functools import lru_cache
 from tqdm import tqdm
 import Levenshtein
 
+conversational_filler = ['UH', 'UHH', 'UM', 'EH', 'MM', 'HM', 'AH', 'HUH', 'HA', 'ER', 'OOF', 'HEE' , 'ACH', 'EEE', 'EW']
+unk_tags = ['<UNK>', '<unk>']
+gigaspeech_punctuations = ['<COMMA>', '<PERIOD>', '<QUESTIONMARK>', '<EXCLAMATIONPOINT>']
+gigaspeech_garbage_utterance_tags = ['<SIL>', '<NOISE>', '<MUSIC>', '<OTHER>']
+non_scoring_words = conversational_filler + unk_tags + gigaspeech_punctuations + gigaspeech_garbage_utterance_tags
+def asr_text_post_processing(text):
+    # 1. convert to uppercase
+    # text = text.upper()  #本来就是大写的
+    # 2. remove hyphen
+    #   "E-COMMERCE" -> "E COMMERCE", "STATE-OF-THE-ART" -> "STATE OF THE ART"
+    text = text.replace('-', ' ')
+    # 3. remove non-scoring words from evaluation
+    remaining_words = []
+    for word in text.split():
+        if word in non_scoring_words:
+            continue
+        remaining_words.append(word)
+    return ' '.join(remaining_words)
+
 def build_ngram_index(names, n=2):
     """构建N-Gram倒排索引"""
     index = {}
@@ -103,7 +122,7 @@ class GigaHotwordsInferDataset(Dataset):
                 self.label_list.append(line[2]) 
                 self.line_name_list.append(line[3]) 
 
-        with open("/nfs/yangguanrou.ygr/data/ner/giga_name_test/person_uniq_my",'r') as f:
+        with open("/nfs/yangguanrou.ygr/data/ner/giga_name_test/person_uniq_my_tn",'r') as f:
             for line in f:
                 line = line.strip()
                 self.name_list.append(line)
@@ -179,7 +198,9 @@ class GigaHotwordsInferDataset(Dataset):
         elif self.infer_type=="filter":
             gt = self.line_name_list[index]
             infer_sentence = self.infer_list[index]
-           
+
+            infer_sentence = asr_text_post_processing(infer_sentence)
+
             if self.filter_infer_sentence:
                 words_list = infer_sentence.split()
                 filtered_words = [word for word in words_list if word not in self.common_words_5k]
@@ -189,13 +210,13 @@ class GigaHotwordsInferDataset(Dataset):
             scores = score_candidates(candidates, infer_sentence)
             sorted_dict = sorted(scores.items(), key=lambda item: item[1],  reverse=True)
             high_score_items = [(k, value) for k, value in sorted_dict if value > self.probability_threshold] 
-            # if len(high_score_items) < self.word_num:
-            #     high_score_items = sorted_dict [:self.word_num]
+            if len(high_score_items) < self.word_num:
+                high_score_items = sorted_dict [:self.word_num]
             self.prompt_word_num += len(high_score_items)
             keys_list = [k for k, _ in high_score_items]
             ocr = " ".join(keys_list)
-            # if len(high_score_items)>self.word_num:
-            #     logger.info("longer than %d candidates, cand_num: %d", self.word_num,len(high_score_items))
+            if len(high_score_items)>self.word_num:
+                logger.info("longer than %d candidates, cand_num: %d", self.word_num,len(high_score_items))
 
             # ======== count recall
             miss=False

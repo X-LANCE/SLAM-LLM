@@ -172,7 +172,7 @@ for index in tqdm(range(len(data_list))):
         high_score_items = sorted_dict[:word_num]
     prompt_word_num += len(high_score_items)
     keys_list = [k for k, _ in high_score_items]
-    ocr = " ".join(keys_list)
+
 
     if len(high_score_items)>word_num:
         logger.info("longer than %d candidates, cand_num: %d", word_num,len(high_score_items))

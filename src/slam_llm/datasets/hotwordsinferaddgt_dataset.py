@@ -54,7 +54,7 @@ def calculate_similarity_score(name, sentence, length_tolerance=3):
     max_similarity = 0
     name_sentence = name.split()
     name_length = len(name_sentence)
-    sentence_ngrams = generate_ngrams(sentence, name_length) #9
+    sentence_ngrams = generate_ngrams(sentence, name_length)
     
     for ngram in sentence_ngrams:
         if abs(len(ngram) - len(name)) <= length_tolerance:
@@ -71,9 +71,8 @@ def score_candidates(candidates, sentence):
     return scores
 
 
-
 class HotwordsInferAddgtDataset(torch.utils.data.Dataset):
-    
+
     def __init__(self,
                  dataset_config,
                  tokenizer=None,
@@ -109,7 +108,7 @@ class HotwordsInferAddgtDataset(torch.utils.data.Dataset):
                     data_dict = json.loads(line.strip())
                     self.data_list.append(data_dict)
 
-        # 
+        
         self.hotwords_list=[]
         self.biaswords_list=[]
         with open(dataset_config.infer_file,'r') as fref:
@@ -133,6 +132,11 @@ class HotwordsInferAddgtDataset(torch.utils.data.Dataset):
         self.hotwords_num=0
         self.miss_words_num=0
 
+        self.probability_threshold = dataset_config.get("probability_threshold", 0.95)
+        self.word_num = dataset_config.get("word_num", 15)
+        self.prompt_word_num = 0
+        logger.info("word_num: %d", self.word_num)
+        logger.info("probability_threshold: %f", self.probability_threshold)
 
     def get_source_len(self, data_dict):
         return data_dict["source_len"]
@@ -184,12 +188,13 @@ class HotwordsInferAddgtDataset(torch.utils.data.Dataset):
             scores = score_candidates(candidates, infer_sentence)
             sorted_dict = sorted(scores.items(), key=lambda item: item[1],  reverse=True)
             high_score_items = [(k, value) for k, value in sorted_dict if value > 0.9] 
-            if len(high_score_items) < 15:
-                high_score_items = sorted_dict[:15]
+            if len(high_score_items) < self.word_num:
+                high_score_items = sorted_dict[:self.word_num]
+            self.prompt_word_num += len(high_score_items)
             keys_list = [k for k, _ in high_score_items]
            
-            if len(high_score_items)>15:
-                logger.info("longer than 15 candidates, cand_num: %d", len(high_score_items))
+            if len(high_score_items)>self.word_num:
+                logger.info("longer than %d candidates, cand_num: %d", self.word_num,len(high_score_items))
 
             # ======== count recall
             miss=False
@@ -204,7 +209,7 @@ class HotwordsInferAddgtDataset(torch.utils.data.Dataset):
                 logger.info("key: %s", key)
                 logger.info("infer sentence: %s",infer_sentence)
                 logger.info("target sentence: %s", target)
-                logger.info("name: %s, gt: %s, keys_list: %s", name, gt, keys_list)
+                logger.info("gt: %s, keys_list: %s", gt, keys_list)
             # ========
             
         ocr = " ".join(keys_list).upper()
