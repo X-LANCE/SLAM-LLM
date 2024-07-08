@@ -25,11 +25,12 @@ developers to train custom multimodal large language model (MLLM), focusing on <
     - [Configuration Priority](#configuration-priority)
 4. [Features](#features)
 5. [Acknowledge](#acknowledge)
+6. [Citation](#citation)
 
 # News
 - [Update Jun. 12, 2024] Recipes for [MaLa-ASR](examples/mala_asr_slidespeech/README.md) has been supported. 
 - **[CALL FOR EXAMPLE]** We sincerely invite developers and researchers to develop new applications, conduct academic research based on SLAM-LLM, and pull request your examples! We also acknowledge engineering PR (such as improving and speeding up multi-node training). 
-- [Update May. 22, 2024] Please join [slack](https://join.slack.com/t/slam-llm/shared_invite/zt-2jbuiyqgi-O83DteBG36xYWcjCNcLWqQ) or [WeChat group](./docs/Wechat.jpg). We will sync our updates and Q&A here. 
+- [Update May. 22, 2024] Please join [slack](https://join.slack.com/t/slam-llm/shared_invite/zt-2mc0pkhhs-5jjOi8Cwc8R1Xc8IQmykDA) or [WeChat group](./docs/Wechat.jpg). We will sync our updates and Q&A here. 
 - [Update May. 21, 2024] Recipes for [Spatial Audio Understanding](examples/seld_spatialsoundqa/README.md) has been supported. 
 - [Update May. 20, 2024] Recipes for [music caption (MC)](examples/mc_musiccaps/README.md) has been supported. 
 - [Update May. 8, 2024] Recipes for [visual speech recognition (VSR)](examples/vsr_LRS3/README.md) has been supported. 
@@ -100,3 +101,15 @@ command-line (shell file) > Hydra configuration (yaml file) > dataclass configur
 - We borrow code from [Llama-Recipes](https://github.com/meta-llama/llama-recipes) for the training process. 
 - We borrow code from [Fairseq](https://github.com/facebookresearch/fairseq) for deepspeed configuration. 
 - We thank the contributors for providing diverse recipes. 
+
+## Citation
+
+```
+@article{ma2024embarrassingly,
+  title={An Embarrassingly Simple Approach for LLM with Strong ASR Capacity},
+  author={Ma, Ziyang and Yang, Guanrou and Yang, Yifan and Gao, Zhifu and Wang, Jiaming and Du, Zhihao and Yu, Fan and Chen, Qian and Zheng, Siqi and Zhang, Shiliang and others},
+  journal={arXiv preprint arXiv:2402.08846},
+  year={2024}
+}
+```
+
