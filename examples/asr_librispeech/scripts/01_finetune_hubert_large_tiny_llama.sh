@@ -1,10 +1,21 @@
 #!/bin/bash
+
+#SBATCH -N 1
+#SBATCH -c 12
+#SBATCH -p gpu
+#SBATCH --gres=gpu:v100-sxm2:1
+#SBATCH --time=08:00:00
+#SBATCH --output=log/%j.output
+#SBATCH --error=log/%j.error
+
+
 # export PYTHONPATH=/root/whisper:$PYTHONPATH
 export PYTHONPATH=/root/fairseq:$PYTHONPATH
 export CUDA_VISIBLE_DEVICES=0
 export TOKENIZERS_PARALLELISM=false
 # export CUDA_LAUNCH_BLOCKING=1
 export OMP_NUM_THREADS=1
+export HYDRA_FULL_ERROR=1
 
 # debug setting for multiple gpus
 # export NCCL_DEBUG=INFO
@@ -22,19 +33,19 @@ code_dir=examples/asr_librispeech
 
 
 
-speech_encoder_path=${run_dir}/models/hubert_xtralarge_ll60k_finetune_ls960.pt
+speech_encoder_path=${run_dir}/models/hubert_large_ll60k_finetune_ls960.pt
 llm_path=${run_dir}/models/TinyLlama-1.1B-Chat-v1.0
 train_data_path=${run_dir}/data/${test_speaker}_train.jsonl
 val_data_path=${run_dir}/data/${test_speaker}_validation.jsonl
 
 
-output_dir=${run_dir}/out/vicuna-7b-v1.5-librispeech-linear-steplrwarmupkeep1e-4-hubert-xtralarge-$(date +"%Y%m%d")
+output_dir=${run_dir}/out/TinyLlama-1.1B-Chat-v1.0-librispeech-linear-steplrwarmupkeep1e-4-hubert-xtralarge-$(date +"%Y%m%d")
 
 hydra_args="
 hydra.run.dir=$output_dir \
-++model_config.llm_name=vicuna-7b-v1.5 \
+++model_config.llm_name=TinyLlama-1.1B-Chat-v1.0 \
 ++model_config.llm_path=$llm_path \
-++model_config.llm_dim=4096 \
+++model_config.llm_dim=2048 \
 ++model_config.encoder_name=hubert \
 ++model_config.normalize=true \
 ++dataset_config.normalize=true \
@@ -72,7 +83,6 @@ if [[ $CUDA_VISIBLE_DEVICES != *","* ]]; then
     torchrun \
         --nnodes 1 \
         --nproc_per_node 1 \
-        --master_port=29503 \
         $code_dir/finetune_asr.py \
         --config-path "conf" \
         --config-name "prompt.yaml" \

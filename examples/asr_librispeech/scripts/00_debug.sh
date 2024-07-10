@@ -1,13 +1,13 @@
-#!/bin/bash -l
+#!/bin/bash
 
 #SBATCH -N 1
 #SBATCH -c 12
 #SBATCH -p gpu
-#SBATCH --gres=gpu:a100:1   
-#SBATCH --constraint=a100@80g
+#SBATCH --gres=gpu:v100-sxm2:1
 #SBATCH --time=08:00:00
 #SBATCH --output=log/%j.output
 #SBATCH --error=log/%j.error
+
 
 # export PYTHONPATH=/root/whisper:$PYTHONPATH
 export PYTHONPATH=/root/fairseq:$PYTHONPATH
@@ -22,9 +22,6 @@ export HYDRA_FULL_ERROR=1
 # export NCCL_DEBUG_SUBSYS=ALL
 # export TORCH_DISTRIBUTED_DEBUG=INFO
 
-# module purge
-module load anaconda3/3.7
-module load cuda/11.8
 source activate /work/van-speech-nlp/jindaznb/slamenv/
 module load ffmpeg/20190305 
 
@@ -34,18 +31,21 @@ run_dir=/work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm
 cd $run_dir
 code_dir=examples/asr_librispeech
 
+
+
 speech_encoder_path=${run_dir}/models/hubert_xtralarge_ll60k_finetune_ls960.pt
-llm_path=${run_dir}/models/vicuna-7b-v1.5
+llm_path=${run_dir}/models/TinyLlama-1.1B-Chat-v1.0
 train_data_path=${run_dir}/data/${test_speaker}_train.jsonl
 val_data_path=${run_dir}/data/${test_speaker}_validation.jsonl
 
-output_dir=${run_dir}/out/vicuna-7b-v1.5-librispeech-linear-steplrwarmupkeep1e-4-hubert-xtralarge-$(date +"%Y%m%d")
+
+output_dir=${run_dir}/out/TinyLlama-1.1B-Chat-v1.0-librispeech-linear-steplrwarmupkeep1e-4-hubert-xtralarge-$(date +"%Y%m%d")
 
 hydra_args="
 hydra.run.dir=$output_dir \
-++model_config.llm_name=vicuna-7b-v1.5 \
+++model_config.llm_name=TinyLlama-1.1B-Chat-v1.0 \
 ++model_config.llm_path=$llm_path \
-++model_config.llm_dim=4096 \
+++model_config.llm_dim=2048 \
 ++model_config.encoder_name=hubert \
 ++model_config.normalize=true \
 ++dataset_config.normalize=true \
@@ -76,20 +76,9 @@ hydra.run.dir=$output_dir \
 
 # -m debugpy --listen 5678 --wait-for-client
 if [[ $CUDA_VISIBLE_DEVICES != *","* ]]; then
-    # python -m debugpy --listen 5678 --wait-for-client $code_dir/finetune_asr.py \
-    #     --config-path "conf" \
-    #     --config-name "prompt.yaml" \
-    #     $hydra_args
-    torchrun \
-        --nnodes 1 \
-        --nproc_per_node 1 \
-        --master_port=29503 \
-        $code_dir/finetune_asr.py \
+    python -m debugpy --listen 5679 --wait-for-client $code_dir/finetune_asr.py \
         --config-path "conf" \
         --config-name "prompt.yaml" \
-        ++train_config.enable_fsdp=false \
-        ++train_config.enable_ddp=true \
-        ++train_config.use_fp16=true \
         $hydra_args
 else
     torchrun \
