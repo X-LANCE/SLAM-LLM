@@ -1,22 +1,36 @@
 #!/bin/bash
 #export PYTHONPATH=/root/whisper:$PYTHONPATH
-export PYTHONPATH=/root/fairseq:$PYTHONPATH
+# export PYTHONPATH=/root/fairseq:$PYTHONPATH
 export CUDA_VISIBLE_DEVICES=0
 export TOKENIZERS_PARALLELISM=false
 # export CUDA_LAUNCH_BLOCKING=1
+export HYDRA_FULL_ERROR=1 
 
-run_dir=/root/SLAM-LLM
+# module load anaconda3/2022.05
+module load ffmpeg/20190305 
+# module unload cuda/11.2  
+# module load cuda/11.8 
+
+source activate /work/van-speech-nlp/jindaznb/asrenv/
+
+test_speaker="M03"
+encoder_name="hubert"
+
+run_dir=/work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm
 cd $run_dir
 code_dir=examples/asr_librispeech
 
-speech_encoder_path=/nfs/yangguanrou.ygr/ckpts/hubert_ckpt/hubert_xtralarge_ll60k_finetune_ls960.pt
-llm_path=/nfs/maziyang.mzy/models/vicuna-7b-v1.5
+speech_encoder_path=/work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/examples/models/hubert_xtralarge_ll60k_finetune_ls960.pt
+llm_path=/work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/examples/models/vicuna-7b-v1.5
 
-output_dir=/nfs/yangguanrou.ygr/experiments_hubert/vicuna-7b-v1.5-hubert_xtralarge_ll60k_finetune_ls960
-ckpt_path=$output_dir/asr_epoch_1_step_1000
-split=librispeech_test_clean
-val_data_path=/nfs/maziyang.mzy/data/librispeech/${split}.jsonl
-decode_log=$ckpt_path/decode_${split}_beam4
+output_dir=/work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/examples/asr_librispeech/out
+
+ckpt_path=/work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/examples/models
+
+split=test
+val_data_path=/work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/examples/asr_librispeech/data/${test_speaker}_${split}.jsonl
+
+decode_log=$ckpt_path/decode_${test_speaker}_${split}_${encoder_name}_beam4
 
 # -m debugpy --listen 5678 --wait-for-client
 python $code_dir/inference_asr_batch.py \
@@ -48,7 +62,7 @@ python $code_dir/inference_asr_batch.py \
         ++train_config.num_workers_dataloader=0 \
         ++train_config.output_dir=$output_dir \
         ++decode_log=$decode_log \
-        ++ckpt_path=$ckpt_path/model.pt \
+        ++ckpt_path=$ckpt_path/hubert_linear_model.pt \
         # ++peft_ckpt=$ckpt_path \
         # ++train_config.use_peft=true \
         # ++train_config.peft_config.r=32 \

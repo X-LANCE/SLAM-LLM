@@ -8,21 +8,25 @@ module load anaconda3/2022.05
 module load ffmpeg/20190305 
 module unload cuda/11.2  
 module load cuda/11.8  
-source activate /work/van-speech-nlp/jindaznb/asrenv/
-nvcc --version
+
+source activate /work/van-speech-nlp/jindaznb/slamenv/
+
+test_speaker="M03"
+encoder_name="wavlm"
 
 run_dir=/work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm
 cd $run_dir
 code_dir=examples/asr_librispeech
 
-speech_encoder_path=/work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/models/WavLM-Large.pt
-llm_path=/work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/models/vicuna-7b-v1.5
+speech_encoder_path=/work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/examples/models/WavLM-Large.pt
+llm_path=/work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/examples/models/vicuna-7b-v1.5
 
-output_dir=/work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/out/vicuna-7b-v1.5-librispeech-linear-steplrwarmupkeep1e-4-wavlm-large-20240426
-ckpt_path=/work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/models
+output_dir=/work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/out
+
+ckpt_path=/work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/examples/models
 split=test
-val_data_path=/work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/examples/asr_librispeech/data/M03_${split}.jsonl
-decode_log=$ckpt_path/decode_${split}_beam4
+val_data_path=/work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/examples/asr_librispeech/data/${test_speaker}_${split}.jsonl
+decode_log=$ckpt_path/decode_${test_speaker}_${split}_${encoder_name}_beam4
 
 # -m debugpy --listen 5678 --wait-for-client
 python $code_dir/inference_asr_batch.py \

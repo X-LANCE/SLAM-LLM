@@ -6,7 +6,8 @@ import time
 import yaml
 from contextlib import nullcontext
 from pathlib import Path
-from pkg_resources import packaging
+# from pkg_resources import packaging
+import packaging
 
 
 import torch
@@ -461,9 +462,20 @@ def check_frozen_layers_peft_model(model):
                 logger.info(f"Layer {i}, parameter {name}: requires_grad = {param.requires_grad}")
 
 
-def setup():
+# def setup():
+#     """Initialize the process group for distributed training"""
+#     dist.init_process_group("nccl")
+
+def setup(rank=0, world_size=1):
     """Initialize the process group for distributed training"""
-    dist.init_process_group("nccl")
+    # Set device to the first (and only) GPU
+    torch.cuda.set_device(rank)
+    dist.init_process_group(
+        backend='nccl',
+        init_method='env://',  # Use environment variables for initialization
+        rank=rank,
+        world_size=world_size
+    )
 
 
 def setup_environ_flags(rank):

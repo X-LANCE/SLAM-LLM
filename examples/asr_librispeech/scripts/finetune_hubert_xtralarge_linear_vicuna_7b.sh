@@ -1,7 +1,9 @@
 #!/bin/bash
 # export PYTHONPATH=/root/whisper:$PYTHONPATH
+echo "Script execution started"
+
 export PYTHONPATH=/root/fairseq:$PYTHONPATH
-export CUDA_VISIBLE_DEVICES=2,3
+export CUDA_VISIBLE_DEVICES=0
 export TOKENIZERS_PARALLELISM=false
 # export CUDA_LAUNCH_BLOCKING=1
 export OMP_NUM_THREADS=1
@@ -10,17 +12,23 @@ export OMP_NUM_THREADS=1
 # export NCCL_DEBUG=INFO
 # export NCCL_DEBUG_SUBSYS=ALL
 # export TORCH_DISTRIBUTED_DEBUG=INFO
+nvidia-smi
 
-run_dir=/root/SLAM-LLM
+source activate /work/van-speech-nlp/jindaznb/slamenv/
+module load ffmpeg/20190305 
+
+test_speaker="M03"
+
+run_dir=/work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm
 cd $run_dir
 code_dir=examples/asr_librispeech
 
-speech_encoder_path=/nfs/yangguanrou.ygr/ckpts/hubert_ckpt/hubert_xtralarge_ll60k_finetune_ls960.pt
-llm_path=/nfs/maziyang.mzy/models/vicuna-7b-v1.5
-train_data_path=/nfs/maziyang.mzy/data/librispeech/librispeech_train_960h.jsonl
-val_data_path=/nfs/maziyang.mzy/data/librispeech/librispeech_dev_other.jsonl
+speech_encoder_path=${run_dir}/models/hubert_xtralarge_ll60k_finetune_ls960.pt
+llm_path=${run_dir}/models/vicuna-7b-v1.5
+train_data_path=${run_dir}/data/${test_speaker}_train.jsonl
+val_data_path=${run_dir}/data/${test_speaker}_validation.jsonl
 
-output_dir=/root/tmp/vicuna-7b-v1.5-librispeech-linear-steplrwarmupkeep1e-4-hubert-xtralarge-$(date +"%Y%m%d")
+output_dir=${run_dir}/out/vicuna-7b-v1.5-librispeech-linear-steplrwarmupkeep1e-4-hubert-xtralarge-$(date +"%Y%m%d")
 
 hydra_args="
 hydra.run.dir=$output_dir \
@@ -57,9 +65,20 @@ hydra.run.dir=$output_dir \
 
 # -m debugpy --listen 5678 --wait-for-client
 if [[ $CUDA_VISIBLE_DEVICES != *","* ]]; then
-    python -m debugpy --listen 5678 --wait-for-client $code_dir/finetune_asr.py \
+    # python -m debugpy --listen 5678 --wait-for-client $code_dir/finetune_asr.py \
+    #     --config-path "conf" \
+    #     --config-name "prompt.yaml" \
+    #     $hydra_args
+    torchrun \
+        --nnodes 1 \
+        --nproc_per_node 1 \
+        --master_port=29503 \
+        $code_dir/finetune_asr.py \
         --config-path "conf" \
         --config-name "prompt.yaml" \
+        ++train_config.enable_fsdp=false \
+        ++train_config.enable_ddp=true \
+        ++train_config.use_fp16=true \
         $hydra_args
 else
     torchrun \

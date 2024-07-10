@@ -18,6 +18,10 @@ from tqdm import tqdm
 
 import hydra
 from omegaconf import DictConfig, ListConfig, OmegaConf
+import time
+
+# Get the current timestamp
+current_time = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())
 
 
 @hydra.main(config_name=None, version_base=None)
@@ -62,7 +66,7 @@ def main(kwargs: DictConfig):
 	del kwargs["dataset_config"]
 	OmegaConf.set_struct(kwargs,True)
 
-	log_config.log_file = "/home/data2/jindaznb/jslpnb/mllm/SLAM-LLM/examples/asr_librispeech/log.txt"
+	log_config.log_file = f"/work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/log/log_{current_time}.txt"
 
 	# Set log
 	if not os.path.exists(os.path.dirname(log_config.log_file)):
