@@ -1,3 +1,4 @@
+
 # os
 import os
 import fire
@@ -91,7 +92,7 @@ def main(kwargs: DictConfig):
 
     # Get the current timestamp
     current_time = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())
-    log_config.log_file = f"/work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/log/log_{current_time}.txt"
+    log_config.log_file = f"/work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/out/log/{current_time}.txt"
     
     # Set log
     if not os.path.exists(os.path.dirname(log_config.log_file)):

@@ -1,0 +1,29 @@
+dataset_config:
+  prompt: Transcribe speech to text.
+  normalize: true
+  dataset: speech_dataset
+  val_data_path: /work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/data/M03_test.jsonl
+  input_type: raw
+  inference_mode: true
+model_config:
+  llm_name: TinyLlama-1.1B-Chat-v1.0
+  llm_path: /work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/models/TinyLlama-1.1B-Chat-v1.0
+  llm_dim: 2048
+  encoder_name: hubert
+  normalize: true
+  encoder_projector_ds_rate: 5
+  encoder_path: /work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/models/hubert_large_ll60k_finetune_ls960.pt
+  encoder_dim: 1024
+  encoder_type: finetune
+  encoder_projector: linear
+train_config:
+  model_name: asr
+  freeze_encoder: true
+  freeze_llm: true
+  batching_strategy: custom
+  num_epochs: 1
+  val_batch_size: 1
+  num_workers_dataloader: 0
+  output_dir: /work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/out/TinyLlama-1.1B-Chat-v1.0-librispeech-linear-steplrwarmupkeep1e-4-hubert-large-20240710/M03
+decode_log: /work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/out/TinyLlama-1.1B-Chat-v1.0-librispeech-linear-steplrwarmupkeep1e-4-hubert-large-20240710/M03/decode_M03_test_hubert-large_beam4
+ckpt_path: /work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/out/TinyLlama-1.1B-Chat-v1.0-librispeech-linear-steplrwarmupkeep1e-4-hubert-large-20240710/M03/asr_epoch_3_step_4508/model.pt

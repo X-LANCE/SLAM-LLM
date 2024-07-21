@@ -1,5 +1,11 @@
 from dataclasses import dataclass, field
 from typing import Optional, List
+import os
+import time
+
+# Get the current time
+current_time = time.strftime("%Y-%m-%d_%H-%M-%S")
+
 @dataclass
 class ModelConfig:
     file: str = "examples/asr_librispeech/model/slam_model_asr.py:model_factory"
@@ -117,10 +123,10 @@ class FSDPConfig:
 
 @dataclass
 class LogConfig:
-    use_wandb: bool = False
-    wandb_dir: str = "/root/test_wandb"
-    wandb_entity_name: str = "project_name"
-    wandb_project_name: str = "project_name"
+    use_wandb: bool = False # # Determines whether to use Weights & Biases (wandb) for logging. If True, wandb is used.
+    wandb_dir: str = "/work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/log/wandb_log"
+    wandb_entity_name: str = "SLAM-LLM"
+    wandb_project_name: str = "SLAM-LLM"
     wandb_exp_name: str = "exp_name"
-    log_file: str = "/root/test.log"
+    log_file: str = "/work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/log/wandb_log"
     log_interval: int = 5

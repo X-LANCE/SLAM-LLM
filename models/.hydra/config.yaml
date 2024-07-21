@@ -2,17 +2,17 @@ dataset_config:
   prompt: 'Transcribe speech to text. '
   normalize: true
   dataset: speech_dataset
-  val_data_path: /work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/examples/asr_librispeech/data/M03_test.jsonl
+  val_data_path: /work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/data/loaded_librispeech_test_other.jsonl
   input_type: raw
   inference_mode: true
 model_config:
   llm_name: vicuna-7b-v1.5
-  llm_path: /work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/examples/models/vicuna-7b-v1.5
+  llm_path: /work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/models/vicuna-7b-v1.5
   llm_dim: 4096
   encoder_name: wavlm
   normalize: true
   encoder_projector_ds_rate: 5
-  encoder_path: /work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/examples/models/WavLM-Large.pt
+  encoder_path: /work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/models/WavLM-Large.pt
   encoder_dim: 1024
   encoder_projector: linear
 train_config:
@@ -23,6 +23,6 @@ train_config:
   num_epochs: 1
   val_batch_size: 1
   num_workers_dataloader: 2
-  output_dir: /work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/examples/asr_librispeech/out
-decode_log: /work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/examples/models/decode_M03_test_wavlm_beam4
-ckpt_path: /work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/examples/models/model.pt
+  output_dir: /work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/out/vicuna-librispeech-linear-steplrwarmupkeep1e-4-whisper-largev3
+decode_log: /work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/out/decode_librispeech_other_wavlm_beam4
+ckpt_path: /work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/models/wavlm_linear_model.pt

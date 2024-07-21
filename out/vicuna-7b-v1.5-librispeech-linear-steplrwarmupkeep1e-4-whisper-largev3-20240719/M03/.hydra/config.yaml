@@ -1,0 +1,34 @@
+dataset_config:
+  prompt: 'Transcribe speech to text. '
+  dataset: speech_dataset
+  train_data_path: /work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/data/M03_train.jsonl
+  val_data_path: /work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/data/M03_validation.jsonl
+  input_type: mel
+  mel_size: 128
+train_config:
+  enable_fsdp: false
+  enable_ddp: true
+  use_fp16: true
+  model_name: asr
+  num_epochs: 3
+  freeze_encoder: true
+  freeze_llm: true
+  batching_strategy: custom
+  warmup_steps: 1000
+  total_steps: 100000
+  lr: 0.0001
+  validation_interval: 1000
+  batch_size_training: 2
+  val_batch_size: 2
+  num_workers_dataloader: 2
+  output_dir: /work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/out/vicuna-7b-v1.5-librispeech-linear-steplrwarmupkeep1e-4-whisper-largev3-20240719/M03
+model_config:
+  llm_name: vicuna-7b-v1.5
+  llm_path: /work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/models/vicuna-7b-v1.5
+  llm_dim: 4096
+  encoder_name: whisper
+  encoder_projector_ds_rate: 5
+  encoder_path: /work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/models/Whisper/large-v3.pt
+  encoder_dim: 1280
+  encoder_projector: linear
+metric: acc

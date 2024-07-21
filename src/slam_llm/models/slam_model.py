@@ -60,7 +60,7 @@ def setup_tokenizer(train_config, model_config, **kwargs):
                                             trust_remote_code=True,
                                             use_fast=False)
     else:
-        tokenizer = AutoTokenizer.from_pretrained(model_config.llm_path)
+        tokenizer = AutoTokenizer.from_pretrained(model_config.llm_path,trust_remote_code=True)
         tokenizer.pad_token_id = tokenizer.eos_token_id
     return tokenizer
 
