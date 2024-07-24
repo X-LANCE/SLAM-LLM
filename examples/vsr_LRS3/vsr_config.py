@@ -18,7 +18,8 @@ class PeftConfig:
     peft_method: str = "lora" # None , llama_adapter, prefix
     r: int = 8
     lora_alpha: int = 32
-    target_modules: List = field(default_factory=lambda: [ "q_proj", "v_proj" ])
+    # target_modules: List = field(default_factory=lambda: [ "q_proj", "v_proj" ])
+    target_modules: List = field(default_factory=lambda: [ "q_proj", "v_proj","k_proj","o_proj" ])
     bias: str = "none"
     task_type: str = "CAUSAL_LM"
     lora_dropout: float = 0.05
@@ -76,7 +77,8 @@ class DataConfig:
     fix_length_audio: int = -1
     inference_mode: bool = False
     dataset: str = "avhubert_dataset"
-    file: str = "src/slam_llm/datasets/avhubert_dataset.py:get_audio_dataset"
+    # file: str = "src/slam_llm/datasets/avhubert_dataset.py:get_audio_dataset"
+    file: str = "/root/SLAM-LLM/src/slam_llm/datasets/avhubert_dataset.py:get_audio_dataset"
     data: str = "/nfs/yangguanrou.ygr/LRS_new/433h_data/"
     train_split: str = "train"
     test_split: str = "val"

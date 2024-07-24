@@ -5,6 +5,7 @@ import logging
 from dataclasses import dataclass, field
 from omegaconf import DictConfig, ListConfig, OmegaConf
 from vsr_config import ModelConfig, TrainConfig, DataConfig, LogConfig, FSDPConfig
+from typing import Optional, List
 
 @dataclass
 class RunConfig:
@@ -15,6 +16,9 @@ class RunConfig:
     fsdp_config: FSDPConfig = field(default_factory=FSDPConfig)
     debug: bool = field(default=False, metadata={"help": "Use pdb when true"})
     metric: str = field(default="acc", metadata={"help": "The metric for evaluation"})
+    ckpt_path: Optional[str] = field(
+        default=None, metadata={"help": "The path to projector checkpoint"}
+    )
 
 @hydra.main(config_name=None)
 def main_hydra(cfg: DictConfig):
