@@ -61,6 +61,10 @@ preds=/root/tmp/vicuna-7b-v1.5-large_vox_433h_bs8_con-20240712/vsr_epoch_6_step_
 trans=/root/tmp/vicuna-7b-v1.5-large_vox_433h_1e-4-20240712/vsr_epoch_6_step_5695/decode__beam4_bs1_gt
 preds=/root/tmp/vicuna-7b-v1.5-large_vox_433h_1e-4-20240712/vsr_epoch_6_step_5695/decode__beam4_bs1_pred
 
+trans=
+
+
+
 # 我觉得还是不要前两个了 没什么用
 python src/llama_recipes/utils/whisper_tn.py ${trans} ${trans}.proc
 python src/llama_recipes/utils/llm_tn.py ${preds} ${preds}.proc
