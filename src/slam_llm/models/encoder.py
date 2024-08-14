@@ -156,3 +156,32 @@ class MusicFMEncoder(nn.Module):
         _, hidden_states = self.model.get_predictions(source)
         out = hidden_states[self.config.encoder_layer_idx]
         return out
+
+
+# j: add a new encoder
+class Wav2PhonemeEncoder(nn.Module):
+    def __init__(self, config, model, feature_extractor):
+        super().__init__()
+        self.config = config
+        self.model = model
+        self.feature_extractor = feature_extractor
+
+    @classmethod
+    def load(cls, model_config):
+        from transformers import Wav2Vec2FeatureExtractor, Wav2Vec2Model
+        # Load feature extractor and model
+        feature_extractor = Wav2Vec2FeatureExtractor.from_pretrained("vitouphy/wav2vec2-xls-r-300m-timit-phoneme")
+        model = Wav2Vec2Model.from_pretrained("vitouphy/wav2vec2-xls-r-300m-timit-phoneme")
+        return cls(model_config, model, feature_extractor)
+
+    def extract_features(self, audio_input):
+        # Process audio_input
+        inputs = self.feature_extractor(audio_input, return_tensors="pt", sampling_rate=16000)
+
+        with torch.no_grad():
+            outputs = self.model(**inputs)
+        
+        # Extract features
+        features = outputs.last_hidden_state
+        
+        return features

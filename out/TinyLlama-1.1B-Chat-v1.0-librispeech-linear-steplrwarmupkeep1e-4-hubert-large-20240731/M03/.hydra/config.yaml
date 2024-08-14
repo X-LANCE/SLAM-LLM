@@ -1,0 +1,33 @@
+dataset_config:
+  prompt: 'Transcribe speech to text. '
+  normalize: true
+  dataset: speech_dataset
+  train_data_path: /work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/data/M03_train.jsonl
+  val_data_path: /work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/data/M03_validation.jsonl
+  input_type: raw
+model_config:
+  llm_name: TinyLlama-1.1B-Chat-v1.0
+  llm_path: /work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/models/TinyLlama-1.1B-Chat-v1.0
+  llm_dim: 2048
+  encoder_name: wav2phoneme
+  normalize: true
+  encoder_projector_ds_rate: 5
+  encoder_path: /work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/models/hubert_large_ll60k_finetune_ls960.pt
+  encoder_dim: 1024
+  encoder_type: finetune
+  encoder_projector: linear
+train_config:
+  model_name: asr
+  num_epochs: 3
+  freeze_encoder: true
+  freeze_llm: true
+  batching_strategy: custom
+  warmup_steps: 1000
+  total_steps: 100000
+  lr: 0.0001
+  validation_interval: 2000
+  batch_size_training: 2
+  val_batch_size: 2
+  num_workers_dataloader: 0
+  output_dir: /work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/out/TinyLlama-1.1B-Chat-v1.0-librispeech-linear-steplrwarmupkeep1e-4-hubert-large-20240731/M03
+metric: acc

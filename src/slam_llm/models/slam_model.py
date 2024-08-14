@@ -95,6 +95,11 @@ def setup_encoder(train_config, model_config, **kwargs):
         if encoder_name == "musicfm":
             from slam_llm.models.encoder import MusicFMEncoder
             encoder = MusicFMEncoder.load(model_config)
+        # j: add new encoder for wav2phoneme
+        if encoder_name == "wav2phoneme":
+            from slam_llm.models.encoder import Wav2PhonemeEncoder
+            encoder = Wav2PhonemeEncoder.load(model_config)
+        
 
         if "llama" in encoder_name.lower():
             from slam_llm.models.encoder import HfTextEncoder
@@ -334,7 +339,11 @@ class slam_model(nn.Module):
                 encoder_outs = encoder_outs.transpose(0, 1)
                 audio_mel_post_mask = (~audio_mel_post_mask).float()
             if self.model_config.encoder_name == 'musicfm':
-                encoder_outs = self.encoder.extract_features(audio, padding_mask = None) # MusicFM doesn't support padding mask 
+                encoder_outs = self.encoder.extract_features(audio, padding_mask = None) # MusicFM doesn't support padding mask
+            # j: add encoder_out with extracted feature
+            if self.model_config.encoder_name == 'wav2phoneme':
+                encoder_outs = outputs.last_hidden_state
+
             if self.encoder is None:
                 encoder_outs = audio_mel if audio_mel is not None else audio
 

@@ -13,5 +13,4 @@ module load ffmpeg/20190305
 
 source activate /work/van-speech-nlp/jindaznb/slamenv/
 
-
 ./scripts/finetune_hubert_xtralarge_linear_vicuna_7b.sh
