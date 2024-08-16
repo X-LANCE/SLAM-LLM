@@ -44,7 +44,7 @@ hydra.run.dir=$output_dir \
 ++model_config.llm_name=vicuna-7b-v1.5 \
 ++model_config.llm_path=$llm_path \
 ++model_config.llm_dim=4096 \
-++model_config.encoder_name=wavlm \
+++model_config.encoder_name=wav2p \
 ++model_config.normalize=true \
 ++dataset_config.normalize=true \
 ++model_config.encoder_projector_ds_rate=5 \
@@ -73,7 +73,7 @@ hydra.run.dir=$output_dir \
 
 # -m debugpy --listen 5678 --wait-for-client
 if [[ $CUDA_VISIBLE_DEVICES != *","* ]]; then
-    python -m debugpy --listen 5678 --wait-for-client $code_dir/finetune_asr.py \
+    python $code_dir/finetune_asr.py \
         --config-path "conf" \
         --config-name "prompt.yaml" \
         $hydra_args

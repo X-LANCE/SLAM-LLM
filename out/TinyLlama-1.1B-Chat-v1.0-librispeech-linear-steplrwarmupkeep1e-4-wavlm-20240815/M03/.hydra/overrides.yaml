@@ -1,7 +1,7 @@
 - ++model_config.llm_name=vicuna-7b-v1.5
 - ++model_config.llm_path=/work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/models/vicuna-7b-v1.5
 - ++model_config.llm_dim=4096
-- ++model_config.encoder_name=wav2phoneme
+- ++model_config.encoder_name=wav2p
 - ++model_config.normalize=true
 - ++dataset_config.normalize=true
 - ++model_config.encoder_projector_ds_rate=5
@@ -24,5 +24,5 @@
 - ++train_config.batch_size_training=4
 - ++train_config.val_batch_size=4
 - ++train_config.num_workers_dataloader=2
-- ++train_config.output_dir=/work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/out/TinyLlama-1.1B-Chat-v1.0-librispeech-linear-steplrwarmupkeep1e-4-wavlm-20240813/M03
+- ++train_config.output_dir=/work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/out/TinyLlama-1.1B-Chat-v1.0-librispeech-linear-steplrwarmupkeep1e-4-wavlm-20240815/M03
 - ++metric=acc

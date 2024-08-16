@@ -96,7 +96,7 @@ def setup_encoder(train_config, model_config, **kwargs):
             from slam_llm.models.encoder import MusicFMEncoder
             encoder = MusicFMEncoder.load(model_config)
         # j: add new encoder for wav2phoneme
-        if encoder_name == "wav2phoneme":
+        if encoder_name == "wav2p":
             from slam_llm.models.encoder import Wav2PhonemeEncoder
             encoder = Wav2PhonemeEncoder.load(model_config)
         
@@ -341,12 +341,9 @@ class slam_model(nn.Module):
             if self.model_config.encoder_name == 'musicfm':
                 encoder_outs = self.encoder.extract_features(audio, padding_mask = None) # MusicFM doesn't support padding mask
             # j: add encoder_out with extracted feature
-            if self.model_config.encoder_name == 'wav2phoneme':
-                encoder_outs = outputs.last_hidden_state
-
-            if self.encoder is None:
-                encoder_outs = audio_mel if audio_mel is not None else audio
-
+            if self.model_config.encoder_name == 'wav2p': # [batch_size, seq_len, dim]
+                encoder_outs = self.encoder.extract_features(audio)            
+                
             if self.model_config.encoder_projector == "q-former":
                 encoder_outs = self.encoder_projector(encoder_outs, audio_mel_post_mask)
             if self.model_config.encoder_projector == "linear":

@@ -99,7 +99,9 @@ class WavLMEncoder(nn.Module):
         return cls(cfg, WavLM_model)
 
     def extract_features(self, source, padding_mask):
-        return self.model.extract_features(source, padding_mask)[0]
+        features = self.model.extract_features(source, padding_mask)[0]
+        print(f"Shape of extracted features: {features.shape}")
+        return features
 
 class AVHubertEncoder:
 
@@ -169,19 +171,13 @@ class Wav2PhonemeEncoder(nn.Module):
     @classmethod
     def load(cls, model_config):
         from transformers import Wav2Vec2FeatureExtractor, Wav2Vec2Model
-        # Load feature extractor and model
+        # Load the feature extractor and model
         feature_extractor = Wav2Vec2FeatureExtractor.from_pretrained("vitouphy/wav2vec2-xls-r-300m-timit-phoneme")
         model = Wav2Vec2Model.from_pretrained("vitouphy/wav2vec2-xls-r-300m-timit-phoneme")
         return cls(model_config, model, feature_extractor)
 
     def extract_features(self, audio_input):
-        # Process audio_input
-        inputs = self.feature_extractor(audio_input, return_tensors="pt", sampling_rate=16000)
-
-        with torch.no_grad():
-            outputs = self.model(**inputs)
-        
-        # Extract features
-        features = outputs.last_hidden_state
-        
-        return features
+        # Pass the processed inputs through the Wav2Vec2 model
+        outputs = self.model(audio_input)
+        # Return the last hidden state as the extracted features
+        return outputs.last_hidden_state
