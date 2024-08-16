@@ -1,0 +1,182 @@
+hydra:
+  run:
+    dir: /work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm
+  sweep:
+    dir: multirun/${now:%Y-%m-%d}/${now:%H-%M-%S}
+    subdir: ${hydra.job.num}
+  launcher:
+    _target_: hydra._internal.core_plugins.basic_launcher.BasicLauncher
+  sweeper:
+    _target_: hydra._internal.core_plugins.basic_sweeper.BasicSweeper
+    max_batch_size: null
+    params: null
+  help:
+    app_name: ${hydra.job.name}
+    header: '${hydra.help.app_name} is powered by Hydra.
+
+      '
+    footer: 'Powered by Hydra (https://hydra.cc)
+
+      Use --hydra-help to view Hydra specific help
+
+      '
+    template: '${hydra.help.header}
+
+      == Configuration groups ==
+
+      Compose your configuration from those groups (group=option)
+
+
+      $APP_CONFIG_GROUPS
+
+
+      == Config ==
+
+      Override anything in the config (foo.bar=value)
+
+
+      $CONFIG
+
+
+      ${hydra.help.footer}
+
+      '
+  hydra_help:
+    template: 'Hydra (${hydra.runtime.version})
+
+      See https://hydra.cc for more info.
+
+
+      == Flags ==
+
+      $FLAGS_HELP
+
+
+      == Configuration groups ==
+
+      Compose your configuration from those groups (For example, append hydra/job_logging=disabled
+      to command line)
+
+
+      $HYDRA_CONFIG_GROUPS
+
+
+      Use ''--cfg hydra'' to Show the Hydra config.
+
+      '
+    hydra_help: ???
+  hydra_logging:
+    version: 1
+    formatters:
+      simple:
+        format: '[%(asctime)s][HYDRA] %(message)s'
+    handlers:
+      console:
+        class: logging.StreamHandler
+        formatter: simple
+        stream: ext://sys.stdout
+    root:
+      level: INFO
+      handlers:
+      - console
+    loggers:
+      logging_example:
+        level: DEBUG
+    disable_existing_loggers: false
+  job_logging:
+    version: 1
+    formatters:
+      simple:
+        format: '[%(asctime)s][%(name)s][%(levelname)s] - %(message)s'
+    handlers:
+      console:
+        class: logging.StreamHandler
+        formatter: simple
+        stream: ext://sys.stdout
+      file:
+        class: logging.FileHandler
+        formatter: simple
+        filename: ${hydra.runtime.output_dir}/${hydra.job.name}.log
+    root:
+      level: INFO
+      handlers:
+      - console
+      - file
+    disable_existing_loggers: false
+  env: {}
+  mode: RUN
+  searchpath: []
+  callbacks: {}
+  output_subdir: .hydra
+  overrides:
+    hydra:
+    - hydra.run.dir=/work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm
+    - hydra.mode=RUN
+    task:
+    - ++model_config.llm_name=vicuna-7b-v1.5
+    - ++model_config.llm_path=/work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/models/vicuna-7b-v1.5
+    - ++model_config.llm_dim=4096
+    - ++model_config.encoder_name=hubert
+    - ++model_config.normalize=true
+    - ++dataset_config.normalize=true
+    - ++model_config.encoder_projector_ds_rate=5
+    - ++model_config.encoder_path=/work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/models/hubert_xtralarge_ll60k_finetune_ls960.pt
+    - ++model_config.encoder_dim=1280
+    - ++model_config.encoder_type=finetune
+    - ++model_config.encoder_projector=linear
+    - ++dataset_config.dataset=speech_dataset
+    - ++dataset_config.val_data_path=/work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/data/M03_test.jsonl
+    - ++dataset_config.input_type=raw
+    - ++dataset_config.inference_mode=true
+    - '++dataset_config.prompt=Transcribe speech to text. '
+    - ++train_config.model_name=asr
+    - ++train_config.freeze_encoder=true
+    - ++train_config.freeze_llm=true
+    - ++train_config.batching_strategy=custom
+    - ++train_config.num_epochs=1
+    - ++train_config.val_batch_size=1
+    - ++train_config.num_workers_dataloader=0
+    - ++train_config.output_dir=/work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/experiments_hubert/vicuna-7b-v1.5-hubert_xtralarge_ll60k_finetune_ls960
+    - ++decode_log=/work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/experiments_hubert/decode_M03_test_hubert_beam4
+    - ++ckpt_path=/work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/hubert_linear_model.pt
+  job:
+    name: inference_asr_batch
+    chdir: null
+    override_dirname: ++ckpt_path=/work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/hubert_linear_model.pt,++dataset_config.dataset=speech_dataset,++dataset_config.inference_mode=true,++dataset_config.input_type=raw,++dataset_config.normalize=true,++dataset_config.prompt=Transcribe
+      speech to text. ,++dataset_config.val_data_path=/work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/data/M03_test.jsonl,++decode_log=/work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/experiments_hubert/decode_M03_test_hubert_beam4,++model_config.encoder_dim=1280,++model_config.encoder_name=hubert,++model_config.encoder_path=/work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/models/hubert_xtralarge_ll60k_finetune_ls960.pt,++model_config.encoder_projector=linear,++model_config.encoder_projector_ds_rate=5,++model_config.encoder_type=finetune,++model_config.llm_dim=4096,++model_config.llm_name=vicuna-7b-v1.5,++model_config.llm_path=/work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/models/vicuna-7b-v1.5,++model_config.normalize=true,++train_config.batching_strategy=custom,++train_config.freeze_encoder=true,++train_config.freeze_llm=true,++train_config.model_name=asr,++train_config.num_epochs=1,++train_config.num_workers_dataloader=0,++train_config.output_dir=/work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/experiments_hubert/vicuna-7b-v1.5-hubert_xtralarge_ll60k_finetune_ls960,++train_config.val_batch_size=1
+    id: ???
+    num: ???
+    config_name: prompt.yaml
+    env_set: {}
+    env_copy: []
+    config:
+      override_dirname:
+        kv_sep: '='
+        item_sep: ','
+        exclude_keys: []
+  runtime:
+    version: 1.3.2
+    version_base: '1.3'
+    cwd: /work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm
+    config_sources:
+    - path: hydra.conf
+      schema: pkg
+      provider: hydra
+    - path: /work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/examples/asr_librispeech/conf
+      schema: file
+      provider: main
+    - path: ''
+      schema: structured
+      provider: schema
+    output_dir: /work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm
+    choices:
+      hydra/env: default
+      hydra/callbacks: null
+      hydra/job_logging: default
+      hydra/hydra_logging: default
+      hydra/hydra_help: default
+      hydra/help: default
+      hydra/sweeper: basic
+      hydra/launcher: basic
+      hydra/output: default
+  verbose: false

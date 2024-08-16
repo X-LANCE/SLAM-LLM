@@ -1,0 +1,29 @@
+dataset_config:
+  prompt: Transcribe speech to text.
+  normalize: true
+  dataset: speech_dataset
+  val_data_path: /work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/data/M03_test.jsonl
+  input_type: raw
+  inference_mode: true
+model_config:
+  llm_name: vicuna-7b-v1.5
+  llm_path: /work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/models/vicuna-7b-v1.5
+  llm_dim: 4096
+  encoder_name: hubert
+  normalize: true
+  encoder_projector_ds_rate: 5
+  encoder_path: /work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/models/hubert_xtralarge_ll60k_finetune_ls960.pt
+  encoder_dim: 1280
+  encoder_type: finetune
+  encoder_projector: linear
+train_config:
+  model_name: asr
+  freeze_encoder: true
+  freeze_llm: true
+  batching_strategy: custom
+  num_epochs: 1
+  val_batch_size: 1
+  num_workers_dataloader: 0
+  output_dir: /work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/experiments_hubert/vicuna-7b-v1.5-hubert_xtralarge_ll60k_finetune_ls960
+decode_log: /work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/experiments_hubert/decode_M03_test_hubert_beam4
+ckpt_path: /work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm/hubert_linear_model.pt

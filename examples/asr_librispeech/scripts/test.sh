@@ -25,19 +25,20 @@ source activate /work/van-speech-nlp/jindaznb/slamenv/
 
 
 
-test_speaker="M03"
+test_speaker="M05"
 
 run_dir=/work/van-speech-nlp/jindaznb/jslpnb/mllm_expriments/slam-llm
 cd $run_dir
 code_dir=examples/asr_librispeech
 
+speech_encoder_name="wav2p"
 speech_encoder_path=${run_dir}/models/WavLM-Large.pt
 llm_path=${run_dir}/models/vicuna-7b-v1.5
 
 train_data_path=${run_dir}/data/${test_speaker}_train.jsonl
 val_data_path=${run_dir}/data/${test_speaker}_validation.jsonl
 
-output_dir=${run_dir}/out/TinyLlama-1.1B-Chat-v1.0-librispeech-linear-steplrwarmupkeep1e-4-wavlm-$(date +"%Y%m%d")/${test_speaker}
+output_dir=${run_dir}/out/TinyLlama-1.1B-Chat-v1.0-librispeech-linear-steplrwarmupkeep1e-4-${speech_encoder_name}-$(date +"%Y%m%d")/${test_speaker}
 
 hydra_args="
 hydra.run.dir=$output_dir \
