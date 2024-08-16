@@ -4,8 +4,9 @@
 #SBATCH -p gpu
 #SBATCH --gres=gpu:v100-sxm2:1
 #SBATCH --time=08:00:00
-#SBATCH --output=log/%j.output
-#SBATCH --error=log/%j.error
+#SBATCH --output=/work/van-speech-nlp/jindaznb/jslpnb/log/%j.output
+#SBATCH --error=/work/van-speech-nlp/jindaznb/jslpnb/log/%j.error 
+
 
 # export PYTHONPATH=/root/whisper:$PYTHONPATH
 # export PYTHONPATH=/root/fairseq:$PYTHONPATH

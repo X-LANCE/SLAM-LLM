@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Define the maximum file size you want to track
-MAXSIZE=100M
+MAXSIZE=5M
 
 # Find files larger than MAXSIZE, remove leading './' and append to .gitignore
 find . -size +$MAXSIZE -type f | sed 's|^\./||' >> .gitignore
