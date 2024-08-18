@@ -34,6 +34,14 @@ preds=/root/SALMONN/giga_dev/SALMONN_gigaspeech_dev.log_pred
 trans=/root/SALMONN/giga_test/SALMONN_gigaspeech_test.log_gt
 preds=/root/SALMONN/giga_test/SALMONN_gigaspeech_test.log_pred
 
+trans=/root/SLAM-LLM/mzy/dev_viterbi_gt
+preds=/root/SLAM-LLM/mzy/dev_viterbi_pred
+
+trans=/root/SLAM-LLM/mzy/libri_4gram/dev_viterbi_gt
+preds=/root/SLAM-LLM/mzy/libri_4gram/dev_viterbi_pred
+
+trans=/root/SLAM-LLM/mzy/test_viterbi_gt
+preds=/root/SLAM-LLM/mzy/test_viterbi_pred
 
 python src/slam_llm/utils/giga_tn.py ${trans} ${trans}.proc1
 python src/slam_llm/utils/giga_tn.py ${preds} ${preds}.proc1

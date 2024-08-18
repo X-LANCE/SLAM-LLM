@@ -40,6 +40,13 @@ preds=/root/SALMONN/giga_dev/SALMONN_gigaspeech_dev.log_pred
 trans=/root/SALMONN/giga_test/SALMONN_gigaspeech_test.log_gt
 preds=/root/SALMONN/giga_test/SALMONN_gigaspeech_test.log_pred
 
+trans=/root/SLAM-LLM/mzy/dev_viterbi_gt
+preds=/root/SLAM-LLM/mzy/dev_viterbi_pred
+
+trans=/root/SLAM-LLM/mzy/only_gigatn/test_viterbi_gt
+preds=/root/SLAM-LLM/mzy/only_gigatn/test_viterbi_pred
+
 python src/llama_recipes/utils/compute_wer.py ${trans} ${preds} ${preds}.onlywer
 
 tail -3 ${preds}.onlywer
+
