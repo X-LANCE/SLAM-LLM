@@ -61,7 +61,8 @@ preds=/root/tmp/vicuna-7b-v1.5-large_vox_433h_bs8_con-20240712/vsr_epoch_6_step_
 trans=/root/tmp/vicuna-7b-v1.5-large_vox_433h_1e-4-20240712/vsr_epoch_6_step_5695/decode__beam4_bs1_gt
 preds=/root/tmp/vicuna-7b-v1.5-large_vox_433h_1e-4-20240712/vsr_epoch_6_step_5695/decode__beam4_bs1_pred
 
-trans=
+trans=/nfs/yangguanrou.ygr/experiments_slides_wavlm/slides-finetune-wavlm/asr/3840/decode_test_beam4_debug0818_gt
+preds=/nfs/yangguanrou.ygr/experiments_slides_wavlm/slides-finetune-wavlm/asr/3840/decode_test_beam4_debug0818_pred
 
 
 
