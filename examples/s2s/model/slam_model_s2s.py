@@ -83,6 +83,15 @@ class slam_model_s2s(slam_model):
             **kwargs,
         )
 
+    def concat_whisper_feat(self, audio_feature, input_ids, T, task="A1A2"):
+        btz = len(T)  # 获取批量大小
+        for j in range(btz):
+            if task[j] != "T1T2" and task[j] != "T1A2":
+                for i in range(7):
+                    input_ids[j, i, 1 : T[j] + 1, :] = audio_feature[j][: T[j]].clone()
+            else:
+                continue
+        return input_ids
 
     def forward(self,
                 input_ids: torch.LongTensor = None,
@@ -99,13 +108,10 @@ class slam_model_s2s(slam_model):
                 ):
         audio_mel = kwargs.get("audio_mel", None)
         audio_mel_post_mask = kwargs.get("audio_mel_post_mask", None) # 2x downsample for whisper
+        audio_length = kwargs.get("audio_length", None)
 
         audio = kwargs.get("audio", None)
         audio_mask = kwargs.get("audio_mask", None)
-
-        # for text encoder
-        instruct_ids = kwargs.get("instruct_ids", None)
-        instruct_mask = kwargs.get("instruct_mask", None)
 
         modality_mask = kwargs.get("modality_mask", None)
 
@@ -133,28 +139,25 @@ class slam_model_s2s(slam_model):
             if self.model_config.encoder_projector == "linear":
                 encoder_outs = self.encoder_projector(encoder_outs)
             if self.model_config.encoder_projector == "cov1d-linear": 
-                encoder_outs = self.encoder_projector(encoder_outs) 
-
-        if instruct_ids is not None:
-            if self.encoder is not None:
-                encoder_outs = self.encoder(input_ids=instruct_ids, attention_mask=instruct_mask).last_hidden_state
-
-            if self.model_config.encoder_projector == "q-former":
-                encoder_outs = self.encoder_projector(encoder_outs, instruct_mask)
-            if self.model_config.encoder_projector == "linear":
                 encoder_outs = self.encoder_projector(encoder_outs)
 
         if input_ids is not None:
             input_ids[input_ids == -1] = 0
+
             if isinstance(self.llm, T5ForConditionalGeneration):
                 inputs_embeds = self.llm.shared(input_ids)
             else:
                 if hasattr(self.llm.model, "embed_tokens"):
-                    inputs_embeds = self.llm.model.embed_tokens(input_ids)
+                    inputs_embeds = self.llm.model.embed_tokens(input_ids)  # [btz, 8, seq_length, emb_dim]
                 elif hasattr(self.llm.model.model, "embed_tokens"):
                     inputs_embeds = self.llm.model.model.embed_tokens(input_ids)
                 else:
                     inputs_embeds = self.llm.model.model.model.embed_tokens(input_ids)
+
+            if audio_mel is not None or audio is not None:
+                inputs_embeds = self.concat_whisper_feat(encoder_outs, inputs_embeds, audio_length)
+
+            inputs_embeds = torch.mean(inputs_embeds, dim=1)  # [btz, seq_length, emb_dim]
 
         if modality_mask is not None:
             modality_mask_start_indices = (modality_mask == True).float().argmax(dim=1)

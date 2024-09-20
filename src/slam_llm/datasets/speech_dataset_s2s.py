@@ -1,17 +1,34 @@
-import os.path as osp
-import random
-import json, yaml
+import json
 import copy
 
 import numpy as np
-from scipy import signal
-import soundfile as sf
 
 import torch
-import torchaudio
-from torch.utils.data import Dataset
 import whisper
 from slam_llm.utils.compute_utils import calculate_output_length_1d
+from slam_llm.utils.snac_utils import layershift
+import librosa
+
+# these tokens setting is from Mini-Omni
+text_vocabsize = 151936
+text_specialtokens = 64
+audio_vocabsize = 4096
+audio_specialtokens = 64
+
+padded_text_vocabsize = text_vocabsize + text_specialtokens
+padded_audio_vocabsize = audio_vocabsize + audio_specialtokens
+
+_eot = text_vocabsize
+_pad_t = text_vocabsize + 1
+_input_t = text_vocabsize + 2
+_answer_t = text_vocabsize + 3
+_asr = text_vocabsize + 4
+
+_eoa = audio_vocabsize
+_pad_a = audio_vocabsize + 1
+_input_a = audio_vocabsize + 2
+_answer_a = audio_vocabsize + 3
+_split = audio_vocabsize + 4
 
 
 class SpeechDatasetJsonl(torch.utils.data.Dataset):
@@ -41,11 +58,15 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         assert self.input_type in ["raw", "mel"], "input_type must be one of [raw, mel]" 
         assert self.manifest_format in ["datasets", "jsonl"], "manifest_format must be one of [datasets, jsonl]"
 
+        self.special_token_a = _answer_a
+        self.special_token_t = _answer_t
+
         self.data_list = []
 
         if self.manifest_format == "datasets":
-            from datasets import load_dataset
-            ds = load_dataset(dataset_config.train_data_path)
+            from datasets import load_dataset, load_from_disk   
+            ds = load_dataset(dataset_config.train_data_path)       # load_from huggingface datasets
+            # ds = load_from_disk(dataset_config.train_data_path)   # load_from local disk
             train_val_split = ds['train'].train_test_split(test_size=self.split_size, seed=self.seed)
             if split == "train":
                 self.data_list = train_val_split['train']
@@ -74,7 +95,17 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
 
     # extract audio feature (raw waveform or mel spectrogram) from audio file
     def extract_audio_feature(self, audio_path):
-        audio_raw = whisper.load_audio(audio_path)
+        # audio path is a dictionary, resample the audio to 16kHz
+        if self.manifest_format == "datasets" and isinstance(audio_path, dict):
+            audio_raw = audio_path['array']
+            audio_raw_sr = audio_path['sampling_rate']
+            audio_raw = librosa.resample(audio_raw, orig_sr=audio_raw_sr, target_sr=16000).astype(np.float32)
+        elif self.manifest_format == "datasets" and isinstance(audio_path, str):
+            audio_length = len(audio_path.split()) // 8
+            return audio_path, audio_length
+        else:
+            audio_raw = whisper.load_audio(audio_path)
+            
         if self.input_type == "raw":
             audio_raw = torch.from_numpy(audio_raw)
             if self.normalize:
@@ -90,22 +121,52 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
             audio_res = audio_mel
 
         return audio_res, audio_length
+
+    def get_input_ids(self, length, special_token_a, special_token_t):
+        input_ids = []
+        for i in range(7):
+            input_ids_item = []
+            input_ids_item.append(layershift(_input_a, i))
+            input_ids_item += [layershift(_pad_a, i)] * length
+            input_ids_item += [(layershift(_eoa, i)), layershift(special_token_a, i)]
+            input_ids.append(torch.tensor(input_ids_item).unsqueeze(0))
+        input_id_T = torch.tensor([_input_t] + [_pad_t] * length + [_eot, special_token_t])
+        input_ids.append(input_id_T.unsqueeze(0))
+        return input_ids
+
+    def get_answer_ids(self, length):
+        answer_ids = []
+        for i in range(7):
+            answer_ids_item = []
+            answer_ids_item += [layershift(_pad_a, i)] * length
+            answer_ids_item += [(layershift(_eoa, i))]
+            answer_ids.append(torch.tensor(answer_ids_item).unsqueeze(0))
+        answer_id_T = torch.tensor([_pad_t] * length + [_eot])
+        answer_ids.append(answer_id_T.unsqueeze(0))
+        return answer_ids
     
     def __getitem__(self, index):
         data_dict = self.data_list[index]
-        source_audio_path = data_dict.get("source_wav", None)
-        target_audio_path = data_dict.get("target_wav", None)
-        source_text = data_dict.get("source_text", None)
-        target_text = data_dict.get("target_text", None)
-        key = data_dict.get("key", None)
 
-        audio_mel, audio_length = self.extract_audio_feature(source_audio_path)
-        target_audio_mel, target_audio_length = self.extract_audio_feature(target_audio_path)
+        if self.manifest_format == "datasets":
+            source_audio = data_dict.get("question_audio", None)
+            target_audio = data_dict.get("answer_snac", None)
+            source_text = data_dict.get("question", None)
+            target_text = data_dict.get("answer", None)
+            key = data_dict.get("key", None)
+        
+        else:
+            source_audio = data_dict.get("source_wav", None)
+            target_audio = data_dict.get("target_wav", None)
+            source_text = data_dict.get("source_text", None)
+            target_text = data_dict.get("target_text", None)
+            key = data_dict.get("key", None)
+
+        audio_mel, audio_length = self.extract_audio_feature(source_audio)
+        target_audio_mel, target_audio_length = self.extract_audio_feature(target_audio)
         if self.fix_length_audio > 0:
             audio_length = self.fix_length_audio
             target_audio_length = self.fix_length_audio
-
-        audio_pseudo = torch.full((audio_length,), -1) # placeholder
 
         prompt = self.prompt
         # if prompt is None:
@@ -114,10 +175,16 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         prompt_ids = self.tokenizer.encode(prompt)
         prompt_length = len(prompt_ids)
 
+        # audio_pseudo = torch.full((audio_length,), -1) # placeholder
+        prompt_ids = torch.tensor(prompt_ids, dtype=torch.int64)
+        example_ids = self.get_input_ids(audio_length + prompt_length, self.special_token_a, self.special_token_t)
+        text_layer = example_ids[7]
+        text_layer = torch.cat((text_layer[:,:audio_length + 1], prompt_ids.unsqueeze(0), text_layer[:,-2:]), dim=1)
+        example_ids[7] = text_layer
+
         if self.inference_mode:
-            prompt_ids = torch.tensor(prompt_ids, dtype=torch.int64)
-            example_ids = torch.cat((audio_pseudo, prompt_ids))  # [audio,prompt]
-            example_mask = example_ids.ge(-1)  # [True,True]
+            example_mask = example_ids[0][0].ge(-1)  # [True,True]
+            example_ids = torch.stack(example_ids).squeeze()
 
             return {
                 "input_ids": example_ids,
@@ -132,22 +199,26 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
                 "prompt_length": prompt_length,
             }
 
-        answer = self.answer_template.format(target_text)
-        example = prompt + answer  # FIX(MZY): avoid putting a bos token before answer.
-        example_ids = self.tokenizer.encode(example)  # [prompt,answer]
-        example_ids.append(self.tokenizer.eos_token_id)  # [prompt,answer,eos]
-        example_ids = torch.tensor(
-            example_ids, dtype=torch.int64
-        )
-        example_ids = torch.cat((audio_pseudo, example_ids))  # [audio,prompt,answer,eos]
+        answer_text = self.answer_template.format(target_text)
+        answer_text_ids = self.tokenizer.encode(answer_text)  # [prompt,answer]
+        answer_text_ids.append(_eot) # [prompt,answer,eos]
+        answer_text_ids = torch.tensor(answer_text_ids, dtype=torch.int64)
+        answer_ids = self.get_answer_ids(target_audio_length)   # NOTE: suppose audio length is always longer than text length
+        answer_ids[7] = torch.cat((answer_text_ids.unsqueeze(0), answer_ids[7][:,len(answer_text_ids):]),dim=1)
 
-        labels_ids = copy.deepcopy(example_ids)  # [audio,prompt,answer,eos]
-        labels_ids[:audio_length + prompt_length] = -1  # [-1,-1,answer,eos];
-        example_mask = example_ids.ge(-1)  # FIX(GZF): [True,True,True,True]
+        # TODO: add snac answer
+
+        for i in range(8):
+            example_ids[i] = torch.cat((example_ids[i], answer_ids[i]), dim=1)
+
+        labels_ids = copy.deepcopy(example_ids[7][0])  # [audio,prompt,answer,eos]
+        labels_ids[:audio_length + prompt_length + 3] = -1  # [-1,-1,answer,eos]; NOTE: here 3 include <bos> <eos> <ans_t>
+        example_mask = example_ids[0][0].ge(-1)  # [True,True,True,True]
 
         label_mask = labels_ids.ge(0)  # [False,False,True,True]
-        example_ids[~example_mask] = 0  # [audio,prompt,answer,eos]
+        # example_ids[~example_mask] = 0  # [audio,prompt,answer,eos]
         labels_ids[~label_mask] = self.IGNORE_INDEX  # [-100,-100,answer,eos]
+        example_ids = torch.stack(example_ids).squeeze()
 
         return {
             "input_ids": example_ids,
@@ -218,8 +289,8 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
 
     def collator(self, samples):
         assert samples is not None 
-        input_prompt_lengths = [s["audio_length"] + s['prompt_length'] for s in samples] #[120, 48, 82, 42]
-        input_answer_lengths = [len(s["input_ids"]) - s["audio_length"] - s['prompt_length'] for s in samples]  #[0, 0, 0, 0]
+        input_prompt_lengths = [s["audio_length"] + s['prompt_length'] + 3 for s in samples] #[319, 319, 319, 319]
+        input_answer_lengths = [len(s["input_ids"][0]) - s["audio_length"] - s['prompt_length'] - 3 for s in samples]  #[264, 99, 206, 141]
 
         input_prompt_max_length = max(input_prompt_lengths)
         input_answer_max_length = max(input_answer_lengths)
@@ -238,6 +309,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
             ) for index in range(len(samples))
         ])
 
+        audio_length = torch.tensor([s["audio_length"] for s in samples])
 
         if self.input_type == "raw":
             audio_raw_max_length = max([s['audio'].shape[0] for s in samples])
@@ -256,7 +328,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
     
         modality_mask = torch.zeros_like(attention_mask)
         for index in range(len(samples)):
-            padding_left = input_prompt_max_length - input_prompt_lengths[index]
+            padding_left = input_prompt_max_length - input_prompt_lengths[index] + 1 # +1 for <bos>
             modality_mask[index, padding_left:padding_left+samples[index]["audio_length"]] = True
 
         if self.inference_mode:
@@ -268,6 +340,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
                 "attention_mask": attention_mask,
                 "audio": audio_raw if self.input_type == "raw" else None,
                 "audio_mask": audio_mask if self.input_type == "raw" else None,
+                "audio_length": audio_length,
                 "audio_mel": audio_mel if self.input_type == "mel" else None,
                 "audio_mel_post_mask": audio_mel_post_mask if self.input_type == "mel" else None,
                 "modality_mask": modality_mask,
@@ -288,6 +361,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
             "attention_mask": attention_mask,
             "audio": audio_raw if self.input_type == "raw" else None,
             "audio_mask": audio_mask if self.input_type == "raw" else None,
+            "audio_length": audio_length,
             "audio_mel": audio_mel if self.input_type == "mel" else None,
             "audio_mel_post_mask": audio_mel_post_mask if self.input_type == "mel" else None,
             "modality_mask": modality_mask
@@ -297,5 +371,4 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
 
 def get_speech_dataset(dataset_config, tokenizer, split):
     dataset = SpeechDatasetJsonl(dataset_config, tokenizer, split)
-
     return dataset

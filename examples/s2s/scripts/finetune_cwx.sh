@@ -23,7 +23,7 @@ llm_path="Qwen/Qwen2-0.5B"
 train_data_path="gpt-omni/VoiceAssistant-400K"
 val_data_path="gpt-omni/VoiceAssistant-400K"
 
-output_dir=/home/v-wenxichen/exp/whisper/s2s-$(date +"%Y%m%d")
+output_dir=/home/v-wenxichen/exp/s2s/$(TZ='Asia/Shanghai' date +"%Y_%m_%d")/$(TZ='Asia/Shanghai' date +"%H_%M_%S")
 
 hydra_args="
 hydra.run.dir=$output_dir \
@@ -46,13 +46,13 @@ hydra.run.dir=$output_dir \
 ++train_config.model_name=s2s \
 ++train_config.num_epochs=3 \
 ++train_config.freeze_encoder=true \
-++train_config.freeze_llm=true \
+++train_config.freeze_llm=false \
 ++train_config.batching_strategy=custom \
 ++train_config.warmup_steps=1000 \
 ++train_config.total_steps=100000 \
 ++train_config.lr=1e-4 \
 ++train_config.validation_interval=1000 \
-++train_config.batch_size_training=1 \
+++train_config.batch_size_training=4 \
 ++train_config.val_batch_size=1 \
 ++train_config.num_workers_dataloader=2 \
 ++train_config.output_dir=$output_dir \

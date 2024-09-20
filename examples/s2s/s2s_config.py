@@ -104,7 +104,7 @@ class DataConfig:
     })
     seed: int = 42
     manifest_format: str = field(default="datasets", metadata={ "help": "alternative: jsonl" })
-    split_size: int = 0.1
+    split_size: float = 0.1
 
 @dataclass
 class FSDPConfig:
