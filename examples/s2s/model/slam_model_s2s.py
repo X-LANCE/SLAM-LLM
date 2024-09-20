@@ -48,7 +48,7 @@ def model_factory(train_config, model_config, **kwargs):
     if ckpt_path is not None:
         logger.info("loading other parts from: {}".format(ckpt_path))
         ckpt_dict = torch.load(ckpt_path, map_location="cpu")
-        model.load_state_dict(ckpt_dict, strict=False)
+        model.load_state_dict(ckpt_dict, strict=False)              # TODO: 这里需要测试存储的 llm 有没有全部加载进来
 
     print_model_size(
         model,
@@ -82,6 +82,9 @@ class slam_model_s2s(slam_model):
             model_config,
             **kwargs,
         )
+
+        # TODO: 增加逻辑，修改 llm 的 lm_head 和 embedding 的词表大小，并重新打印模型大小
+
 
     def concat_whisper_feat(self, audio_feature, input_ids, T, task="A1A2"):
         btz = len(T)  # 获取批量大小
