@@ -10,25 +10,25 @@ from slam_llm.utils.snac_utils import layershift
 import librosa
 
 # these tokens setting is from Mini-Omni
-text_vocabsize = 151936
-text_specialtokens = 64
-audio_vocabsize = 4096
-audio_specialtokens = 64
+# text_vocabsize = 151936
+# text_specialtokens = 64
+# audio_vocabsize = 4096
+# audio_specialtokens = 64
 
-padded_text_vocabsize = text_vocabsize + text_specialtokens
-padded_audio_vocabsize = audio_vocabsize + audio_specialtokens
+# padded_text_vocabsize = text_vocabsize + text_specialtokens
+# padded_audio_vocabsize = audio_vocabsize + audio_specialtokens
 
-_eot = text_vocabsize
-_pad_t = text_vocabsize + 1
-_input_t = text_vocabsize + 2
-_answer_t = text_vocabsize + 3
-_asr = text_vocabsize + 4
+# _eot = text_vocabsize
+# _pad_t = text_vocabsize + 1
+# _input_t = text_vocabsize + 2
+# _answer_t = text_vocabsize + 3
+# _asr = text_vocabsize + 4
 
-_eoa = audio_vocabsize
-_pad_a = audio_vocabsize + 1
-_input_a = audio_vocabsize + 2
-_answer_a = audio_vocabsize + 3
-_split = audio_vocabsize + 4
+# _eoa = audio_vocabsize
+# _pad_a = audio_vocabsize + 1
+# _input_a = audio_vocabsize + 2
+# _answer_a = audio_vocabsize + 3
+# _split = audio_vocabsize + 4
 
 
 class SpeechDatasetJsonl(torch.utils.data.Dataset):
@@ -58,8 +58,29 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         assert self.input_type in ["raw", "mel"], "input_type must be one of [raw, mel]" 
         assert self.manifest_format in ["datasets", "jsonl"], "manifest_format must be one of [datasets, jsonl]"
 
-        self.special_token_a = _answer_a
-        self.special_token_t = _answer_t
+        # vocab config
+        self.vocab_config = dataset_config.get("vocab_config", None)
+        self.text_vocabsize = self.vocab_config.text_vocabsize
+        self.text_specialtokens = self.vocab_config.text_specialtokens
+        self.audio_vocabsize = self.vocab_config.audio_vocabsize
+        self.audio_specialtokens = self.vocab_config.audio_specialtokens
+        self.padded_text_vocabsize = self.vocab_config.padded_text_vocabsize
+        self.padded_audio_vocabsize = self.vocab_config.padded_audio_vocabsize
+        self.total_vocabsize = self.vocab_config.total_vocabsize
+        self._eot = self.vocab_config.eot
+        self._pad_t = self.vocab_config.pad_t
+        self._input_t = self.vocab_config.input_t
+        self._answer_t = self.vocab_config.answer_t
+        self._asr = self.vocab_config.asr
+        self._eoa = self.vocab_config.eoa
+        self._pad_a = self.vocab_config.pad_a
+        self._input_a = self.vocab_config.input_a
+        self._answer_a = self.vocab_config.answer_a
+        self._split = self.vocab_config.split
+
+        self.special_token_a = self._answer_a
+        self.special_token_t = self._answer_t
+    
 
         self.data_list = []
 
@@ -126,11 +147,11 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         input_ids = []
         for i in range(7):
             input_ids_item = []
-            input_ids_item.append(layershift(_input_a, i))
-            input_ids_item += [layershift(_pad_a, i)] * length
-            input_ids_item += [(layershift(_eoa, i)), layershift(special_token_a, i)]
+            input_ids_item.append(layershift(self._input_a, i))
+            input_ids_item += [layershift(self._pad_a, i)] * length
+            input_ids_item += [(layershift(self._eoa, i)), layershift(special_token_a, i)]
             input_ids.append(torch.tensor(input_ids_item).unsqueeze(0))
-        input_id_T = torch.tensor([_input_t] + [_pad_t] * length + [_eot, special_token_t])
+        input_id_T = torch.tensor([self._input_t] + [self._pad_t] * length + [self._eot, special_token_t])
         input_ids.append(input_id_T.unsqueeze(0))
         return input_ids
 
@@ -138,10 +159,10 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         answer_ids = []
         for i in range(7):
             answer_ids_item = []
-            answer_ids_item += [layershift(_pad_a, i)] * length
-            answer_ids_item += [(layershift(_eoa, i))]
+            answer_ids_item += [layershift(self._pad_a, i)] * length
+            answer_ids_item += [(layershift(self._eoa, i))]
             answer_ids.append(torch.tensor(answer_ids_item).unsqueeze(0))
-        answer_id_T = torch.tensor([_pad_t] * length + [_eot])
+        answer_id_T = torch.tensor([self._pad_t] * length + [self._eot])
         answer_ids.append(answer_id_T.unsqueeze(0))
         return answer_ids
     
@@ -201,7 +222,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
 
         answer_text = self.answer_template.format(target_text)
         answer_text_ids = self.tokenizer.encode(answer_text)  # [prompt,answer]
-        answer_text_ids.append(_eot) # [prompt,answer,eos]
+        answer_text_ids.append(self._eot) # [prompt,answer,eos]
         answer_text_ids = torch.tensor(answer_text_ids, dtype=torch.int64)
         answer_ids = self.get_answer_ids(target_audio_length)   # NOTE: suppose audio length is always longer than text length
         answer_ids[7] = torch.cat((answer_text_ids.unsqueeze(0), answer_ids[7][:,len(answer_text_ids):]),dim=1)

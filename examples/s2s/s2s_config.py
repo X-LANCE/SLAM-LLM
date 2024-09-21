@@ -1,5 +1,45 @@
 from dataclasses import dataclass, field
 from typing import Optional, List
+
+@dataclass
+class VocabConfig:
+    text_vocabsize: int = 151936
+    text_specialtokens: int = 64
+    audio_vocabsize: int = 4096
+    audio_specialtokens: int = 64
+    total_vocabsize: int = 181120
+
+    padded_text_vocabsize: int = field(init=False)
+    padded_audio_vocabsize: int = field(init=False)
+
+    eot: int = field(init=False)   # end of text token
+    pad_t: int = field(init=False) # padding text token
+    input_t: int = field(init=False) # input text token
+    answer_t: int = field(init=False) # answer text token
+    asr: int = field(init=False)   # ASR token
+
+    eoa: int = field(init=False)   # end of audio token
+    pad_a: int = field(init=False) # padding audio token
+    input_a: int = field(init=False) # input audio token
+    answer_a: int = field(init=False) # answer audio token
+    split: int = field(init=False) # split token
+
+    def __post_init__(self):
+        self.padded_text_vocabsize = self.text_vocabsize + self.text_specialtokens
+        self.padded_audio_vocabsize = self.audio_vocabsize + self.audio_specialtokens
+
+        self.eot = self.text_vocabsize
+        self.pad_t = self.text_vocabsize + 1
+        self.input_t = self.text_vocabsize + 2
+        self.answer_t = self.text_vocabsize + 3
+        self.asr = self.text_vocabsize + 4
+
+        self.eoa = self.audio_vocabsize
+        self.pad_a = self.audio_vocabsize + 1
+        self.input_a = self.audio_vocabsize + 2
+        self.answer_a = self.audio_vocabsize + 3
+        self.split = self.audio_vocabsize + 4
+
 @dataclass
 class ModelConfig:
     file: str = "examples/s2s/model/slam_model_s2s.py:model_factory"
@@ -20,6 +60,7 @@ class ModelConfig:
     encoder_type: str = field(default="finetune", metadata={
         "help": "whether model is only pretrained or finetuned, used for models such as hubert"
     })
+    vocab_config: VocabConfig = field(default_factory=VocabConfig)
 
 @dataclass
 class PeftConfig:
@@ -79,6 +120,8 @@ class TrainConfig:
     })
     freeze_encoder:bool = False
 
+
+
 @dataclass
 class DataConfig:
     dataset: str = "speech_dataset_s2s"
@@ -105,6 +148,8 @@ class DataConfig:
     seed: int = 42
     manifest_format: str = field(default="datasets", metadata={ "help": "alternative: jsonl" })
     split_size: float = 0.1
+
+    vocab_config: VocabConfig = field(default_factory=VocabConfig)
 
 @dataclass
 class FSDPConfig:

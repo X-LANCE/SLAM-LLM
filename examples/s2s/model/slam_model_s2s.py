@@ -30,8 +30,6 @@ def model_factory(train_config, model_config, **kwargs):
         train_config, model_config, **kwargs
     )
 
-    # TODO: add decoder projector and decoder
-
     model = slam_model_s2s(
         encoder,
         llm,
@@ -83,13 +81,15 @@ class slam_model_s2s(slam_model):
             **kwargs,
         )
 
-        # TODO: 增加逻辑，修改 llm 的 lm_head 和 embedding 的词表大小，并重新打印模型大小
+        # resize llm embedding layer
+        if self.model_config.vocab_config.total_vocabsize != self.llm.lm_head.weight.size(0):
+            self.llm.resize_token_embeddings(self.model_config.vocab_config.total_vocabsize)
 
 
-    def concat_whisper_feat(self, audio_feature, input_ids, T, task="A1A2"):
-        btz = len(T)  # 获取批量大小
+    def concat_whisper_feat(self, audio_feature, input_ids, T, task = None):
+        btz = len(T)
         for j in range(btz):
-            if task[j] != "T1T2" and task[j] != "T1A2":
+            if task is None or (task[j] != "T1T2" and task[j] != "T1A2"):
                 for i in range(7):
                     input_ids[j, i, 1 : T[j] + 1, :] = audio_feature[j][: T[j]].clone()
             else:
@@ -111,7 +111,6 @@ class slam_model_s2s(slam_model):
                 ):
         audio_mel = kwargs.get("audio_mel", None)
         audio_mel_post_mask = kwargs.get("audio_mel_post_mask", None) # 2x downsample for whisper
-        audio_length = kwargs.get("audio_length", None)
 
         audio = kwargs.get("audio", None)
         audio_mask = kwargs.get("audio_mask", None)
@@ -157,22 +156,24 @@ class slam_model_s2s(slam_model):
                 else:
                     inputs_embeds = self.llm.model.model.model.embed_tokens(input_ids)
 
-            if audio_mel is not None or audio is not None:
-                inputs_embeds = self.concat_whisper_feat(encoder_outs, inputs_embeds, audio_length)
-
-            inputs_embeds = torch.mean(inputs_embeds, dim=1)  # [btz, seq_length, emb_dim]
+            # if audio_mel is not None or audio is not None:
+            #     inputs_embeds = self.concat_whisper_feat(encoder_outs, inputs_embeds, audio_length) # embed the audio feature into the input_embeds
 
         if modality_mask is not None:
-            modality_mask_start_indices = (modality_mask == True).float().argmax(dim=1)
-            modality_lengths = torch.clamp(modality_mask.sum(dim=1), max=encoder_outs.shape[1]).tolist()
+            modality_mask = modality_mask.unsqueeze(1).repeat(1, 7, 1)  # [btz, 8, seq_length]
+            modality_mask_start_indices = (modality_mask == True).float().argmax(dim=2)
+            modality_lengths = torch.clamp(modality_mask.sum(dim=2), max=encoder_outs.shape[1]).tolist()
 
             encoder_outs_pad = torch.zeros_like(inputs_embeds)
             for i in range(encoder_outs.shape[0]):
-                encoder_outs_pad[
-                    i, modality_mask_start_indices[i]:modality_mask_start_indices[i]+modality_lengths[i]
-                ] = encoder_outs[i][:modality_lengths[i]]
+                for j in range(7):
+                    start_idx = modality_mask_start_indices[i, j].item()
+                    length = modality_lengths[i][j]
+                    encoder_outs_pad[i, j, start_idx:start_idx+length] = encoder_outs[i, :length]
             
-            inputs_embeds = encoder_outs_pad + inputs_embeds * (~modality_mask[:, :, None])
+            inputs_embeds[:, :7, :, :] = encoder_outs_pad[:, :7, :, :] + inputs_embeds[:, :7, :, :] * (~modality_mask[:, :, :, None])
+        
+        inputs_embeds = torch.mean(inputs_embeds, dim=1)  # [btz, seq_length, emb_dim], average over the 8 layers
 
         if kwargs.get("inference_mode", False):
             return inputs_embeds, attention_mask
