@@ -6,7 +6,7 @@ import numpy as np
 import torch
 import whisper
 from slam_llm.utils.compute_utils import calculate_output_length_1d
-from slam_llm.utils.snac_utils import layershift
+from slam_llm.utils.snac_utils import layershift, get_snac_answer_token
 import librosa
 
 # these tokens setting is from Mini-Omni
@@ -122,8 +122,8 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
             audio_raw_sr = audio_path['sampling_rate']
             audio_raw = librosa.resample(audio_raw, orig_sr=audio_raw_sr, target_sr=16000).astype(np.float32)
         elif self.manifest_format == "datasets" and isinstance(audio_path, str):
-            audio_length = len(audio_path.split()) // 8
-            return audio_path, audio_length
+            audio_res, audio_length = get_snac_answer_token(audio_path)
+            return audio_res, audio_length
         else:
             audio_raw = whisper.load_audio(audio_path)
             
@@ -160,9 +160,10 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         for i in range(7):
             answer_ids_item = []
             answer_ids_item += [layershift(self._pad_a, i)] * length
-            answer_ids_item += [(layershift(self._eoa, i))]
+            # answer_ids_item += [(layershift(self._eoa, i))]
             answer_ids.append(torch.tensor(answer_ids_item).unsqueeze(0))
-        answer_id_T = torch.tensor([self._pad_t] * length + [self._eot])
+        # answer_id_T = torch.tensor([self._pad_t] * length + [self._eot])
+        answer_id_T = torch.tensor([self._pad_t] * length)
         answer_ids.append(answer_id_T.unsqueeze(0))
         return answer_ids
     
@@ -184,7 +185,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
             key = data_dict.get("key", None)
 
         audio_mel, audio_length = self.extract_audio_feature(source_audio)
-        target_audio_mel, target_audio_length = self.extract_audio_feature(target_audio)
+        target_audio, target_audio_length = self.extract_audio_feature(target_audio)
         if self.fix_length_audio > 0:
             audio_length = self.fix_length_audio
             target_audio_length = self.fix_length_audio
@@ -212,7 +213,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
                 "attention_mask": example_mask,
                 "audio_mel": audio_mel,
                 "audio_length": audio_length,
-                "target_audio_mel": target_audio_mel,
+                "target_audio": target_audio,
                 "target_audio_length": target_audio_length,
                 "key": key,
                 "source_text": source_text,
@@ -225,21 +226,25 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         answer_text_ids.append(self._eot) # [prompt,answer,eos]
         answer_text_ids = torch.tensor(answer_text_ids, dtype=torch.int64)
         answer_ids = self.get_answer_ids(target_audio_length)   # NOTE: suppose audio length is always longer than text length
-        answer_ids[7] = torch.cat((answer_text_ids.unsqueeze(0), answer_ids[7][:,len(answer_text_ids):]),dim=1)
-
-        # TODO: add snac answer
+        answer_ids[7] = torch.cat((answer_text_ids.unsqueeze(0), answer_ids[7][:,len(answer_text_ids):]),dim=1)     # [answer_audio,eos]
+        text_padding_length = target_audio_length - len(answer_text_ids)
+        
+        for i in range(7):
+            answer_ids[i] = torch.cat((target_audio[i].unsqueeze(0), answer_ids[i][:,target_audio_length:]), dim=1)
 
         for i in range(8):
-            example_ids[i] = torch.cat((example_ids[i], answer_ids[i]), dim=1)
+            example_ids[i] = torch.cat((example_ids[i], answer_ids[i]), dim=1)      # FIXME: 这里有 bug
 
-        labels_ids = copy.deepcopy(example_ids[7][0])  # [audio,prompt,answer,eos]
-        labels_ids[:audio_length + prompt_length + 3] = -1  # [-1,-1,answer,eos]; NOTE: here 3 include <bos> <eos> <ans_t>
-        example_mask = example_ids[0][0].ge(-1)  # [True,True,True,True]
+        example_ids = torch.stack(example_ids).squeeze()
+        labels_ids = copy.deepcopy(example_ids)  # [audio,prompt,answer,eos]
+        labels_ids[:,:audio_length + prompt_length + 3] = -1  # [-1,-1,answer,eos]; NOTE: here 3 include <bos> <eos> <ans_t>
+        labels_ids[7,-text_padding_length:] = -1   # [-1,-1,answer_text,eos,-1]; NOTE: here padding if for text layer cause it's shorter than audio layer
+        
+        example_mask = example_ids[0].ge(-1)  # [True,True,True,True]
 
         label_mask = labels_ids.ge(0)  # [False,False,True,True]
         # example_ids[~example_mask] = 0  # [audio,prompt,answer,eos]
         labels_ids[~label_mask] = self.IGNORE_INDEX  # [-100,-100,answer,eos]
-        example_ids = torch.stack(example_ids).squeeze()
 
         return {
             "input_ids": example_ids,
@@ -247,7 +252,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
             "attention_mask": example_mask,
             "audio_mel": audio_mel,
             "audio_length": audio_length,
-            "target_audio_mel": target_audio_mel,
+            "target_audio": target_audio,
             "target_audio_length": target_audio_length,
             "key": key,
             "source_text": source_text,
@@ -287,7 +292,12 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         elif isinstance(sequence, torch.Tensor):
             if sequence.ndimension() == 2:
                 if padding_length >= 0:
-                    sequence = torch.nn.functional.pad(sequence, (0, padding_length))
+                    # sequence = torch.nn.functional.pad(sequence, (0, padding_length)) FIXME: this is wrong before in SLAM-LLM
+                    padding_tensor = torch.full((sequence.size(0), padding_length), padding_idx, dtype=sequence.dtype)
+                    if padding_side == "left":
+                        sequence = torch.cat((padding_tensor, sequence), dim=1)
+                    else:
+                        sequence = torch.cat((sequence, padding_tensor), dim=1)
                 else:
                     sequence = sequence[:, :padding_length]
             else:

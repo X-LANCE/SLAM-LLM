@@ -61,7 +61,7 @@ hydra.run.dir=$output_dir \
 
 # -m debugpy --listen 5678 --wait-for-client
 if [[ $CUDA_VISIBLE_DEVICES != *","* ]]; then
-    python -m debugpy --listen 5678 --wait-for-client $code_dir/finetune_s2s.py \
+    python $code_dir/finetune_s2s.py \
         --config-path "conf" \
         --config-name "prompt.yaml" \
         $hydra_args
@@ -79,4 +79,4 @@ else
         $hydra_args
 fi
 
-# bash /home/v-wenxichen/SLAM-LLM/examples/s2s/scripts/finetune_cwx.sh
+bash /home/v-wenxichen/SLAM-LLM/examples/s2s/scripts/finetune_cwx.sh

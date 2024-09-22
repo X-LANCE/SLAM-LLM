@@ -55,6 +55,28 @@ def reconscruct_snac(output_list):
     return output
 
 
+def get_snac_answer_token(snac_tokens_str):
+    snac_tokens = snac_tokens_str.split()
+    audio_length = len(snac_tokens) // 8 + 7    # here the additional 7 is due to parallel generation
+    snac_config = SnacConfig()    
+    eoa = snac_config.end_of_audio
+    padding_token = snac_config.audio_vocab_size
+    result = []
+
+    for layer in range(1, 8):  # 从第1层到第7层
+        layer_tokens = []
+        layer_tokens.extend([eoa] * layer)
+        layer_tokens.extend([snac_tokens[i] for i in range(len(snac_tokens)) if i % 8 == layer])
+        if layer < 7:
+            layer_tokens.append(padding_token)
+        if layer < 6:
+            layer_tokens.extend([eoa] * (6 - layer))
+        result.append(torch.tensor([int(token) for token in layer_tokens]))
+        
+    result_tensor = torch.stack(result)
+    return result_tensor, audio_length
+
+
 def reconstruct_tensors(flattened_output, device=None):
     """Reconstructs the list of tensors from the flattened output."""
 

@@ -1,6 +1,7 @@
 import torch
 import os
 import logging
+import torch.nn.functional as F
 from slam_llm.models.slam_model import (
     slam_model,
     setup_tokenizer,
@@ -178,14 +179,29 @@ class slam_model_s2s(slam_model):
         if kwargs.get("inference_mode", False):
             return inputs_embeds, attention_mask
 
-        model_outputs = self.llm(inputs_embeds=inputs_embeds, attention_mask=attention_mask, labels=labels)
-        acc = -1
+        text_labels = labels[:, 7] if labels is not None else None
+        audio_labels = labels[:, :7] if labels is not None else None
+        model_outputs = self.llm(inputs_embeds=inputs_embeds, attention_mask=attention_mask, labels=text_labels)    # here we use the text token layer as the target label
+
+        # parrallel generation TODO: 需要重写八层的loss，现在只有最后一层的loss
+        x_ori = model_outputs.logits
+        text_vocab_size = self.model_config.vocab_config.padded_text_vocabsize
+        audio_vocab_size = self.model_config.vocab_config.padded_audio_vocabsize
+        xt = x_ori[..., :text_vocab_size]
+        xa = []
+        for i in range(7):
+            xa.append(x_ori[..., text_vocab_size + audio_vocab_size * i : text_vocab_size + audio_vocab_size * (i + 1)])
+
+        total_loss = self.compute_parallel_loss(xt, text_labels, xa, audio_labels)
+        model_outputs.loss = total_loss
+
+        text_acc = -1
         if self.metric:
             with torch.no_grad():
-                preds = torch.argmax(model_outputs.logits, -1)
-                acc = compute_accuracy(preds.detach()[:, :-1], labels.detach()[:, 1:], ignore_label=-100)
+                preds = torch.argmax(xt, -1)
+                text_acc = compute_accuracy(preds.detach()[:, :-1], text_labels.detach()[:, 1:], ignore_label=-100)
 
-        return model_outputs, acc
+        return model_outputs, text_acc
 
 
     @torch.no_grad()
@@ -264,3 +280,27 @@ class slam_model_s2s(slam_model):
         )
 
         return model_outputs
+
+
+    def compute_parallel_loss(self, xt, text_labels, xa, audio_labels):
+        """
+        Compute the parallel loss for text and audio layers.
+        """
+        text_vocab_size = self.model_config.vocab_config.padded_text_vocabsize
+        audio_vocab_size = self.model_config.vocab_config.padded_audio_vocabsize
+        
+        if text_labels is not None:
+            # text_loss = F.cross_entropy(xt.reshape(-1, text_vocab_size), text_labels.reshape(-1), ignore_index=-100)
+            text_loss = F.cross_entropy(xt[:, :-1, :].reshape(-1, text_vocab_size), text_labels[:, 1:].reshape(-1), ignore_index=-100)
+        else:
+            text_loss = 0
+
+        audio_loss = 0
+        for i in range(7):
+            if audio_labels[:,i] is not None:
+                # audio_loss += F.cross_entropy(xa[i].reshape(-1, audio_vocab_size), audio_labels[:,i].reshape(-1), ignore_index=-100)
+                audio_loss += F.cross_entropy(xa[i][:, :-1, :].reshape(-1, audio_vocab_size), audio_labels[:, i, 1:].reshape(-1), ignore_index=-100)
+
+        total_loss = (text_loss + audio_loss) / 8
+
+        return total_loss
