@@ -1,10 +1,10 @@
 # SLAM-AAC
 
-## Introduction
 SLAM-AAC is a LLM-based model for Automated Audio Captioning (AAC) task. Inspired by techniques in machine translation and ASR, the model enhances audio captioning by incorporating paraphrasing augmentation and a plug-and-play CLAP-Refine strategy. For more details, please refer to the [paper]().
 
 ## Model Architecture
 SLAM-AAC utilizes EAT as the audio encoder and Vicuna-7B as the LLM decoder. During training, only the Linear Projector and LoRA modules are trainable. For inference, multiple candidates are generated using different beam sizes, which are then refined using the CLAP-Refine strategy.
+
 ![](./docs/image.png)
 
 ## Performance and checkpoints
