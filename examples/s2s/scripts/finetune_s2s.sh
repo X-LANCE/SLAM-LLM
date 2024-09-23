@@ -85,4 +85,4 @@ else
 fi
 
 # ++train_config.use_fp16=true \
-# bash /home/v-wenxichen/SLAM-LLM/examples/s2s/scripts/finetune_cwx.sh
+# bash /home/v-wenxichen/SLAM-LLM/examples/s2s/scripts/finetune_s2s.sh

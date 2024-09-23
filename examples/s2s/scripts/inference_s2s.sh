@@ -49,4 +49,4 @@ python -m debugpy --listen 5678 --wait-for-client $code_dir/inference_s2s_batch.
         ++decode_log=$decode_log \
         ++ckpt_path=$ckpt_path/model.pt \
 
-# bash /home/v-wenxichen/SLAM-LLM/examples/s2s/scripts/inference_cwx.sh
+# bash /home/v-wenxichen/SLAM-LLM/examples/s2s/scripts/inference_s2s.sh
