@@ -1,4 +1,4 @@
-# DRCap Zeroshot audio captioning
+# DRCap_Zeroshot_Audio_Captioning
 
 ## Introduction
 DRCap is a data-efficient and flexible audio captioning system requiring text-only data for training and can quickly adapt to new domains without additional fine-tuning. 
