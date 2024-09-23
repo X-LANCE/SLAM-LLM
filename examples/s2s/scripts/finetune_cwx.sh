@@ -3,14 +3,8 @@
 export PYTHONPATH=/root/fairseq:$PYTHONPATH
 export CUDA_VISIBLE_DEVICES=0
 export TOKENIZERS_PARALLELISM=false
-# export CUDA_LAUNCH_BLOCKING=1
 export OMP_NUM_THREADS=1
 export LD_LIBRARY_PATH=/home/v-wenxichen/anaconda3/envs/slam/lib:$LD_LIBRARY_PATH
-
-# debug setting for multiple gpus
-# export NCCL_DEBUG=INFO
-# export NCCL_DEBUG_SUBSYS=ALL
-# export TORCH_DISTRIBUTED_DEBUG=INFO
 
 run_dir=/home/v-wenxichen/SLAM-LLM
 cd $run_dir
@@ -47,7 +41,7 @@ hydra.run.dir=$output_dir \
 ++dataset_config.mel_size=80 \
 ++dataset_config.seed=42 \
 ++dataset_config.manifest_format=datasets \
-++dataset_config.split_size=0.1 \
+++dataset_config.split_size=0.01 \
 ++train_config.model_name=s2s \
 ++train_config.num_epochs=5 \
 ++train_config.freeze_encoder=true \
@@ -56,7 +50,7 @@ hydra.run.dir=$output_dir \
 ++train_config.warmup_steps=1000 \
 ++train_config.total_steps=100000 \
 ++train_config.lr=1e-4 \
-++train_config.validation_interval=10000 \
+++train_config.validation_interval=5000 \
 ++train_config.batch_size_training=4 \
 ++train_config.val_batch_size=4 \
 ++train_config.num_workers_dataloader=2 \
