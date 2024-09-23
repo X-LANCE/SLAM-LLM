@@ -4,7 +4,7 @@ from slam_llm.utils.deepspeed_utils import deepspeed_main_wrapper
 import logging
 from dataclasses import dataclass, field
 from omegaconf import DictConfig, ListConfig, OmegaConf
-from asr_config import ModelConfig, TrainConfig, DataConfig, LogConfig
+from s2s_config import ModelConfig, TrainConfig, DataConfig, LogConfig
 
 
 @dataclass
