@@ -17,12 +17,14 @@ llm_path="Qwen/Qwen2-0.5B"
 train_data_path="gpt-omni/VoiceAssistant-400K"
 val_data_path="gpt-omni/VoiceAssistant-400K"
 
+exp_name="s2s_train_test"
+
 home_dir=/home/v-wenxichen/exp/s2s
 # output_dir=$home_dir/$(TZ='Asia/Shanghai' date +"%Y_%m_%d")/$(TZ='Asia/Shanghai' date +"%H_%M_%S")
-output_dir=$home_dir/$(TZ='Asia/Shanghai' date +"%Y_%m_%d")/s2s_train_test
+output_dir=$home_dir/$(TZ='Asia/Shanghai' date +"%Y_%m_%d")/$exp_name
 
 use_wandb=true
-wandb_exp_name="s2s_train_test"
+wandb_exp_name=$exp_name
 
 hydra_args="
 hydra.run.dir=$output_dir \
@@ -55,9 +57,6 @@ hydra.run.dir=$output_dir \
 ++train_config.val_batch_size=4 \
 ++train_config.num_workers_dataloader=2 \
 ++train_config.output_dir=$output_dir \
-++train_config.use_fp16=true \
-++train_config.enable_ddp=true \
-++train_config.enable_fsdp=false \
 ++metric=acc \
 ++log_config.use_wandb=$use_wandb \
 ++log_config.wandb_entity_name=wxc12 \
@@ -80,7 +79,10 @@ else
         $code_dir/finetune_s2s.py \
         --config-path "conf" \
         --config-name "prompt.yaml" \
+        ++train_config.enable_ddp=true \
+        ++train_config.enable_fsdp=false \
         $hydra_args
 fi
 
+# ++train_config.use_fp16=true \
 # bash /home/v-wenxichen/SLAM-LLM/examples/s2s/scripts/finetune_cwx.sh

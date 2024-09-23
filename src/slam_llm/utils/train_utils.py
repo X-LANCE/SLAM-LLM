@@ -234,26 +234,40 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                                     )
 
                         else:
-                            if not train_config.use_peft and getattr(StateDictType, fsdp_config.checkpoint_type) == StateDictType.FULL_STATE_DICT:
-                                save_model_checkpoint(
-                                    model, optimizer, rank, train_config, epoch=epoch
-                                )
-                            elif not train_config.use_peft and getattr(StateDictType, fsdp_config.checkpoint_type) == StateDictType.SHARDED_STATE_DICT:
-                                logger.info(" Saving the FSDP model checkpoints using SHARDED_STATE_DICT")
-                                logger.info("=====================================================")
-
-                                save_model_and_optimizer_sharded(model, rank, train_config)
-                                if train_config.save_optimizer:
-                                    save_model_and_optimizer_sharded(model, rank, train_config, optim=optimizer)
-                                    logger.info(" Saving the FSDP model checkpoints and optimizer using SHARDED_STATE_DICT")
+                            if train_config.enable_fsdp:
+                                if getattr(StateDictType, fsdp_config.checkpoint_type) == StateDictType.FULL_STATE_DICT:
+                                    save_model_checkpoint(
+                                        model, optimizer, rank, train_config, epoch=epoch
+                                    )
+                                elif getattr(StateDictType, fsdp_config.checkpoint_type) == StateDictType.SHARDED_STATE_DICT:
+                                    logger.info(" Saving the FSDP model checkpoints using SHARDED_STATE_DICT")
                                     logger.info("=====================================================")
 
-                            if not train_config.use_peft and  train_config.save_optimizer:
-                                save_optimizer_checkpoint(
-                                    model, optimizer, rank, train_config, epoch=epoch
-                                )
-                                logger.info(" Saving the FSDP model checkpoints and optimizer using FULL_STATE_DICT")
-                                logger.info("=====================================================")
+                                    save_model_and_optimizer_sharded(model, rank, train_config)
+                                    if train_config.save_optimizer:
+                                        save_model_and_optimizer_sharded(model, rank, train_config, optim=optimizer)
+                                        logger.info(" Saving the FSDP model checkpoints and optimizer using SHARDED_STATE_DICT")
+                                        logger.info("=====================================================")
+
+                                if train_config.save_optimizer:
+                                    save_optimizer_checkpoint(
+                                        model, optimizer, rank, train_config, epoch=epoch
+                                    )
+                                    logger.info(" Saving the FSDP model checkpoints and optimizer using FULL_STATE_DICT")
+                                    logger.info("=====================================================")
+
+                            elif train_config.enable_ddp:
+                                if rank==0:
+                                    save_model_checkpoint_peft(
+                                            model, optimizer, rank, train_config, checkpoint_name=checkpoint_name
+                                        )
+                                dist.barrier()
+                                    
+                            else:
+                                save_model_checkpoint_peft(
+                                        model, optimizer, rank, train_config, checkpoint_name=checkpoint_name
+                                    )
+                                
                         if train_config.enable_fsdp or train_config.enable_ddp:
                             dist.barrier()
                     checkpoint_end_time = time.perf_counter() - checkpoint_start_time
