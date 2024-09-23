@@ -166,9 +166,9 @@ class FSDPConfig:
 @dataclass
 class LogConfig:
     use_wandb: bool = False
-    wandb_dir: str = "/root/test_wandb"
+    wandb_dir: str = "/home/v-wenxichen/wandb_log"
     wandb_entity_name: str = "project_name"
     wandb_project_name: str = "project_name"
     wandb_exp_name: str = "exp_name"
     log_file: str = "/home/v-wenxichen/exp/test/test.log"
-    log_interval: int = 5
+    log_interval: int = 10

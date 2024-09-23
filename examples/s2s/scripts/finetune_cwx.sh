@@ -23,7 +23,12 @@ llm_path="Qwen/Qwen2-0.5B"
 train_data_path="gpt-omni/VoiceAssistant-400K"
 val_data_path="gpt-omni/VoiceAssistant-400K"
 
-output_dir=/home/v-wenxichen/exp/s2s/$(TZ='Asia/Shanghai' date +"%Y_%m_%d")/$(TZ='Asia/Shanghai' date +"%H_%M_%S")
+home_dir=/home/v-wenxichen/exp/s2s
+# output_dir=$home_dir/$(TZ='Asia/Shanghai' date +"%Y_%m_%d")/$(TZ='Asia/Shanghai' date +"%H_%M_%S")
+output_dir=$home_dir/$(TZ='Asia/Shanghai' date +"%Y_%m_%d")/s2s_train_test
+
+use_wandb=true
+wandb_exp_name="s2s_train_test"
 
 hydra_args="
 hydra.run.dir=$output_dir \
@@ -44,19 +49,24 @@ hydra.run.dir=$output_dir \
 ++dataset_config.manifest_format=datasets \
 ++dataset_config.split_size=0.1 \
 ++train_config.model_name=s2s \
-++train_config.num_epochs=3 \
+++train_config.num_epochs=5 \
 ++train_config.freeze_encoder=true \
 ++train_config.freeze_llm=false \
 ++train_config.batching_strategy=custom \
 ++train_config.warmup_steps=1000 \
 ++train_config.total_steps=100000 \
 ++train_config.lr=1e-4 \
-++train_config.validation_interval=1000 \
+++train_config.validation_interval=10000 \
 ++train_config.batch_size_training=4 \
-++train_config.val_batch_size=1 \
+++train_config.val_batch_size=4 \
 ++train_config.num_workers_dataloader=2 \
 ++train_config.output_dir=$output_dir \
 ++metric=acc \
+++log_config.use_wandb=$use_wandb \
+++log_config.wandb_entity_name=wxc12 \
+++log_config.wandb_project_name=SLAM-Omni \
+++log_config.wandb_exp_name=$wandb_exp_name \
+++log_config.log_file=$output_dir/exp.log \
 "
 
 # -m debugpy --listen 5678 --wait-for-client
@@ -79,4 +89,4 @@ else
         $hydra_args
 fi
 
-bash /home/v-wenxichen/SLAM-LLM/examples/s2s/scripts/finetune_cwx.sh
+# bash /home/v-wenxichen/SLAM-LLM/examples/s2s/scripts/finetune_cwx.sh

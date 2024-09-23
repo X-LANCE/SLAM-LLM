@@ -225,20 +225,27 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         answer_text_ids = self.tokenizer.encode(answer_text)  # [prompt,answer]
         answer_text_ids.append(self._eot) # [prompt,answer,eos]
         answer_text_ids = torch.tensor(answer_text_ids, dtype=torch.int64)
-        answer_ids = self.get_answer_ids(target_audio_length)   # NOTE: suppose audio length is always longer than text length
-        answer_ids[7] = torch.cat((answer_text_ids.unsqueeze(0), answer_ids[7][:,len(answer_text_ids):]),dim=1)     # [answer_audio,eos]
+
+        answer_length = max(len(answer_text_ids), target_audio_length)
+        answer_ids = self.get_answer_ids(answer_length)                 # NOTE: somtimes answer_text_ids is longer than target_audio_length 
+        answer_ids[7] = torch.cat((answer_text_ids.unsqueeze(0), answer_ids[7][:,len(answer_text_ids):]),dim=1)     # [answer_text,eos]
         text_padding_length = target_audio_length - len(answer_text_ids)
         
         for i in range(7):
             answer_ids[i] = torch.cat((target_audio[i].unsqueeze(0), answer_ids[i][:,target_audio_length:]), dim=1)
 
         for i in range(8):
-            example_ids[i] = torch.cat((example_ids[i], answer_ids[i]), dim=1)      # FIXME: 这里有 bug
+            example_ids[i] = torch.cat((example_ids[i], answer_ids[i]), dim=1)      
 
         example_ids = torch.stack(example_ids).squeeze()
         labels_ids = copy.deepcopy(example_ids)  # [audio,prompt,answer,eos]
         labels_ids[:,:audio_length + prompt_length + 3] = -1  # [-1,-1,answer,eos]; NOTE: here 3 include <bos> <eos> <ans_t>
-        labels_ids[7,-text_padding_length:] = -1   # [-1,-1,answer_text,eos,-1]; NOTE: here padding if for text layer cause it's shorter than audio layer
+
+        if text_padding_length > 0:
+            labels_ids[7,-text_padding_length:] = -1   # [-1,-1,answer_text,eos,-1]
+        else:
+            audio_padding_length = -text_padding_length
+            labels_ids[:7,-audio_padding_length:] = -1  # [-1,-1,answer_text,eos,-1]
         
         example_mask = example_ids[0].ge(-1)  # [True,True,True,True]
 
