@@ -371,7 +371,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
 
         if self.inference_mode:
             keys = [s['key'] for s in samples]
-            targets = [s['target'] for s in samples]
+            target_text = [s['target_text'] for s in samples]
 
             return {
                 "input_ids": input_ids,
@@ -383,7 +383,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
                 "audio_mel_post_mask": audio_mel_post_mask if self.input_type == "mel" else None,
                 "modality_mask": modality_mask,
                 "keys": keys,
-                "targets": targets
+                "target_texts": target_text,
             }
 
         labels = torch.stack([

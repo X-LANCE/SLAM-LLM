@@ -14,7 +14,7 @@ speech_encoder_path="small"   # whisper small
 llm_path="Qwen/Qwen2-0.5B"
 
 output_dir=/home/v-wenxichen/exp/s2s/2024_09_23/s2s_train_test
-ckpt_path=$output_dir/asr_epoch_1_step_1000
+ckpt_path=$output_dir/s2s_epoch_1_step_5000
 split=test
 val_data_path=/home/v-wenxichen/data/s2s/test/${split}.jsonl
 decode_log=$ckpt_path/decode_${split}.log
@@ -37,6 +37,7 @@ python -m debugpy --listen 5678 --wait-for-client $code_dir/inference_s2s_batch.
         ++dataset_config.input_type=mel \
         ++dataset_config.mel_size=80 \
         ++dataset_config.inference_mode=true \
+        ++dataset_config.manifest_format=jsonl \
         ++train_config.model_name=s2s \
         ++train_config.freeze_encoder=true \
         ++train_config.freeze_llm=false \
