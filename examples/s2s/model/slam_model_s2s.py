@@ -337,13 +337,14 @@ class slam_model_s2s(slam_model):
             **kwargs,
         )
 
-        generated_ids = []
-        current_input_ids = input_ids
-        current_audio_ids = [torch.zeros_like(input_ids) for _ in range(7)]
+        generated_ids = [[] for _ in range(8)]
+        current_input_text = None
+        current_audio_tokens = [None for _ in range(7)]
         past_key_values = None
         do_sample = kwargs.get("do_sample", False)
         max_new_tokens = kwargs.get("max_new_tokens", 200)
         temperature = kwargs.get("temperature", 1.0)
+
         pad_t = self.model_config.vocab_config.pad_t
         pad_a = self.model_config.vocab_config.pad_a
         eot = self.model_config.vocab_config.eot
@@ -354,15 +355,20 @@ class slam_model_s2s(slam_model):
 
         # NOTE: currently, we only support greedy decoding and sampling for parallel generation
         for step in range(max_new_tokens):
+            if current_input_text is not None:
+                text_embed = self.llm.model.embed_tokens(current_input_text)
+                audio_embeds = [self.llm.model.embed_tokens(layershift(current_audio_tokens[i], i)) for i in range(7)]
+                inputs_embeds = torch.stack(audio_embeds + [text_embed], dim=1)  # 7层音频 + 1层文本
+            
             outputs = self.llm(
                 inputs_embeds=inputs_embeds,
-                attention_mask=attention_mask,
+                attention_mask=None,                # single sample, no need for attention mask
                 past_key_values=past_key_values,
                 use_cache=True,
             )
             
             logits = outputs.logits
-            past_key_values = outputs.past_key_values
+            past_key_values = outputs.past_key_values       # Update past_key_values for the next step
 
             # Split logits into text and audio layers based on vocab size
             text_vocab_size = self.model_config.vocab_config.padded_text_vocabsize
@@ -371,14 +377,17 @@ class slam_model_s2s(slam_model):
             xa_logits = [logits[..., text_vocab_size + audio_vocab_size * i : text_vocab_size + audio_vocab_size * (i + 1)] for i in range(7)]
 
             if not text_end:
-                next_token_text = self.sample_next_token(xt_logits[:, -1, :], do_sample, temperature, text_vocab_size)
+                next_token_text = self.sample_next_token(xt_logits[:, -1, :], do_sample, temperature, text_vocab_size).squeeze(0)
             else:
                 next_token_text = torch.tensor([pad_t], device=input_ids.device)
 
-            if not audio_end:
-                next_tokens_audio = [self.sample_next_token(xa_logits[i][:, -1, :], do_sample, temperature, audio_vocab_size) for i in range(7)]
-            else:
-                next_tokens_audio = [torch.tensor([pad_a], device=input_ids.device) for _ in range(7)]
+            next_tokens_audio = []
+            for i in range(7):
+                if not audio_end:
+                    next_token_audio = self.sample_next_token(xa_logits[i][:, -1, :], do_sample, temperature, audio_vocab_size).squeeze(0)
+                else:
+                    next_token_audio = torch.full((input_ids.size(0),), pad_a, device=input_ids.device)  # 填充pad_a
+                next_tokens_audio.append(next_token_audio)
 
             if next_tokens_audio[-1] == eoa:
                 audio_end = True
@@ -391,21 +400,15 @@ class slam_model_s2s(slam_model):
             generated_ids[7].append(next_token_text.clone().tolist()[0])  # Text layer
             
             # Update input_ids and inputs_embeds for the next step
-            current_input_ids = torch.cat([current_input_ids, next_token_text], dim=1)
+            current_input_text = next_token_text
             for i in range(7):
-                current_audio_ids[i] = torch.cat([current_audio_ids[i], next_tokens_audio[i]], dim=1)
-
-            inputs_embeds = []
-            for i in range(7):
-                inputs_embeds.append(layershift(self.llm.model.embed_tokens(current_audio_ids[i]), i))   # Shift for each audio layer
-            inputs_embeds.append(self.llm.model.embed_tokens(current_input_ids))  # Embed the text tokens
-            inputs_embeds = torch.stack(inputs_embeds, dim=1)
+                current_audio_tokens[i] = next_tokens_audio[i]
 
             if audio_end and text_end:
                 break
 
         # Concatenate the generated tokens to form the complete sequence
-        generated_ids = torch.cat(generated_ids, dim=1)
+        generated_ids = [torch.tensor(layer) for layer in generated_ids] 
 
         return generated_ids
 

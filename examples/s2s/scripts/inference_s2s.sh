@@ -5,6 +5,7 @@ export CUDA_VISIBLE_DEVICES=0
 export TOKENIZERS_PARALLELISM=false
 export OMP_NUM_THREADS=1
 export LD_LIBRARY_PATH=/home/v-wenxichen/anaconda3/envs/slam/lib:$LD_LIBRARY_PATH
+export PYDEVD_WARN_SLOW_RESOLVE_TIMEOUT=2
 
 run_dir=/home/v-wenxichen/SLAM-LLM
 cd $run_dir
@@ -17,7 +18,7 @@ output_dir=/home/v-wenxichen/exp/s2s/2024_09_23/s2s_train_test
 ckpt_path=$output_dir/s2s_epoch_1_step_5000
 split=test
 val_data_path=/home/v-wenxichen/data/s2s/test/${split}.jsonl
-decode_log=$ckpt_path/decode_${split}.log
+decode_log=$ckpt_path/decode_${split}
 
 # -m debugpy --listen 5678 --wait-for-client
 python -m debugpy --listen 5678 --wait-for-client $code_dir/inference_s2s_batch.py \

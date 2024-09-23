@@ -109,7 +109,7 @@ def main(kwargs: DictConfig):
         dataset_config,
         split="test",
     )
-	if not (train_config.enable_fsdp or train_config.enable_ddp) or rank == 0:
+	if not (train_config.enable_fsdp or train_config.enable_ddp):
 		logger.info(f"--> Training Set Length = {len(dataset_test)}")
 
 	test_dataloader = torch.utils.data.DataLoader(
@@ -124,15 +124,19 @@ def main(kwargs: DictConfig):
 	
 
 	logger.info("=====================================")
-	pred_path = kwargs.get('decode_log') + "_pred"
-	gt_path = kwargs.get('decode_log') + "_gt"
-	with open(pred_path, "w") as pred, open(gt_path, "w") as gt:
+	pred_path = kwargs.get('decode_log') + "_pred_text"
+	gt_path = kwargs.get('decode_log') + "_gt_text"
+	pred_snac_tokens_path = kwargs.get('decode_log') + "_pred_audio_snac_tokens"
+	gt_snac_tokens_path = kwargs.get('decode_log') + "_gt_audio_snac_tokens"
+	with open(pred_path, "w") as pred, open(gt_path, "w") as gt, open(pred_snac_tokens_path, "w") as pred_a, open(gt_snac_tokens_path, "w") as gt_a:
 		for step, batch in tqdm(enumerate(test_dataloader), total=len(test_dataloader)):
 			for key in batch.keys():
 				batch[key] = batch[key].to(device) if isinstance(batch[key], torch.Tensor) else batch[key]
 			model_outputs = model.generate(**batch)
-			output_text = model.tokenizer.batch_decode(model_outputs, add_special_tokens=False, skip_special_tokens=True)
-			for key, text, target in zip(batch["keys"], output_text, batch["targets"]):
+			text_outputs = model_outputs[7]
+			audio_outputs = model_outputs[:7]
+			output_text = model.tokenizer.batch_decode(text_outputs, add_special_tokens=False, skip_special_tokens=True)
+			for key, text, target in zip(batch["keys"], output_text, batch["target_texts"]):
 				pred.write(key + "\t" + text.replace("\n", " ") + "\n")
 				gt.write(key + "\t" + target + "\n")
 
