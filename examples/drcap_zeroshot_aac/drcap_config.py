@@ -2,22 +2,22 @@ from dataclasses import dataclass, field
 from typing import Optional, List
 @dataclass
 class ModelConfig:
-    file: str = "examples/aac_audiocaps/model/slam_model_aac.py:model_factory"
+    file: str = "examples/drcap_zeroshot_aac/model/slam_model_drcap.py:model_factory"
     llm_name: str = "vicuna-13b-v1.5"
     llm_path: str = "PATH/to/LLAMA/7B"
     llm_type: str = "decoder_only"
     llm_dim: int = 4096
     encoder_name: Optional[str] = None
-    encoder_ds_rate: int = 2
     encoder_path: Optional[str] = None
     encoder_dim: int = 1280
     encoder_projector: str = "linear"
-    encoder_projector_ds_rate: int = 5
-    encoder_fairseq_dir: str = "/fairseq/EAT"
+    encoder_projector_ds_rate: int = 1
+    clap_config: str = "examples/drcap_zeroshot_aac/conf/clap_config.yaml"
     modal: str = "audio"
     normalize: Optional[bool] = field(default=False, metadata={
         "help": "whether inpit is normalized, used for models such as wavlm"
     })
+    pd_text_support: Optional[str] = None
 
 @dataclass
 class PeftConfig:
@@ -44,7 +44,7 @@ class TrainConfig:
     }) #
     context_length:int = 4096
     gradient_accumulation_steps:int = 1
-    num_epochs:int = 3
+    num_epochs:int = 4
     num_workers_dataloader:int = 1
     warmup_steps:int = 1000
     total_steps:int = 100000
@@ -89,16 +89,15 @@ class DataConfig:
     data_path: Optional[str] = None
     max_words: Optional[int] = None
     max_mel: Optional[float] = None
-    fix_length_audio: int = -1
+    fix_length_audio: int = 1
+    use_rag: Optional[bool] = True
+    rag_first: Optional[bool] = True
+    frequency: Optional[int] = 32000
     inference_mode:bool = False
-    model_name: str = 'eat'
-    fbank_mean: float = -4.268
-    fbank_std: float = 4.569
-    target_length: int = 1024
-    fixed_length: bool = False
+    model_name: str = 'clap'
     prompt: str = "Describe the audio you hear. Output the audio caption directly without redundant content. Ensure that the output is not duplicated. "
     random_crop: bool = False
-    encoder_projector_ds_rate: int = 5
+    encoder_projector_ds_rate: int = 1
     input_type: str = field(default="raw", metadata={
                                 "help":"Use raw when input is wav, mel when for whisper"
                             })

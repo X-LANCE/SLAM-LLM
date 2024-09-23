@@ -1,32 +1,45 @@
-# AAC_Audiocaps
+# DRCap Zeroshot audio captioning
 
-## Performance and checkpoints
-We use [EAT](https://github.com/cwx-worst-one/EAT) as the audio encoder in this repo. Be sure to set up the corresponding environments based on the instructions provided in each repository. Here are checkpoints and performance for training only the linear layer and training the linear layer with LLM tuning via LoRA.
-Audio Encoder | Projector | LLM | PEFT | METEOR | CIDEr | SPICE | SPIDEr
-|---|---|---|---|---|---|---|---|
-[EAT-base (fine-tuned)](https://drive.google.com/file/d/1aCYiQmoZv_Gh1FxnR-CCWpNAp6DIJzn6/view?usp=sharing) | [Linear](https://drive.google.com/file/d/1xyhgx8cUKSIKpYgPlEWjHL-jLgSnhfGJ/view?usp=sharing)(~16.26M) | [vicuna-7b-v1.5](https://huggingface.co/lmsys/vicuna-7b-v1.5) | x | 0.2508 | 0.7532 | **0.1853** |0.4692
-[EAT-base (fine-tuned)](https://drive.google.com/file/d/1aCYiQmoZv_Gh1FxnR-CCWpNAp6DIJzn6/view?usp=sharing) | [Linear](https://drive.google.com/drive/folders/1_Pl3DLSbu6i2KyNCvzf74HAWXLroBgN3?usp=sharing)(~16.26M) | [vicuna-7b-v1.5](https://huggingface.co/lmsys/vicuna-7b-v1.5) | [LoRA](https://drive.google.com/drive/folders/1_Pl3DLSbu6i2KyNCvzf74HAWXLroBgN3?usp=sharing)(~4.19M) | **0.2606** | **0.7922** | 0.1852 | **0.4887**
+## Introduction
+DRCap is a data-efficient and flexible audio captioning system requiring text-only data for training and can quickly adapt to new domains without additional fine-tuning. 
+
+![](assets/model.png)
+
+## Pretrained models 
+You could download our pretrained CLAP model and linear mapping network through google drive: 
+* [CLAP](https://drive.google.com/drive/folders/1d5RqM2OTxO8PD7qBUAyXXJHjS96XIauw?usp=sharing) pretrained on [SoundVECaps](https://yyua8222.github.io/Sound-VECaps-demo/) and [WavCaps](https://huggingface.co/datasets/cvssp/WavCaps) [~1.9M Audio-text pairs in total] 
+
+* [Linear mapping network](https://drive.google.com/drive/folders/1d5RqM2OTxO8PD7qBUAyXXJHjS96XIauw?usp=sharing) trained on AudioCaps and Clotho_v2 via clap latents decoding and text-to-text retrieval augmentation. 
+  
+* LLM [vicuna-7b-v1.5](https://huggingface.co/lmsys/vicuna-7b-v1.5)
+
+## Inference
+You could modify the variables `run_dir`, `audio_encoder_dir`, `output_dir`, `llm_path` in `scripts/inference_drcap.sh` to match the paths where the downloaded checkpoints are located. Additionally, update the `source` in `data/audiocaps_test.jsonl` to ensure the audio paths point to your audio files, and then run:
+
+```shell
+bash scripts/inference_drcap.sh
+```
 
 
 ## Data preparation
-Prepare your `jsonl` data in the following format:
+Prepare your `jsonl` data file in the following format:
 ```json
-{"key": "Y7fmOlUlwoNg_1", "source": "/root/data/AudioCaps/waveforms/test/Y7fmOlUlwoNg.wav", "target": "Constant rattling noise and sharp vibrations"}
-{"key": "Y6BJ455B1aAs_1", "source": "/root/data/AudioCaps/waveforms/test/Y6BJ455B1aAs.wav", "target": "A rocket flies by followed by a loud explosion and fire crackling as a truck engine runs idle"}
+{"key": "Y7fmOlUlwoNg_1", "target": "Constant rattling noise and sharp vibrations", "text": "Constant rattling noise and sharp vibrations"}
+{"key": "Y6BJ455B1aAs_1", "target": "A rocket flies by followed by a loud explosion and fire crackling as a truck engine runs idle", "text": "A rocket flies by followed by a loud explosion and fire crackling as a truck engine runs idle"}
 ```
-Ensure your data aligns with this structure for consistent results.
+Please note that only textual data is required for training. However, for zero-shot inference, audio files are also necessary. You could find an example of the jsonl file in `data/audiocaps_test.jsonl`
 
+Run the following command to do the retrieval-augmentation and create the text embedding support for evaluation: 
+```shell
+bash scripts/data_preprocess.sh
+``` 
 
 ## Model Training
-To train the model, you could run the following command:
+You could run the following command to train the model
 ```bash
-bash scripts/finetune_eat_audiocaps.sh
+bash scripts/finetune_drcap.sh
 ```
-You could modify the variable including `audio_encoder_path`, `llm_path`, `output_dir`, `train_jsonl_path` and `val_jsonl_path` in the script to fit your setup. For training only the linear layer (without using LoRA or other PEFT methods), you can set the following parameters: `use_peft=false` and `freeze_llm=true`.
+For training only the linear layer (without using LoRA or other PEFT methods), you can set the following parameters: `use_peft=false` and `freeze_llm=true`. To turn off the RAG, you could set `use_arg=false` and `rag_first=false`
 
-## Inference
-To perform inference with trained models, you could use this command:
-```bash
-bash scripts/inference_eat_audiocaps.sh
-```
-Ensure your environment is set up and data paths are correct to reproduce results. 
+## Acknowledgement
+The code of training the CLAP model is based on the [WavCaps](https://github.com/XinhaoMei/WavCaps) repo, we thank the contributors for open-sourcing their work.

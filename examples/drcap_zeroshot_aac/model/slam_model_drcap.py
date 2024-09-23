@@ -29,7 +29,7 @@ def model_factory(train_config, model_config, **kwargs):
     encoder_projector = setup_encoder_projector(
         train_config, model_config, **kwargs
     )
-    model = slam_model_aac(
+    model = slam_model_drcap(
         encoder,
         llm,
         encoder_projector,
@@ -59,7 +59,7 @@ def model_factory(train_config, model_config, **kwargs):
     return model, tokenizer
 
 
-class slam_model_aac(slam_model):
+class slam_model_drcap(slam_model):
     def __init__(
         self,
         encoder,

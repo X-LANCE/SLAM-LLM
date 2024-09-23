@@ -1,0 +1,68 @@
+device: "cuda"
+seed: 20
+embed_size: 1024
+temp: 0.07
+queue_size: 5120
+json_files: [
+'../data/json_files/BBC_Sound_Effects/bbc_final.json',
+ '../data/json_files/FreeSound/fsd_final.json', 
+ '../data/json_files/SoundBible/sb_final.json',
+ "../data/json_files/AudioSet_SL/as_final.json", 
+ "data/AudioCaps/json_files/train.json", 
+ "data/Clotho/json_files/train.json"
+]
+
+resume: false
+blacklist: "../data/json_files/blacklist/" # path to blacklist file
+embed_regularization: true
+
+arch_version: 0
+
+
+dist_args:
+  world_size: 1
+
+audio_args:
+  sr: 32000
+  n_fft: 1024
+  hop_length: 320
+  f_min: 50
+  f_max: 14000
+  n_mels: 64
+  max_length: 30
+  mono: True
+  use_torchaudio: True
+
+
+audio_encoder_args:
+  type: "transformer"
+  model: "Cnn14"
+  pretrained: False
+  freeze: False
+
+
+data_args:
+  batch_size: 128
+  num_workers: 8
+
+
+text_encoder_args:
+  type: 'roberta-base'
+  freeze: False
+
+
+optim_args:
+  lr: !!float 5e-5
+  warmup_steps: 0
+  optimizer_name: "adam"
+  betas: [0.9, 0.999]
+  eps: !!float 1e-8
+  momentum: 0.9
+  warmup_epochs: 2
+
+
+training:
+  spec_augmentation: True
+  epochs: 15
+  clip_grad: 2
+  dropout: 0.2
