@@ -77,17 +77,20 @@ class AudioDatasetJsonl(torch.utils.data.Dataset):
         target = data_dict.get("target", None)
         task = data_dict.get("prompt", "AAC")
         key = data_dict.get("key", None)
+        text = data_dict.get("text", None) 
         
         # audio_raw, sample_rate = torchaudio.load(audio_path)
-        try:
-            audio_raw, sample_rate = torchaudio.load(audio_path)
-            if audio_raw.shape[1] == 0:
-                raise ValueError("Empty audio file")
-            resampler = Resample(orig_freq=sample_rate, new_freq=16000)
-            audio_raw = resampler(audio_raw)
+        if self.input_type == "mel" or self.input_type == "raw": 
+            try:
+                audio_info = torchaudio.info(audio_path)
+                audio_raw, sample_rate = torchaudio.load(audio_path, num_frames=10*audio_info.sample_rate)  #[1, wav_length]
+                if audio_raw.shape[1] == 0:
+                    raise ValueError("Empty audio file")
+                resampler = Resample(orig_freq=sample_rate, new_freq=self.dataset_config.get("frequency", 16000))
+                audio_raw = resampler(audio_raw)
 
-        except (FileNotFoundError, ValueError, RuntimeError):
-            audio_raw = torch.zeros(1, 16000)
+            except (FileNotFoundError, ValueError, RuntimeError):
+                audio_raw = torch.zeros(1, 16000)
         
         # assert sample_rate == 16e3, "Sample rate should be 16kHz, but got {} in file {}".format(sample_rate,audio_path)
         if self.model_name == "beats":
@@ -101,7 +104,12 @@ class AudioDatasetJsonl(torch.utils.data.Dataset):
         # prompt = "Describe the audio you hear. Output the audio caption directly without redundant content. Ensure that the output is not duplicated. "
         # prompt = "Describe the audio you hear. "
         prompt = self.dataset_config.prompt + ' '
-        
+        if self.dataset_config.get("use_rag", False) and not self.dataset_config.get("rag_first", False): 
+            similar_captions = data_dict.get("similar_captions", None)
+            similar_captions_cat = ""
+            for similar_caption in similar_captions: 
+                similar_captions_cat = similar_captions_cat + similar_caption + ". "  
+            prompt = f"Similar audios sound like: {similar_captions_cat}This audio sounds like "
 
         prompt = self.prompt_template.format(prompt)
         answer = self.answer_template.format(target)
@@ -114,15 +122,29 @@ class AudioDatasetJsonl(torch.utils.data.Dataset):
             
         elif self.model_name == "eat":
             audio_length = audio_mel.shape[0] // 2 + 1      # ad-hoc for eat for 2x downsample from mel to feats
-        audio_length = audio_length // self.dataset_config.encoder_projector_ds_rate # ad-hoc for 5x fc downsample
         # audio_length = calculate_output_length_1d(audio_length, 5, 5, 0) # ad-hoc for 5x cov1d downsample
         if self.fix_length_audio > 0:
             audio_length = self.fix_length_audio
+        audio_length = audio_length // self.dataset_config.encoder_projector_ds_rate # ad-hoc for 5x fc downsample
+
         audio_pseudo = torch.full((audio_length,), -1) # placeholder
 
         if self.inference_mode:
             prompt_ids = torch.tensor(prompt_ids, dtype=torch.int64)
             example_ids = torch.cat((audio_pseudo, prompt_ids))  # [audio,prompt]
+            if self.dataset_config.get("rag_first", False): 
+                similar_captions = data_dict.get("similar_captions", None)
+                similar_captions_cat = ""
+                for similar_caption in similar_captions: 
+                    similar_captions_cat = similar_captions_cat + similar_caption + ". "  
+                similar_captions_cat_id = self.tokenizer.encode(similar_captions_cat) 
+                similar_captions_cat_id.append(self.tokenizer.eos_token_id)
+                similar_captions_len = len(similar_captions_cat_id)
+                similar_captions_cat_id = torch.tensor(
+                    similar_captions_cat_id, dtype=torch.int64
+                )
+                example_ids = torch.cat((similar_captions_cat_id, example_ids))  # [similar_captions,audio,prompt]
+
             example_mask = example_ids.ge(-1)  # [True,True]
 
             return {
@@ -130,9 +152,11 @@ class AudioDatasetJsonl(torch.utils.data.Dataset):
                 "attention_mask": example_mask,
                 "audio": audio_raw if self.input_type == "raw" else None,
                 "audio_mel": audio_mel if self.input_type == "mel" else None,
+                "text": text if self.input_type == "text" else None, 
                 "audio_length": audio_length,
                 "key": key,
                 "target": target,
+                'similar_captions_len': similar_captions_len if self.dataset_config.get("rag_first", False) else None,
             }
 
         example = prompt + answer  # FIX(MZY): avoid putting a bos token before answer.
@@ -145,6 +169,27 @@ class AudioDatasetJsonl(torch.utils.data.Dataset):
 
         labels_ids = copy.deepcopy(example_ids)  # [audio,prompt,answer,eos]
         labels_ids[:audio_length + prompt_length] = -1  # [-1,-1,answer,eos];
+
+        if self.dataset_config.get("rag_first", False):  
+            similar_captions = data_dict.get("similar_captions", None)
+            similar_captions_cat = ""
+            for similar_caption in similar_captions:   
+                similar_captions_cat = similar_captions_cat + similar_caption + ". " 
+            example_ids = self.tokenizer.encode(example)  # [prompt,answer]
+            example_ids.append(self.tokenizer.eos_token_id)  # [prompt,answer,eos]
+            example_ids = torch.tensor(
+                example_ids, dtype=torch.int64
+            )
+            similar_captions_cat_id = self.tokenizer.encode(similar_captions_cat) 
+            similar_captions_cat_id.append(self.tokenizer.eos_token_id)
+            similar_captions_len = len(similar_captions_cat_id)
+            similar_captions_cat_id = torch.tensor(
+                similar_captions_cat_id, dtype=torch.int64
+            )
+            example_ids = torch.cat((similar_captions_cat_id, audio_pseudo, example_ids))  # [similar_captions,eos,audio,prompt,answer,eos]
+            labels_ids = copy.deepcopy(example_ids)  
+            labels_ids[:similar_captions_len + audio_length + prompt_length] = -1 # [-1,-1,-1,-1,answer,eos]
+
         example_mask = example_ids.ge(-1)  # FIX(GZF): [True,True,True,True]
 
         label_mask = labels_ids.ge(0)  # [False,False,True,True]
@@ -155,9 +200,11 @@ class AudioDatasetJsonl(torch.utils.data.Dataset):
             "input_ids": example_ids,
             "labels": labels_ids,
             "attention_mask": example_mask,
-            'audio_mel': audio_mel,
+            'audio_mel': audio_mel if self.input_type == "mel" else None,
+            'text': text if self.input_type == "text" else None, 
             'audio_length': audio_length,
             "target": target,
+            'similar_captions_len': similar_captions_len if self.dataset_config.get("rag_first", None) else None,
         }
 
     def pad(self, sequence, max_length, padding_idx=0):
@@ -184,15 +231,28 @@ class AudioDatasetJsonl(torch.utils.data.Dataset):
         attention_mask = torch.stack([self.pad(s['attention_mask'], input_ids_max_length, False)
                                       for s in samples])
     
-        audio_mel_max_length = max([s['audio_mel'].shape[0] for s in samples])
-        audio_mel = torch.stack([self.pad(s['audio_mel'], audio_mel_max_length, 0)
-                                  for s in samples])
-        audio_mel_mask = torch.zeros(len(samples), audio_mel_max_length)
-        for line, sample in enumerate(samples):
-            audio_mel_mask[line, :sample['audio_mel'].shape[0]] = 1
+        if self.input_type == "mel": 
+            audio_mel_max_length = max([s['audio_mel'].shape[0] for s in samples])
+            audio_mel = torch.stack([self.pad(s['audio_mel'], audio_mel_max_length, 0)
+                                    for s in samples])
+            audio_mel_mask = torch.zeros(len(samples), audio_mel_max_length)
+            for line, sample in enumerate(samples):
+                audio_mel_mask[line, :sample['audio_mel'].shape[0]] = 1
+
+        elif self.input_type == "raw": 
+            audio_max_length = max([s["audio"].shape[-1] for s in samples])
+            audio_raw = torch.stack([self.pad(s["audio"].squeeze(0), audio_max_length, 0) for s in samples])
+
+        elif self.input_type == "text": 
+            text = [s["text"] for s in samples]
+
         modality_mask = torch.zeros_like(attention_mask)
         for line, sample in enumerate(samples):
-            modality_mask[line, :sample['audio_length']] = 1
+            if not self.dataset_config.get("rag_first", False): 
+                modality_mask[line, :sample['audio_length']] = 1
+            else: 
+                modality_mask[line, sample['similar_captions_len']:sample['audio_length'] + sample['similar_captions_len']] = 1
+
     
         targets = [s['target'] for s in samples]
         if self.inference_mode:
@@ -202,6 +262,7 @@ class AudioDatasetJsonl(torch.utils.data.Dataset):
                 "input_ids": input_ids,
                 "attention_mask": attention_mask,
                 "audio_mel": audio_mel if self.input_type == "mel" else None,
+                "audio": audio_raw if self.input_type == "raw" else None, 
                 "modality_mask": modality_mask,
                 "keys": keys,
                 "targets": targets
@@ -213,9 +274,11 @@ class AudioDatasetJsonl(torch.utils.data.Dataset):
             'input_ids': input_ids,
             'labels': labels,
             'attention_mask': attention_mask,
-            'audio_mel': audio_mel,
-            'audio_mel_mask': audio_mel_mask,
-            'modality_mask': modality_mask
+            'audio_mel': audio_mel if self.input_type == "mel" else None,
+            'audio_mel_mask': audio_mel_mask if self.input_type == "mel" else None,
+            "text": text if self.input_type == "text" else None, 
+            'modality_mask': modality_mask, 
+            'targets': targets
         }
 
 

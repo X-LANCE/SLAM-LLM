@@ -66,6 +66,20 @@ class EATEncoder:
     def extract_features(self, source, padding_mask):
         return self.model.extract_features(source, padding_mask = padding_mask, mask=False, remove_extra_tokens = False)['x']
 
+class CLAPEncoder: 
+
+    @classmethod
+    def load(cls, model_config): 
+        from .CLAP.ase_model import ASE
+        import ruamel.yaml as yaml
+        with open(model_config.clap_config, 'r') as f: 
+            clap_config = yaml.safe_load(f)
+        clap_config['pd_text_support'] = model_config.get("pd_text_support", None)
+        model = ASE(clap_config)
+        checkpoint = torch.load(model_config.encoder_path)['model']
+        model.load_state_dict(checkpoint)
+        return model
+    
 class SpatialASTEncoder:
     @classmethod
     def load(cls, model_config):

@@ -80,6 +80,9 @@ def setup_encoder(train_config, model_config, **kwargs):
         if encoder_name == "eat":
             from slam_llm.models.encoder import EATEncoder
             encoder = EATEncoder.load(model_config)
+        if encoder_name == "clap": 
+            from slam_llm.models.encoder import CLAPEncoder
+            encoder = CLAPEncoder.load(model_config)
         if encoder_name == "SpatialAST":
             from slam_llm.models.encoder import SpatialASTEncoder
             encoder = SpatialASTEncoder.load(model_config)
@@ -295,7 +298,7 @@ class slam_model(nn.Module):
         audio_mask = kwargs.get("audio_mask", None)
         visual = kwargs.get("visual", None)
         visual_mask = kwargs.get("visual_mask", None)
-
+        text = kwargs.get("text", None)
 
         # for text encoder
         instruct_ids = kwargs.get("instruct_ids", None)
@@ -307,7 +310,7 @@ class slam_model(nn.Module):
         en_data = kwargs.get("en", None)
 
         encoder_outs = None
-        if audio_mel is not None or audio is not None or visual is not None:
+        if audio_mel is not None or audio is not None or visual is not None or text is not None:
             if self.train_config.freeze_encoder: # freeze encoder
                 self.encoder.eval()
 
@@ -317,6 +320,11 @@ class slam_model(nn.Module):
                 encoder_outs, audio_mel_post_mask = self.encoder.extract_features(audio_mel, audio_mel_mask) # bs*seq*dim
             if self.model_config.encoder_name == "eat":
                 encoder_outs = self.encoder.model.extract_features(audio_mel.unsqueeze(dim=1), padding_mask = None, mask=False, remove_extra_tokens = False)['x']
+            if self.model_config.encoder_name == "clap": 
+                if text is not None: 
+                    encoder_outs = self.encoder.encode_text(text).unsqueeze(1)  # [btz, 1, dim]        
+                elif audio is not None: 
+                    encoder_outs = self.encoder.encode_audio(audio)  # with projection-based decoding 
             if self.model_config.encoder_name == "SpatialAST":
                 encoder_outs = self.encoder(audio) # output: [bs, seq_len=3+512, dim=768]
             if self.model_config.encoder_name == "wavlm":
