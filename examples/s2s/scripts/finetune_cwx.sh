@@ -55,6 +55,9 @@ hydra.run.dir=$output_dir \
 ++train_config.val_batch_size=4 \
 ++train_config.num_workers_dataloader=2 \
 ++train_config.output_dir=$output_dir \
+++train_config.use_fp16=true \
+++train_config.enable_ddp=true \
+++train_config.enable_fsdp=false \
 ++metric=acc \
 ++log_config.use_wandb=$use_wandb \
 ++log_config.wandb_entity_name=wxc12 \
@@ -77,9 +80,6 @@ else
         $code_dir/finetune_s2s.py \
         --config-path "conf" \
         --config-name "prompt.yaml" \
-        ++train_config.enable_fsdp=false \
-        ++train_config.enable_ddp=true \
-        ++train_config.use_fp16=true \
         $hydra_args
 fi
 
