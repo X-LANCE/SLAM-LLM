@@ -51,9 +51,9 @@ hydra.run.dir=$output_dir \
 ++train_config.freeze_llm=false \
 ++train_config.batching_strategy=custom \
 ++train_config.warmup_steps=1000 \
-++train_config.total_steps=100000 \
+++train_config.total_steps=120000 \
 ++train_config.lr=1e-4 \
-++train_config.validation_interval=5000 \
+++train_config.validation_interval=10000 \
 ++train_config.batch_size_training=4 \
 ++train_config.val_batch_size=4 \
 ++train_config.num_workers_dataloader=2 \
@@ -64,8 +64,9 @@ hydra.run.dir=$output_dir \
 ++log_config.wandb_project_name=SLAM-Omni \
 ++log_config.wandb_exp_name=$wandb_exp_name \
 ++log_config.log_file=$output_dir/exp.log \
-++ckpt_path=$ckpt_path/model.pt \
 "
+# ++ckpt_path=$ckpt_path/model.pt \
+
 
 # -m debugpy --listen 5678 --wait-for-client
 if [[ $CUDA_VISIBLE_DEVICES != *","* ]]; then

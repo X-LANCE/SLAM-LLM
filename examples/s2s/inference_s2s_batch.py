@@ -30,6 +30,9 @@ class RunConfig:
             "help": "The path to peft checkpoint, should be a directory including adapter_config.json"
         },
     )
+    decode_text_only: bool = field(
+        default=False, metadata={"help": "Decode text only"}
+    )
 
 
 @hydra.main(config_name=None, version_base=None)

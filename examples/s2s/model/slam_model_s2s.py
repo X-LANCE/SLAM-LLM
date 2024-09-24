@@ -15,6 +15,7 @@ from slam_llm.utils.metric import compute_accuracy
 from transformers import T5ForConditionalGeneration
 from slam_llm.utils.snac_utils import layershift, get_snac_answer_token
 from snac import SNAC
+from tqdm import tqdm
 
 
 logger = logging.getLogger(__name__)
@@ -287,7 +288,7 @@ class slam_model_s2s(slam_model):
         audio_end = False    # Track whether audio generation has ended
 
         # NOTE: currently, we only support greedy decoding and sampling for parallel generation
-        for step in range(max_new_tokens):
+        for step in tqdm(range(max_new_tokens), desc="Generating"):
             if current_input_text is not None:
                 audio_tokens = torch.cat([layershift(current_audio_tokens[i], i).unsqueeze(1) for i in range(7)], dim=1)
                 combined_input_ids = torch.cat([audio_tokens, current_input_text.unsqueeze(1)], dim=1)

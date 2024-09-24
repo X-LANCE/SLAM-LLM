@@ -16,15 +16,16 @@ llm_path="Qwen/Qwen2-0.5B"
 codec_decoder_path="hubertsiuzdak/snac_24khz"
 
 output_dir=/home/v-wenxichen/exp/s2s/2024_09_23/s2s_train_test_1
-ckpt_path=$output_dir/s2s_epoch_1_step_60000
+ckpt_path=$output_dir/s2s_epoch_1_step_90000
 split=test
 
 # val_data_path=/home/v-wenxichen/data/s2s/test/${split}.jsonl
 val_data_path="gpt-omni/VoiceAssistant-400K"
 decode_log=$ckpt_path/decode_${split}
+decode_text_only=true
 
 # -m debugpy --listen 5678 --wait-for-client
-python -m debugpy --listen 5678 --wait-for-client $code_dir/inference_s2s_batch.py \
+python $code_dir/inference_s2s_batch.py \
         --config-path "conf" \
         --config-name "prompt.yaml" \
         hydra.run.dir=$ckpt_path \
@@ -56,5 +57,6 @@ python -m debugpy --listen 5678 --wait-for-client $code_dir/inference_s2s_batch.
         ++train_config.output_dir=$output_dir \
         ++decode_log=$decode_log \
         ++ckpt_path=$ckpt_path/model.pt \
+        ++decode_text_only=$decode_text_only \
 
 # bash /home/v-wenxichen/SLAM-LLM/examples/s2s/scripts/inference_s2s.sh

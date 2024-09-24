@@ -129,12 +129,14 @@ def main(kwargs: DictConfig):
 	logger.info("=====================================")
 	pred_path = kwargs.get('decode_log') + "_pred_text"
 	gt_path = kwargs.get('decode_log') + "_gt_text"
+	question_path = kwargs.get('decode_log') + "_question_text"
 	generate_audio_dir = kwargs.get('decode_log') + "output_audio"
-	if not os.path.exists(generate_audio_dir):
+	decode_text_only = kwargs.get('decode_text_only', False)
+	if not os.path.exists(generate_audio_dir) and not decode_text_only:
 		os.makedirs(generate_audio_dir)
 
-	with open(pred_path, "w") as pred, open(gt_path, "w") as gt:
-		for step, batch in tqdm(enumerate(test_dataloader), total=len(test_dataloader)):
+	with open(pred_path, "w") as pred, open(gt_path, "w") as gt, open(question_path, "w") as q:
+		for step, batch in enumerate(test_dataloader):
 			for key in batch.keys():
 				batch[key] = batch[key].to(device) if isinstance(batch[key], torch.Tensor) else batch[key]
 			model_outputs = model.generate(**batch)
@@ -142,9 +144,16 @@ def main(kwargs: DictConfig):
 			audio_outputs = model_outputs[:7]
 			# output_text = model.tokenizer.batch_decode(text_outputs, add_special_tokens=False, skip_special_tokens=True)
 			output_text = model.tokenizer.decode(text_outputs, add_special_tokens=False, skip_special_tokens=True)
-			for key, text, target in zip(batch["keys"], [output_text], batch["target_texts"]):
-				pred.write(key + "\t" + text.replace("\n", " ") + "\n")
-				gt.write(key + "\t" + target + "\n")
+			for key, source_text, target_text, generated_text in zip(batch["keys"], batch["source_texts"], batch["target_texts"], [output_text]):
+				q.write(key + "\t" + source_text + "\n")
+				gt.write(key + "\t" + target_text + "\n")
+				pred.write(key + "\t" + generated_text + "\n")
+
+				logger.info(f"Question: {source_text}")
+				logger.info(f"Generated Text: {generated_text}")
+
+			if decode_text_only:
+				continue
 
 			for i, key in enumerate(batch["keys"]):
 				audio_tokens = [audio_outputs[layer] for layer in range(7)]
