@@ -17,7 +17,7 @@ llm_path="Qwen/Qwen2-0.5B"
 train_data_path="gpt-omni/VoiceAssistant-400K"
 val_data_path="gpt-omni/VoiceAssistant-400K"
 
-exp_name="s2s_train_test_1"
+exp_name="s2s_train_v0"
 
 home_dir=/home/v-wenxichen/exp/s2s
 # output_dir=$home_dir/$(TZ='Asia/Shanghai' date +"%Y_%m_%d")/$(TZ='Asia/Shanghai' date +"%H_%M_%S")

@@ -6,7 +6,8 @@ import numpy as np
 class SnacConfig:
     audio_vocab_size = 4096
     padded_vocab_size = 4160
-    end_of_audio = 4097
+    end_of_audio = 4096
+    padding_token = 4097
 
 
 snac_config = SnacConfig()    
@@ -57,20 +58,19 @@ def reconscruct_snac(output_list):
 
 def get_snac_answer_token(snac_tokens_str):
     snac_tokens = snac_tokens_str.split()
-    audio_length = len(snac_tokens) // 8 + 7    # here the additional 7 is due to parallel generation
+    audio_length = len(snac_tokens) // 8 + 8    # here the additional 8 is due to parallel generation
     snac_config = SnacConfig()    
     eoa = snac_config.end_of_audio
-    padding_token = snac_config.audio_vocab_size
+    padding_token = snac_config.padding_token
     result = []
 
     for layer in range(1, 8):  # 从第1层到第7层
         layer_tokens = []
-        layer_tokens.extend([eoa] * layer)
+        layer_tokens.extend([padding_token] * layer)
         layer_tokens.extend([snac_tokens[i] for i in range(len(snac_tokens)) if i % 8 == layer])
+        layer_tokens.append(eoa)
         if layer < 7:
-            layer_tokens.append(padding_token)
-        if layer < 6:
-            layer_tokens.extend([eoa] * (6 - layer))
+            layer_tokens.extend([padding_token] * (7 - layer))
         result.append(torch.tensor([int(token) for token in layer_tokens]))
         
     result_tensor = torch.stack(result)
