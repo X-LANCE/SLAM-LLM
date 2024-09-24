@@ -17,11 +17,12 @@ llm_path="Qwen/Qwen2-0.5B"
 train_data_path="gpt-omni/VoiceAssistant-400K"
 val_data_path="gpt-omni/VoiceAssistant-400K"
 
-exp_name="s2s_train_test"
+exp_name="s2s_train_test_1"
 
 home_dir=/home/v-wenxichen/exp/s2s
 # output_dir=$home_dir/$(TZ='Asia/Shanghai' date +"%Y_%m_%d")/$(TZ='Asia/Shanghai' date +"%H_%M_%S")
 output_dir=$home_dir/$(TZ='Asia/Shanghai' date +"%Y_%m_%d")/$exp_name
+ckpt_path=/home/v-wenxichen/exp/s2s/2024_09_23/s2s_train_test/s2s_epoch_1_step_15000
 
 use_wandb=true
 wandb_exp_name=$exp_name
@@ -63,6 +64,7 @@ hydra.run.dir=$output_dir \
 ++log_config.wandb_project_name=SLAM-Omni \
 ++log_config.wandb_exp_name=$wandb_exp_name \
 ++log_config.log_file=$output_dir/exp.log \
+++ckpt_path=$ckpt_path/model.pt \
 "
 
 # -m debugpy --listen 5678 --wait-for-client

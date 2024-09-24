@@ -13,11 +13,14 @@ code_dir=examples/s2s
 
 speech_encoder_path="small"   # whisper small
 llm_path="Qwen/Qwen2-0.5B"
+codec_decoder_path="hubertsiuzdak/snac_24khz"
 
-output_dir=/home/v-wenxichen/exp/s2s/2024_09_23/s2s_train_test
-ckpt_path=$output_dir/s2s_epoch_1_step_5000
+output_dir=/home/v-wenxichen/exp/s2s/2024_09_23/s2s_train_test_1
+ckpt_path=$output_dir/s2s_epoch_1_step_60000
 split=test
-val_data_path=/home/v-wenxichen/data/s2s/test/${split}.jsonl
+
+# val_data_path=/home/v-wenxichen/data/s2s/test/${split}.jsonl
+val_data_path="gpt-omni/VoiceAssistant-400K"
 decode_log=$ckpt_path/decode_${split}
 
 # -m debugpy --listen 5678 --wait-for-client
@@ -33,12 +36,16 @@ python -m debugpy --listen 5678 --wait-for-client $code_dir/inference_s2s_batch.
         ++model_config.encoder_path=$speech_encoder_path \
         ++model_config.encoder_dim=768 \
         ++model_config.encoder_projector=linear \
+        ++model_config.codec_decoder_path=$codec_decoder_path \
+        ++model_config.codec_decode=true \
         ++dataset_config.dataset=speech_dataset_s2s \
         ++dataset_config.val_data_path=$val_data_path \
+        ++dataset_config.train_data_path=$val_data_path \
         ++dataset_config.input_type=mel \
         ++dataset_config.mel_size=80 \
         ++dataset_config.inference_mode=true \
-        ++dataset_config.manifest_format=jsonl \
+        ++dataset_config.manifest_format=datasets \
+        ++dataset_config.split_size=0.00001 \
         ++train_config.model_name=s2s \
         ++train_config.freeze_encoder=true \
         ++train_config.freeze_llm=false \

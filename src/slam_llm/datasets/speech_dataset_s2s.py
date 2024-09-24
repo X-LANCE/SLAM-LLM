@@ -175,7 +175,8 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
             target_audio = data_dict.get("answer_snac", None)
             source_text = data_dict.get("question", None)
             target_text = data_dict.get("answer", None)
-            key = data_dict.get("key", None)
+            if source_audio is not None:
+                key = source_audio['path']
         
         else:
             source_audio = data_dict.get("source_wav", None)
@@ -372,6 +373,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         if self.inference_mode:
             keys = [s['key'] for s in samples]
             target_text = [s['target_text'] for s in samples]
+            source_text = [s['source_text'] for s in samples]
 
             return {
                 "input_ids": input_ids,
@@ -384,6 +386,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
                 "modality_mask": modality_mask,
                 "keys": keys,
                 "target_texts": target_text,
+                "source_texts": source_text,
             }
 
         labels = torch.stack([

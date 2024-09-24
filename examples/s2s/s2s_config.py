@@ -61,6 +61,8 @@ class ModelConfig:
         "help": "whether model is only pretrained or finetuned, used for models such as hubert"
     })
     vocab_config: VocabConfig = field(default_factory=VocabConfig)
+    codec_decode: bool = False
+    codec_decoder_path: Optional[str] = None
 
 @dataclass
 class PeftConfig:

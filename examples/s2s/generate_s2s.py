@@ -12,9 +12,11 @@ from slam_llm.models.slam_model import slam_model
 
 from slam_llm.utils.model_utils import get_custom_model_factory
 from slam_llm.utils.dataset_utils import get_preprocessed_dataset
+from slam_llm.utils.snac_utils import reconscruct_snac, reconstruct_tensors
 import os
 import logging
 from tqdm import tqdm
+import soundfile as sf
 
 import hydra
 from omegaconf import DictConfig, ListConfig, OmegaConf
@@ -98,6 +100,7 @@ def main(kwargs: DictConfig):
 	
 	model_factory = get_custom_model_factory(model_config, logger)
 	model, tokenizer = model_factory(train_config, model_config, **kwargs)
+	codec_decoder = model.codec_decoder
 	device = torch.device("cuda" if torch.cuda.is_available() else "cpu") # FIX(MZY): put the whole model to device.
 	model.to(device)
 	model.eval()
@@ -126,20 +129,31 @@ def main(kwargs: DictConfig):
 	logger.info("=====================================")
 	pred_path = kwargs.get('decode_log') + "_pred_text"
 	gt_path = kwargs.get('decode_log') + "_gt_text"
-	pred_snac_tokens_path = kwargs.get('decode_log') + "_pred_audio_snac_tokens"
-	gt_snac_tokens_path = kwargs.get('decode_log') + "_gt_audio_snac_tokens"
-	with open(pred_path, "w") as pred, open(gt_path, "w") as gt, open(pred_snac_tokens_path, "w") as pred_a, open(gt_snac_tokens_path, "w") as gt_a:
+	generate_audio_dir = kwargs.get('decode_log') + "output_audio"
+	if not os.path.exists(generate_audio_dir):
+		os.makedirs(generate_audio_dir)
+
+	with open(pred_path, "w") as pred, open(gt_path, "w") as gt:
 		for step, batch in tqdm(enumerate(test_dataloader), total=len(test_dataloader)):
 			for key in batch.keys():
 				batch[key] = batch[key].to(device) if isinstance(batch[key], torch.Tensor) else batch[key]
 			model_outputs = model.generate(**batch)
 			text_outputs = model_outputs[7]
 			audio_outputs = model_outputs[:7]
-			output_text = model.tokenizer.batch_decode(text_outputs, add_special_tokens=False, skip_special_tokens=True)
-			for key, text, target in zip(batch["keys"], output_text, batch["target_texts"]):
+			# output_text = model.tokenizer.batch_decode(text_outputs, add_special_tokens=False, skip_special_tokens=True)
+			output_text = model.tokenizer.decode(text_outputs, add_special_tokens=False, skip_special_tokens=True)
+			for key, text, target in zip(batch["keys"], [output_text], batch["target_texts"]):
 				pred.write(key + "\t" + text.replace("\n", " ") + "\n")
 				gt.write(key + "\t" + target + "\n")
 
+			for i, key in enumerate(batch["keys"]):
+				audio_tokens = [audio_outputs[layer] for layer in range(7)]
+
+				audiolist = reconscruct_snac(audio_tokens)
+				audio = reconstruct_tensors(audiolist)
+				with torch.inference_mode():
+					audio_hat = codec_decoder.decode(audio)
+				sf.write(f"{generate_audio_dir}/{step:02d}_{i:02d}.wav", audio_hat.squeeze().cpu().numpy(), 24000)
 
 if __name__ == "__main__":
 	main_hydra()
