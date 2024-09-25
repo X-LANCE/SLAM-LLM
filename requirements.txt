@@ -85,9 +85,6 @@ optimum==1.22.0
 pandas==2.2.2
 passpy==1.0.2
 pathspec==0.12.1
-petname==2.7.post1
-pooch==1.8.2
-portalocker==2.10.1
 proto-plus==1.24.0
 protobuf==5.28.1
 py7zr==0.22.0
