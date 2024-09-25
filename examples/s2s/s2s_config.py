@@ -152,6 +152,7 @@ class DataConfig:
     split_size: float = 0.1
 
     vocab_config: VocabConfig = field(default_factory=VocabConfig)
+    load_from_cache_file: bool = False
 
 @dataclass
 class FSDPConfig:

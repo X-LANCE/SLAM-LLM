@@ -85,9 +85,11 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         self.data_list = []
 
         if self.manifest_format == "datasets":
-            from datasets import load_dataset, load_from_disk   
-            ds = load_dataset(dataset_config.train_data_path)       # load_from huggingface datasets
-            # ds = load_from_disk(dataset_config.train_data_path)   # load_from local disk
+            from datasets import load_dataset, load_from_disk
+            if dataset_config.load_from_cache_file:       
+                ds = load_dataset(dataset_config.train_data_path)       # load_from huggingface datasets
+            else:
+                ds = load_from_disk(dataset_config.train_data_path)   # load_from local disk
             train_val_split = ds['train'].train_test_split(test_size=self.split_size, seed=self.seed)
             if split == "train":
                 self.data_list = train_val_split['train']

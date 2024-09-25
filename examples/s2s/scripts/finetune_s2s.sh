@@ -12,16 +12,24 @@ run_dir=/home/v-wenxichen/SLAM-LLM
 cd $run_dir
 code_dir=examples/s2s
 
-speech_encoder_path="/home/v-wenxichen/.cache/whisper/small.pt"   # whisper small
-llm_path="/home/v-wenxichen/.cache/huggingface/hub/models--Qwen--Qwen2-0.5B"
+speech_encoder_path="/valleblob/v-wenxichen/models/whisper/small.pt"   # whisper small
+llm_path="/valleblob/v-wenxichen/models/models--Qwen--Qwen2-0.5B/snapshots/ff3a49fac17555b8dfc4db6709f480cc8f16a9fe"
+# speech_encoder_path="small"   # whisper small
+# llm_path="Qwen/Qwen2-0.5B"
 
 # train_data_path=/home/v-wenxichen/data/s2s/test/test_train.jsonl
 # val_data_path=/home/v-wenxichen/data/s2s/test/test_val.jsonl
-train_data_path="/valleblob/v-wenxichen/data/s2s/VoiceAssistant-400K"
-val_data_path="/valleblob/v-wenxichen/data/s2s/VoiceAssistant-400K"
 
-exp_name="s2s_train_v0_test"
-# exp_name="debug"
+# train_data_path="/valleblob/v-wenxichen/data/s2s/VoiceAssistant-400K"
+# val_data_path="/valleblob/v-wenxichen/data/s2s/VoiceAssistant-400K"
+# load_from_cache_file=false
+
+train_data_path="gpt-omni/VoiceAssistant-400K"
+val_data_path="gpt-omni/VoiceAssistant-400K"
+load_from_cache_file=true
+
+# exp_name="s2s_train_v0_test"
+exp_name="debug"
 
 home_dir=/valleblob
 # output_dir=$home_dir/$(TZ='Asia/Shanghai' date +"%Y_%m_%d")/$(TZ='Asia/Shanghai' date +"%H_%M_%S")
@@ -53,6 +61,7 @@ hydra.run.dir=$output_dir \
 ++dataset_config.seed=42 \
 ++dataset_config.manifest_format=datasets \
 ++dataset_config.split_size=0.01 \
+++dataset_config.load_from_cache_file=$load_from_cache_file \
 ++train_config.model_name=s2s \
 ++train_config.num_epochs=5 \
 ++train_config.freeze_encoder=true \
