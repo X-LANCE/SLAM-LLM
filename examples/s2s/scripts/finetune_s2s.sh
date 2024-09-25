@@ -1,8 +1,8 @@
 #!/bin/bash
 # export PYTHONPATH=/root/whisper:$PYTHONPATH
 export PYTHONPATH=/root/fairseq:$PYTHONPATH
-# export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
-export CUDA_VISIBLE_DEVICES=0
+export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
+# export CUDA_VISIBLE_DEVICES=0
 export TOKENIZERS_PARALLELISM=false
 export OMP_NUM_THREADS=1
 export LD_LIBRARY_PATH=/home/v-wenxichen/anaconda3/envs/slam/lib:$LD_LIBRARY_PATH
@@ -12,21 +12,13 @@ code_dir=examples/s2s
 
 speech_encoder_path="/valleblob/v-wenxichen/models/whisper/small.pt"   # whisper small
 llm_path="/valleblob/v-wenxichen/models/models--Qwen--Qwen2-0.5B/snapshots/ff3a49fac17555b8dfc4db6709f480cc8f16a9fe"
-# speech_encoder_path="small"   # whisper small
-# llm_path="Qwen/Qwen2-0.5B"
 
-# train_data_path=/home/v-wenxichen/data/s2s/test/test_train.jsonl
-# val_data_path=/home/v-wenxichen/data/s2s/test/test_val.jsonl
 
 train_data_path="/valleblob/v-wenxichen/data/s2s/VoiceAssistant-400K"
 val_data_path="/valleblob/v-wenxichen/data/s2s/VoiceAssistant-400K"
 load_from_cache_file=false
 
-# train_data_path="gpt-omni/VoiceAssistant-400K"
-# val_data_path="gpt-omni/VoiceAssistant-400K"
-# load_from_cache_file=true
-
-exp_name="s2s_train_v0"
+exp_name="s2s_train_v0_gpu8"
 # exp_name="debug"
 
 home_dir=/valleblob/v-wenxichen/exp/s2s
@@ -65,8 +57,8 @@ hydra.run.dir=$output_dir \
 ++train_config.freeze_encoder=true \
 ++train_config.freeze_llm=false \
 ++train_config.batching_strategy=custom \
-++train_config.warmup_steps=1000 \
-++train_config.total_steps=120000 \
+++train_config.warmup_steps=2400 \
+++train_config.total_steps=240000 \
 ++train_config.lr=1e-4 \
 ++train_config.validation_interval=10000 \
 ++train_config.batch_size_training=4 \

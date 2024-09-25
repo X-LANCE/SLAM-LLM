@@ -6,7 +6,7 @@ target:
   workspace_name: Workspace_NLC # 
 
 environment:
-  image:  wumark/valle:flash_v2  # unset CUDA_VISIBLE_DEVICES
+  image:  worstchan/slam-omni:v0  # unset CUDA_VISIBLE_DEVICES
   # setup:
   #   - pip install timm
     
@@ -51,4 +51,4 @@ search:
   params:
     - name: gpus
       spec: discrete
-      values: [4]
+      values: [8]
