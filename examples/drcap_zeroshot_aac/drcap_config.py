@@ -79,8 +79,8 @@ class TrainConfig:
 
 @dataclass
 class DataConfig:
-    dataset: str = "audio_dataset"
-    file: str = "src/slam_llm/datasets/audio_dataset.py:get_audio_dataset"
+    dataset: str = "zs_audio_dataset"
+    file: str = "examples/drcap_zeroshot_aac/dataset/zs_audio_dataset.py:get_zs_audio_dataset"
     train_data_path: Optional[str] = None
     val_data_path: Optional[str] = None
     train_split: str = "train"
