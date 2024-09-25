@@ -18,18 +18,18 @@ llm_path="/valleblob/v-wenxichen/models/models--Qwen--Qwen2-0.5B/snapshots/ff3a4
 # train_data_path=/home/v-wenxichen/data/s2s/test/test_train.jsonl
 # val_data_path=/home/v-wenxichen/data/s2s/test/test_val.jsonl
 
-# train_data_path="/valleblob/v-wenxichen/data/s2s/VoiceAssistant-400K"
-# val_data_path="/valleblob/v-wenxichen/data/s2s/VoiceAssistant-400K"
-# load_from_cache_file=false
+train_data_path="/valleblob/v-wenxichen/data/s2s/VoiceAssistant-400K"
+val_data_path="/valleblob/v-wenxichen/data/s2s/VoiceAssistant-400K"
+load_from_cache_file=false
 
-train_data_path="gpt-omni/VoiceAssistant-400K"
-val_data_path="gpt-omni/VoiceAssistant-400K"
-load_from_cache_file=true
+# train_data_path="gpt-omni/VoiceAssistant-400K"
+# val_data_path="gpt-omni/VoiceAssistant-400K"
+# load_from_cache_file=true
 
-# exp_name="s2s_train_v0_test"
-exp_name="debug"
+exp_name="s2s_train_v0"
+# exp_name="debug"
 
-home_dir=/valleblob
+home_dir=/valleblob/v-wenxichen/exp/s2s
 # output_dir=$home_dir/$(TZ='Asia/Shanghai' date +"%Y_%m_%d")/$(TZ='Asia/Shanghai' date +"%H_%M_%S")
 output_dir=$home_dir/$(TZ='Asia/Shanghai' date +"%Y_%m_%d")/$exp_name
 # ckpt_path=/home/v-wenxichen/exp/s2s/2024_09_23/s2s_train_test/s2s_epoch_1_step_15000  # this line is for resuming training
@@ -79,7 +79,7 @@ hydra.run.dir=$output_dir \
 ++log_config.wandb_project_name=SLAM-Omni \
 ++log_config.wandb_exp_name=$wandb_exp_name \
 ++log_config.log_file=$output_dir/exp.log \
-++log_config.log_interval=10 \
+++log_config.log_interval=100 \
 "
 # ++ckpt_path=$ckpt_path/model.pt \
 # ↑ this line is for resuming training
