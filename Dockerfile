@@ -1,4 +1,4 @@
-FROM pytorch/pytorch:2.1.0-cuda11.8-cudnn8-runtime
+FROM pytorch/pytorch:2.4.1-cuda11.8-cudnn9-runtime
 
 USER root
 
@@ -14,7 +14,7 @@ RUN set -x \
     && apt-get clean
 
 RUN pip install --no-cache-dir packaging editdistance gpustat wandb einops debugpy tqdm soundfile matplotlib scipy sentencepiece pandas \
-    && pip install --no-cache-dir torchaudio==2.1.0 --index-url https://download.pytorch.org/whl/cu118
+    && pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 
 WORKDIR /workspace
 
