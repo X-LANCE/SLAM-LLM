@@ -94,6 +94,7 @@ class slam_model_s2s(slam_model):
         # resize llm embedding layer
         if self.model_config.vocab_config.total_vocabsize != self.llm.lm_head.weight.size(0):
             self.llm.resize_token_embeddings(self.model_config.vocab_config.total_vocabsize)
+            logger.info("Resize llm embedding layer's vocab size to {}".format(self.model_config.vocab_config.total_vocabsize))
 
         self.codec_decoder = codec_decoder
 
@@ -202,16 +203,22 @@ class slam_model_s2s(slam_model):
         for i in range(7):
             xa.append(x_ori[..., text_vocab_size + audio_vocab_size * i : text_vocab_size + audio_vocab_size * (i + 1)])
 
-        total_loss = self.compute_parallel_loss(xt, text_labels, xa, audio_labels)
+        loss_recorder = []
+        total_loss, loss_recorder = self.compute_parallel_loss(xt, text_labels, xa, audio_labels)
         model_outputs.loss = total_loss
 
         text_acc = -1
+        audio_acc = [-1 for _ in range(7)]
         if self.metric:
             with torch.no_grad():
                 preds = torch.argmax(xt, -1)
                 text_acc = compute_accuracy(preds.detach()[:, :-1], text_labels.detach()[:, 1:], ignore_label=-100)
 
-        return model_outputs, text_acc
+                preds_audio = [torch.argmax(xa[i], -1) for i in range(7)]
+                audio_acc = [compute_accuracy(preds_audio[i].detach()[:, :-1], audio_labels[:, i, 1:], ignore_label=-100) for i in range(7)]
+
+        # metrics = {"text_acc": text_acc, "audio_acc": audio_acc, "layer_loss": loss_recorder}
+        return model_outputs, text_acc, audio_acc, loss_recorder
 
 
 
@@ -221,22 +228,26 @@ class slam_model_s2s(slam_model):
         """
         text_vocab_size = self.model_config.vocab_config.padded_text_vocabsize
         audio_vocab_size = self.model_config.vocab_config.padded_audio_vocabsize
+        layer_loss = [0 for _ in range(8) ]
         
         if text_labels is not None:
             # text_loss = F.cross_entropy(xt.reshape(-1, text_vocab_size), text_labels.reshape(-1), ignore_index=-100)
             text_loss = F.cross_entropy(xt[:, :-1, :].reshape(-1, text_vocab_size), text_labels[:, 1:].reshape(-1), ignore_index=-100)
+            layer_loss[7] = text_loss
         else:
             text_loss = 0
 
-        audio_loss = 0
+        total_audio_loss = 0
+        single_audio_loss = 0
         for i in range(7):
             if audio_labels[:,i] is not None:
                 # audio_loss += F.cross_entropy(xa[i].reshape(-1, audio_vocab_size), audio_labels[:,i].reshape(-1), ignore_index=-100)
-                audio_loss += F.cross_entropy(xa[i][:, :-1, :].reshape(-1, audio_vocab_size), audio_labels[:, i, 1:].reshape(-1), ignore_index=-100)
+                single_audio_loss = F.cross_entropy(xa[i][:, :-1, :].reshape(-1, audio_vocab_size), audio_labels[:, i, 1:].reshape(-1), ignore_index=-100)
+                layer_loss[i] = single_audio_loss
+                total_audio_loss += single_audio_loss
 
-        total_loss = (text_loss + audio_loss) / 8
-
-        return total_loss
+        total_loss = (text_loss + total_audio_loss) / 8
+        return total_loss, layer_loss
 
 
     @torch.no_grad()
@@ -276,7 +287,7 @@ class slam_model_s2s(slam_model):
         past_key_values = None
 
         do_sample = kwargs.get("do_sample", False)
-        max_new_tokens = kwargs.get("max_new_tokens", 1024)
+        max_new_tokens = kwargs.get("max_new_tokens", 360)
         temperature = kwargs.get("temperature", 1.0)
 
         pad_t = self.model_config.vocab_config.pad_t

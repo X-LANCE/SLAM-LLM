@@ -15,8 +15,7 @@ speech_encoder_path="small"   # whisper small
 llm_path="Qwen/Qwen2-0.5B"
 codec_decoder_path="hubertsiuzdak/snac_24khz"
 
-output_dir=/home/v-wenxichen/exp/s2s/2024_09_23/s2s_train_test_1
-ckpt_path=$output_dir/s2s_epoch_1_step_90000
+ckpt_path=/home/v-wenxichen/exp/s2s/2024_09_24/s2s_train_v0/s2s_epoch_1_step_80000
 split=test
 
 # val_data_path=/home/v-wenxichen/data/s2s/test/${split}.jsonl
@@ -46,7 +45,7 @@ python $code_dir/inference_s2s_batch.py \
         ++dataset_config.mel_size=80 \
         ++dataset_config.inference_mode=true \
         ++dataset_config.manifest_format=datasets \
-        ++dataset_config.split_size=0.00001 \
+        ++dataset_config.split_size=0.00002 \
         ++train_config.model_name=s2s \
         ++train_config.freeze_encoder=true \
         ++train_config.freeze_llm=false \
@@ -54,7 +53,6 @@ python $code_dir/inference_s2s_batch.py \
         ++train_config.num_epochs=1 \
         ++train_config.val_batch_size=1 \
         ++train_config.num_workers_dataloader=2 \
-        ++train_config.output_dir=$output_dir \
         ++decode_log=$decode_log \
         ++ckpt_path=$ckpt_path/model.pt \
         ++decode_text_only=$decode_text_only \

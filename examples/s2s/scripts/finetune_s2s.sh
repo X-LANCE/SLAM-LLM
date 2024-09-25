@@ -18,13 +18,18 @@ train_data_path="gpt-omni/VoiceAssistant-400K"
 val_data_path="gpt-omni/VoiceAssistant-400K"
 
 exp_name="s2s_train_v0"
+# exp_name="debug"
 
 home_dir=/home/v-wenxichen/exp/s2s
 # output_dir=$home_dir/$(TZ='Asia/Shanghai' date +"%Y_%m_%d")/$(TZ='Asia/Shanghai' date +"%H_%M_%S")
 output_dir=$home_dir/$(TZ='Asia/Shanghai' date +"%Y_%m_%d")/$exp_name
 ckpt_path=/home/v-wenxichen/exp/s2s/2024_09_23/s2s_train_test/s2s_epoch_1_step_15000
 
-use_wandb=true
+if [ "$exp_name" = "debug" ]; then
+    use_wandb=false
+else
+    use_wandb=true
+fi
 wandb_exp_name=$exp_name
 
 hydra_args="
@@ -64,16 +69,25 @@ hydra.run.dir=$output_dir \
 ++log_config.wandb_project_name=SLAM-Omni \
 ++log_config.wandb_exp_name=$wandb_exp_name \
 ++log_config.log_file=$output_dir/exp.log \
+++log_config.log_interval=10 \
 "
 # ++ckpt_path=$ckpt_path/model.pt \
+# ↑ this line is for resuming training
 
 
-# -m debugpy --listen 5678 --wait-for-client
+
 if [[ $CUDA_VISIBLE_DEVICES != *","* ]]; then
-    python $code_dir/finetune_s2s.py \
-        --config-path "conf" \
-        --config-name "prompt.yaml" \
-        $hydra_args
+    if [ "$exp_name" = "debug" ]; then
+        python -m debugpy --listen 5678 --wait-for-client $code_dir/finetune_s2s.py \
+            --config-path "conf" \
+            --config-name "prompt.yaml" \
+            $hydra_args
+    else
+        python $code_dir/finetune_s2s.py \
+            --config-path "conf" \
+            --config-name "prompt.yaml" \
+            $hydra_args
+    fi
 else
     torchrun \
         --nnodes 1 \

@@ -58,7 +58,7 @@ def reconscruct_snac(output_list):
 
 def get_snac_answer_token(snac_tokens_str):
     snac_tokens = snac_tokens_str.split()
-    audio_length = len(snac_tokens) // 8 + 8    # here the additional 8 is due to parallel generation
+    audio_length = len(snac_tokens) // 8 + 8    # here the additional 8 is due to parallel generation, 7 padding tokens and 1 end of audio token
     snac_config = SnacConfig()    
     eoa = snac_config.end_of_audio
     padding_token = snac_config.padding_token

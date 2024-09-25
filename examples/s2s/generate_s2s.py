@@ -130,7 +130,7 @@ def main(kwargs: DictConfig):
 	pred_path = kwargs.get('decode_log') + "_pred_text"
 	gt_path = kwargs.get('decode_log') + "_gt_text"
 	question_path = kwargs.get('decode_log') + "_question_text"
-	generate_audio_dir = kwargs.get('decode_log') + "output_audio"
+	generate_audio_dir = kwargs.get('decode_log') + "_pred_audio"
 	decode_text_only = kwargs.get('decode_text_only', False)
 	if not os.path.exists(generate_audio_dir) and not decode_text_only:
 		os.makedirs(generate_audio_dir)
@@ -162,7 +162,11 @@ def main(kwargs: DictConfig):
 				audio = reconstruct_tensors(audiolist)
 				with torch.inference_mode():
 					audio_hat = codec_decoder.decode(audio)
-				sf.write(f"{generate_audio_dir}/{step:02d}_{i:02d}.wav", audio_hat.squeeze().cpu().numpy(), 24000)
+
+				if key[-4:] == ".wav":
+					key = key[:-4]
+				sf.write(f"{generate_audio_dir}/{key}.wav", audio_hat.squeeze().cpu().numpy(), 24000)
+				logger.info(f"Generated Audio: {key}.wav")
 
 if __name__ == "__main__":
 	main_hydra()
