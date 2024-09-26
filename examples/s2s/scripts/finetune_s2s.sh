@@ -1,9 +1,8 @@
 #!/bin/bash
 # export PYTHONPATH=/root/whisper:$PYTHONPATH
 export PYTHONPATH=/root/fairseq:$PYTHONPATH
-export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
+# export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 export CUDA_VISIBLE_DEVICES=0,1,2,3
-# export CUDA_VISIBLE_DEVICES=0
 export TOKENIZERS_PARALLELISM=false
 export OMP_NUM_THREADS=1
 export LD_LIBRARY_PATH=/home/v-wenxichen/anaconda3/envs/slam/lib:$LD_LIBRARY_PATH
@@ -19,7 +18,11 @@ train_data_path="/valleblob/v-wenxichen/data/s2s/VoiceAssistant-400K"
 val_data_path="/valleblob/v-wenxichen/data/s2s/VoiceAssistant-400K"
 load_from_cache_file=false
 
-exp_name="s2s_train_v0_gpu4"
+batch_size_training=4
+use_fp16=false
+
+exp_name="s2s_train_v0_gpu4_btz${batch_size_training}"
+# exp_name="s2s_train_v0_gpu24_btz${batch_size_training}_fp16"
 # exp_name="debug"
 
 home_dir=/valleblob/v-wenxichen/exp/s2s
@@ -66,6 +69,7 @@ hydra.run.dir=$output_dir \
 ++train_config.val_batch_size=4 \
 ++train_config.num_workers_dataloader=2 \
 ++train_config.output_dir=$output_dir \
+++train_config.use_fp16=$use_fp16 \
 ++metric=acc \
 ++log_config.use_wandb=$use_wandb \
 ++log_config.wandb_entity_name=wxc12 \
@@ -94,7 +98,7 @@ if [[ $CUDA_VISIBLE_DEVICES != *","* ]]; then
 else
     torchrun \
         --nnodes 1 \
-        --nproc_per_node 2 \
+        --nproc_per_node 4 \
         --master_port=29503 \
         $code_dir/finetune_s2s.py \
         --config-path "conf" \
@@ -106,3 +110,6 @@ fi
 
 # ++train_config.use_fp16=true \
 # bash /home/v-wenxichen/SLAM-LLM/examples/s2s/scripts/finetune_s2s.sh
+
+# 1GPU + 12w steps + btz4 = 1epoch
+# 1GPU + 24w steps + btz2 = 1epoch 

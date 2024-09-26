@@ -12,13 +12,18 @@ code_dir=examples/s2s
 
 speech_encoder_path="small"   # whisper small
 llm_path="Qwen/Qwen2-0.5B"
+
+
 # train_data_path=/home/v-wenxichen/data/s2s/test/test_train.jsonl
 # val_data_path=/home/v-wenxichen/data/s2s/test/test_val.jsonl
 train_data_path="gpt-omni/VoiceAssistant-400K"
 val_data_path="gpt-omni/VoiceAssistant-400K"
+load_from_cache_file=true
 
-exp_name="s2s_train_v0"
-# exp_name="debug"
+batch_size_training=2
+
+# exp_name="s2s_train_v0"
+exp_name="debug"
 
 home_dir=/home/v-wenxichen/exp/s2s
 # output_dir=$home_dir/$(TZ='Asia/Shanghai' date +"%Y_%m_%d")/$(TZ='Asia/Shanghai' date +"%H_%M_%S")
@@ -31,6 +36,8 @@ else
     use_wandb=true
 fi
 wandb_exp_name=$exp_name
+
+use_fp16=true
 
 hydra_args="
 hydra.run.dir=$output_dir \
@@ -50,6 +57,7 @@ hydra.run.dir=$output_dir \
 ++dataset_config.seed=42 \
 ++dataset_config.manifest_format=datasets \
 ++dataset_config.split_size=0.01 \
+++dataset_config.load_from_cache_file=$load_from_cache_file \
 ++train_config.model_name=s2s \
 ++train_config.num_epochs=5 \
 ++train_config.freeze_encoder=true \
@@ -59,10 +67,11 @@ hydra.run.dir=$output_dir \
 ++train_config.total_steps=120000 \
 ++train_config.lr=1e-4 \
 ++train_config.validation_interval=10000 \
-++train_config.batch_size_training=4 \
+++train_config.batch_size_training=$batch_size_training \
 ++train_config.val_batch_size=4 \
 ++train_config.num_workers_dataloader=2 \
 ++train_config.output_dir=$output_dir \
+++train_config.use_fp16=$use_fp16 \
 ++metric=acc \
 ++log_config.use_wandb=$use_wandb \
 ++log_config.wandb_entity_name=wxc12 \
@@ -102,4 +111,4 @@ else
 fi
 
 # ++train_config.use_fp16=true \
-# bash /home/v-wenxichen/SLAM-LLM/examples/s2s/scripts/finetune_s2s.sh
+# bash /home/v-wenxichen/SLAM-LLM/examples/s2s/scripts/finetune_s2s_debug.sh

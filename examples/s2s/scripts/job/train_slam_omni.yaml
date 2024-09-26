@@ -1,7 +1,8 @@
 description: speech_lm
 
 target:
-  name: msrresrchvc # TARGET NAME       
+  name: msrresrchvc # 80G A100  
+  # name: msroctovc # 40G A100
   service: sing
   workspace_name: Workspace_NLC # 
 
@@ -27,9 +28,9 @@ search:
     name: slam-omni_v0
     # sku: 4x32G8-V100-IB
     sku: 1x80G4-A100 
-    # sku: 1x80G8-A100 
+    # sku: 1x40G8-A100 
     # sku: 80G8-H100-NvLink
-    # sku: 2xND96rs_v4 # 40 8 a100
+    # sku: 3xND96rs_v4 # 40 8 a100
     sla_tier: Premium
     priority: high
     process_count_per_node: 1
@@ -53,3 +54,4 @@ search:
     - name: gpus
       spec: discrete
       values: [4]
+      # values: [8]
