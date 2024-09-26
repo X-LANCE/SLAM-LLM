@@ -2,6 +2,7 @@
 # export PYTHONPATH=/root/whisper:$PYTHONPATH
 export PYTHONPATH=/root/fairseq:$PYTHONPATH
 export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
+export CUDA_VISIBLE_DEVICES=0,1,2,3
 # export CUDA_VISIBLE_DEVICES=0
 export TOKENIZERS_PARALLELISM=false
 export OMP_NUM_THREADS=1
@@ -18,7 +19,7 @@ train_data_path="/valleblob/v-wenxichen/data/s2s/VoiceAssistant-400K"
 val_data_path="/valleblob/v-wenxichen/data/s2s/VoiceAssistant-400K"
 load_from_cache_file=false
 
-exp_name="s2s_train_v0_gpu8"
+exp_name="s2s_train_v0_gpu4"
 # exp_name="debug"
 
 home_dir=/valleblob/v-wenxichen/exp/s2s
