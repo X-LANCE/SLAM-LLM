@@ -15,11 +15,13 @@ speech_encoder_path="small"   # whisper small
 llm_path="Qwen/Qwen2-0.5B"
 codec_decoder_path="hubertsiuzdak/snac_24khz"
 
-ckpt_path=/home/v-wenxichen/exp/s2s/2024_09_24/s2s_train_v0/s2s_epoch_1_step_80000
+ckpt_path=/home/v-wenxichen/exp/s2s/2024_09_24/s2s_train_v0/s2s_epoch_1_step_110000
 split=test
 
 # val_data_path=/home/v-wenxichen/data/s2s/test/${split}.jsonl
 val_data_path="gpt-omni/VoiceAssistant-400K"
+load_from_cache_file=true
+
 decode_log=$ckpt_path/decode_${split}
 decode_text_only=true
 
@@ -46,6 +48,7 @@ python $code_dir/inference_s2s_batch.py \
         ++dataset_config.inference_mode=true \
         ++dataset_config.manifest_format=datasets \
         ++dataset_config.split_size=0.00002 \
+        ++dataset_config.load_from_cache_file=$load_from_cache_file \
         ++train_config.model_name=s2s \
         ++train_config.freeze_encoder=true \
         ++train_config.freeze_llm=false \

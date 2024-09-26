@@ -173,5 +173,5 @@ class LogConfig:
     wandb_entity_name: str = "project_name"
     wandb_project_name: str = "project_name"
     wandb_exp_name: str = "exp_name"
-    log_file: str = "/valleblob/v-wenxichen/exp/log"
+    log_file: str = "/valleblob/v-wenxichen/exp/log/test.log"
     log_interval: int = 10
