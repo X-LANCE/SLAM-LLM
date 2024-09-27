@@ -13,9 +13,7 @@ your_code=/code
 
 your_data=/userhome
 
-your_code=/home/yxdu/hit/sjtu
 
-your_data=/home/yxdu/hit
 
 source=covost_ende
 

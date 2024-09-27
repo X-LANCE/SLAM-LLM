@@ -86,6 +86,7 @@ hydra.run.dir=$output_dir \
 ++train_config.output_dir=$output_dir \
 ++metric=acc \
 ++train_config.use_fp16=false \
+++model_config.ckpt_path=$ckpt_name \
 "
 
 
