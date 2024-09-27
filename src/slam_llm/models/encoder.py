@@ -35,7 +35,7 @@ class WhisperWrappedEncoder:
         else:
             import whisper
             encoder = whisper.load_model(name=model_config.encoder_path, device='cpu').encoder
-            encoder.extract_variable_length_
+            encoder.extract_variable_length_features = types.MethodType(extract_variable_length_features, encoder)
         return encoder
 
 
