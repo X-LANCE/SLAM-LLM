@@ -5,11 +5,11 @@ from torch.distributed.fsdp.fully_sharded_data_parallel import StateDictType
 
 @dataclass
 class ModelConfig:
-    file: Optional[str] = None
+    file: str = "examples/st_covost2/model/slam_model_st.py"
     llm_name: str = "vicuna-13b-v1.5"
     llm_path: str = "PATH/to/LLAMA/7B"
     llm_type: str = "decoder_only"
-    llm_dim: int = 4096
+    llm_dim: int = 3584
     encoder_path_hf: Optional[str] = None
     encoder_name: Optional[str] = None
     encoder_ds_rate: int = 2
@@ -89,7 +89,7 @@ class TrainConfig:
 @dataclass
 class DataConfig:
     dataset: str = "st_dataset"
-    file: str = "src/slam_llm/datasets/st_dataset.py:get_speech_dataset"
+    file: str = "examples/st_covost2/dataset/st_dataset.py:get_speech_dataset"
     train_data_path: Optional[str] = None
     val_data_path: Optional[str] = None
     train_split: str = "train"

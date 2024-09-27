@@ -5,10 +5,13 @@ export WANDB_MODE=offline
 
 your_code=/code
 your_data=/userhome
+your_code=/home/yxdu/hit/sjtu
 
+your_data=/home/yxdu/hit
 
 source=covost_enzh
-checkpoint_dir=${your_data}/speech/data/qwen/mmt
+
+checkpoint_dir=${your_data}/speech/data/qwen/spt-all-7B-mul6
 output_dir=${your_data}/speech/data/qwen/srt
 
 
@@ -17,7 +20,7 @@ encoder_path_hf=${your_data}/speech/models/whisper-large-v3
 llm_path=${your_data}/speech/models/Qwen2-7B
 
 train_data_path=${your_data}/speech/data/qwen/train_spt_0926.jsonl
-val_data_path=${your_data}/speech/data/qwen/dev_spt_0926.jsonl
+val_data_path=${your_data}/speech/data/qwen/test_spt_0926.jsonl
 
 
 
@@ -79,6 +82,7 @@ hydra.run.dir=$output_dir \
 ++train_config.output_dir=$output_dir \
 ++metric=acc \
 ++train_config.use_fp16=false \
+++model_config.ckpt_path=$ckpt_name \
 "
 
 
