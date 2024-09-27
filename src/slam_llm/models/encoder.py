@@ -3,8 +3,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from dataclasses import dataclass
-import whisper
-from transformers import WhisperModel
 
 
 class WhisperWrappedEncoder:
@@ -32,8 +30,10 @@ class WhisperWrappedEncoder:
             return x
 
         if model_config.encoder_path_hf is not None:
+            from transformers import WhisperModel
             encoder = WhisperModel.from_pretrained(model_config.encoder_path_hf,torch_dtype=torch.bfloat16).encoder
         else:
+            import whisper
             encoder = whisper.load_model(name=model_config.encoder_path, device='cpu').encoder
             encoder.extract_variable_length_
         return encoder

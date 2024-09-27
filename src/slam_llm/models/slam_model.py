@@ -41,7 +41,7 @@ def model_factory(train_config, model_config, **kwargs):
         **kwargs,
     )
 
-    ckpt_path = model_config.ckpt_path #FIX(MZY): load model ckpt(mainly projector, related to model_checkpointing/checkpoint_handler.py: save_model_checkpoint_peft)
+    ckpt_path = kwargs.get("ckpt_path", None) #FIX(MZY): load model ckpt(mainly projector, related to model_checkpointing/checkpoint_handler.py: save_model_checkpoint_peft)
     if ckpt_path is not None:
             logger.info("loading other parts from: {}".format(ckpt_path))
             ckpt_dict = torch.load(ckpt_path, map_location="cpu")
@@ -149,8 +149,6 @@ def setup_llm(train_config, model_config, **kwargs):
                     load_in_8bit=True if train_config.quantization else None,
                     device_map="auto" if train_config.quantization else None,
                     use_cache=use_cache,
-                    attn_implementation="flash_attention_2" if train_config.use_fast_kernels else None,
-                    torch_dtype=torch.bfloat16
                 )
         else:
             llama_config = AutoConfig.from_pretrained(model_config.llm_path)
@@ -175,8 +173,6 @@ def setup_llm(train_config, model_config, **kwargs):
                 load_in_8bit=True if train_config.quantization else None,
                 device_map="auto" if train_config.quantization else None,
                 use_cache=use_cache,
-                attn_implementation="flash_attention_2" if train_config.use_fast_kernels else None,
-                torch_dtype=torch.bfloat16
             )
         else:
             model = AutoModelForCausalLM.from_pretrained(
@@ -184,20 +180,18 @@ def setup_llm(train_config, model_config, **kwargs):
                 load_in_8bit=True if train_config.quantization else None,
                 device_map="auto" if train_config.quantization else None,
                 use_cache=use_cache,
-                attn_implementation="flash_attention_2" if train_config.use_fast_kernels else None,
-                torch_dtype=torch.bfloat16
             )
-    # if (train_config.enable_fsdp or train_config.enable_ddp) and train_config.use_fast_kernels:
-    #     """
-    #     For FSDP and FSDP+PEFT, setting 'use_fast_kernels' will enable
-    #     using of Flash Attention or Xformer memory-efficient kernels
-    #     based on the hardware being used. This would speed up fine-tuning.
-    #     """
-    #     try:
-    #         from optimum.bettertransformer import BetterTransformer
-    #         model = BetterTransformer.transform(model)
-    #     except ImportError:
-    #         logger.warning("Module 'optimum' not found. Please install 'optimum' it before proceeding.")
+    if (train_config.enable_fsdp or train_config.enable_ddp) and train_config.use_fast_kernels:
+        """
+        For FSDP and FSDP+PEFT, setting 'use_fast_kernels' will enable
+        using of Flash Attention or Xformer memory-efficient kernels
+        based on the hardware being used. This would speed up fine-tuning.
+        """
+        try:
+            from optimum.bettertransformer import BetterTransformer
+            model = BetterTransformer.transform(model)
+        except ImportError:
+            logger.warning("Module 'optimum' not found. Please install 'optimum' it before proceeding.")
 
     print_module_size(model, model_config.llm_name, int(os.environ["RANK"]) if train_config.enable_fsdp or train_config.enable_ddp else 0)
 
@@ -319,9 +313,8 @@ class slam_model(nn.Module):
         if audio_mel is not None or audio is not None or visual is not None or text is not None:
             if self.train_config.freeze_encoder: # freeze encoder
                 self.encoder.eval()
-            if self.model_config.encoder_path_hf is not None:
-                encoder_outs = self.encoder(audio_mel.permute(0, 2, 1)).last_hidden_state # bs*seq*dim
-            elif self.model_config.encoder_name == "whisper":
+
+            if self.model_config.encoder_name == "whisper":
                 encoder_outs = self.encoder.extract_variable_length_features(audio_mel.permute(0, 2, 1)) # bs*seq*dim
             if self.model_config.encoder_name == "beats":
                 encoder_outs, audio_mel_post_mask = self.encoder.extract_features(audio_mel, audio_mel_mask) # bs*seq*dim
@@ -368,24 +361,20 @@ class slam_model(nn.Module):
                 encoder_outs = self.encoder_projector(encoder_outs, instruct_mask)
             if self.model_config.encoder_projector == "linear":
                 encoder_outs = self.encoder_projector(encoder_outs)
-        
 
-        
-
+        if input_ids is not None:
+            input_ids[input_ids == -1] = 0
+            if isinstance(self.llm, T5ForConditionalGeneration):
+                inputs_embeds = self.llm.shared(input_ids)
+            else:
+                if hasattr(self.llm.model, "embed_tokens"):
+                    inputs_embeds = self.llm.model.embed_tokens(input_ids)
+                elif hasattr(self.llm.model.model, "embed_tokens"):
+                    inputs_embeds = self.llm.model.model.embed_tokens(input_ids)
+                else:
+                    inputs_embeds = self.llm.model.model.model.embed_tokens(input_ids)
 
         if modality_mask is not None:
-            if input_ids is not None:
-                input_ids[input_ids == -1] = 0
-                if isinstance(self.llm, T5ForConditionalGeneration):
-                    inputs_embeds = self.llm.shared(input_ids)
-                else:
-                    if hasattr(self.llm.model, "embed_tokens"):
-                        inputs_embeds = self.llm.model.embed_tokens(input_ids)
-                    elif hasattr(self.llm.model.model, "embed_tokens"):
-                        inputs_embeds = self.llm.model.model.embed_tokens(input_ids)
-                    else:
-                        inputs_embeds = self.llm.model.model.model.embed_tokens(input_ids)
-
             modality_mask_start_indices = (modality_mask == True).float().argmax(dim=1)
             modality_lengths = torch.clamp(modality_mask.sum(dim=1), max=encoder_outs.shape[1]).tolist()
 
@@ -396,22 +385,6 @@ class slam_model(nn.Module):
                 ] = encoder_outs[i][:modality_lengths[i]]
             
             inputs_embeds = encoder_outs_pad + inputs_embeds * (~modality_mask[:, :, None])
-        else:
-             # 直接截取 inputs_embeds 的 80 个以后的元素
-            input_ids = input_ids[:, 80:]
-            if input_ids is not None:
-                input_ids[input_ids == -1] = 0
-                if isinstance(self.llm, T5ForConditionalGeneration):
-                    inputs_embeds = self.llm.shared(input_ids)
-                else:
-                    if hasattr(self.llm.model, "embed_tokens"):
-                        inputs_embeds = self.llm.model.embed_tokens(input_ids)
-                    elif hasattr(self.llm.model.model, "embed_tokens"):
-                        inputs_embeds = self.llm.model.model.embed_tokens(input_ids)
-                    else:
-                        inputs_embeds = self.llm.model.model.model.embed_tokens(input_ids)
-            inputs_embeds = torch.cat((encoder_outs, inputs_embeds), dim=1)
-
 
         if kwargs.get("inference_mode", False):
             return inputs_embeds, attention_mask
@@ -461,8 +434,8 @@ class slam_model(nn.Module):
         model_outputs = self.llm.generate(
             inputs_embeds=inputs_embeds,
             # max_length=kwargs.get("max_length", 200),
-            max_new_tokens=kwargs.get("max_new_tokens", 150),
-            num_beams=kwargs.get("num_beams", 5),
+            max_new_tokens=kwargs.get("max_new_tokens", 200),
+            num_beams=kwargs.get("num_beams", 4),
             do_sample=kwargs.get("do_sample", False),
             min_length=kwargs.get("min_length", 1),
             top_p=kwargs.get("top_p", 1.0),
@@ -474,4 +447,5 @@ class slam_model(nn.Module):
             eos_token_id=self.tokenizer.eos_token_id,
             pad_token_id=self.tokenizer.pad_token_id
         )
+
         return model_outputs
