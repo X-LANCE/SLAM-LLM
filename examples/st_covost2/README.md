@@ -31,31 +31,27 @@ You can find the test jsonl in "test_st.jsonl"
 {"audio": "/userhome/speech/data/common/4/en/clips/common_voice_en_699711.mp3", "prompt": "\"She'll be all right.\"<|ja|>", "gt": "\"She'll be all right.\"<|ja|>彼女は大丈夫だろう。", "source": "covost_enenja"}
 {"audio": "/userhome/speech/data/common/4/en/clips/common_voice_en_699711.mp3", "prompt": "\"She'll be all right.\"<|zh|>", "gt": "\"She'll be all right.\"<|zh|>她会没事的。", "source": "covost_enenzh"}
 ```
-
-## ASR pre-train
-In this step, we perform ASR pretraining to acquire speech recognition capabilities.
-
+## Train Stage
+Here, we have designed a four-step training process, where each training session uses the checkpoint obtained from the previous training session.
 ```
+#In this step, we perform ASR pretraining to acquire speech recognition capabilities.
 bash asr_pretrain.sh
-```
 
-
-## MMT Stage
-In this phase, we conduct multimodal machine translation training to enhance the final performance.
-```
+#In this phase, we conduct multimodal machine translation training to enhance the final performance.
 bash mmt.sh
-```
 
-## SRT Stage
-monolingual SRT training.
-```
+#monolingual SRT training.
 bash srt.sh
+
+#multilingual multitask training.
+bash zsrt.sh
 ```
 
-multilingual multitask training.
-## zsrt Stage
+
+## Infer Stage
+Here, we have designed a four-step training process, where each training session uses the checkpoint obtained from the previous training session.
 ```
-bash zsrt.sh
+bash infer.sh
 ```
 
 ##  Citation

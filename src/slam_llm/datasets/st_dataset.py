@@ -55,7 +55,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
                     if data_source==self.source or self.source=="all":
                         self.data_list.append(data_dict)
         
-        self.data_list = self.data_list[:1000]
+        # self.data_list = self.data_list[:1000]
         self.printed = False  # 标志位，控制print只执行一次
 
     

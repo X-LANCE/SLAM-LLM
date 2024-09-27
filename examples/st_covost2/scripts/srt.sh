@@ -4,15 +4,13 @@ export WANDB_MODE=offline
 # export HYDRA_FULL_ERROR=1
 
 your_code=/code
-
 your_data=/userhome
 
 
+source=covost_enzh
+checkpoint_dir=${your_data}/speech/data/qwen/mmt
+output_dir=${your_data}/speech/data/qwen/srt
 
-
-run_dir=${your_code}/SLAM-LLM
-cd $run_dir
-code_dir=examples/st_covost2
 
 # speech_encoder_path=${your_data}/speech/models/whisper/large-v3.pt
 encoder_path_hf=${your_data}/speech/models/whisper-large-v3
@@ -23,12 +21,10 @@ val_data_path=${your_data}/speech/data/qwen/dev_spt_0926.jsonl
 
 
 
-source=covost_enzh
 
-
-checkpoint_dir=${your_data}/speech/data/qwen/mmt
-output_dir=${your_data}/speech/data/qwen/srt
-
+run_dir=${your_code}/SLAM-LLM
+cd $run_dir
+code_dir=examples/st_covost2
 
 
 

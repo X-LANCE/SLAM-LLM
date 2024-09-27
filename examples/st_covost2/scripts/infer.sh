@@ -15,28 +15,29 @@ your_data=/userhome
 
 
 
+source=covost_ende
 
-
-
-run_dir=${your_code}/SLAM-LLM
-cd $run_dir
-code_dir=examples/st_covost2
+checkpoint_dir=${your_data}/speech/data/qwen/spt-all-7B-mul6
 
 # speech_encoder_path=${your_data}/speech/models/whisper/large-v3.pt
 encoder_path_hf=${your_data}/speech/models/whisper-large-v3
 llm_path=${your_data}/speech/models/Qwen2-7B
 
 train_data_path=${your_data}/speech/data/qwen/train_spt_0926.jsonl
-val_data_path=${your_data}/speech/data/qwen/dev_spt_de.jsonl
+val_data_path=${your_data}/speech/data/qwen/test_spt_de.jsonl
+
+
+run_dir=${your_code}/SLAM-LLM
+cd $run_dir
+code_dir=examples/st_covost2
 
 
 
-source=all
-source=covost_ende
 
 
 
-checkpoint_dir=${your_data}/speech/data/qwen/spt-all-7B-mul6
+
+
 
 
 # 查找以asr_epoch_开头的目录，提取epoch和step，并找出最大的epoch和step

@@ -8,11 +8,11 @@ your_code=/code
 your_data=/userhome
 
 
+source=all
 
 
-run_dir=${your_code}/SLAM-LLM
-cd $run_dir
-code_dir=examples/st_covost2
+checkpoint_dir=${your_data}/speech/data/qwen/srt
+output_dir=${your_data}/speech/data/qwen/final
 
 # speech_encoder_path=${your_data}/speech/models/whisper/large-v3.pt
 encoder_path_hf=${your_data}/speech/models/whisper-large-v3
@@ -22,12 +22,14 @@ train_data_path=${your_data}/speech/data/qwen/train_spt_0926.jsonl
 val_data_path=${your_data}/speech/data/qwen/dev_spt_0926.jsonl
 
 
+run_dir=${your_code}/SLAM-LLM
+cd $run_dir
+code_dir=examples/st_covost2
 
-source=all
 
 
-checkpoint_dir=${your_data}/speech/data/qwen/srt
-output_dir=${your_data}/speech/data/qwen/final
+
+
 
 
 
