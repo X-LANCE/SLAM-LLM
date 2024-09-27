@@ -18,6 +18,15 @@ class ModelConfig:
     normalize: Optional[bool] = field(default=False, metadata={
         "help": "whether inpit is normalized, used for models such as wavlm"
     })
+    do_sample: bool = False
+    top_p: float = 1.0
+    temperature: float = 1.0
+    num_beams: int = 4
+    num_return_sequences: int = 1
+    length_penalty: float = 1.0
+    repetition_penalty: float = 1.0
+    max_new_tokens: int = 200
+    min_length: int = 1
 
 @dataclass
 class PeftConfig:

@@ -1,24 +1,24 @@
 #!/bin/bash
-export CUDA_VISIBLE_DEVICES=5
+export CUDA_VISIBLE_DEVICES=1
 export TOKENIZERS_PARALLELISM=false
 
-run_dir=/root/SLAM-LLM
+run_dir=/data/wenxi.chen/SLAM-LLM
 cd $run_dir
-code_dir=examples/aac_audiocaps
+code_dir=examples/slam_aac
 
-audio_encoder_path=/root/models/EAT/EAT-base_epoch30_finetune_AS2M.pt
-llm_path=/root/models/vicuna-7b-v1.5
+audio_encoder_path=/data/xiquan.li/models/EAT-base_epoch30_ft.pt
+llm_path=/data/xiquan.li/models/vicuna-7b-v1.5
 
 seed=42
 encoder_projector_ds_rate=5
-num_beams=4
+num_beams=8
 
-inference_data_path=/root/data/AudioCaps/new_test.jsonl
-output_dir=/root/exps/test/finetune_test_lora/aac_epoch_2_step_6682
-decode_log=$output_dir/decode_log_test_clean_beam${num_beams}_repetition_penalty1
+inference_data_path=/data/wenxi.chen/data/audiocaps/new_test.jsonl
+output_dir=/data/wenxi.chen/cp/aac_epoch_2_step_182_audiocaps_seed42
+decode_log=$output_dir/decode_beam${num_beams}
 
 
-# -m debugpy --listen 6666 --wait-for-client
+# -m debugpy --listen 5678 --wait-for-client
 python $code_dir/inference_aac_batch.py \
     --config-path "conf" \
     --config-name "prompt.yaml" \
@@ -41,19 +41,21 @@ python $code_dir/inference_aac_batch.py \
     ++dataset_config.inference_mode=true \
     ++dataset_config.normalize=true \
     ++dataset_config.input_type=mel \
+    ++dataset_config.fixed_length=true \
+    ++dataset_config.target_length=1024 \
     ++train_config.model_name=aac \
     ++train_config.batching_strategy=custom \
     ++train_config.num_epochs=1 \
-    ++train_config.val_batch_size=8 \
-    ++train_config.num_workers_dataloader=8 \
+    ++train_config.val_batch_size=4 \
+    ++train_config.num_workers_dataloader=0 \
     ++train_config.output_dir=$output_dir \
-    ++decode_log=$decode_log \
     ++train_config.freeze_encoder=true \
     ++train_config.freeze_llm=false \
-    ++ckpt_path=$output_dir/model.pt \
-    ++dataset_config.fixed_length=true \
-    ++dataset_config.target_length=1024 \
-    ++peft_ckpt=$output_dir \
     ++train_config.use_peft=true \
+    ++ckpt_path=$output_dir/model.pt \
+    ++peft_ckpt=$output_dir \
+    ++decode_log=$decode_log \
+    ++model_config.num_beams=$num_beams
 
 # note: to inference model trained the linear layer only, you could set '++train_config.use_peft=false' and 'train_config.freeze_llm=true'
+# bash /data/wenxi.chen/SLAM-LLM/examples/slam_aac/scripts/inference_audiocaps_bs.sh

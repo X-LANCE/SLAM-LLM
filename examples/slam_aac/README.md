@@ -31,7 +31,7 @@ Ensure your `jsonl` data follows the structure outlined below:
 {"key": "Y7fmOlUlwoNg_1", "source": "/root/data/AudioCaps/waveforms/test/Y7fmOlUlwoNg.wav", "target": "Constant rattling noise and sharp vibrations"}
 {"key": "Y6BJ455B1aAs_1", "source": "/root/data/AudioCaps/waveforms/test/Y6BJ455B1aAs.wav", "target": "A rocket flies by followed by a loud explosion and fire crackling as a truck engine runs idle"}
 ```
-In addition, you can refer to the [manifest](https://drive.google.com/drive/folders/1NJinoWg3yXKSPm-pRrhqKLvCD9dtDuDG?usp=sharing) file we've provided, which includes the Clotho dataset enhanced with paraphrasing augmentation as bonus.
+In addition, you can refer to the [manifest](https://drive.google.com/drive/folders/1NJinoWg3yXKSPm-pRrhqKLvCD9dtDuDG?usp=sharing) file we've provided, which includes the Clotho dataset enhanced with **paraphrasing augmentation** as bonus.
 
 ## Model Training
 To pre-train the SLAM-AAC model, you can run the following command:
@@ -50,14 +50,27 @@ bash scripts/finetune_audiocaps.sh
 bash scripts/finetune_clotho.sh
 ```
 
-#### Note:
+### Note:
 In the current version of SLAM-LLM, the `peft_ckpt` parameter is no longer required. However, if you are using the checkpoint provided by us, which was trained with an earlier version, please keep the `peft_ckpt` parameter in your configuration to ensure compatibility.
 
 
 ## Inference
-To perform inference with trained models, you could use this command:
+To perform inference with the trained models, you can use the following commands to decode using the common beam search method:
 ```bash
-bash scripts/inference_audiocaps.sh
+# Inference on AudioCaps (Beam Search)
+bash scripts/inference_audiocaps_bs.sh
+
+# Inference on Clotho (Beam Search)
+bash scripts/inference_clotho_bs.sh
+```
+
+For improved inference results, you can use the CLAP-Refine strategy, which employs multiple beam search decoding and may take longer to run. You can execute the following commands:
+```bash
+# Inference on AudioCaps (CLAP-Refine)
+bash scripts/inference_audiocaps_CLAP_Refine.sh
+
+# Inference on Clotho (CLAP-Refine)
+bash scripts/inference_clotho_CLAP_Refine.sh
 ```
 
 <!-- ##  Citation

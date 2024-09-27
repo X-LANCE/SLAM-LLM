@@ -219,6 +219,56 @@ class slam_model_aac(slam_model):
 
 
     @torch.no_grad()
+    def generate(self,
+                input_ids: torch.LongTensor = None,
+                attention_mask: Optional[torch.Tensor] = None,
+                position_ids: Optional[torch.LongTensor] = None,
+                past_key_values: Optional[List[torch.FloatTensor]] = None,
+                inputs_embeds: Optional[torch.FloatTensor] = None,
+                labels: Optional[torch.LongTensor] = None,
+                use_cache: Optional[bool] = None,
+                output_attentions: Optional[bool] = None,
+                output_hidden_states: Optional[bool] = None,
+                return_dict: Optional[bool] = None,
+                **kwargs,
+                ):
+        kwargs["inference_mode"] = True
+
+        inputs_embeds, attention_mask = self.forward(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            position_ids=position_ids,
+            past_key_values=past_key_values,
+            inputs_embeds=inputs_embeds,
+            labels=labels,
+            use_cache=use_cache,
+            output_attentions=output_attentions,
+            output_hidden_states=output_hidden_states,
+            return_dict=return_dict,
+            **kwargs,
+        )
+        
+        model_outputs = self.llm.generate(
+            inputs_embeds=inputs_embeds,
+            # max_length=kwargs.get("max_length", 200),
+            max_new_tokens=self.model_config.max_new_tokens,
+            num_beams=self.model_config.num_beams,
+            num_return_sequences=self.model_config.num_return_sequences,
+            do_sample=self.model_config.do_sample,
+            min_length=self.model_config.min_length,
+            top_p=self.model_config.top_p,
+            repetition_penalty=self.model_config.repetition_penalty,
+            length_penalty=self.model_config.length_penalty,
+            temperature=self.model_config.temperature,
+            attention_mask=attention_mask,
+            bos_token_id=self.tokenizer.bos_token_id,
+            eos_token_id=self.tokenizer.eos_token_id,
+            pad_token_id=self.tokenizer.pad_token_id
+        )
+        
+        return model_outputs
+
+    @torch.no_grad()
     def inference(
         self,
         wav_path = None,
