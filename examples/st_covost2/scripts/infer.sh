@@ -15,42 +15,22 @@ your_data=/userhome
 
 
 
-source=covost_ende
+source=covost_enzh
 
-checkpoint_dir=${your_data}/speech/data/qwen/spt-all-7B-mul6
-
-# speech_encoder_path=${your_data}/speech/models/whisper/large-v3.pt
 encoder_path_hf=${your_data}/speech/models/whisper-large-v3
+checkpoint_dir=${your_data}/speech/data/models/cotst
 llm_path=${your_data}/speech/models/Qwen2-7B
 
 train_data_path=${your_data}/speech/data/qwen/train_spt_0926.jsonl
-val_data_path=${your_data}/speech/data/qwen/test_spt_de.jsonl
-
+val_data_path=${your_code}/SLAM-LLM/examples/st_covost2/test_st.jsonl
 
 run_dir=${your_code}/SLAM-LLM
 cd $run_dir
 code_dir=examples/st_covost2
 
 
-
-
-
-
-
-
-
-
-# 查找以asr_epoch_开头的目录，提取epoch和step，并找出最大的epoch和step
-max_epoch=$(ls -d ${checkpoint_dir}/asr_epoch_*_step_* | sed -n 's/.*asr_epoch_\([0-9]*\)_step_\([0-9]*\).*/\1/p' | sort -n | tail -1)
-max_step=$(ls -d ${checkpoint_dir}/asr_epoch_${max_epoch}_step_* | sed -n 's/.*asr_epoch_[0-9]*_step_\([0-9]*\).*/\1/p' | sort -n | tail -1)
-
-# 构建最终的路径
-final_path="${checkpoint_dir}/asr_epoch_${max_epoch}_step_${max_step}"
-
-echo $final_path
-
-
-ckpt_name=$final_path/model.pt
+ckpt_name=$checkpoint_dir/model.pt
+echo $ckpt_name
 
 
 decode_log=$checkpoint_dir/$source.jsonl

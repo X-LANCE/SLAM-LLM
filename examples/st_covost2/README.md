@@ -4,9 +4,10 @@
 We only train the q-former projector in this recipe.
 Encoder | Projector | LLM 
 |---|---|---
-[whisper-large-v3](https://huggingface.co/openai/whisper-large-v3) | [q-former] | [Qwen2-7B](https://huggingface.co/Qwen/Qwen2-7B) 
+[whisper-large-v3](https://huggingface.co/openai/whisper-large-v3) | [q-former](https://huggingface.co/yxdu/cotst) | [Qwen2-7B](https://huggingface.co/Qwen/Qwen2-7B) 
 ```
 git lfs clone https://huggingface.co/openai/whisper-large-v3
+git lfs clone https://huggingface.co/yxdu/cotst
 git lfs clone https://huggingface.co/Qwen/Qwen2-7B
 ```
 
@@ -49,7 +50,8 @@ bash zsrt.sh
 
 
 ## Infer Stage
-Here, we have designed a four-step training process, where each training session uses the checkpoint obtained from the previous training session.
+You can try our pre-trained model.
+
 ```
 bash infer.sh
 ```
