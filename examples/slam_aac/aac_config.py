@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from typing import Optional, List
 @dataclass
 class ModelConfig:
-    file: str = "examples/aac_audiocaps/model/slam_model_aac.py:model_factory"
+    file: str = "examples/slam_aac/model/slam_model_aac.py:model_factory"
     llm_name: str = "vicuna-13b-v1.5"
     llm_path: str = "PATH/to/LLAMA/7B"
     llm_type: str = "decoder_only"
@@ -76,6 +76,8 @@ class TrainConfig:
         "help": "whether to freeze llm when finetuning, should be true when use peft finetuning"
     })
     freeze_encoder:bool = False
+    specaug:bool = False
+    noise_aug:bool = False
 
 @dataclass
 class DataConfig:
@@ -96,7 +98,7 @@ class DataConfig:
     fbank_std: float = 4.569
     target_length: int = 1024
     fixed_length: bool = False
-    prompt: str = "Describe the audio you hear. Output the audio caption directly without redundant content. Ensure that the output is not duplicated. "
+    prompt: str = "Describe the audio you hear."
     random_crop: bool = False
     encoder_projector_ds_rate: int = 5
     input_type: str = field(default="raw", metadata={

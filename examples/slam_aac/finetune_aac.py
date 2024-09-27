@@ -2,6 +2,7 @@ from slam_llm.pipeline.finetune import main as train
 
 import hydra
 import logging
+from typing import Optional
 from dataclasses import dataclass, field
 from omegaconf import DictConfig, ListConfig, OmegaConf
 from aac_config import ModelConfig, TrainConfig, DataConfig, LogConfig, FSDPConfig
@@ -15,6 +16,12 @@ class RunConfig:
     fsdp_config: FSDPConfig = field(default_factory=FSDPConfig)
     debug: bool = field(default=False, metadata={"help": "Use pdb when true"})
     metric: str = field(default="acc", metadata={"help": "The metric for evaluation"})
+    ckpt_path: Optional[str] = field(
+        default=None, metadata={"help": "The path to projector checkpoint"}
+    )
+    peft_ckpt: Optional[str] = field(
+        default=None, metadata={"help": "The path to peft checkpoint"}
+    )
 
 @hydra.main(config_name=None, version_base=None)
 def main_hydra(cfg: DictConfig):

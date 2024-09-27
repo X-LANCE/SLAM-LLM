@@ -12,21 +12,18 @@ code_dir=examples/slam_aac
 audio_encoder_path=/data/xiquan.li/models/EAT-base_epoch30_ft.pt
 llm_path=/data/xiquan.li/models/vicuna-7b-v1.5
 
-seed=10086
-btz=4
-lr=8e-6
+seed=666
+btz=16
+lr=1e-4
 encoder_projector_ds_rate=5
 
-train_jsonl_path=/data/wenxi.chen/data/clotho/development.jsonl
+train_jsonl_path=/data/wenxi.chen/data/pretrain/merged_data_v7.jsonl
 val_jsonl_path=/data/wenxi.chen/data/clotho/validation.jsonl
 
 
-exp_name=slam-aac_Clotho
-output_dir=/data/wenxi.chen/exps/Clotho/${exp_name}
+exp_name=slam-aac_pretrain
+output_dir=/root/exps/test/${exp_name}
 
-ckpt_path=/data/wenxi.chen/cp/wavcaps_pt_v7-seed666_btz16_lr1e-4-short_prompt_10w/aac_epoch_4_step_4001/model.pt   # path to load the pre-trained model
-peft_ckpt=/data/wenxi.chen/cp/wavcaps_pt_v7-seed666_btz16_lr1e-4-short_prompt_10w/aac_epoch_4_step_4001
-# ↑ This parameter is required for loading the old version of the SLAM-LLM model. Our released checkpoint uses the old version. In the new version, this parameter is no longer needed.
 
 hydra_args="
 hydra.run.dir=$output_dir \
@@ -64,6 +61,7 @@ hydra.run.dir=$output_dir \
 ++train_config.output_dir=$output_dir \
 ++train_config.seed=${seed} \
 ++train_config.use_peft=true \
+++train_config.run_validation=false \
 ++train_config.peft_config.peft_method=lora \
 ++train_config.specaug=true \
 ++log_config.log_file="${output_dir}/train.log" \
@@ -73,8 +71,6 @@ hydra.run.dir=$output_dir \
 ++log_config.wandb_exp_name=$exp_name \
 ++log_config.use_wandb=true \
 ++metric=acc \
-++ckpt_path=$ckpt_path \
-++peft_ckpt=$peft_ckpt \
 "
 
 # note: to train the linear layer only, you could set '++train_config.use_peft=false' and 'train_config.freeze_llm=true'
@@ -98,4 +94,4 @@ else
         $hydra_args
 fi
 
-# bash /data/wenxi.chen/SLAM-LLM/examples/slam_aac/scripts/finetune_clotho.sh
+# bash /data/wenxi.chen/SLAM-LLM/examples/slam_aac/scripts/pretrain.sh
