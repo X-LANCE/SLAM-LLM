@@ -22,12 +22,12 @@ run_dir=${your_code}/SLAM-LLM
 cd $run_dir
 code_dir=examples/st_covost2
 
-speech_encoder_path=${your_data}/speech/models/whisper/large-v3.pt
+# speech_encoder_path=${your_data}/speech/models/whisper/large-v3.pt
 encoder_path_hf=${your_data}/speech/models/whisper-large-v3
 llm_path=${your_data}/speech/models/Qwen2-7B
 
 train_data_path=${your_data}/speech/data/qwen/train_spt_0926.jsonl
-val_data_path=${your_data}/speech/data/qwen/test_spt_de.jsonl
+val_data_path=${your_data}/speech/data/qwen/dev_spt_de.jsonl
 
 
 

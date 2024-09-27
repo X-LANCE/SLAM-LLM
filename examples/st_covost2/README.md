@@ -1,51 +1,62 @@
-# ASR_Librispeech
+# ST_covost2
 
-## Performance and checkpoints
-We only train the linear projector in this recipe.
+## Download Model 
+We only train the q-former projector in this recipe.
 Encoder | Projector | LLM | test-clean | test-other
 |---|---|---|---|---
-[WavLM-large](https://drive.google.com/file/d/12-cB34qCTvByWT-QtOcZaqwwO21FLSqU/view) | [Linear](https://drive.google.com/file/d/1cLNuMR05oXxKj8M_Z3yAZ5JHJ06ybIHp/view?usp=sharing)(~18.88M) | [vicuna-7b-v1.5](https://huggingface.co/lmsys/vicuna-7b-v1.5) | 2.28 | 4.78
-[hubert_xtralarge_ll60k_finetune_ls960](https://dl.fbaipublicfiles.com/hubert/hubert_xtralarge_ll60k_finetune_ls960.pt) | [Linear](https://drive.google.com/file/d/1Np7EjMYSZCl7M6Q92pt_MvOSSX6ggJPA/view?usp=drive_link)(~21.50M) | [vicuna-7b-v1.5](https://huggingface.co/lmsys/vicuna-7b-v1.5) | 1.84 | 3.39 
+[whisper-large-v3](https://huggingface.co/openai/whisper-large-v3) | [q-former] | [Qwen2-7B](https://huggingface.co/Qwen/Qwen2-7B) | 2.28 | 4.78
+```
+git lfs clone https://huggingface.co/openai/whisper-large-v3
+git lfs clone https://huggingface.co/Qwen/Qwen2-7B
+```
+
+
+## Data 
+You need to download this dataset.
+```
+(https://github.com/facebookresearch/covost)
+```
+
+
 
 ## Data preparation
-You need to prepare the data jsonl in this format.
+You need to prepare the data jsonl in this format.  
+You can find the test jsonl in "test_st.jsonl"
 ```
-{"key": "1001-134707-0000_ASR", "source": "/data/open_data/librispeech_audio/audio/librispeech_1001-134707-0000.wav", "target": "1 little recks the laborer. How near his work is holding him to God, The loving laborer through space and time, after all, not to create, only or found only."}
-...
-{"key": "1001-134707-0000_ASR", "source": "/data/open_data/librispeech_audio/audio/librispeech_1001-134707-0000.wav", "target": "1 little recks the laborer. How near his work is holding him to God, The loving laborer through space and time, after all, not to create, only or found only."}
+{"audio": "/userhome/speech/data/common/4/en/clips/common_voice_en_699711.mp3", "prompt": "<|en|>", "gt": "\"She'll be all right.\"", "source": "covost_en"}
+{"audio": "/userhome/speech/data/common/4/en/clips/common_voice_en_699711.mp3", "prompt": "<|de|>", "gt": "\"She'll be all right.\"<|de|>Sie wird schon in Ordnung sein.", "source": "covost_ende"}
+{"audio": "/userhome/speech/data/common/4/en/clips/common_voice_en_699711.mp3", "prompt": "<|ja|>", "gt": "\"She'll be all right.\"<|ja|>彼女は大丈夫だろう。", "source": "covost_enja"}
+{"audio": "/userhome/speech/data/common/4/en/clips/common_voice_en_699711.mp3", "prompt": "<|zh|>", "gt": "\"She'll be all right.\"<|zh|>她会没事的。", "source": "covost_enzh"}
+{"audio": "/userhome/speech/data/common/4/en/clips/common_voice_en_699711.mp3", "prompt": "\"She'll be all right.\"<|de|>", "gt": "\"She'll be all right.\"<|de|>Sie wird schon in Ordnung sein.", "source": "covost_enende"}
+{"audio": "/userhome/speech/data/common/4/en/clips/common_voice_en_699711.mp3", "prompt": "\"She'll be all right.\"<|ja|>", "gt": "\"She'll be all right.\"<|ja|>彼女は大丈夫だろう。", "source": "covost_enenja"}
+{"audio": "/userhome/speech/data/common/4/en/clips/common_voice_en_699711.mp3", "prompt": "\"She'll be all right.\"<|zh|>", "gt": "\"She'll be all right.\"<|zh|>她会没事的。", "source": "covost_enenzh"}
 ```
 
-## Decode with checkpoints
+## ASR pre-train
+In this step, we perform ASR pretraining to acquire speech recognition capabilities.
+
 ```
-bash decode_wavlm_large_linear_vicuna_7b.sh
+bash asr_pretrain.sh
 ```
-Modify the path including `speech_encoder_path`, `llm_path`, `output_dir`, `ckpt_path`, `val_data_path` and `decode_log` in the script when you run the shell script. 
 
-## Train a new model
 
-### Use whisper as the encoder
+## MMT Stage
+In this phase, we conduct multimodal machine translation training to enhance the final performance.
 ```
-bash finetune_whisper_large_linear_vicuna_7b.sh
+bash mmt.sh
 ```
-Whisper takes mel as input. Pay attention to the key `dataset_config.mel_size` for different version of the whisper model family. 
 
-### Use self-supervised model(such as WavLM) as the encoder
+## SRT Stage
+monolingual SRT training.
 ```
-bash finetune_wavlm_large_linear_vicuna_7b.sh
+bash srt.sh
 ```
-WavLM takes raw wavform as input. Pay attention to the key `dataset_config.normalize` and `model_config.normalize` for different version of the SSL models for different SSL models are different in these keys. 
 
-**Note**:
-- if you are running on a machine with multiple GPUs please make sure to only make one of them visible using `export CUDA_VISIBLE_DEVICES=GPU:id`
-- If you want to run with FSDP, you can set `++train_config.enable_fsdp=true` and `++train_config.enable_ddp=false`.
-
-### Flash Attention and Xformer Memory Efficient Kernels
-
-Setting `use_fast_kernels` will enable using of Flash Attention or Xformer memory-efficient kernels based on the hardware being used. This would speed up the fine-tuning job. This has been enabled in `optimum` library from HuggingFace as a one-liner API, please read more [here](https://pytorch.org/blog/out-of-the-box-acceleration/).
-
-### Fine-tuning using FSDP on 70B Model
-
-If you are interested in running full parameter fine-tuning on the 70B model, you can enable `low_cpu_fsdp` mode as the following command. This option will load model on rank0 only before moving model to devices to construct FSDP. This can dramatically save cpu memory when loading large models like 70B (on a 8-gpu node, this reduces cpu memory from 2+T to 280G for 70B model). This has been tested with `BF16` on 16xA100, 80GB GPUs.
+multilingual multitask training.
+## zsrt Stage
+```
+bash zsrt.sh
+```
 
 ##  Citation
 You can refer to the paper for more results. 
