@@ -2,9 +2,9 @@
 
 ## Download Model 
 We only train the q-former projector in this recipe.
-Encoder | Projector | LLM | test-clean | test-other
-|---|---|---|---|---
-[whisper-large-v3](https://huggingface.co/openai/whisper-large-v3) | [q-former] | [Qwen2-7B](https://huggingface.co/Qwen/Qwen2-7B) | 2.28 | 4.78
+Encoder | Projector | LLM 
+|---|---|---
+[whisper-large-v3](https://huggingface.co/openai/whisper-large-v3) | [q-former] | [Qwen2-7B](https://huggingface.co/Qwen/Qwen2-7B) 
 ```
 git lfs clone https://huggingface.co/openai/whisper-large-v3
 git lfs clone https://huggingface.co/Qwen/Qwen2-7B
