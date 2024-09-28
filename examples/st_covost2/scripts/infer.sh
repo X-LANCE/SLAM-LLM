@@ -15,14 +15,16 @@ your_data=/userhome
 
 
 
+
+
+
 source=covost_enzh
 
 encoder_path_hf=${your_data}/speech/models/whisper-large-v3
-checkpoint_dir=${your_data}/speech/data/models/cotst
+checkpoint_dir=${your_data}/speech/models/cotst
 llm_path=${your_data}/speech/models/Qwen2-7B
 
-train_data_path=${your_data}/speech/data/qwen/train_spt_0926.jsonl
-val_data_path=${your_code}/SLAM-LLM/examples/st_covost2/test_st.jsonl
+val_data_path=${your_data}/speech/data/qwen/test_spt_0926.jsonl
 
 run_dir=${your_code}/SLAM-LLM
 cd $run_dir
