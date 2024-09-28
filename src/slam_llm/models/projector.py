@@ -58,7 +58,7 @@ class EncoderProjectorQFormer(nn.Module):
         configuration.encoder_hidden_size = self.encoder_dim
         configuration.num_hidden_layers = 8
 
-        self.query_len = 64
+        self.query_len = int(config.get("query_len", 64))
         self.query = nn.Parameter(torch.zeros(1, self.query_len, configuration.hidden_size))
         self.query.data.normal_(mean=0.0, std=1.0)
         self.qformer = Blip2QFormerModel(configuration)
