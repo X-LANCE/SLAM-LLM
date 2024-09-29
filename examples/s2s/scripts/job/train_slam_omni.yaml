@@ -1,8 +1,8 @@
 description: speech_lm
 
 target:
-  name: msrresrchvc # 80G A100  
-  # name: msroctovc # 40G A100
+  # name: msrresrchvc # 80G A100  
+  name: msroctovc # 40G A100
   service: sing
   workspace_name: Workspace_NLC # 
 
@@ -21,25 +21,29 @@ storage:
     mount_dir: /valleblob
     mount_options: ["-o", "attr_timeout=240"]
 
-# amlt run ./examples/s2s/scripts/job/train_slam_omni.yaml 1234 -y
+# amlt run ./examples/s2s/scripts/job/train_slam_omni.yaml 3824 -y
 
 search:
   job_template:
     name: slam-omni_v0
     # sku: 4x32G8-V100-IB
-    sku: 1x80G4-A100 
-    # sku: 1x40G8-A100 
+    # sku: 1x80G4-A100 
+    sku: 1x40G8-A100 
     # sku: 80G8-H100-NvLink
     # sku: 3xND96rs_v4 # 40 8 a100
     sla_tier: Premium
     priority: high
     process_count_per_node: 1
+    identity: managed
     command:
       #- conda init
       # - source activate py36
       # - export model_path=/valleblob/vzongyili/cv/model/tats/vqgan/vqgan_ucf101_baseline_g{gpus}_b{batch_size}_wandb
-      - bash ./examples/s2s/scripts/finetune_s2s.sh {gpus} #{batch_size} $$model_path
-      - sleep 3h
+      # - bash ./examples/s2s/scripts/finetune_s2s.sh {gpus} #{batch_size} $$model_path
+      # - bash ./examples/s2s/scripts/finetune_s2s_fp16.sh {gpus} #{batch_size} $$model_path
+      - bash test.sh {gpus}
+      # - sleep 3h
+      - sleep infinity
     submit_args:
       env:
         NCCL_DEBUG: INFO
@@ -53,5 +57,6 @@ search:
   params:
     - name: gpus
       spec: discrete
-      values: [4]
-      # values: [8]
+      # values: [4]
+      values: [8]
+ 

@@ -50,11 +50,12 @@ def main(kwargs: DictConfig):
 	# Update the configuration for the training and sharding process
 	# train_config, fsdp_config, model_config, log_config = TRAIN_CONFIG(), FSDP_CONFIG(), MODEL_CONFIG(), LOG_CONFIG()
 	# update_config((train_config, fsdp_config, model_config, log_config), **kwargs)
-	train_config, fsdp_config, model_config, log_config, dataset_config = kwargs.train_config, \
-	                                                                      kwargs.fsdp_config, \
-	                                                                      kwargs.model_config, \
-	                                                                      kwargs.log_config, \
-	                                                                      kwargs.dataset_config
+	train_config, fsdp_config, model_config, log_config, dataset_config, decode_config = kwargs.train_config, \
+	                                                                      				kwargs.fsdp_config, \
+																						kwargs.model_config, \
+																						kwargs.log_config, \
+																						kwargs.dataset_config, \
+																						kwargs.decode_config
 
 	OmegaConf.set_struct(kwargs,False)
 	del kwargs["train_config"]
@@ -62,6 +63,7 @@ def main(kwargs: DictConfig):
 	del kwargs["model_config"]
 	del kwargs["log_config"]
 	del kwargs["dataset_config"]
+	del kwargs["decode_config"]
 	OmegaConf.set_struct(kwargs,True)
 
 	# Set log
@@ -124,8 +126,8 @@ def main(kwargs: DictConfig):
 			drop_last=False,
 			collate_fn=dataset_test.collator
         )
-	
 
+	logger.info("decode_config: {}".format(decode_config))	
 	logger.info("=====================================")
 	pred_path = kwargs.get('decode_log') + "_pred_text"
 	gt_path = kwargs.get('decode_log') + "_gt_text"
@@ -139,7 +141,7 @@ def main(kwargs: DictConfig):
 		for step, batch in enumerate(test_dataloader):
 			for key in batch.keys():
 				batch[key] = batch[key].to(device) if isinstance(batch[key], torch.Tensor) else batch[key]
-			model_outputs = model.generate(**batch)
+			model_outputs = model.generate(**batch, **decode_config)
 			text_outputs = model_outputs[7]
 			audio_outputs = model_outputs[:7]
 			# output_text = model.tokenizer.batch_decode(text_outputs, add_special_tokens=False, skip_special_tokens=True)
@@ -154,6 +156,9 @@ def main(kwargs: DictConfig):
 
 			if decode_text_only:
 				continue
+				
+			if audio_outputs[0].shape[0] == decode_config.max_new_tokens:
+				continue
 
 			for i, key in enumerate(batch["keys"]):
 				audio_tokens = [audio_outputs[layer] for layer in range(7)]
@@ -167,6 +172,9 @@ def main(kwargs: DictConfig):
 					key = key[:-4]
 				sf.write(f"{generate_audio_dir}/{key}.wav", audio_hat.squeeze().cpu().numpy(), 24000)
 				logger.info(f"Generated Audio: {key}.wav")
+
+	logger.info("=====================================")
+	logger.info("Inference finished.")
 
 if __name__ == "__main__":
 	main_hydra()

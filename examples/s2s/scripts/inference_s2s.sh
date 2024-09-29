@@ -6,6 +6,7 @@ export TOKENIZERS_PARALLELISM=false
 export OMP_NUM_THREADS=1
 export LD_LIBRARY_PATH=/home/v-wenxichen/anaconda3/envs/slam/lib:$LD_LIBRARY_PATH
 export PYDEVD_WARN_SLOW_RESOLVE_TIMEOUT=2
+export CUDA_LAUNCH_BLOCKING=1
 
 run_dir=/home/v-wenxichen/SLAM-LLM
 cd $run_dir
@@ -15,18 +16,21 @@ speech_encoder_path="small"   # whisper small
 llm_path="Qwen/Qwen2-0.5B"
 codec_decoder_path="hubertsiuzdak/snac_24khz"
 
-ckpt_path=/home/v-wenxichen/exp/s2s/2024_09_24/s2s_train_v0/s2s_epoch_1_step_110000
+ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v0_gpu4_btz4_epochs10_retrain_from_epoch2/s2s_epoch_4_step_22946
 split=test
 
 # val_data_path=/home/v-wenxichen/data/s2s/test/${split}.jsonl
 val_data_path="gpt-omni/VoiceAssistant-400K"
 load_from_cache_file=true
 
-decode_log=$ckpt_path/decode_${split}
-decode_text_only=true
+repetition_penalty=1.2
+max_new_tokens=100
+
+decode_log=$ckpt_path/decode_${split}_rp${repetition_penalty}
+decode_text_only=false
 
 # -m debugpy --listen 5678 --wait-for-client
-python $code_dir/inference_s2s_batch.py \
+python -m debugpy --listen 5678 --wait-for-client $code_dir/inference_s2s_batch.py \
         --config-path "conf" \
         --config-name "prompt.yaml" \
         hydra.run.dir=$ckpt_path \
@@ -59,5 +63,7 @@ python $code_dir/inference_s2s_batch.py \
         ++decode_log=$decode_log \
         ++ckpt_path=$ckpt_path/model.pt \
         ++decode_text_only=$decode_text_only \
+        ++decode_config.repetition_penalty=$repetition_penalty \
+        ++decode_config.max_new_tokens=$max_new_tokens \
 
 # bash /home/v-wenxichen/SLAM-LLM/examples/s2s/scripts/inference_s2s.sh

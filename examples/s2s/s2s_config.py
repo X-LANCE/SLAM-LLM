@@ -155,6 +155,25 @@ class DataConfig:
     load_from_cache_file: bool = False
 
 @dataclass
+class DecodeConfig:
+    do_sample: bool = False
+    max_new_tokens: int = 256
+    min_length: int = 10
+    temperature: float = 1.0
+    top_k: int = 50
+    top_p: float = 1.0
+    num_beams: int = 1
+    num_return_sequences: int = 1
+    max_time: float = 0.0
+    repetition_penalty: float = 1.0
+    length_penalty: float = 1.0
+    early_stopping: bool = False
+    no_repeat_ngram_size: int = 0
+    bad_words_ids: List = field(default_factory=list)
+    num_beam_groups: int = 1
+    diversity_penalty: float = 0.0
+
+@dataclass
 class FSDPConfig:
     mixed_precision: bool = True
     use_fp16: bool = False
@@ -175,3 +194,4 @@ class LogConfig:
     wandb_exp_name: str = "exp_name"
     log_file: str = "/valleblob/v-wenxichen/exp/log/test.log"
     log_interval: int = 10
+

@@ -289,6 +289,7 @@ class slam_model_s2s(slam_model):
         do_sample = kwargs.get("do_sample", False)
         max_new_tokens = kwargs.get("max_new_tokens", 360)
         temperature = kwargs.get("temperature", 1.0)
+        repetition_penalty = kwargs.get("repetition_penalty", 1.0)
 
         pad_t = self.model_config.vocab_config.pad_t
         pad_a = self.model_config.vocab_config.pad_a
@@ -323,6 +324,22 @@ class slam_model_s2s(slam_model):
             xt_logits = logits[..., :text_vocab_size]
             xa_logits = [logits[..., text_vocab_size + audio_vocab_size * i : text_vocab_size + audio_vocab_size * (i + 1)] for i in range(7)]
 
+            if repetition_penalty != 1.0:
+                for token_id in set(generated_ids[7]):
+                    # Apply penalty to text logits
+                    if xt_logits[0, -1, token_id] < 0:
+                        xt_logits[0, -1, token_id] *= repetition_penalty
+                    else:
+                        xt_logits[0, -1, token_id] /= repetition_penalty
+                
+                for i in range(7):
+                    for token_id in set(generated_ids[i]):
+                        # Apply penalty to audio logits
+                        if xa_logits[i][0, -1, token_id] < 0:
+                            xa_logits[i][0, -1, token_id] *= repetition_penalty
+                        else:
+                            xa_logits[i][0, -1, token_id] /= repetition_penalty
+
             if not text_end:
                 next_token_text = self.sample_next_token(xt_logits[:, -1, :], do_sample, temperature, text_vocab_size).squeeze(0)
             else:
@@ -340,11 +357,6 @@ class slam_model_s2s(slam_model):
                 audio_end = True
             if next_token_text == eot:
                 text_end = True
-
-            # Append generated tokens to the list
-            for i in range(7):
-                generated_ids[i].append(next_tokens_audio[i].clone().tolist()[0])  # Audio layers
-            generated_ids[7].append(next_token_text.clone().tolist()[0])  # Text layer
             
             # Update input_ids and inputs_embeds for the next step
             current_input_text = next_token_text
@@ -357,12 +369,17 @@ class slam_model_s2s(slam_model):
             #     input_pos = input_pos.add_(1)
             attention_mask = torch.cat([attention_mask, torch.ones((input_ids.size(0), 1), device=input_ids.device)], dim=1)
 
-            if audio_end and text_end:
+            if audio_end:
                 break
+
+            # Append generated tokens to the list
+            for i in range(7):
+                generated_ids[i].append(next_tokens_audio[i].clone().tolist()[0])  # Audio layers
+            generated_ids[7].append(next_token_text.clone().tolist()[0])  # Text layer
 
         # Concatenate the generated tokens to form the complete sequence
         text_tokens = generated_ids[-1]
-        generated_ids[-1] = text_tokens[: text_tokens.index(eot)]
+        # generated_ids[-1] = text_tokens[: text_tokens.index(eot)]
         generated_ids = [torch.tensor(layer) for layer in generated_ids] 
         return generated_ids
 
