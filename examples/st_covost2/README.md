@@ -1,5 +1,15 @@
 # ST_covost2
 
+
+## Model Stracture
+<img src="image/framework.jpg" alt="示例图片" style="width:75%;">
+
+
+## Multitask 
+<img src="image/prompt.png" alt="示例图片" style="width:50%;">
+
+
+
 ## Download Model 
 We only train the q-former projector in this recipe.
 Encoder | Projector | LLM 
@@ -33,7 +43,7 @@ You can find the test jsonl in "test_st.jsonl"
 {"audio": "/userhome/speech/data/common/4/en/clips/common_voice_en_699711.mp3", "prompt": "\"She'll be all right.\"<|zh|>", "gt": "\"She'll be all right.\"<|zh|>她会没事的。", "source": "covost_enenzh"}
 ```
 ## Train Stage
-Here, we have designed a four-step training process, where each training session uses the checkpoint obtained from the previous training session.
+Here, we have designed a three-step training process, where each training session uses the checkpoint obtained from the previous training session.
 ```
 #In this step, we perform ASR pretraining to acquire speech recognition capabilities.
 bash asr_pretrain.sh
@@ -41,10 +51,8 @@ bash asr_pretrain.sh
 #In this phase, we conduct multimodal machine translation training to enhance the final performance.
 bash mmt.sh
 
-#monolingual SRT training.
+#monolingual SRT training and multitask training.
 bash srt.sh
-
-#multilingual multitask training.
 bash zsrt.sh
 ```
 
