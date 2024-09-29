@@ -379,7 +379,7 @@ class slam_model_s2s(slam_model):
 
         # Concatenate the generated tokens to form the complete sequence
         text_tokens = generated_ids[-1]
-        # generated_ids[-1] = text_tokens[: text_tokens.index(eot)]
+        generated_ids[-1] = text_tokens[: text_tokens.index(eot)]
         generated_ids = [torch.tensor(layer) for layer in generated_ids] 
         return generated_ids
 
