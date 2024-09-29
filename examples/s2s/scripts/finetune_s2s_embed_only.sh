@@ -18,18 +18,18 @@ val_data_path="/valleblob/v-wenxichen/data/s2s/VoiceAssistant-400K"
 load_from_cache_file=false
 
 batch_size_training=4
-use_fp16=true
+use_fp16=false
 num_epochs=10
 train_audio_embed_only=true
 
-exp_name="s2s_train_v0_gpu4_btz${batch_size_training}_epochs${num_epochs}_retrain_from_epoch2_fp16_train_embed_only"
+exp_name="s2s_train_v0_gpu4_btz${batch_size_training}_epochs${num_epochs}_train_embed_only"
 # exp_name="s2s_train_v0_gpu24_btz${batch_size_training}_fp16"
 # exp_name="debug"
 
 home_dir=/valleblob/v-wenxichen/exp/s2s
 # output_dir=$home_dir/$(TZ='Asia/Shanghai' date +"%Y_%m_%d")/$(TZ='Asia/Shanghai' date +"%H_%M_%S")
 output_dir=$home_dir/$exp_name
-ckpt_path=/valleblob/v-wenxichen/exp/s2s/2024_09_26/s2s_train_v0_gpu4_btz4/s2s_epoch_2_step_20982  # this line is for resuming training
+ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v0_gpu4_btz4_fp16/s2s_epoch_4_step_22946  # this line is for resuming training
 
 if [ "$exp_name" = "debug" ]; then
     use_wandb=false
