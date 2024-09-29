@@ -20,6 +20,34 @@ from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
 
+def partial_freeze_weights(model, original_vocabsize, total_vocabsize):
+    trainable_range = (original_vocabsize, total_vocabsize)
+
+    # Define a hook to zero out the gradient for weights outside the trainable range during the backward pass
+    def zero_out_gradient(grad):
+        grad[:trainable_range[0], :] = 0
+        grad[trainable_range[1] + 1:, :] = 0
+        return grad
+
+    # Freeze all layers first
+    for param in model.parameters():
+        param.requires_grad = False
+
+    # Assuming the output layer is `lm_head`
+    for param in model.llm.lm_head.parameters():
+        # Compute the standard deviation for He initialization
+        std_dev = (2.0 / param.size(1)) ** 0.5
+
+        # Initialize the specific rows with He initialization
+        param[original_vocabsize:total_vocabsize] = (
+            torch.randn((trainable_range[1] - trainable_range[0], param.size(1))) * std_dev
+        )
+        param.requires_grad = True
+
+        # Register the hook on the weight tensor
+        param.register_hook(zero_out_gradient)
+
+
 def model_factory(train_config, model_config, **kwargs):
     # return necessary components for training
     tokenizer = setup_tokenizer(train_config, model_config, **kwargs)
@@ -57,6 +85,10 @@ def model_factory(train_config, model_config, **kwargs):
         ckpt_dict = torch.load(ckpt_path, map_location="cpu")
         model.load_state_dict(ckpt_dict, strict=False)              # TODO: 这里需要测试存储的 llm 有没有全部加载进来
 
+    if train_config.train_audio_embed_only:
+        logger.info("Only training audio embedding layer")
+        partial_freeze_weights(model, model_config.vocab_config.padded_text_vocabsize, model_config.vocab_config.total_vocabsize)
+
     print_model_size(
         model,
         train_config,
@@ -92,7 +124,8 @@ class slam_model_s2s(slam_model):
         )
 
         # resize llm embedding layer
-        if self.model_config.vocab_config.total_vocabsize != self.llm.lm_head.weight.size(0):
+        self.original_vocabsize = self.llm.lm_head.weight.size(0)
+        if self.model_config.vocab_config.total_vocabsize != self.original_vocabsize:
             self.llm.resize_token_embeddings(self.model_config.vocab_config.total_vocabsize)
             logger.info("Resize llm embedding layer's vocab size to {}".format(self.model_config.vocab_config.total_vocabsize))
 
@@ -379,7 +412,7 @@ class slam_model_s2s(slam_model):
 
         # Concatenate the generated tokens to form the complete sequence
         text_tokens = generated_ids[-1]
-        generated_ids[-1] = text_tokens[: text_tokens.index(eot)]
+        generated_ids[-1] = text_tokens[: text_tokens.index(eot)] if eot in text_tokens else text_tokens
         generated_ids = [torch.tensor(layer) for layer in generated_ids] 
         return generated_ids
 

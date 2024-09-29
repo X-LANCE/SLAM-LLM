@@ -16,7 +16,7 @@ speech_encoder_path="small"   # whisper small
 llm_path="Qwen/Qwen2-0.5B"
 codec_decoder_path="hubertsiuzdak/snac_24khz"
 
-ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v0_gpu4_btz4_epochs10_retrain_from_epoch2/s2s_epoch_4_step_22946
+ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v0_gpu4_btz4_fp16/s2s_epoch_4_step_22946
 split=test
 
 # val_data_path=/home/v-wenxichen/data/s2s/test/${split}.jsonl
@@ -30,7 +30,7 @@ decode_log=$ckpt_path/decode_${split}_rp${repetition_penalty}
 decode_text_only=false
 
 # -m debugpy --listen 5678 --wait-for-client
-python -m debugpy --listen 5678 --wait-for-client $code_dir/inference_s2s_batch.py \
+python $code_dir/inference_s2s_batch.py \
         --config-path "conf" \
         --config-name "prompt.yaml" \
         hydra.run.dir=$ckpt_path \
