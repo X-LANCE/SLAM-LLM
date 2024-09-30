@@ -163,9 +163,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         for i in range(self.code_layer):
             answer_ids_item = []
             answer_ids_item += [layershift(self._pad_a, i)] * length
-            # answer_ids_item += [(layershift(self._eoa, i))]
             answer_ids.append(torch.tensor(answer_ids_item).unsqueeze(0))
-        # answer_id_T = torch.tensor([self._pad_t] * length + [self._eot])
         answer_id_T = torch.tensor([self._pad_t] * length)
         answer_ids.append(answer_id_T.unsqueeze(0))
         return answer_ids
