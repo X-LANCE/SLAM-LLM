@@ -89,6 +89,13 @@ def model_factory(train_config, model_config, **kwargs):
         logger.info("Only training audio embedding layer")
         partial_freeze_weights(model, model_config.vocab_config.padded_text_vocabsize, model_config.vocab_config.total_vocabsize)
 
+    if train_config.train_embed_only:
+        logger.info("Only training embedding layer")
+        for param in model.parameters():
+            param.requires_grad = False
+        for param in model.llm.lm_head.parameters():
+            param.requires_grad = True
+
     print_model_size(
         model,
         train_config,

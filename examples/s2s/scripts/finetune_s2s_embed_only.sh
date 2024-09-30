@@ -18,11 +18,12 @@ val_data_path="/valleblob/v-wenxichen/data/s2s/VoiceAssistant-400K"
 load_from_cache_file=false
 
 batch_size_training=4
-use_fp16=false
+use_fp16=true
 num_epochs=10
-train_audio_embed_only=true
+train_audio_embed_only=false
+train_embed_only=true
 
-exp_name="s2s_train_v0_gpu4_btz${batch_size_training}_epochs${num_epochs}_train_embed_only"
+exp_name="s2s_train_v0_gpu4_btz${batch_size_training}_epochs${num_epochs}_train_embed_only_fp16"
 # exp_name="s2s_train_v0_gpu24_btz${batch_size_training}_fp16"
 # exp_name="debug"
 
@@ -72,6 +73,7 @@ hydra.run.dir=$output_dir \
 ++train_config.output_dir=$output_dir \
 ++train_config.use_fp16=$use_fp16 \
 ++train_config.train_audio_embed_only=$train_audio_embed_only \
+++train_config.train_embed_only=$train_embed_only \
 ++metric=acc \
 ++log_config.use_wandb=$use_wandb \
 ++log_config.wandb_entity_name=wxc12 \

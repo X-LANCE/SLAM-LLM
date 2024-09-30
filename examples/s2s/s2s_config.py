@@ -121,6 +121,7 @@ class TrainConfig:
         "help": "whether to freeze llm when finetuning, should be true when use peft finetuning"
     })
     freeze_encoder:bool = False
+    train_embed_only:bool = False
     train_audio_embed_only:bool = False
 
 

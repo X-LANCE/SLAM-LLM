@@ -41,6 +41,7 @@ search:
       # - export model_path=/valleblob/vzongyili/cv/model/tats/vqgan/vqgan_ucf101_baseline_g{gpus}_b{batch_size}_wandb
       # - bash ./examples/s2s/scripts/finetune_s2s.sh {gpus} #{batch_size} $$model_path
       # - bash ./examples/s2s/scripts/finetune_s2s_fp16.sh {gpus} #{batch_size} $$model_path
+      # - bash ./examples/s2s/scripts/finetune_s2s_embed_only.sh {gpus}
       - bash ./examples/s2s/scripts/finetune_s2s_embed_only.sh {gpus}
       # - bash test.sh {gpus}
       # - sleep 3h
