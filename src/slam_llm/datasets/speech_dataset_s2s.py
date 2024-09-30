@@ -77,6 +77,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         self._input_a = self.vocab_config.input_a
         self._answer_a = self.vocab_config.answer_a
         self._split = self.vocab_config.split
+        self.code_layer = self.vocab_config.code_layer
 
         self.special_token_a = self._answer_a
         self.special_token_t = self._answer_t
@@ -147,7 +148,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
 
     def get_input_ids(self, length, special_token_a, special_token_t):
         input_ids = []
-        for i in range(7):
+        for i in range(self.code_layer):
             input_ids_item = []
             input_ids_item.append(layershift(self._input_a, i))
             input_ids_item += [layershift(self._pad_a, i)] * length
@@ -159,7 +160,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
 
     def get_answer_ids(self, length):
         answer_ids = []
-        for i in range(7):
+        for i in range(self.code_layer):
             answer_ids_item = []
             answer_ids_item += [layershift(self._pad_a, i)] * length
             # answer_ids_item += [(layershift(self._eoa, i))]
@@ -203,9 +204,9 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         # audio_pseudo = torch.full((audio_length,), -1) # placeholder
         prompt_ids = torch.tensor(prompt_ids, dtype=torch.int64)
         example_ids = self.get_input_ids(audio_length + prompt_length, self.special_token_a, self.special_token_t)
-        text_layer = example_ids[7]
+        text_layer = example_ids[self.code_layer]
         text_layer = torch.cat((text_layer[:,:audio_length + 1], prompt_ids.unsqueeze(0), text_layer[:,-2:]), dim=1)
-        example_ids[7] = text_layer
+        example_ids[self.code_layer] = text_layer
 
         if self.inference_mode:
             example_mask = example_ids[0][0].ge(-1)  # [True,True]
@@ -231,13 +232,13 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
 
         answer_length = max(len(answer_text_ids), target_audio_length)
         answer_ids = self.get_answer_ids(answer_length)                 # NOTE: somtimes answer_text_ids is longer than target_audio_length 
-        answer_ids[7] = torch.cat((answer_text_ids.unsqueeze(0), answer_ids[7][:,len(answer_text_ids):]),dim=1)     # [answer_text,eos]
+        answer_ids[self.code_layer] = torch.cat((answer_text_ids.unsqueeze(0), answer_ids[self.code_layer][:,len(answer_text_ids):]),dim=1)     # [answer_text,eos]
         text_padding_length = target_audio_length - len(answer_text_ids)
         
-        for i in range(7):
+        for i in range(self.code_layer):
             answer_ids[i] = torch.cat((target_audio[i].unsqueeze(0), answer_ids[i][:,target_audio_length:]), dim=1)
 
-        for i in range(8):
+        for i in range(self.code_layer + 1):
             example_ids[i] = torch.cat((example_ids[i], answer_ids[i]), dim=1)      
 
         example_ids = torch.stack(example_ids).squeeze()
@@ -245,10 +246,10 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         labels_ids[:,:audio_length + prompt_length + 3] = -1  # [-1,-1,answer,eos]; NOTE: here 3 include <bos> <eos> <ans_t>
 
         if text_padding_length > 0:
-            labels_ids[7,-text_padding_length:] = -1   # [-1,-1,answer_text,eos,-1]
+            labels_ids[self.code_layer,-text_padding_length:] = -1   # [-1,-1,answer_text,eos,-1]
         else:
             audio_padding_length = -text_padding_length
-            labels_ids[:7,-audio_padding_length:] = -1  # [-1,-1,answer_text,eos,-1]
+            labels_ids[:self.code_layer,-audio_padding_length:] = -1  # [-1,-1,answer_text,eos,-1]
         
         example_mask = example_ids[0].ge(-1)  # [True,True,True,True]
 

@@ -8,10 +8,10 @@ class VocabConfig:
     audio_vocabsize: int = 4096
     audio_specialtokens: int = 64
     total_vocabsize: int = 181120
+    code_layer: int = 7
 
     padded_text_vocabsize: int = field(init=False)
     padded_audio_vocabsize: int = field(init=False)
-    code_layer: int = 7
     total_audio_vocabsize: int = field(init=False)
 
     eot: int = field(init=False)   # end of text token

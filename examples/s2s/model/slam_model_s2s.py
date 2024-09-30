@@ -147,12 +147,13 @@ class slam_model_s2s(slam_model):
 
         self.codec_decoder = codec_decoder
         self.tts_adapter = tts_adapter
+        self.code_layer = self.model_config.vocab_config.code_layer
 
     def concat_whisper_feat(self, audio_feature, input_ids, T, task = None):
         btz = len(T)
         for j in range(btz):
             if task is None or (task[j] != "T1T2" and task[j] != "T1A2"):
-                for i in range(7):
+                for i in range(self.code_layer):
                     input_ids[j, i, 1 : T[j] + 1, :] = audio_feature[j][: T[j]].clone()
             else:
                 continue
@@ -222,26 +223,26 @@ class slam_model_s2s(slam_model):
             #     inputs_embeds = self.concat_whisper_feat(encoder_outs, inputs_embeds, audio_length) # embed the audio feature into the input_embeds
 
         if modality_mask is not None:
-            modality_mask = modality_mask.unsqueeze(1).repeat(1, 7, 1)  # [btz, 8, seq_length]
+            modality_mask = modality_mask.unsqueeze(1).repeat(1, self.code_layer, 1)  # [btz, 8, seq_length]
             modality_mask_start_indices = (modality_mask == True).float().argmax(dim=2)
             modality_lengths = torch.clamp(modality_mask.sum(dim=2), max=encoder_outs.shape[1]).tolist()
 
             encoder_outs_pad = torch.zeros_like(inputs_embeds)
             for i in range(encoder_outs.shape[0]):
-                for j in range(7):
+                for j in range(self.code_layer):
                     start_idx = modality_mask_start_indices[i, j].item()
                     length = modality_lengths[i][j]
                     encoder_outs_pad[i, j, start_idx:start_idx+length] = encoder_outs[i, :length]
             
-            inputs_embeds[:, :7, :, :] = encoder_outs_pad[:, :7, :, :] + inputs_embeds[:, :7, :, :] * (~modality_mask[:, :, :, None])
+            inputs_embeds[:, :self.code_layer, :, :] = encoder_outs_pad[:, :self.code_layer, :, :] + inputs_embeds[:, :self.code_layer, :, :] * (~modality_mask[:, :, :, None])
         
         inputs_embeds = torch.mean(inputs_embeds, dim=1)  # [btz, seq_length, emb_dim], average over the 8 layers
 
         if kwargs.get("inference_mode", False):
             return inputs_embeds, attention_mask
 
-        text_labels = labels[:, 7] if labels is not None else None
-        audio_labels = labels[:, :7] if labels is not None else None
+        text_labels = labels[:,self.code_layer] if labels is not None else None
+        audio_labels = labels[:, :self.code_layer] if labels is not None else None
         model_outputs = self.llm(inputs_embeds=inputs_embeds, attention_mask=attention_mask, labels=text_labels)    # here we use the text token layer as the target label
 
         # parrallel generation
@@ -251,7 +252,7 @@ class slam_model_s2s(slam_model):
         audio_vocab_size = self.model_config.vocab_config.padded_audio_vocabsize
         xt = x_ori[..., :text_vocab_size]
         xa = []
-        for i in range(7):
+        for i in range(self.code_layer):
             xa.append(x_ori[..., text_vocab_size + audio_vocab_size * i : text_vocab_size + audio_vocab_size * (i + 1)])
 
         loss_recorder = []
@@ -259,14 +260,14 @@ class slam_model_s2s(slam_model):
         model_outputs.loss = total_loss
 
         text_acc = -1
-        audio_acc = [-1 for _ in range(7)]
+        audio_acc = [-1 for _ in range(self.code_layer)]
         if self.metric:
             with torch.no_grad():
                 preds = torch.argmax(xt, -1)
                 text_acc = compute_accuracy(preds.detach()[:, :-1], text_labels.detach()[:, 1:], ignore_label=-100)
 
-                preds_audio = [torch.argmax(xa[i], -1) for i in range(7)]
-                audio_acc = [compute_accuracy(preds_audio[i].detach()[:, :-1], audio_labels[:, i, 1:], ignore_label=-100) for i in range(7)]
+                preds_audio = [torch.argmax(xa[i], -1) for i in range(self.code_layer)]
+                audio_acc = [compute_accuracy(preds_audio[i].detach()[:, :-1], audio_labels[:, i, 1:], ignore_label=-100) for i in range(self.code_layer)]
 
         # metrics = {"text_acc": text_acc, "audio_acc": audio_acc, "layer_loss": loss_recorder}
         return model_outputs, text_acc, audio_acc, loss_recorder
@@ -279,25 +280,25 @@ class slam_model_s2s(slam_model):
         """
         text_vocab_size = self.model_config.vocab_config.padded_text_vocabsize
         audio_vocab_size = self.model_config.vocab_config.padded_audio_vocabsize
-        layer_loss = [0 for _ in range(8) ]
+        layer_loss = [0 for _ in range(self.code_layer+1) ]
         
         if text_labels is not None:
             # text_loss = F.cross_entropy(xt.reshape(-1, text_vocab_size), text_labels.reshape(-1), ignore_index=-100)
             text_loss = F.cross_entropy(xt[:, :-1, :].reshape(-1, text_vocab_size), text_labels[:, 1:].reshape(-1), ignore_index=-100)
-            layer_loss[7] = text_loss
+            layer_loss[self.code_layer] = text_loss
         else:
             text_loss = 0
 
         total_audio_loss = 0
         single_audio_loss = 0
-        for i in range(7):
+        for i in range(self.code_layer):
             if audio_labels[:,i] is not None:
                 # audio_loss += F.cross_entropy(xa[i].reshape(-1, audio_vocab_size), audio_labels[:,i].reshape(-1), ignore_index=-100)
                 single_audio_loss = F.cross_entropy(xa[i][:, :-1, :].reshape(-1, audio_vocab_size), audio_labels[:, i, 1:].reshape(-1), ignore_index=-100)
                 layer_loss[i] = single_audio_loss
                 total_audio_loss += single_audio_loss
 
-        total_loss = (text_loss + total_audio_loss) / 8
+        total_loss = (text_loss + total_audio_loss) / (self.code_layer+1)
         return total_loss, layer_loss
 
 
@@ -331,9 +332,9 @@ class slam_model_s2s(slam_model):
             **kwargs,
         )
 
-        generated_ids = [[] for _ in range(8)]
+        generated_ids = [[] for _ in range((self.code_layer+1))]
         current_input_text = None
-        current_audio_tokens = [None for _ in range(7)]
+        current_audio_tokens = [None for _ in range(self.code_layer)]
         # input_pos = torch.arange(input_ids.size(-1), device=input_ids.device).unsqueeze(0)
         past_key_values = None
 
@@ -353,7 +354,7 @@ class slam_model_s2s(slam_model):
         # NOTE: currently, we only support greedy decoding and sampling for parallel generation
         for step in tqdm(range(max_new_tokens), desc="Generating"):
             if current_input_text is not None:
-                audio_tokens = torch.cat([layershift(current_audio_tokens[i], i).unsqueeze(1) for i in range(7)], dim=1)
+                audio_tokens = torch.cat([layershift(current_audio_tokens[i], i).unsqueeze(1) for i in range(self.code_layer)], dim=1)
                 combined_input_ids = torch.cat([audio_tokens, current_input_text.unsqueeze(1)], dim=1)
                 inputs_embeds = self.llm.model.embed_tokens(combined_input_ids)
                 inputs_embeds = torch.mean(inputs_embeds, dim=1).unsqueeze(1)
@@ -373,17 +374,17 @@ class slam_model_s2s(slam_model):
             text_vocab_size = self.model_config.vocab_config.padded_text_vocabsize
             audio_vocab_size = self.model_config.vocab_config.padded_audio_vocabsize
             xt_logits = logits[..., :text_vocab_size]
-            xa_logits = [logits[..., text_vocab_size + audio_vocab_size * i : text_vocab_size + audio_vocab_size * (i + 1)] for i in range(7)]
+            xa_logits = [logits[..., text_vocab_size + audio_vocab_size * i : text_vocab_size + audio_vocab_size * (i + 1)] for i in range(self.code_layer)]
 
             if repetition_penalty != 1.0:
-                for token_id in set(generated_ids[7]):
+                for token_id in set(generated_ids[self.code_layer]):
                     # Apply penalty to text logits
                     if xt_logits[0, -1, token_id] < 0:
                         xt_logits[0, -1, token_id] *= repetition_penalty
                     else:
                         xt_logits[0, -1, token_id] /= repetition_penalty
                 
-                for i in range(7):
+                for i in range(self.code_layer):
                     for token_id in set(generated_ids[i]):
                         # Apply penalty to audio logits
                         if xa_logits[i][0, -1, token_id] < 0:
@@ -397,7 +398,7 @@ class slam_model_s2s(slam_model):
                 next_token_text = torch.tensor([pad_t], device=input_ids.device)
 
             next_tokens_audio = []
-            for i in range(7):
+            for i in range(self.code_layer):
                 if not audio_end:
                     next_token_audio = self.sample_next_token(xa_logits[i][:, -1, :], do_sample, temperature, audio_vocab_size).squeeze(0)
                 else:
@@ -411,7 +412,7 @@ class slam_model_s2s(slam_model):
             
             # Update input_ids and inputs_embeds for the next step
             current_input_text = next_token_text
-            for i in range(7):
+            for i in range(self.code_layer):
                 current_audio_tokens[i] = next_tokens_audio[i]
 
             # if input_pos.size(-1) > 1:
@@ -424,9 +425,9 @@ class slam_model_s2s(slam_model):
                 break
 
             # Append generated tokens to the list
-            for i in range(7):
+            for i in range(self.code_layer):
                 generated_ids[i].append(next_tokens_audio[i].clone().tolist()[0])  # Audio layers
-            generated_ids[7].append(next_token_text.clone().tolist()[0])  # Text layer
+            generated_ids[self.code_layer].append(next_token_text.clone().tolist()[0])  # Text layer
 
         # Concatenate the generated tokens to form the complete sequence
         text_tokens = generated_ids[-1]

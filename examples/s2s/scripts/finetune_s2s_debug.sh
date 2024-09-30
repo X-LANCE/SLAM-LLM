@@ -20,13 +20,15 @@ train_data_path="gpt-omni/VoiceAssistant-400K"
 val_data_path="gpt-omni/VoiceAssistant-400K"
 load_from_cache_file=true
 
-batch_size_training=2
+batch_size_training=4
+use_fp16=false
+lr=1e-4
 train_audio_embed_only=false
 train_embed_only=false
-tts_adapter=true
+tts_adapter=false
 
-# exp_name="s2s_train_v0"
-exp_name="debug"
+exp_name="s2s_train_v0"
+# exp_name="debug"
 
 home_dir=/home/v-wenxichen/exp/s2s
 # output_dir=$home_dir/$(TZ='Asia/Shanghai' date +"%Y_%m_%d")/$(TZ='Asia/Shanghai' date +"%H_%M_%S")
@@ -40,7 +42,6 @@ else
 fi
 wandb_exp_name=$exp_name
 
-use_fp16=true
 
 hydra_args="
 hydra.run.dir=$output_dir \
@@ -69,7 +70,7 @@ hydra.run.dir=$output_dir \
 ++train_config.batching_strategy=custom \
 ++train_config.warmup_steps=1000 \
 ++train_config.total_steps=120000 \
-++train_config.lr=1e-4 \
+++train_config.lr=$lr \
 ++train_config.validation_interval=10000 \
 ++train_config.batch_size_training=$batch_size_training \
 ++train_config.val_batch_size=4 \
