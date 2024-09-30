@@ -2,6 +2,7 @@ import torch
 import os
 import logging
 import torch.nn.functional as F
+import torch.nn as nn
 from slam_llm.models.slam_model import (
     slam_model,
     setup_tokenizer,
@@ -16,6 +17,7 @@ from transformers import T5ForConditionalGeneration
 from slam_llm.utils.snac_utils import layershift, get_snac_answer_token
 from snac import SNAC
 from tqdm import tqdm
+from utils.model_utils import setup_tts_adapter
 
 
 logger = logging.getLogger(__name__)
@@ -66,12 +68,18 @@ def model_factory(train_config, model_config, **kwargs):
     if model_config.codec_decode:
         codec_decoder = SNAC.from_pretrained(model_config.codec_decoder_path).eval()
 
+    tts_adapter = None
+    if model_config.tts_adapter:
+        adapter_config = model_config.tts_adapter_config
+        tts_adapter = setup_tts_adapter(adapter_config, model_config, **kwargs)
+
     model = slam_model_s2s(
         encoder,
         llm,
         encoder_projector,
         tokenizer,
         codec_decoder,
+        tts_adapter,
         train_config,
         model_config,
         **kwargs,
@@ -83,7 +91,7 @@ def model_factory(train_config, model_config, **kwargs):
     if ckpt_path is not None:
         logger.info("loading other parts from: {}".format(ckpt_path))
         ckpt_dict = torch.load(ckpt_path, map_location="cpu")
-        model.load_state_dict(ckpt_dict, strict=False)              # TODO: 这里需要测试存储的 llm 有没有全部加载进来
+        model.load_state_dict(ckpt_dict, strict=False)
 
     if train_config.train_audio_embed_only:
         logger.info("Only training audio embedding layer")
@@ -115,6 +123,7 @@ class slam_model_s2s(slam_model):
         llm,
         encoder_projector,
         tokenizer,
+        tts_adapter,
         codec_decoder,
         train_config,
         model_config,
@@ -137,6 +146,7 @@ class slam_model_s2s(slam_model):
             logger.info("Resize llm embedding layer's vocab size to {}".format(self.model_config.vocab_config.total_vocabsize))
 
         self.codec_decoder = codec_decoder
+        self.tts_adapter = tts_adapter
 
     def concat_whisper_feat(self, audio_feature, input_ids, T, task = None):
         btz = len(T)
@@ -234,7 +244,8 @@ class slam_model_s2s(slam_model):
         audio_labels = labels[:, :7] if labels is not None else None
         model_outputs = self.llm(inputs_embeds=inputs_embeds, attention_mask=attention_mask, labels=text_labels)    # here we use the text token layer as the target label
 
-        # parrallel generation TODO: 需要重写八层的loss，现在只有最后一层的loss
+        # parrallel generation
+        # TODO: add tts adapter forward
         x_ori = model_outputs.logits
         text_vocab_size = self.model_config.vocab_config.padded_text_vocabsize
         audio_vocab_size = self.model_config.vocab_config.padded_audio_vocabsize

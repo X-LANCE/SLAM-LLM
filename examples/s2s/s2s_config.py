@@ -11,6 +11,8 @@ class VocabConfig:
 
     padded_text_vocabsize: int = field(init=False)
     padded_audio_vocabsize: int = field(init=False)
+    code_layer: int = 7
+    total_audio_vocabsize: int = field(init=False)
 
     eot: int = field(init=False)   # end of text token
     pad_t: int = field(init=False) # padding text token
@@ -27,6 +29,7 @@ class VocabConfig:
     def __post_init__(self):
         self.padded_text_vocabsize = self.text_vocabsize + self.text_specialtokens
         self.padded_audio_vocabsize = self.audio_vocabsize + self.audio_specialtokens
+        self.total_audio_vocabsize = self.padded_audio_vocabsize * self.code_layer
 
         self.eot = self.text_vocabsize
         self.pad_t = self.text_vocabsize + 1
@@ -39,6 +42,28 @@ class VocabConfig:
         self.input_a = self.audio_vocabsize + 2
         self.answer_a = self.audio_vocabsize + 3
         self.split = self.audio_vocabsize + 4
+
+@dataclass
+class TTSAdapterConfig:
+    add_qkv_bias: Optional[bool] = True
+    bias: bool = False
+    gelu_approximate: Optional[str] = None
+    head_size: Optional[int] = 64
+    intermediate_size: Optional[int] = 4864
+    lm_head_bias: bool = False
+    mlp_class_name: str = "GptNeoxMLP"
+    n_layer: int = 6
+    n_head: int = 14
+    n_embd: int = 896
+    n_query_groups: Optional[int] = 2
+    norm_class_name: str = "RMSNorm"
+    norm_eps: float = 1e-6
+    parallel_residual: bool = False
+    rotary_percentage: float = 1
+    shared_attention_norm: bool = False
+
+    def __post_init__(self):
+        self.rope_n_elem = int(self.rotary_percentage * self.head_size)
 
 @dataclass
 class ModelConfig:
@@ -63,6 +88,9 @@ class ModelConfig:
     vocab_config: VocabConfig = field(default_factory=VocabConfig)
     codec_decode: bool = False
     codec_decoder_path: Optional[str] = None
+    tts_adapter: bool = False
+    tts_adapter_config: TTSAdapterConfig = field(default_factory=TTSAdapterConfig)
+
 
 @dataclass
 class PeftConfig:

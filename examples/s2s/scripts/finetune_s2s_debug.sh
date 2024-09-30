@@ -22,7 +22,8 @@ load_from_cache_file=true
 
 batch_size_training=2
 train_audio_embed_only=false
-train_embed_only=true
+train_embed_only=false
+tts_adapter=true
 
 # exp_name="s2s_train_v0"
 exp_name="debug"
@@ -51,6 +52,7 @@ hydra.run.dir=$output_dir \
 ++model_config.encoder_path=$speech_encoder_path \
 ++model_config.encoder_dim=768 \
 ++model_config.encoder_projector=linear \
+++model_config.tts_adapter=$tts_adapter \
 ++dataset_config.dataset=speech_dataset_s2s \
 ++dataset_config.train_data_path=$train_data_path \
 ++dataset_config.val_data_path=$val_data_path \

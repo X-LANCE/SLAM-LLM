@@ -21,7 +21,7 @@ storage:
     mount_dir: /valleblob
     mount_options: ["-o", "attr_timeout=240"]
 
-# amlt run ./examples/s2s/scripts/job/train_slam_omni.yaml 666 -y
+#  run ./examples/s2s/scripts/job/train_slam_omni.yaml 777 -yamlt
 
 search:
   job_template:
@@ -41,7 +41,7 @@ search:
       # - export model_path=/valleblob/vzongyili/cv/model/tats/vqgan/vqgan_ucf101_baseline_g{gpus}_b{batch_size}_wandb
       # - bash ./examples/s2s/scripts/finetune_s2s.sh {gpus} #{batch_size} $$model_path
       # - bash ./examples/s2s/scripts/finetune_s2s_fp16.sh {gpus} #{batch_size} $$model_path
-      # - bash ./examples/s2s/scripts/finetune_s2s_embed_only.sh {gpus}
+      # - bash ./examples/s2s/scripts/finetune_s2s_audio_embed_only.sh {gpus}
       - bash ./examples/s2s/scripts/finetune_s2s_embed_only.sh {gpus}
       # - bash test.sh {gpus}
       # - sleep 3h
