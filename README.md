@@ -77,12 +77,24 @@ docker run -it --gpus all --name slam --shm-size=256g slam-llm:latest /bin/bash
 ## List of Recipes
 We provide reference implementations of various LLM-based speech, audio, and music tasks: 
 - **Speech Task**
-    - [Automatic Speech Recognition (ASR)](examples/asr_librispeech/README.md)
-    - [Text-to-Speech (TTS)](examples/vallex/README.md)
-    - [Visual Speech Recognition (VSR)](examples/vsr_LRS3/README.md)
+    - Automatic Speech Recognition (ASR)
+        - [SLAM-ASR](examples/asr_librispeech/README.md)
+    
+    - Contextual Automatic Speech Recognition (CASR)
+        - [ Mala-ASR](examples/mala_asr_slidespeech/README.md)
+    
+    - [Visual Speech Recognition (VSR)](examples/vsr_LRS3/README.md) 
+    - Speech-to-Text Translation (S2TT)
+        - [CoT-ST](examples/st_covost2/README.md)
+    
+    - Text-to-Speech (TTS)
+        - [VALL-E-X](examples/vallex/README.md)
+    
 - **Audio Task**
     - [Automated Audio Captioning (AAC)](examples/aac_audiocaps/README.md)
-    - [Spatial Audio Understanding](examples/seld_spatialsoundqa/README.md)
+      - [DRCap](examples/drcap_zeroshot_aac/README.md)
+    - Spatial Audio Understanding
+      - [BAT](examples/seld_spatialsoundqa/README.md)
 - **Music Task**
     - [Music Caption (MC)](examples/mc_musiccaps/README.md)
 
