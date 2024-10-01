@@ -28,15 +28,17 @@ developers to train custom multimodal large language model (MLLM), focusing on <
 6. [Citation](#citation)
 
 # News
-- [Update Jun. 12, 2024] Recipes for [MaLa-ASR](examples/mala_asr_slidespeech/README.md) has been supported. 
+- [Update Sep. 28, 2024] Recipes for [CoT-ST](examples/st_covost2/README.md) have been supported. 
+- [Update Sep. 25, 2024] Recipes for [DRCap](examples/drcap_zeroshot_aac/README.md) have been supported. 
+- [Update Jun. 12, 2024] Recipes for [MaLa-ASR](examples/mala_asr_slidespeech/README.md) have been supported. 
 - **[CALL FOR EXAMPLE]** We sincerely invite developers and researchers to develop new applications, conduct academic research based on SLAM-LLM, and pull request your examples! We also acknowledge engineering PR (such as improving and speeding up multi-node training). 
 - [Update May. 22, 2024] Please join [slack](https://join.slack.com/t/slam-llm/shared_invite/zt-2mc0pkhhs-5jjOi8Cwc8R1Xc8IQmykDA) or [WeChat group](./docs/Wechat.jpg). We will sync our updates and Q&A here. 
-- [Update May. 21, 2024] Recipes for [Spatial Audio Understanding](examples/seld_spatialsoundqa/README.md) has been supported. 
-- [Update May. 20, 2024] Recipes for [music caption (MC)](examples/mc_musiccaps/README.md) has been supported. 
-- [Update May. 8, 2024] Recipes for [visual speech recognition (VSR)](examples/vsr_LRS3/README.md) has been supported. 
-- [Update May. 4, 2024] Recipes for [zero-shot text-to-speech (TTS)](examples/vallex/README.md) has been supported. 
-- [Update Apr. 28, 2024] Recipes for [automated audio captioning (AAC)](examples/aac_audiocaps/README.md) has been supported. 
-- [Update Mar. 31, 2024] Recipes for [automatic speech recognition (ASR)](examples/asr_librispeech/README.md) has been supported. 
+- [Update May. 21, 2024] Recipes for [Spatial Audio Understanding](examples/seld_spatialsoundqa/README.md) have been supported. 
+- [Update May. 20, 2024] Recipes for [music caption (MC)](examples/mc_musiccaps/README.md) have been supported. 
+- [Update May. 8, 2024] Recipes for [visual speech recognition (VSR)](examples/vsr_LRS3/README.md) have been supported. 
+- [Update May. 4, 2024] Recipes for [zero-shot text-to-speech (TTS)](examples/vallex/README.md) have been supported. 
+- [Update Apr. 28, 2024] Recipes for [automated audio captioning (AAC)](examples/aac_audiocaps/README.md) have been supported. 
+- [Update Mar. 31, 2024] Recipes for [automatic speech recognition (ASR)](examples/asr_librispeech/README.md) have been supported. 
 
 # Installation
 ```bash
@@ -75,12 +77,24 @@ docker run -it --gpus all --name slam --shm-size=256g slam-llm:latest /bin/bash
 ## List of Recipes
 We provide reference implementations of various LLM-based speech, audio, and music tasks: 
 - **Speech Task**
-    - [Automatic Speech Recognition (ASR)](examples/asr_librispeech/README.md)
-    - [Text-to-Speech (TTS)](examples/vallex/README.md)
-    - [Visual Speech Recognition (VSR)](examples/vsr_LRS3/README.md)
+    - Automatic Speech Recognition (ASR)
+        - [SLAM-ASR](examples/asr_librispeech/README.md)
+    
+    - Contextual Automatic Speech Recognition (CASR)
+        - [ Mala-ASR](examples/mala_asr_slidespeech/README.md)
+    
+    - [Visual Speech Recognition (VSR)](examples/vsr_LRS3/README.md) 
+    - Speech-to-Text Translation (S2TT)
+        - [CoT-ST](examples/st_covost2/README.md)
+    
+    - Text-to-Speech (TTS)
+        - [VALL-E-X](examples/vallex/README.md)
+    
 - **Audio Task**
     - [Automated Audio Captioning (AAC)](examples/aac_audiocaps/README.md)
-    - [Spatial Audio Understanding](examples/seld_spatialsoundqa/README.md)
+      - [DRCap](examples/drcap_zeroshot_aac/README.md)
+    - Spatial Audio Understanding
+      - [BAT](examples/seld_spatialsoundqa/README.md)
 - **Music Task**
     - [Music Caption (MC)](examples/mc_musiccaps/README.md)
 
