@@ -67,10 +67,10 @@ bash infer.sh
 ##  Citation
 You can refer to the paper for more results. 
 ```
-@article{ma2024embarrassingly,
-  title={An Embarrassingly Simple Approach for LLM with Strong ASR Capacity},
-  author={Ma, Ziyang and Yang, Guanrou and Yang, Yifan and Gao, Zhifu and Wang, Jiaming and Du, Zhihao and Yu, Fan and Chen, Qian and Zheng, Siqi and Zhang, Shiliang and others},
-  journal={arXiv preprint arXiv:2402.08846},
-  year={2024}
+@inproceedings{Du2024CoTSTEL,
+  title={CoT-ST: Enhancing LLM-based Speech Translation with Multimodal Chain-of-Thought},
+  author={Yexing Du and Ziyang Ma and Yifan Yang and Keqi Deng and Xie Chen and Bo Yang and Yang Xiang and Ming Liu and Bing Qin},
+  year={2024},
+  url={https://api.semanticscholar.org/CorpusID:272987643}
 }
 ```
