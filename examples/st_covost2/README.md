@@ -1,5 +1,15 @@
 # ST_covost2
 
+
+## Model Stracture
+<img src="image/framework.jpg" alt="示例图片" style="width:75%;">
+
+
+## Multitask 
+<img src="image/prompt.png" alt="示例图片" style="width:50%;">
+
+
+
 ## Download Model 
 We only train the q-former projector in this recipe.
 Encoder | Projector | LLM 
@@ -33,7 +43,7 @@ You can find the test jsonl in "test_st.jsonl"
 {"audio": "/userhome/speech/data/common/4/en/clips/common_voice_en_699711.mp3", "prompt": "\"She'll be all right.\"<|zh|>", "gt": "\"She'll be all right.\"<|zh|>她会没事的。", "source": "covost_enenzh"}
 ```
 ## Train Stage
-Here, we have designed a four-step training process, where each training session uses the checkpoint obtained from the previous training session.
+Here, we have designed a three-step training process, where each training session uses the checkpoint obtained from the previous training session.
 ```
 #In this step, we perform ASR pretraining to acquire speech recognition capabilities.
 bash asr_pretrain.sh
@@ -41,16 +51,14 @@ bash asr_pretrain.sh
 #In this phase, we conduct multimodal machine translation training to enhance the final performance.
 bash mmt.sh
 
-#monolingual SRT training.
+#monolingual SRT training and multitask training.
 bash srt.sh
-
-#multilingual multitask training.
 bash zsrt.sh
 ```
 
 
 ## Infer Stage
-You can try our pre-trained model. Example for en-zh translation of CoVoST-2.
+You can try our pre-trained model.
 
 ```
 bash infer_enzh.sh
@@ -59,10 +67,10 @@ bash infer_enzh.sh
 ##  Citation
 You can refer to the paper for more results. 
 ```
-@article{du2024cot,
-  title={CoT-ST: Enhancing LLM-based Speech Translation with Multimodal Chain-of-Thought},
-  author={Yexing Du, Ziyang Ma, Yifan Yang, Keqi Deng, Xie Chen, Bo Yang, Yang Xiang, Ming Liu, Bing Qin},
-  journal={arXiv preprint arXiv:2409.19510},
+@article{ma2024embarrassingly,
+  title={An Embarrassingly Simple Approach for LLM with Strong ASR Capacity},
+  author={Ma, Ziyang and Yang, Guanrou and Yang, Yifan and Gao, Zhifu and Wang, Jiaming and Du, Zhihao and Yu, Fan and Chen, Qian and Zheng, Siqi and Zhang, Shiliang and others},
+  journal={arXiv preprint arXiv:2402.08846},
   year={2024}
 }
 ```
