@@ -15,6 +15,11 @@ import itertools
 import json
 import time
 from slam_llm.models.slam_model import slam_model
+
+
+
+
+
 # config
 # from llama_recipes.configs import fsdp_config as FSDP_CONFIG
 # from llama_recipes.configs import train_config as TRAIN_CONFIG
@@ -33,7 +38,7 @@ from slam_llm.utils.dataset_utils import get_preprocessed_dataset
 import os
 import logging
 from tqdm import tqdm
-from slam_llm.models.slam_model import model_factory
+from .model.slam_model_st import model_factory
 
 import hydra
 from omegaconf import DictConfig, ListConfig, OmegaConf

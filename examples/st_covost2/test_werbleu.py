@@ -47,11 +47,11 @@ def main():
                     response_asr.append(response_language1)
                     response_st.append(response_language2)
                 else:
-                    response_asr.append("")
-                    response_st.append("")
+                    # response_asr.append("")
+                    # response_st.append("")
                     print(response)
                     print(gt)
-                    # continue
+                    continue
 
                 if len(gt_parts) == 2:
                     # 获取英文和中文部分

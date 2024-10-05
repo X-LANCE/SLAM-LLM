@@ -217,6 +217,7 @@ def main(kwargs: DictConfig):
         num_workers=train_config.num_workers_dataloader,
         pin_memory=True,
         **train_dl_kwargs,
+        prefetch_factor=100,
     )
 
     eval_dataloader = None
@@ -230,6 +231,7 @@ def main(kwargs: DictConfig):
             dataset_val,
             num_workers=train_config.num_workers_dataloader,
             pin_memory=True,
+            prefetch_factor=100,
             **val_dl_kwargs,
         )
 
