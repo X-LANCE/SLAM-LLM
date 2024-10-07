@@ -1,7 +1,7 @@
 description: speech_lm
 
 target:
-  name: msrresrchvc # 80G A100  
+  name: msrresrchvc # 80G A100 / H100
   # name: msroctovc # 40G A100
   service: sing
   workspace_name: Workspace_NLC # 
@@ -43,11 +43,11 @@ search:
       #- conda init
       # - source activate py36
       # - export model_path=/valleblob/vzongyili/cv/model/tats/vqgan/vqgan_ucf101_baseline_g{gpus}_b{batch_size}_wandb
-      - bash ./examples/s2s/scripts/finetune_s2s.sh {gpus} #{batch_size} $$model_path
+      # - bash ./examples/s2s/scripts/finetune_s2s.sh {gpus} #{batch_size} $$model_path
       # - bash ./examples/s2s/scripts/finetune_s2s_fp16.sh {gpus} #{batch_size} $$model_path
       # - bash ./examples/s2s/scripts/finetune_s2s_audio_embed_only.sh {gpus}
       # - bash ./examples/s2s/scripts/finetune_s2s_embed_only.sh {gpus}
-      # - bash ./examples/s2s/scripts/pretrain_tts.sh {gpus}
+      - bash ./examples/s2s/scripts/pretrain_tts.sh {gpus}
       # - bash test.sh {gpus}
       # - sleep 3h
       - sleep infinity

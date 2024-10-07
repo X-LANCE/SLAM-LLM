@@ -81,6 +81,7 @@ hydra.run.dir=$output_dir \
 ++train_config.use_fp16=$use_fp16 \
 ++train_config.train_audio_embed_only=$train_audio_embed_only \
 ++train_config.train_embed_only=$train_embed_only \
+++train_config.task_type=$task_type \
 ++metric=acc \
 ++log_config.use_wandb=$use_wandb \
 ++log_config.wandb_entity_name=wxc12 \

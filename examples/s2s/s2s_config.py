@@ -151,6 +151,7 @@ class TrainConfig:
     freeze_encoder:bool = False
     train_embed_only:bool = False
     train_audio_embed_only:bool = False
+    task_type:str = "s2s"
 
 
 

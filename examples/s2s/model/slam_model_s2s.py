@@ -54,15 +54,23 @@ def model_factory(train_config, model_config, **kwargs):
     # return necessary components for training
     tokenizer = setup_tokenizer(train_config, model_config, **kwargs)
 
-    encoder = setup_encoder(train_config, model_config, **kwargs)
+    if train_config.task_type == "s2s":
+        encoder = setup_encoder(train_config, model_config, **kwargs)
+    elif train_config.task_type == "tts":
+        encoder = None
+    else:
+        raise NotImplementedError
 
     # llm
     llm = setup_llm(train_config, model_config, **kwargs)
 
     # projector
-    encoder_projector = setup_encoder_projector(
-        train_config, model_config, **kwargs
-    )
+    if encoder is not None:
+        encoder_projector = setup_encoder_projector(
+            train_config, model_config, **kwargs
+        )
+    else:
+        encoder_projector = None
 
     codec_decoder = None
     if model_config.codec_decode:
@@ -94,11 +102,13 @@ def model_factory(train_config, model_config, **kwargs):
         model.load_state_dict(ckpt_dict, strict=False)
 
     if train_config.train_audio_embed_only:
-        logger.info("Only training audio embedding layer")
+        if int(os.environ["RANK"]) == 0:
+            logger.info("Only training audio embedding layer")
         partial_freeze_weights(model, model_config.vocab_config.padded_text_vocabsize, model_config.vocab_config.total_vocabsize)
 
     if train_config.train_embed_only:
-        logger.info("Only training embedding layer")
+        if int(os.environ["RANK"]) == 0:
+            logger.info("Only training embedding layer")
         for param in model.parameters():
             param.requires_grad = False
         for param in model.llm.lm_head.parameters():
