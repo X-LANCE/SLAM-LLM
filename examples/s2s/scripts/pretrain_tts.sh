@@ -1,5 +1,4 @@
 #!/bin/bash
-# export PYTHONPATH=/root/whisper:$PYTHONPATH
 export PYTHONPATH=/root/fairseq:$PYTHONPATH
 # export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 export CUDA_VISIBLE_DEVICES=0,1,2,3
@@ -11,12 +10,12 @@ export WANDB_API_KEY=406faa59cf62a3646fa3479a7e133c4cf5a77100       # please rep
 code_dir=examples/s2s
 
 speech_encoder_path="/valleblob/v-wenxichen/models/whisper/small.pt"   # whisper small
-llm_path="/valleblob/v-wenxichen/models/models--Qwen--Qwen2-0.5B/snapshots/ff3a49fac17555b8dfc4db6709f480cc8f16a9fe"
+llm_path="/valleblob/v-wenxichen/models/models--Qwen--Qwen2-0.5B/snapshots/ff3a49fac17555b8dfc4db6709f480cc8f16a9fe"  # Qwen/Qwen2-0.5B
 
 
 train_data_path="/valleblob/v-wenxichen/data/s2s/VoiceAssistant-400K"
 val_data_path="/valleblob/v-wenxichen/data/s2s/VoiceAssistant-400K"
-load_from_cache_file=false
+load_from_cache_file=false  # set to true if you have already generated the cache file, otherwise set to false
 
 batch_size_training=4
 use_fp16=false
@@ -29,7 +28,6 @@ task_type=tts
 
 exp_name="tts_pre-train_v0_gpu4_btz${batch_size_training}_lr${lr}_nofp16_epochs${num_epochs}"
 # exp_name="debug"
-# exp_name="s2s_train_v0_gpu4_btz${batch_size_training}_lr${lr}_fp16_epochs${num_epochs}_train_embed_only"
 
 home_dir=/valleblob/v-wenxichen/exp/s2s
 # output_dir=$home_dir/$(TZ='Asia/Shanghai' date +"%Y_%m_%d")/$(TZ='Asia/Shanghai' date +"%H_%M_%S")
@@ -94,7 +92,6 @@ hydra.run.dir=$output_dir \
 # ↑ this line is for resuming training
 
 
-
 if [[ $CUDA_VISIBLE_DEVICES != *","* ]]; then
     if [ "$exp_name" = "debug" ]; then
         python -m debugpy --listen 5678 --wait-for-client $code_dir/finetune_s2s.py \
@@ -120,5 +117,4 @@ else
         $hydra_args
 fi
 
-# ++train_config.use_fp16=true \
 # bash /home/v-wenxichen/SLAM-LLM/examples/s2s/scripts/pretrain_tts.sh

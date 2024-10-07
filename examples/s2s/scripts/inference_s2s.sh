@@ -1,5 +1,4 @@
 #!/bin/bash
-# export PYTHONPATH=/root/whisper:$PYTHONPATH
 export PYTHONPATH=/root/fairseq:$PYTHONPATH
 export CUDA_VISIBLE_DEVICES=0
 export TOKENIZERS_PARALLELISM=false
@@ -8,13 +7,16 @@ export LD_LIBRARY_PATH=/home/v-wenxichen/anaconda3/envs/slam/lib:$LD_LIBRARY_PAT
 export PYDEVD_WARN_SLOW_RESOLVE_TIMEOUT=2
 export CUDA_LAUNCH_BLOCKING=1
 
-run_dir=/home/v-wenxichen/SLAM-LLM
-cd $run_dir
+
 code_dir=examples/s2s
 
 speech_encoder_path="small"   # whisper small
 llm_path="Qwen/Qwen2-0.5B"
 codec_decoder_path="hubertsiuzdak/snac_24khz"
+
+tts_adapter=false
+task_type=s2s
+split_size=0.00002
 
 ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v0_gpu4_btz4_fp16/s2s_epoch_3_step_21964
 split=test
@@ -44,6 +46,7 @@ python $code_dir/inference_s2s_batch.py \
         ++model_config.encoder_projector=linear \
         ++model_config.codec_decoder_path=$codec_decoder_path \
         ++model_config.codec_decode=true \
+        ++model_config.tts_adapter=$tts_adapter \
         ++dataset_config.dataset=speech_dataset_s2s \
         ++dataset_config.val_data_path=$val_data_path \
         ++dataset_config.train_data_path=$val_data_path \
@@ -51,8 +54,9 @@ python $code_dir/inference_s2s_batch.py \
         ++dataset_config.mel_size=80 \
         ++dataset_config.inference_mode=true \
         ++dataset_config.manifest_format=datasets \
-        ++dataset_config.split_size=0.00002 \
+        ++dataset_config.split_size=$split_size \
         ++dataset_config.load_from_cache_file=$load_from_cache_file \
+        ++dataset_config.task_type=$task_type \
         ++train_config.model_name=s2s \
         ++train_config.freeze_encoder=true \
         ++train_config.freeze_llm=false \
@@ -60,6 +64,7 @@ python $code_dir/inference_s2s_batch.py \
         ++train_config.num_epochs=1 \
         ++train_config.val_batch_size=1 \
         ++train_config.num_workers_dataloader=2 \
+        ++train_config.task_type=$task_type \
         ++decode_log=$decode_log \
         ++ckpt_path=$ckpt_path/model.pt \
         ++decode_text_only=$decode_text_only \
