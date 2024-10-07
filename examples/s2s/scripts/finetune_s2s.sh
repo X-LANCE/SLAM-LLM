@@ -21,15 +21,17 @@ load_from_cache_file=false
 batch_size_training=4
 use_fp16=false
 num_epochs=10
+lr=1e-4
 
-exp_name="s2s_train_v0_gpu4_btz${batch_size_training}_epochs${num_epochs}_retrain_from_epoch2"
+# exp_name="s2s_train_v0_gpu4_btz${batch_size_training}_lr${lr}_nofp16_epochs${num_epochs}"
+exp_name="reproduce"
 # exp_name="s2s_train_v0_gpu24_btz${batch_size_training}_fp16"
 # exp_name="debug"
 
 home_dir=/valleblob/v-wenxichen/exp/s2s
 # output_dir=$home_dir/$(TZ='Asia/Shanghai' date +"%Y_%m_%d")/$(TZ='Asia/Shanghai' date +"%H_%M_%S")
 output_dir=$home_dir/$exp_name
-ckpt_path=/valleblob/v-wenxichen/exp/s2s/2024_09_26/s2s_train_v0_gpu4_btz4/s2s_epoch_2_step_20982  # this line is for resuming training
+# ckpt_path=/valleblob/v-wenxichen/exp/s2s/2024_09_26/s2s_train_v0_gpu4_btz4/s2s_epoch_2_step_20982  # this line is for resuming training
 
 if [ "$exp_name" = "debug" ]; then
     use_wandb=false
@@ -64,7 +66,7 @@ hydra.run.dir=$output_dir \
 ++train_config.batching_strategy=custom \
 ++train_config.warmup_steps=3000 \
 ++train_config.total_steps=300000 \
-++train_config.lr=1e-4 \
+++train_config.lr=$lr \
 ++train_config.validation_interval=10000 \
 ++train_config.batch_size_training=$batch_size_training \
 ++train_config.val_batch_size=$batch_size_training \
@@ -79,8 +81,8 @@ hydra.run.dir=$output_dir \
 ++log_config.wandb_dir=$output_dir \
 ++log_config.log_file=$output_dir/exp.log \
 ++log_config.log_interval=100 \
-++ckpt_path=$ckpt_path/model.pt \
 "
+# ++ckpt_path=$ckpt_path/model.pt \
 # ↑ this line is for resuming training
 
 

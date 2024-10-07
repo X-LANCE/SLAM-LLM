@@ -21,7 +21,7 @@ batch_size_training=4
 use_fp16=true
 num_epochs=10
 train_audio_embed_only=true
-lr=1e-5
+lr=1e-3
 
 exp_name="s2s_train_v0_gpu4_btz${batch_size_training}_lr${lr}_fp16_epochs${num_epochs}_train_audio_embed_only"
 # exp_name="s2s_train_v0_gpu24_btz${batch_size_training}_fp16"

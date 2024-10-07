@@ -81,7 +81,9 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
 
         self.special_token_a = self._answer_a
         self.special_token_t = self._answer_t
-    
+
+        # task config 
+        self.task_type = dataset_config.get("task_type", "s2s")
 
         self.data_list = []
 
@@ -170,6 +172,12 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
     
     def __getitem__(self, index):
         data_dict = self.data_list[index]
+        task_type = self.task_type  # TODO: this type could be determined by sampling strategy instead of hard-coded
+        audio_mel = None
+        example_ids = None
+        key = None
+        audio_length = 0
+        target_audio_length = 0
 
         if self.manifest_format == "datasets":
             source_audio = data_dict.get("question_audio", None)
@@ -186,8 +194,12 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
             target_text = data_dict.get("target_text", None)
             key = data_dict.get("key", None)
 
-        audio_mel, audio_length = self.extract_audio_feature(source_audio)
-        target_audio, target_audio_length = self.extract_audio_feature(target_audio)
+        if task_type == "s2s" or task_type == "asr":
+            audio_mel, audio_length = self.extract_audio_feature(source_audio)
+        
+        if task_type == "s2s" or task_type == "tts":
+            target_audio, target_audio_length = self.extract_audio_feature(target_audio)
+
         if self.fix_length_audio > 0:
             audio_length = self.fix_length_audio
             target_audio_length = self.fix_length_audio
@@ -201,10 +213,26 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
 
         # audio_pseudo = torch.full((audio_length,), -1) # placeholder
         prompt_ids = torch.tensor(prompt_ids, dtype=torch.int64)
-        example_ids = self.get_input_ids(audio_length + prompt_length, self.special_token_a, self.special_token_t)
-        text_layer = example_ids[self.code_layer]
-        text_layer = torch.cat((text_layer[:,:audio_length + 1], prompt_ids.unsqueeze(0), text_layer[:,-2:]), dim=1)
-        example_ids[self.code_layer] = text_layer
+
+        if task_type == "s2s" or task_type == "asr":
+            example_ids = self.get_input_ids(audio_length + prompt_length, self.special_token_a, self.special_token_t)
+            text_layer = example_ids[self.code_layer]
+            text_layer = torch.cat((text_layer[:,:audio_length + 1], prompt_ids.unsqueeze(0), text_layer[:,-2:]), dim=1)     # <bos> <audio> <prompt> <eos> <task>
+            example_ids[self.code_layer] = text_layer
+        elif task_type == "tts":
+            target_text_ids = self.tokenizer.encode(target_text)
+            target_text_length = len(target_text_ids)
+            target_text_ids = torch.tensor(target_text_ids, dtype=torch.int64)
+            example_ids = self.get_input_ids(target_text_length + prompt_length, self.special_token_a, self.special_token_t) # <bos> <text> <prompt> <eos> <task>
+            text_layer = example_ids[self.code_layer]
+            text_layer = torch.cat((text_layer[:,:1], target_text_ids.unsqueeze(0), prompt_ids.unsqueeze(0), text_layer[:,-2:]), dim=1)
+            example_ids[self.code_layer] = text_layer
+        else:
+            raise ValueError(f"task_type {task_type} is not supported")
+
+        input_length = audio_length
+        if task_type == "tts":
+            input_length = target_text_length   # NOTE: when task_type is tts, input_length is target_text_length
 
         if self.inference_mode:
             example_mask = example_ids[0][0].ge(-1)  # [True,True]
@@ -214,6 +242,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
                 "input_ids": example_ids,
                 "attention_mask": example_mask,
                 "audio_mel": audio_mel,
+                "input_length": input_length,
                 "audio_length": audio_length,
                 "target_audio": target_audio,
                 "target_audio_length": target_audio_length,
@@ -221,6 +250,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
                 "source_text": source_text,
                 "target_text": target_text,
                 "prompt_length": prompt_length,
+                "task_type": task_type,
             }
 
         answer_text = self.answer_template.format(target_text)
@@ -233,15 +263,16 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         answer_ids[self.code_layer] = torch.cat((answer_text_ids.unsqueeze(0), answer_ids[self.code_layer][:,len(answer_text_ids):]),dim=1)     # [answer_text,eos]
         text_padding_length = target_audio_length - len(answer_text_ids)
         
-        for i in range(self.code_layer):
-            answer_ids[i] = torch.cat((target_audio[i].unsqueeze(0), answer_ids[i][:,target_audio_length:]), dim=1)
+        if target_audio is not None:    
+            for i in range(self.code_layer):
+                answer_ids[i] = torch.cat((target_audio[i].unsqueeze(0), answer_ids[i][:,target_audio_length:]), dim=1)
 
         for i in range(self.code_layer + 1):
             example_ids[i] = torch.cat((example_ids[i], answer_ids[i]), dim=1)      
 
         example_ids = torch.stack(example_ids).squeeze()
         labels_ids = copy.deepcopy(example_ids)  # [audio,prompt,answer,eos]
-        labels_ids[:,:audio_length + prompt_length + 3] = -1  # [-1,-1,answer,eos]; NOTE: here 3 include <bos> <eos> <ans_t>
+        labels_ids[:,:input_length + prompt_length + 3] = -1  # [-1,-1,answer,eos]; NOTE: here 3 include <bos> <eos> <ans_t>
 
         if text_padding_length > 0:
             labels_ids[self.code_layer,-text_padding_length:] = -1   # [-1,-1,answer_text,eos,-1]
@@ -260,6 +291,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
             "labels": labels_ids,
             "attention_mask": example_mask,
             "audio_mel": audio_mel,
+            "input_length": input_length,
             "audio_length": audio_length,
             "target_audio": target_audio,
             "target_audio_length": target_audio_length,
@@ -267,6 +299,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
             "source_text": source_text,
             "target_text": target_text,
             "prompt_length": prompt_length,
+            "task_type": task_type,
         }
 
     def pad(self, sequence, max_length, padding_idx=0):
@@ -329,8 +362,8 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
 
     def collator(self, samples):
         assert samples is not None 
-        input_prompt_lengths = [s["audio_length"] + s['prompt_length'] + 3 for s in samples] #[319, 319, 319, 319]
-        input_answer_lengths = [len(s["input_ids"][0]) - s["audio_length"] - s['prompt_length'] - 3 for s in samples]  #[264, 99, 206, 141]
+        input_prompt_lengths = [s["input_length"] + s['prompt_length'] + 3 for s in samples] #[319, 319, 319, 319]
+        input_answer_lengths = [len(s["input_ids"][0]) - s["input_length"] - s['prompt_length'] - 3 for s in samples]  #[264, 99, 206, 141]
 
         input_prompt_max_length = max(input_prompt_lengths)
         input_answer_max_length = max(input_answer_lengths)
@@ -349,16 +382,21 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
             ) for index in range(len(samples))
         ])
 
+        input_length = torch.tensor([s["input_length"] for s in samples])
         audio_length = torch.tensor([s["audio_length"] for s in samples])
+        audio_raw = None
+        audio_mask = None
+        audio_mel = None
+        audio_mel_post_mask = None
 
-        if self.input_type == "raw":
+        if self.input_type == "raw" and self.task_type in ["s2s", "asr"]:
             audio_raw_max_length = max([s['audio'].shape[0] for s in samples])
             audio_raw = torch.stack([self.pad(s['audio'], audio_raw_max_length, 0)
                                      for s in samples])
             audio_mask = torch.zeros(len(samples), audio_raw_max_length)
             for line, sample in enumerate(samples):
                 audio_mask[line, :sample['audio'].shape[0]] = 1
-        elif self.input_type == "mel":
+        elif self.input_type == "mel" and self.task_type in ["s2s", "asr"]:
             audio_mel_max_length = max([s['audio_mel'].shape[0] for s in samples])
             audio_mel = torch.stack([self.pad(s['audio_mel'], audio_mel_max_length, 0)
                                   for s in samples])
@@ -371,6 +409,8 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
             padding_left = input_prompt_max_length - input_prompt_lengths[index] + 1 # +1 for <bos>
             modality_mask[index, padding_left:padding_left+samples[index]["audio_length"]] = True
 
+        task_type = [s['task_type'] for s in samples]
+
         if self.inference_mode:
             keys = [s['key'] for s in samples]
             target_text = [s['target_text'] for s in samples]
@@ -379,15 +419,17 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
             return {
                 "input_ids": input_ids,
                 "attention_mask": attention_mask,
-                "audio": audio_raw if self.input_type == "raw" else None,
-                "audio_mask": audio_mask if self.input_type == "raw" else None,
+                "audio": audio_raw,
+                "audio_mask": audio_mask,
+                "input_length": input_length,
                 "audio_length": audio_length,
-                "audio_mel": audio_mel if self.input_type == "mel" else None,
-                "audio_mel_post_mask": audio_mel_post_mask if self.input_type == "mel" else None,
+                "audio_mel": audio_mel,
+                "audio_mel_post_mask": audio_mel_post_mask,
                 "modality_mask": modality_mask,
                 "keys": keys,
                 "target_texts": target_text,
                 "source_texts": source_text,
+                "task_types": task_type
             }
 
         labels = torch.stack([
@@ -401,12 +443,14 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
             "input_ids": input_ids,
             "labels": labels,
             "attention_mask": attention_mask,
-            "audio": audio_raw if self.input_type == "raw" else None,
-            "audio_mask": audio_mask if self.input_type == "raw" else None,
+            "audio": audio_raw,
+            "audio_mask": audio_mask,
+            "input_length": input_length,
             "audio_length": audio_length,
-            "audio_mel": audio_mel if self.input_type == "mel" else None,
-            "audio_mel_post_mask": audio_mel_post_mask if self.input_type == "mel" else None,
-            "modality_mask": modality_mask
+            "audio_mel": audio_mel,
+            "audio_mel_post_mask": audio_mel_post_mask,
+            "modality_mask": modality_mask,
+            "task_types": task_type
         }
 
 

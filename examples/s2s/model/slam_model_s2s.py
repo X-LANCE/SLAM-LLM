@@ -143,7 +143,9 @@ class slam_model_s2s(slam_model):
         self.original_vocabsize = self.llm.lm_head.weight.size(0)
         if self.model_config.vocab_config.total_vocabsize != self.original_vocabsize:
             self.llm.resize_token_embeddings(self.model_config.vocab_config.total_vocabsize)
-            logger.info("Resize llm embedding layer's vocab size to {}".format(self.model_config.vocab_config.total_vocabsize))
+
+            if int(os.environ["RANK"]) == 0:
+                logger.info("Resize llm embedding layer's vocab size to {}".format(self.model_config.vocab_config.total_vocabsize))
 
         self.codec_decoder = codec_decoder
         self.tts_adapter = tts_adapter
@@ -207,7 +209,7 @@ class slam_model_s2s(slam_model):
                 encoder_outs = self.encoder_projector(encoder_outs)
 
         if input_ids is not None:
-            input_ids[input_ids == -1] = 0
+            input_ids[input_ids == -1] = 0  # [btz, 8, seq_length]
 
             if isinstance(self.llm, T5ForConditionalGeneration):
                 inputs_embeds = self.llm.shared(input_ids)
@@ -222,7 +224,7 @@ class slam_model_s2s(slam_model):
             # if audio_mel is not None or audio is not None:
             #     inputs_embeds = self.concat_whisper_feat(encoder_outs, inputs_embeds, audio_length) # embed the audio feature into the input_embeds
 
-        if modality_mask is not None:
+        if modality_mask is not None and encoder_outs is not None:
             modality_mask = modality_mask.unsqueeze(1).repeat(1, self.code_layer, 1)  # [btz, 8, seq_length]
             modality_mask_start_indices = (modality_mask == True).float().argmax(dim=2)
             modality_lengths = torch.clamp(modality_mask.sum(dim=2), max=encoder_outs.shape[1]).tolist()
