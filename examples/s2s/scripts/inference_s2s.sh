@@ -27,7 +27,7 @@ load_from_cache_file=true
 repetition_penalty=1.2
 max_new_tokens=100
 
-decode_log=$ckpt_path/decode_${split}_rp${repetition_penalty}
+decode_log=$ckpt_path/s2s_decode_${split}_rp${repetition_penalty}
 decode_text_only=true
 
 # -m debugpy --listen 5678 --wait-for-client

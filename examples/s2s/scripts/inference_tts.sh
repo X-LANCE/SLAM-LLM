@@ -15,7 +15,7 @@ codec_decoder_path="hubertsiuzdak/snac_24khz"
 
 tts_adapter=false
 task_type=tts
-split_size=0.00002
+split_size=0.00001
 
 ckpt_path=/valleblob/v-wenxichen/exp/s2s/tts_pre-train_v0_gpu4_btz4_lr1e-4_nofp16_epochs10/s2s_epoch_6_step_4910
 split=test
@@ -27,7 +27,7 @@ load_from_cache_file=true
 repetition_penalty=1.0
 max_new_tokens=100
 
-decode_log=$ckpt_path/decode_${split}_rp${repetition_penalty}
+decode_log=$ckpt_path/tts_decode_${split}_rp${repetition_penalty}
 decode_text_only=true
 
 # -m debugpy --listen 5678 --wait-for-client
@@ -70,4 +70,4 @@ python $code_dir/inference_s2s_batch.py \
         ++decode_config.repetition_penalty=$repetition_penalty \
         ++decode_config.max_new_tokens=$max_new_tokens \
 
-# bash /home/v-wenxichen/SLAM-LLM/examples/s2s/scripts/inference_s2s.sh
+# bash /home/v-wenxichen/SLAM-LLM/examples/s2s/scripts/inference_tts.sh

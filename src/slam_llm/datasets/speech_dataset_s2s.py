@@ -233,6 +233,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         input_length = audio_length
         if task_type == "tts":
             input_length = target_text_length   # NOTE: when task_type is tts, input_length is target_text_length
+            source_text = target_text
 
         if self.inference_mode:
             example_mask = example_ids[0][0].ge(-1)  # [True,True]
