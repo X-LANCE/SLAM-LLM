@@ -204,6 +204,7 @@ class DecodeConfig:
     bad_words_ids: List = field(default_factory=list)
     num_beam_groups: int = 1
     diversity_penalty: float = 0.0
+    task_type: str = "s2s"
 
 @dataclass
 class FSDPConfig:

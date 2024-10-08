@@ -127,18 +127,14 @@ def main(kwargs: DictConfig):
 			collate_fn=dataset_test.collator
         )
 
-	task_type = train_config.task_type
+	task_type = decode_config.task_type
 	logger.info("decode_config: {}".format(decode_config))	
 	logger.info("==============Start {task_type} Inference==============".format(task_type=task_type))
 
 	pred_path = kwargs.get('decode_log') + "_pred_text"
 	gt_path = kwargs.get('decode_log') + "_gt_text"
 
-	if task_type == "s2s":
-		question_path = kwargs.get('decode_log') + "_question_text"
-	elif task_type == "tts":
-		question_path = kwargs.get('decode_log') + "_target_text"
-
+	question_path = kwargs.get('decode_log') + "_question_text"
 	generate_audio_dir = kwargs.get('decode_log') + "_pred_audio"
 	decode_text_only = kwargs.get('decode_text_only', False)
 	if not os.path.exists(generate_audio_dir) and not decode_text_only:
@@ -155,8 +151,7 @@ def main(kwargs: DictConfig):
 			output_text = model.tokenizer.decode(text_outputs, add_special_tokens=False, skip_special_tokens=True)
 			for key, source_text, target_text, generated_text in zip(batch["keys"], batch["source_texts"], batch["target_texts"], [output_text]):
 				q.write(key + "\t" + source_text + "\n")
-				if task_type != "s2s":
-					gt.write(key + "\t" + target_text + "\n")
+				gt.write(key + "\t" + target_text + "\n")
 				pred.write(key + "\t" + generated_text + "\n")
 
 				if task_type == "s2s":
