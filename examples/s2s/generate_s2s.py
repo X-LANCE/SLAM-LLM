@@ -164,7 +164,7 @@ def main(kwargs: DictConfig):
 			if decode_text_only:
 				continue
 				
-			if audio_outputs[0].shape[0] == decode_config.max_new_tokens:
+			if audio_outputs[0].shape[0] == decode_config.max_new_tokens:	# if the audio token is too long, skip (bad case)
 				continue
 
 			for i, key in enumerate(batch["keys"]):

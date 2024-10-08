@@ -17,7 +17,7 @@ tts_adapter=false
 task_type=tts
 split_size=0.00001
 
-ckpt_path=/valleblob/v-wenxichen/exp/s2s/tts_pre-train_v0_gpu4_btz4_lr1e-4_nofp16_epochs10/s2s_epoch_6_step_4910
+ckpt_path=/valleblob/v-wenxichen/exp/s2s/tts_pre-train_v0_gpu4_btz4_lr5e-4_nofp16_epochs10/s2s_epoch_8_step_16874
 split=test
 
 # val_data_path=/home/v-wenxichen/data/s2s/test/${split}.jsonl
@@ -25,13 +25,14 @@ val_data_path="gpt-omni/VoiceAssistant-400K"
 load_from_cache_file=true
 
 repetition_penalty=1.0
-max_new_tokens=100
+max_new_tokens=300
+dataset_sample_seed=666
 
-decode_log=$ckpt_path/tts_decode_${split}_rp${repetition_penalty}
+decode_log=$ckpt_path/tts_decode_${split}_rp${repetition_penalty}_seed${dataset_sample_seed}
 decode_text_only=true
 
 # -m debugpy --listen 5678 --wait-for-client
-python -m debugpy --listen 5678 --wait-for-client $code_dir/inference_s2s_batch.py \
+python $code_dir/inference_s2s_batch.py \
         --config-path "conf" \
         --config-name "prompt_tts.yaml" \
         hydra.run.dir=$ckpt_path \
@@ -56,9 +57,10 @@ python -m debugpy --listen 5678 --wait-for-client $code_dir/inference_s2s_batch.
         ++dataset_config.split_size=$split_size \
         ++dataset_config.load_from_cache_file=$load_from_cache_file \
         ++dataset_config.task_type=$task_type \
+        ++dataset_config.seed=$dataset_sample_seed \
         ++train_config.model_name=s2s \
         ++train_config.freeze_encoder=true \
-        ++train_config.freeze_llm=false \
+        ++train_config.freeze_llm=true \
         ++train_config.batching_strategy=custom \
         ++train_config.num_epochs=1 \
         ++train_config.val_batch_size=1 \
