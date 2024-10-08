@@ -14,17 +14,17 @@ llm_path="Qwen/Qwen2-0.5B"
 codec_decoder_path="hubertsiuzdak/snac_24khz"
 
 tts_adapter=false
-task_type=s2s
+task_type=tts
 split_size=0.00002
 
-ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v0_gpu4_btz4_fp16/s2s_epoch_3_step_21964
+ckpt_path=/valleblob/v-wenxichen/exp/s2s/tts_pre-train_v0_gpu4_btz4_lr1e-4_nofp16_epochs10/s2s_epoch_6_step_4910
 split=test
 
 # val_data_path=/home/v-wenxichen/data/s2s/test/${split}.jsonl
 val_data_path="gpt-omni/VoiceAssistant-400K"
 load_from_cache_file=true
 
-repetition_penalty=1.2
+repetition_penalty=1.0
 max_new_tokens=100
 
 decode_log=$ckpt_path/decode_${split}_rp${repetition_penalty}

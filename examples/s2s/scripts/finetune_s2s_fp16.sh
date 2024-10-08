@@ -1,6 +1,4 @@
 #!/bin/bash
-# export PYTHONPATH=/root/whisper:$PYTHONPATH
-export PYTHONPATH=/root/fairseq:$PYTHONPATH
 export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 # export CUDA_VISIBLE_DEVICES=0,1,2,3
 export TOKENIZERS_PARALLELISM=false

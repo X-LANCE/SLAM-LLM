@@ -102,12 +102,12 @@ def model_factory(train_config, model_config, **kwargs):
         model.load_state_dict(ckpt_dict, strict=False)
 
     if train_config.train_audio_embed_only:
-        if int(os.environ["RANK"]) == 0:
+        if int(os.environ.get("RANK", "0")) == 0:
             logger.info("Only training audio embedding layer")
         partial_freeze_weights(model, model_config.vocab_config.padded_text_vocabsize, model_config.vocab_config.total_vocabsize)
 
     if train_config.train_embed_only:
-        if int(os.environ["RANK"]) == 0:
+        if int(os.environ.get("RANK", "0")) == 0:
             logger.info("Only training embedding layer")
         for param in model.parameters():
             param.requires_grad = False
@@ -154,7 +154,7 @@ class slam_model_s2s(slam_model):
         if self.model_config.vocab_config.total_vocabsize != self.original_vocabsize:
             self.llm.resize_token_embeddings(self.model_config.vocab_config.total_vocabsize)
 
-            if int(os.environ["RANK"]) == 0:
+            if int(os.environ.get("RANK", "0")) == 0:
                 logger.info("Resize llm embedding layer's vocab size to {}".format(self.model_config.vocab_config.total_vocabsize))
 
         self.codec_decoder = codec_decoder
