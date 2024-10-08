@@ -415,6 +415,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
             keys = [s['key'] for s in samples]
             target_text = [s['target_text'] for s in samples]
             source_text = [s['source_text'] for s in samples]
+            target_audio = [s['target_audio'] for s in samples]
 
             return {
                 "input_ids": input_ids,
@@ -429,6 +430,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
                 "keys": keys,
                 "target_texts": target_text,
                 "source_texts": source_text,
+                "target_audio": target_audio,
                 "task_types": task_type
             }
 

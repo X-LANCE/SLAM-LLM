@@ -69,5 +69,6 @@ python $code_dir/inference_s2s_batch.py \
         ++decode_text_only=$decode_text_only \
         ++decode_config.repetition_penalty=$repetition_penalty \
         ++decode_config.max_new_tokens=$max_new_tokens \
+        ++decode_config.task_type=$task_type \
 
 # bash /home/v-wenxichen/SLAM-LLM/examples/s2s/scripts/inference_s2s.sh

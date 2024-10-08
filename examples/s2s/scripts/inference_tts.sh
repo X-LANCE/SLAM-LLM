@@ -31,9 +31,9 @@ decode_log=$ckpt_path/tts_decode_${split}_rp${repetition_penalty}
 decode_text_only=true
 
 # -m debugpy --listen 5678 --wait-for-client
-python $code_dir/inference_s2s_batch.py \
+python -m debugpy --listen 5678 --wait-for-client $code_dir/inference_s2s_batch.py \
         --config-path "conf" \
-        --config-name "prompt.yaml" \
+        --config-name "prompt_tts.yaml" \
         hydra.run.dir=$ckpt_path \
         ++model_config.llm_name=qwen2-0.5b \
         ++model_config.llm_path=$llm_path \
