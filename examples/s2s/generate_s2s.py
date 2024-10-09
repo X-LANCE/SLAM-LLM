@@ -165,6 +165,7 @@ def main(kwargs: DictConfig):
 				continue
 				
 			if audio_outputs[0].shape[0] == decode_config.max_new_tokens:	# if the audio token is too long, skip (bad case)
+				logger.warning(f"Audio token is too long, skip. You can try to increase the max_new_tokens in the decode_config.")
 				continue
 
 			for i, key in enumerate(batch["keys"]):
