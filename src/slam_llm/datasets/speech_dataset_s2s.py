@@ -254,24 +254,29 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
             }
 
         answer_text = self.answer_template.format(target_text)
-        answer_text_ids = self.tokenizer.encode(answer_text)  # [prompt,answer]
-        answer_text_ids.append(self._eot) # [prompt,answer,eos]
+        answer_text_ids = self.tokenizer.encode(answer_text)  # [answer]
+        answer_text_ids.append(self._eot) # [answer,eos]
         answer_text_ids = torch.tensor(answer_text_ids, dtype=torch.int64)
 
         answer_length = max(len(answer_text_ids), target_audio_length)
         answer_ids = self.get_answer_ids(answer_length)                 # NOTE: somtimes answer_text_ids is longer than target_audio_length 
         answer_ids[self.code_layer] = torch.cat((answer_text_ids.unsqueeze(0), answer_ids[self.code_layer][:,len(answer_text_ids):]),dim=1)     # [answer_text,eos]
         text_padding_length = target_audio_length - len(answer_text_ids)
+
+        labels_ids = copy.deepcopy(answer_ids)
+        ori_example_ids = copy.deepcopy(example_ids)
         
         if target_audio is not None:    
             for i in range(self.code_layer):
-                answer_ids[i] = torch.cat((target_audio[i].unsqueeze(0), answer_ids[i][:,target_audio_length:]), dim=1)
+                labels_ids[i] = torch.cat((target_audio[i].unsqueeze(0), answer_ids[i][:,target_audio_length:]), dim=1)
+                answer_ids[i] = torch.cat((layershift(target_audio[i], i).unsqueeze(0), labels_ids[i][:,target_audio_length:]), dim=1)
 
         for i in range(self.code_layer + 1):
-            example_ids[i] = torch.cat((example_ids[i], answer_ids[i]), dim=1)      
+            example_ids[i] = torch.cat((ori_example_ids[i], answer_ids[i]), dim=1)  # [audio,prompt,answer,eos]
+            labels_ids[i] = torch.cat((ori_example_ids[i], labels_ids[i]), dim=1)
 
         example_ids = torch.stack(example_ids).squeeze()
-        labels_ids = copy.deepcopy(example_ids)  # [audio,prompt,answer,eos]
+        labels_ids = torch.stack(labels_ids).squeeze()
         labels_ids[:,:input_length + prompt_length + 3] = -1  # [-1,-1,answer,eos]; NOTE: here 3 include <bos> <eos> <ans_t>
 
         if text_padding_length > 0:

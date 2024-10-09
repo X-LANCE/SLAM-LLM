@@ -366,7 +366,7 @@ class slam_model_s2s(slam_model):
         # NOTE: currently, we only support greedy decoding and sampling for parallel generation
         for step in tqdm(range(max_new_tokens), desc="Generating"):
             if current_input_text is not None:
-                audio_tokens = torch.cat([current_audio_tokens[i].unsqueeze(1) for i in range(self.code_layer)], dim=1)
+                audio_tokens = torch.cat([layershift(current_audio_tokens[i], i).unsqueeze(1) for i in range(self.code_layer)], dim=1)
                 combined_input_ids = torch.cat([audio_tokens, current_input_text.unsqueeze(1)], dim=1)
                 inputs_embeds = self.llm.model.embed_tokens(combined_input_ids)
                 inputs_embeds = torch.mean(inputs_embeds, dim=1).unsqueeze(1)
