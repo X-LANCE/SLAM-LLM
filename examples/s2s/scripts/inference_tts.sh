@@ -29,7 +29,7 @@ max_new_tokens=300
 dataset_sample_seed=666
 
 decode_log=$ckpt_path/tts_decode_${split}_rp${repetition_penalty}_seed${dataset_sample_seed}
-decode_text_only=true
+decode_text_only=false
 
 # -m debugpy --listen 5678 --wait-for-client
 python $code_dir/inference_s2s_batch.py \

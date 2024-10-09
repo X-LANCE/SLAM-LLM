@@ -15,20 +15,21 @@ codec_decoder_path="hubertsiuzdak/snac_24khz"
 
 tts_adapter=false
 task_type=s2s
-split_size=0.00002
+split_size=0.00001
 
-ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v0_gpu4_btz4_fp16/s2s_epoch_3_step_21964
+ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v0_gpu4_btz4_lr5e-4_nofp16_epochs10/s2s_epoch_5_step_13928
 split=test
 
 # val_data_path=/home/v-wenxichen/data/s2s/test/${split}.jsonl
 val_data_path="gpt-omni/VoiceAssistant-400K"
 load_from_cache_file=true
 
-repetition_penalty=1.2
-max_new_tokens=100
+repetition_penalty=1.0
+max_new_tokens=300
+dataset_sample_seed=0
 
-decode_log=$ckpt_path/s2s_decode_${split}_rp${repetition_penalty}
-decode_text_only=true
+decode_log=$ckpt_path/s2s_decode_${split}_rp${repetition_penalty}_seed${dataset_sample_seed}
+decode_text_only=false
 
 # -m debugpy --listen 5678 --wait-for-client
 python $code_dir/inference_s2s_batch.py \
@@ -56,6 +57,7 @@ python $code_dir/inference_s2s_batch.py \
         ++dataset_config.split_size=$split_size \
         ++dataset_config.load_from_cache_file=$load_from_cache_file \
         ++dataset_config.task_type=$task_type \
+        ++dataset_config.seed=$dataset_sample_seed \
         ++train_config.model_name=s2s \
         ++train_config.freeze_encoder=true \
         ++train_config.freeze_llm=false \
