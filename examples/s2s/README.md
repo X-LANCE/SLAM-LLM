@@ -1,5 +1,8 @@
 # s2s-dev
 
+## Demo
+You can refer to the `examples/s2s/demo` directory for a simple demo of TTS and S2S tasks.
+
 ## Environment Setup
 You can set up the environment using the following command once you have setup the environment for SLAM-LLM:
 ```bash

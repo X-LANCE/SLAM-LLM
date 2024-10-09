@@ -19,13 +19,13 @@ load_from_cache_file=false  # set to true if you have already generated the cach
 batch_size_training=4
 use_fp16=false
 num_epochs=10
-lr=5e-4
+lr=1e-4
 train_audio_embed_only=false
 train_embed_only=false
 tts_adapter=false
 task_type=tts
 
-exp_name="tts_pre-train_v0_gpu4_btz${batch_size_training}_lr${lr}_nofp16_epochs${num_epochs}"
+exp_name="tts_pre-train_v1_gpu4_btz${batch_size_training}_lr${lr}_nofp16_epochs${num_epochs}"
 # exp_name="debug"
 
 home_dir=/valleblob/v-wenxichen/exp/s2s
