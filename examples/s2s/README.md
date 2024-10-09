@@ -12,7 +12,7 @@ pip install -r requirements.txt
 Or you can use our provided docker image:
 ```bash
 docker pull worstchan/slam-omni:v0
-docker run -it --gpus all --name slam-omni -v /path/to/slam-llm:/workspace/slam-llm worstchan/slam-omni:v0 /bin/bash
+docker run -it --gpus all --name slam-omni worstchan/slam-omni:v0 /bin/bash
 ```
 
 ## Data Preparation
@@ -50,10 +50,20 @@ bash ./examples/s2s/scripts/finetune_s2s.sh
 
 
 ## Inference
-To generate the text and speech using the pre-trained model given the speech input, you can run the following command:
+To generate the text and speech (i.e., to perform S2S task) using the pre-trained model given the speech input, you can run the following command:
 ```bash
 bash ./examples/s2s/scripts/inference_s2s.sh
 ```
+
+<!-- <!-- 你也可以使用 TTS 预训练的模型执行 TTS 推理任务，使用以下命令： -->
+You can also use the TTS pre-trained model to perform TTS inference tasks using the following command:
+```bash
+bash ./examples/s2s/scripts/inference_tts.sh
+```
+
+<!-- 要注意我们目前的推理只支持单个输入，暂不支持批量输入。 -->
+Please note that our current inference only supports **single** input and does not support batch input.
+
 
 ## TODO
 - [ ] Add ASR pre-training
