@@ -4,11 +4,6 @@ import torch
 import logging
 # import argparse
 from slam_llm.models.slam_model import slam_model
-# config
-# from llama_recipes.configs import fsdp_config as FSDP_CONFIG
-# from llama_recipes.configs import train_config as TRAIN_CONFIG
-# from llama_recipes.configs import model_config as MODEL_CONFIG
-# from llama_recipes.configs import log_config as LOG_CONFIG
 
 from slam_llm.utils.model_utils import get_custom_model_factory
 from slam_llm.utils.dataset_utils import get_preprocessed_dataset
@@ -47,9 +42,6 @@ def main_hydra(cfg: DictConfig):
 
 def main(kwargs: DictConfig):
 
-	# Update the configuration for the training and sharding process
-	# train_config, fsdp_config, model_config, log_config = TRAIN_CONFIG(), FSDP_CONFIG(), MODEL_CONFIG(), LOG_CONFIG()
-	# update_config((train_config, fsdp_config, model_config, log_config), **kwargs)
 	train_config, fsdp_config, model_config, log_config, dataset_config, decode_config = kwargs.train_config, \
 	                                                                      				kwargs.fsdp_config, \
 																						kwargs.model_config, \

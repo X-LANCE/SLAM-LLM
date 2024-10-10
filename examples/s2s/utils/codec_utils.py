@@ -1,5 +1,5 @@
 from snac import SNAC
-from slam_llm.utils.train_utils import print_module_size, print_model_size
+from slam_llm.utils.train_utils import print_module_size
 import os
 
 def setup_codec(train_config, model_config, **kwargs):
