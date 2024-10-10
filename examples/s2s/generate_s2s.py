@@ -125,10 +125,14 @@ def main(kwargs: DictConfig):
 		logger.info("Decode Strategy: Sampling")
 	else:
 		logger.info("Decode Strategy: Greedy")
+	if decode_config.decode_text_only:
+		logger.info("Decode Text Only")
+	else:
+		logger.info("Decode Text & Audio")
 	logger.info("============== Start {task_type} Inference ==============".format(task_type=task_type))
 
 	decode_log_dir = kwargs.get('decode_log')
-	decode_text_only = kwargs.get('decode_text_only', False)
+	output_text_only = kwargs.get('output_text_only', False)
 
 	if not os.path.exists(decode_log_dir):
 		os.makedirs(decode_log_dir)
@@ -138,7 +142,7 @@ def main(kwargs: DictConfig):
 	question_path = os.path.join(decode_log_dir, "question_text")
 	generate_audio_dir = os.path.join(decode_log_dir, "pred_audio")
 
-	if not os.path.exists(generate_audio_dir) and not decode_text_only:
+	if not os.path.exists(generate_audio_dir) and not (output_text_only or decode_config.decode_text_only):
 		os.makedirs(generate_audio_dir)
 
 	with open(pred_path, "w") as pred, open(gt_path, "w") as gt, open(question_path, "w") as q:
@@ -162,7 +166,7 @@ def main(kwargs: DictConfig):
 
 				logger.info(f"Generated Text: {generated_text}")
 
-			if decode_text_only:
+			if output_text_only or decode_config.decode_text_only:
 				continue
 				
 			if audio_outputs[0].shape[0] == decode_config.max_new_tokens:	# if the audio token is too long, skip (bad case)

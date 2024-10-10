@@ -39,9 +39,15 @@ top_k=50
 temperature=1.0
 decode_text_only=false
 
+output_text_only=false
+
 decode_log=$ckpt_path/tts_decode_${split}_rp${repetition_penalty}_seed${dataset_sample_seed}_greedy
 if [ "$do_sample" = true ] ; then
-    decode_log=$ckpt_path/tts_decode_${split}_rp${repetition_penalty}_seed${dataset_sample_seed}_sampling_topk${top_k}_topp${top_p}_temp${temperature}
+    decode_log=$ckpt_path/s2s_decode_${split}_rp${repetition_penalty}_seed${dataset_sample_seed}_sampling_topk${top_k}_topp${top_p}_temp${temperature}
+fi
+
+if [ "$decode_text_only" = true ] ; then
+    decode_log=$decode_log"_text_only"
 fi
 
 # -m debugpy --listen 5678 --wait-for-client
@@ -81,7 +87,7 @@ python $code_dir/inference_s2s_batch.py \
         ++train_config.task_type=$task_type \
         ++decode_log=$decode_log \
         ++ckpt_path=$ckpt_path/model.pt \
-        ++decode_text_only=$decode_text_only \
+        ++output_text_only=$output_text_only \
         ++decode_config.repetition_penalty=$repetition_penalty \
         ++decode_config.max_new_tokens=$max_new_tokens \
         ++decode_config.task_type=$task_type \
@@ -89,5 +95,6 @@ python $code_dir/inference_s2s_batch.py \
         ++decode_config.top_p=$top_p \
         ++decode_config.top_k=$top_k \
         ++decode_config.temperature=$temperature \
+        ++decode_config.decode_text_only=$decode_text_only \
 
 # bash /home/v-wenxichen/SLAM-LLM/examples/s2s/scripts/inference_tts.sh

@@ -62,7 +62,9 @@ bash ./examples/s2s/scripts/inference_tts.sh
 ```
 
 <!-- 要注意我们目前的推理只支持单个输入，暂不支持批量输入。 -->
-Please note that our current inference only supports **single** input and does not support batch input.
+### Note
+- Our current inference only supports **single** input and does not support batch input.
+- We provide two inference mode: `text only` and `text & speech`. You can set the `decode_text_only` parameter in the inference script to choose the mode you want to use.
 
 
 ## TODO

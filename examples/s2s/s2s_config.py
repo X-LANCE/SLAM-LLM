@@ -207,6 +207,7 @@ class DecodeConfig:
     num_beam_groups: int = 1
     diversity_penalty: float = 0.0
     task_type: str = "s2s"
+    decode_text_only: bool = False
 
 @dataclass
 class FSDPConfig:

@@ -309,6 +309,7 @@ class slam_model_s2s(slam_model):
 
         max_new_tokens = kwargs.get("max_new_tokens", 360)
         repetition_penalty = kwargs.get("repetition_penalty", 1.0)
+        decode_text_only = kwargs.get("decode_text_only", False)
 
         pad_t = self.model_config.vocab_config.pad_t
         pad_a = self.model_config.vocab_config.pad_a
@@ -344,7 +345,6 @@ class slam_model_s2s(slam_model):
             # Apply repetition penalty to the logits
             if repetition_penalty != 1.0:
                 xt_logits = self.repetition_penalty(xt_logits, generated_ids[self.code_layer], repetition_penalty)
-                
                 for i in range(self.code_layer):
                     xa_logits[i] = self.repetition_penalty(xa_logits[i], generated_ids[i], repetition_penalty)
 
@@ -355,13 +355,13 @@ class slam_model_s2s(slam_model):
 
             next_tokens_audio = []
             for i in range(self.code_layer):
-                if not audio_end:
+                if not audio_end and not decode_text_only:
                     next_token_audio = self.sample_next_token(xa_logits[i][:, -1, :], **kwargs)
                 else:
-                    next_token_audio = torch.full((input_ids.size(0),), pad_a, device=input_ids.device)  # 填充pad_a
+                    next_token_audio = torch.full((input_ids.size(0),), pad_a, device=input_ids.device)
                 next_tokens_audio.append(next_token_audio)
 
-            if next_tokens_audio[-1] == eoa:
+            if next_tokens_audio[-1] == eoa or decode_text_only:
                 audio_end = True
             if next_token_text == eot:
                 text_end = True
