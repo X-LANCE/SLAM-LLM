@@ -29,9 +29,9 @@ dataset_sample_seed=1234
 repetition_penalty=1.0
 max_new_tokens=500
 do_sample=false
-top_p=0.95
+top_p=0.9
 top_k=50
-temperature=1.2
+temperature=1.0
 decode_text_only=false
 
 decode_log=$ckpt_path/tts_decode_${split}_rp${repetition_penalty}_seed${dataset_sample_seed}_greedy

@@ -17,7 +17,7 @@ tts_adapter=false
 task_type=s2s
 split_size=0.00001
 
-ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v1_gpu4_btz4_lr1e-4_nofp16_epochs10/s2s_epoch_3_step_1964
+ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v1_gpu4_btz4_lr5e-4_nofp16_epochs10/s2s_epoch_3_step_21964
 split=test
 
 # val_data_path=/home/v-wenxichen/data/s2s/test/${split}.jsonl
@@ -29,9 +29,9 @@ dataset_sample_seed=1234
 repetition_penalty=1.0
 max_new_tokens=500
 do_sample=false
-top_p=0.95
+top_p=0.9
 top_k=50
-temperature=1.2
+temperature=1.0
 decode_text_only=false
 
 decode_log=$ckpt_path/s2s_decode_${split}_rp${repetition_penalty}_seed${dataset_sample_seed}_greedy

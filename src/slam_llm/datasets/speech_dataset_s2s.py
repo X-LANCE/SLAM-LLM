@@ -9,27 +9,6 @@ from slam_llm.utils.compute_utils import calculate_output_length_1d
 from slam_llm.utils.snac_utils import layershift, get_snac_answer_token
 import librosa
 
-# these tokens setting is from Mini-Omni
-# text_vocabsize = 151936
-# text_specialtokens = 64
-# audio_vocabsize = 4096
-# audio_specialtokens = 64
-
-# padded_text_vocabsize = text_vocabsize + text_specialtokens
-# padded_audio_vocabsize = audio_vocabsize + audio_specialtokens
-
-# _eot = text_vocabsize
-# _pad_t = text_vocabsize + 1
-# _input_t = text_vocabsize + 2
-# _answer_t = text_vocabsize + 3
-# _asr = text_vocabsize + 4
-
-# _eoa = audio_vocabsize
-# _pad_a = audio_vocabsize + 1
-# _input_a = audio_vocabsize + 2
-# _answer_a = audio_vocabsize + 3
-# _split = audio_vocabsize + 4
-
 
 class SpeechDatasetJsonl(torch.utils.data.Dataset):
     
@@ -459,7 +438,6 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
             "modality_mask": modality_mask,
             "task_types": task_type
         }
-
 
 
 def get_speech_dataset(dataset_config, tokenizer, split):
