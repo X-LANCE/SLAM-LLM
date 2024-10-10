@@ -20,7 +20,12 @@ split_size=0.00001
 ckpt_path=/valleblob/v-wenxichen/exp/s2s/tts_pre-train_v1_gpu4_btz4_lr5e-4_nofp16_epochs10/s2s_epoch_5_step_3928
 split=test
 
-# val_data_path=/home/v-wenxichen/data/s2s/test/${split}.jsonl
+# jsonl dataset
+# manifest_format=jsonl
+# val_data_path=/home/v-wenxichen/SLAM-LLM/examples/s2s/demo/data/${split}.jsonl
+
+# huggingface dataset
+manifest_format=datasets
 val_data_path="gpt-omni/VoiceAssistant-400K"
 load_from_cache_file=true
 dataset_sample_seed=1234
@@ -61,7 +66,7 @@ python $code_dir/inference_s2s_batch.py \
         ++dataset_config.input_type=mel \
         ++dataset_config.mel_size=80 \
         ++dataset_config.inference_mode=true \
-        ++dataset_config.manifest_format=datasets \
+        ++dataset_config.manifest_format=$manifest_format \
         ++dataset_config.split_size=$split_size \
         ++dataset_config.load_from_cache_file=$load_from_cache_file \
         ++dataset_config.task_type=$task_type \

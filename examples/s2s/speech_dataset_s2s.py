@@ -6,7 +6,7 @@ import numpy as np
 import torch
 import whisper
 from slam_llm.utils.compute_utils import calculate_output_length_1d
-from slam_llm.utils.snac_utils import layershift, get_snac_answer_token
+from utils.snac_utils import layershift, get_snac_answer_token
 import librosa
 
 
@@ -66,6 +66,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
 
         self.data_list = []
 
+        # TODO: design a better way to load data
         if self.manifest_format == "datasets":
             from datasets import load_dataset, load_from_disk
             if dataset_config.load_from_cache_file:       
@@ -99,6 +100,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         return len(self.data_list)
 
     # extract audio feature (raw waveform or mel spectrogram) from audio file
+    # NOTE: here datasets format is just for VoiceAssistant-400K dataset
     def extract_audio_feature(self, audio_path):
         # audio path is a dictionary, resample the audio to 16kHz
         if self.manifest_format == "datasets" and isinstance(audio_path, dict):
@@ -165,13 +167,14 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
             target_text = data_dict.get("answer", None)
             if source_audio is not None:
                 key = source_audio['path']
-        
-        else:
+        elif self.manifest_format == "jsonl":
             source_audio = data_dict.get("source_wav", None)
             target_audio = data_dict.get("target_wav", None)
             source_text = data_dict.get("source_text", None)
             target_text = data_dict.get("target_text", None)
             key = data_dict.get("key", None)
+        else:
+            raise ValueError("manifest_format must be one of [datasets, jsonl]")
 
         if task_type == "s2s" or task_type == "asr":
             audio_mel, audio_length = self.extract_audio_feature(source_audio)
@@ -181,16 +184,11 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
 
         if self.fix_length_audio > 0:
             audio_length = self.fix_length_audio
-            target_audio_length = self.fix_length_audio
 
         prompt = self.prompt
-        # if prompt is None:
-        #     prompt = "Transcribe speech to text. Output the transcription directly without redundant content. Ensure that the output is not duplicated. "
         prompt = self.prompt_template.format(prompt)
         prompt_ids = self.tokenizer.encode(prompt)
         prompt_length = len(prompt_ids)
-
-        # audio_pseudo = torch.full((audio_length,), -1) # placeholder
         prompt_ids = torch.tensor(prompt_ids, dtype=torch.int64)
 
         if task_type == "s2s" or task_type == "asr":
@@ -267,7 +265,6 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         example_mask = example_ids[0].ge(-1)  # [True,True,True,True]
 
         label_mask = labels_ids.ge(0)  # [False,False,True,True]
-        # example_ids[~example_mask] = 0  # [audio,prompt,answer,eos]
         labels_ids[~label_mask] = self.IGNORE_INDEX  # [-100,-100,answer,eos]
 
         return {

@@ -14,12 +14,11 @@ from slam_llm.utils.train_utils import print_model_size
 from typing import List, Optional
 from slam_llm.utils.metric import compute_accuracy
 from transformers import T5ForConditionalGeneration
-from slam_llm.utils.snac_utils import layershift, get_snac_answer_token
 from tqdm import tqdm
 from utils.tts_adapter_utils import setup_tts_adapter
 from utils.codec_utils import setup_codec
 from utils.trick_utils import partial_freeze_weights, train_embedding_layer_only
-
+from utils.snac_utils import layershift
 
 logger = logging.getLogger(__name__)
 

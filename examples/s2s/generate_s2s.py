@@ -12,7 +12,7 @@ from slam_llm.models.slam_model import slam_model
 
 from slam_llm.utils.model_utils import get_custom_model_factory
 from slam_llm.utils.dataset_utils import get_preprocessed_dataset
-from slam_llm.utils.snac_utils import reconscruct_snac, reconstruct_tensors
+from utils.snac_utils import reconscruct_snac, reconstruct_tensors
 import os
 import logging
 from tqdm import tqdm

@@ -159,7 +159,7 @@ class TrainConfig:
 @dataclass
 class DataConfig:
     dataset: str = "speech_dataset_s2s"
-    file: str = "src/slam_llm/datasets/speech_dataset_s2s.py:get_speech_dataset"
+    file: str = "examples/s2s/speech_dataset_s2s.py:get_speech_dataset"
     train_data_path: Optional[str] = None
     val_data_path: Optional[str] = None
     train_split: str = "train"
