@@ -319,7 +319,7 @@ class slam_model_s2s(slam_model):
         text_end = False     # Track whether text generation has ended
         audio_end = False    # Track whether audio generation has ended
 
-        # NOTE: currently, we only support greedy decoding and sampling for parallel generation
+        # NOTE: currently, we only support greedy decoding and sampling for parallel generation, no beam search
         for step in tqdm(range(max_new_tokens), desc="Generating"):
             if current_input_text is not None:
                 audio_tokens = torch.cat([layershift(current_audio_tokens[i], i).unsqueeze(1) for i in range(self.code_layer)], dim=1)
@@ -342,31 +342,22 @@ class slam_model_s2s(slam_model):
             xt_logits = logits[..., :text_vocab_size]
             xa_logits = [logits[..., text_vocab_size + audio_vocab_size * i : text_vocab_size + audio_vocab_size * (i + 1)] for i in range(self.code_layer)]
 
+            # Apply repetition penalty to the logits
             if repetition_penalty != 1.0:
-                for token_id in set(generated_ids[self.code_layer]):
-                    # Apply penalty to text logits
-                    if xt_logits[0, -1, token_id] < 0:
-                        xt_logits[0, -1, token_id] *= repetition_penalty
-                    else:
-                        xt_logits[0, -1, token_id] /= repetition_penalty
+                xt_logits = self.repetition_penalty(xt_logits, generated_ids[self.code_layer], repetition_penalty)
                 
                 for i in range(self.code_layer):
-                    for token_id in set(generated_ids[i]):
-                        # Apply penalty to audio logits
-                        if xa_logits[i][0, -1, token_id] < 0:
-                            xa_logits[i][0, -1, token_id] *= repetition_penalty
-                        else:
-                            xa_logits[i][0, -1, token_id] /= repetition_penalty
+                    xa_logits[i] = self.repetition_penalty(xa_logits[i], generated_ids[i], repetition_penalty)
 
             if not text_end:
-                next_token_text = self.sample_next_token(xt_logits[:, -1, :], **kwargs).squeeze(0)
+                next_token_text = self.sample_next_token(xt_logits[:, -1, :], **kwargs)
             else:
                 next_token_text = torch.tensor([pad_t], device=input_ids.device)
 
             next_tokens_audio = []
             for i in range(self.code_layer):
                 if not audio_end:
-                    next_token_audio = self.sample_next_token(xa_logits[i][:, -1, :], **kwargs).squeeze(0)
+                    next_token_audio = self.sample_next_token(xa_logits[i][:, -1, :], **kwargs)
                 else:
                     next_token_audio = torch.full((input_ids.size(0),), pad_a, device=input_ids.device)  # 填充pad_a
                 next_tokens_audio.append(next_token_audio)
@@ -443,3 +434,16 @@ class slam_model_s2s(slam_model):
         else:
             # Greedy decoding (argmax)
             return torch.argmax(logits, dim=-1, keepdim=True)
+
+
+    def repetition_penalty(self, logits, generated_ids, repetition_penalty):
+        """
+        Apply repetition penalty to the logits.
+        """
+        for token_id in set(generated_ids):
+            if logits[0, -1, token_id] < 0:
+                logits[0, -1, token_id] *= repetition_penalty
+            else:
+                logits[0, -1, token_id] /= repetition_penalty
+
+        return logits

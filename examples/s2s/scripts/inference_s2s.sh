@@ -23,13 +23,21 @@ split=test
 # val_data_path=/home/v-wenxichen/data/s2s/test/${split}.jsonl
 val_data_path="gpt-omni/VoiceAssistant-400K"
 load_from_cache_file=true
+dataset_sample_seed=1234
 
+# decode config
 repetition_penalty=1.0
-max_new_tokens=400
-dataset_sample_seed=0
-
-decode_log=$ckpt_path/s2s_decode_${split}_rp${repetition_penalty}_seed${dataset_sample_seed}
+max_new_tokens=500
+do_sample=false
+top_p=0.95
+top_k=50
+temperature=1.2
 decode_text_only=false
+
+decode_log=$ckpt_path/s2s_decode_${split}_rp${repetition_penalty}_seed${dataset_sample_seed}_greedy
+if [ "$do_sample" = true ] ; then
+    decode_log=$ckpt_path/s2s_decode_${split}_rp${repetition_penalty}_seed${dataset_sample_seed}_sampling_topk${top_k}_topp${top_p}_temp${temperature}
+fi
 
 # -m debugpy --listen 5678 --wait-for-client
 python $code_dir/inference_s2s_batch.py \
@@ -60,7 +68,7 @@ python $code_dir/inference_s2s_batch.py \
         ++dataset_config.seed=$dataset_sample_seed \
         ++train_config.model_name=s2s \
         ++train_config.freeze_encoder=true \
-        ++train_config.freeze_llm=false \
+        ++train_config.freeze_llm=true \
         ++train_config.batching_strategy=custom \
         ++train_config.num_epochs=1 \
         ++train_config.val_batch_size=1 \
@@ -72,5 +80,9 @@ python $code_dir/inference_s2s_batch.py \
         ++decode_config.repetition_penalty=$repetition_penalty \
         ++decode_config.max_new_tokens=$max_new_tokens \
         ++decode_config.task_type=$task_type \
+        ++decode_config.do_sample=$do_sample \
+        ++decode_config.top_p=$top_p \
+        ++decode_config.top_k=$top_k \
+        ++decode_config.temperature=$temperature \
 
 # bash /home/v-wenxichen/SLAM-LLM/examples/s2s/scripts/inference_s2s.sh

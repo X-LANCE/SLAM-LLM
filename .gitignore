@@ -3,6 +3,7 @@ __pycache__
 .ipynb_checkpoints
 .vscode
 debug.py
+debug.ipynb
 .idea/*
 transformers
 wandb/

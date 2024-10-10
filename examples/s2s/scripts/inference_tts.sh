@@ -23,17 +23,24 @@ split=test
 # val_data_path=/home/v-wenxichen/data/s2s/test/${split}.jsonl
 val_data_path="gpt-omni/VoiceAssistant-400K"
 load_from_cache_file=true
-
-repetition_penalty=1.0
-max_new_tokens=500
 dataset_sample_seed=1234
 
-decode_log=$ckpt_path/tts_decode_${split}_rp${repetition_penalty}_seed${dataset_sample_seed}_greedy
-decode_text_only=false
+# decode config
+repetition_penalty=1.0
+max_new_tokens=500
 do_sample=false
+top_p=0.95
+top_k=50
+temperature=1.2
+decode_text_only=false
+
+decode_log=$ckpt_path/tts_decode_${split}_rp${repetition_penalty}_seed${dataset_sample_seed}_greedy
+if [ "$do_sample" = true ] ; then
+    decode_log=$ckpt_path/tts_decode_${split}_rp${repetition_penalty}_seed${dataset_sample_seed}_sampling_topk${top_k}_topp${top_p}_temp${temperature}
+fi
 
 # -m debugpy --listen 5678 --wait-for-client
-python -m debugpy --listen 5678 --wait-for-client $code_dir/inference_s2s_batch.py \
+python $code_dir/inference_s2s_batch.py \
         --config-path "conf" \
         --config-name "prompt_tts.yaml" \
         hydra.run.dir=$ckpt_path \
@@ -74,5 +81,8 @@ python -m debugpy --listen 5678 --wait-for-client $code_dir/inference_s2s_batch.
         ++decode_config.max_new_tokens=$max_new_tokens \
         ++decode_config.task_type=$task_type \
         ++decode_config.do_sample=$do_sample \
+        ++decode_config.top_p=$top_p \
+        ++decode_config.top_k=$top_k \
+        ++decode_config.temperature=$temperature \
 
 # bash /home/v-wenxichen/SLAM-LLM/examples/s2s/scripts/inference_tts.sh

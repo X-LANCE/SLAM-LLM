@@ -133,7 +133,7 @@ def main(kwargs: DictConfig):
 		logger.info("Decode Strategy: Sampling")
 	else:
 		logger.info("Decode Strategy: Greedy")
-	logger.info("==============Start {task_type} Inference==============".format(task_type=task_type))
+	logger.info("============== Start {task_type} Inference ==============".format(task_type=task_type))
 
 	decode_log_dir = kwargs.get('decode_log')
 	decode_text_only = kwargs.get('decode_text_only', False)
