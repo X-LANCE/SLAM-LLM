@@ -87,6 +87,7 @@ class ModelConfig:
     })
     vocab_config: VocabConfig = field(default_factory=VocabConfig)
     codec_decode: bool = False
+    codec_decoder_type: str = "SNAC"
     codec_decoder_path: Optional[str] = None
     tts_adapter: bool = False
     tts_adapter_config: TTSAdapterConfig = field(default_factory=TTSAdapterConfig)
@@ -196,6 +197,7 @@ class DecodeConfig:
     top_p: float = 1.0
     num_beams: int = 1
     num_return_sequences: int = 1
+    num_samples: int = 1
     max_time: float = 0.0
     repetition_penalty: float = 1.0
     length_penalty: float = 1.0

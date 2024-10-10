@@ -25,7 +25,7 @@ val_data_path="gpt-omni/VoiceAssistant-400K"
 load_from_cache_file=true
 
 repetition_penalty=1.0
-max_new_tokens=300
+max_new_tokens=400
 dataset_sample_seed=0
 
 decode_log=$ckpt_path/s2s_decode_${split}_rp${repetition_penalty}_seed${dataset_sample_seed}

@@ -15,46 +15,20 @@ from typing import List, Optional
 from slam_llm.utils.metric import compute_accuracy
 from transformers import T5ForConditionalGeneration
 from slam_llm.utils.snac_utils import layershift, get_snac_answer_token
-from snac import SNAC
 from tqdm import tqdm
-from utils.model_utils import setup_tts_adapter
+from utils.tts_adapter_utils import setup_tts_adapter
+from utils.codec_utils import setup_codec
+from utils.trick_utils import partial_freeze_weights, train_embedding_layer_only
 
 
 logger = logging.getLogger(__name__)
-
-def partial_freeze_weights(model, original_vocabsize, total_vocabsize):
-    trainable_range = (original_vocabsize, total_vocabsize)
-
-    # Define a hook to zero out the gradient for weights outside the trainable range during the backward pass
-    def zero_out_gradient(grad):
-        grad[:trainable_range[0], :] = 0
-        grad[trainable_range[1] + 1:, :] = 0
-        return grad
-
-    # Freeze all layers first
-    for param in model.parameters():
-        param.requires_grad = False
-
-    # Assuming the output layer is `lm_head`
-    for param in model.llm.lm_head.parameters():
-        # Compute the standard deviation for He initialization
-        std_dev = (2.0 / param.size(1)) ** 0.5
-
-        # Initialize the specific rows with He initialization
-        param[original_vocabsize:total_vocabsize] = (
-            torch.randn((trainable_range[1] - trainable_range[0], param.size(1))) * std_dev
-        )
-        param.requires_grad = True
-
-        # Register the hook on the weight tensor
-        param.register_hook(zero_out_gradient)
 
 
 def model_factory(train_config, model_config, **kwargs):
     # return necessary components for training
     tokenizer = setup_tokenizer(train_config, model_config, **kwargs)
 
-    if train_config.task_type == "s2s":
+    if train_config.task_type == "s2s" or train_config.task_type == "asr":
         encoder = setup_encoder(train_config, model_config, **kwargs)
     elif train_config.task_type == "tts":
         encoder = None
@@ -74,7 +48,7 @@ def model_factory(train_config, model_config, **kwargs):
 
     codec_decoder = None
     if model_config.codec_decode:
-        codec_decoder = SNAC.from_pretrained(model_config.codec_decoder_path).eval()
+        codec_decoder = setup_codec(train_config, model_config, **kwargs)
 
     tts_adapter = None
     if model_config.tts_adapter:
@@ -102,17 +76,10 @@ def model_factory(train_config, model_config, **kwargs):
         model.load_state_dict(ckpt_dict, strict=False)
 
     if train_config.train_audio_embed_only:
-        if int(os.environ.get("RANK", "0")) == 0:
-            logger.info("Only training audio embedding layer")
         partial_freeze_weights(model, model_config.vocab_config.padded_text_vocabsize, model_config.vocab_config.total_vocabsize)
 
     if train_config.train_embed_only:
-        if int(os.environ.get("RANK", "0")) == 0:
-            logger.info("Only training embedding layer")
-        for param in model.parameters():
-            param.requires_grad = False
-        for param in model.llm.lm_head.parameters():
-            param.requires_grad = True
+        train_embedding_layer_only(model)
 
     print_model_size(
         model,
@@ -161,15 +128,6 @@ class slam_model_s2s(slam_model):
         self.tts_adapter = tts_adapter
         self.code_layer = self.model_config.vocab_config.code_layer
 
-    def concat_whisper_feat(self, audio_feature, input_ids, T, task = None):
-        btz = len(T)
-        for j in range(btz):
-            if task is None or (task[j] != "T1T2" and task[j] != "T1A2"):
-                for i in range(self.code_layer):
-                    input_ids[j, i, 1 : T[j] + 1, :] = audio_feature[j][: T[j]].clone()
-            else:
-                continue
-        return input_ids
 
     def forward(self,
                 input_ids: torch.LongTensor = None,
@@ -230,9 +188,6 @@ class slam_model_s2s(slam_model):
                     inputs_embeds = self.llm.model.model.embed_tokens(input_ids)
                 else:
                     inputs_embeds = self.llm.model.model.model.embed_tokens(input_ids)
-
-            # if audio_mel is not None or audio is not None:
-            #     inputs_embeds = self.concat_whisper_feat(encoder_outs, inputs_embeds, audio_length) # embed the audio feature into the input_embeds
 
         if modality_mask is not None and encoder_outs is not None:
             modality_mask = modality_mask.unsqueeze(1).repeat(1, self.code_layer, 1)  # [btz, 8, seq_length]
@@ -350,9 +305,10 @@ class slam_model_s2s(slam_model):
         # input_pos = torch.arange(input_ids.size(-1), device=input_ids.device).unsqueeze(0)
         past_key_values = None
 
-        do_sample = kwargs.get("do_sample", False)
+        text_vocab_size = self.model_config.vocab_config.padded_text_vocabsize
+        audio_vocab_size = self.model_config.vocab_config.padded_audio_vocabsize
+
         max_new_tokens = kwargs.get("max_new_tokens", 360)
-        temperature = kwargs.get("temperature", 1.0)
         repetition_penalty = kwargs.get("repetition_penalty", 1.0)
 
         pad_t = self.model_config.vocab_config.pad_t
@@ -383,8 +339,6 @@ class slam_model_s2s(slam_model):
             past_key_values = outputs.past_key_values       # Update past_key_values for the next step
 
             # Split logits into text and audio layers based on vocab size
-            text_vocab_size = self.model_config.vocab_config.padded_text_vocabsize
-            audio_vocab_size = self.model_config.vocab_config.padded_audio_vocabsize
             xt_logits = logits[..., :text_vocab_size]
             xa_logits = [logits[..., text_vocab_size + audio_vocab_size * i : text_vocab_size + audio_vocab_size * (i + 1)] for i in range(self.code_layer)]
 
@@ -405,14 +359,14 @@ class slam_model_s2s(slam_model):
                             xa_logits[i][0, -1, token_id] /= repetition_penalty
 
             if not text_end:
-                next_token_text = self.sample_next_token(xt_logits[:, -1, :], do_sample, temperature, text_vocab_size).squeeze(0)
+                next_token_text = self.sample_next_token(xt_logits[:, -1, :], **kwargs).squeeze(0)
             else:
                 next_token_text = torch.tensor([pad_t], device=input_ids.device)
 
             next_tokens_audio = []
             for i in range(self.code_layer):
                 if not audio_end:
-                    next_token_audio = self.sample_next_token(xa_logits[i][:, -1, :], do_sample, temperature, audio_vocab_size).squeeze(0)
+                    next_token_audio = self.sample_next_token(xa_logits[i][:, -1, :], **kwargs).squeeze(0)
                 else:
                     next_token_audio = torch.full((input_ids.size(0),), pad_a, device=input_ids.device)  # 填充pad_a
                 next_tokens_audio.append(next_token_audio)
@@ -422,7 +376,7 @@ class slam_model_s2s(slam_model):
             if next_token_text == eot:
                 text_end = True
             
-            # Update input_ids and inputs_embeds for the next step
+            # Update input_ids for the next step
             current_input_text = next_token_text
             for i in range(self.code_layer):
                 current_audio_tokens[i] = next_tokens_audio[i]
@@ -433,7 +387,7 @@ class slam_model_s2s(slam_model):
             #     input_pos = input_pos.add_(1)
             attention_mask = torch.cat([attention_mask, torch.ones((input_ids.size(0), 1), device=input_ids.device)], dim=1)
 
-            if audio_end:
+            if audio_end and text_end:
                 break
 
             # Append generated tokens to the list
@@ -449,12 +403,43 @@ class slam_model_s2s(slam_model):
 
 
     @torch.no_grad()
-    def sample_next_token(self, logits, do_sample, temperature, vocab_size, num_samples=1):
+    def sample_next_token(self, logits, **kwargs):
         """
         Generate the next token based on the model output logits.
-        Both sampling and greedy decoding are supported.
+        Supports both greedy decoding, top-k sampling, and top-p (nucleus) sampling.
         """
+        do_sample = kwargs.get("do_sample", False)
+        temperature = kwargs.get("temperature", 1.0)
+        top_k = kwargs.get("top_k", 50)
+        top_p = kwargs.get("top_p", 1.0)
+        num_samples = kwargs.get("num_samples", 1)
+
+        # Adjust logits with temperature
+        logits = logits.squeeze(0)
+        logits = logits / temperature
+
+        # Top-k filtering
+        if top_k > 0:
+            top_k = min(top_k, logits.size(-1))  # Make sure top_k is within the vocab size
+            values, indices = torch.topk(logits, top_k)
+            logits[logits < values[..., [-1]]] = -float('Inf')  # Filter tokens not in top_k
+
+        # Top-p filtering (nucleus sampling)
+        if top_p < 1.0:
+            sorted_logits, sorted_indices = torch.sort(logits, descending=True)
+            cumulative_probs = torch.cumsum(F.softmax(sorted_logits, dim=-1), dim=-1)
+
+            # Remove tokens with cumulative probability above the threshold
+            sorted_indices_to_remove = cumulative_probs > top_p
+            sorted_indices_to_remove[..., 1:] = sorted_indices_to_remove[..., :-1].clone()
+            sorted_indices_to_remove[..., 0] = 0
+
+            indices_to_remove = sorted_indices[sorted_indices_to_remove]
+            logits[indices_to_remove] = -float('Inf')
+
         if do_sample:
-            return torch.multinomial(F.softmax(logits / temperature, dim=-1), num_samples=num_samples)
+            # Perform sampling
+            return torch.multinomial(F.softmax(logits, dim=-1), num_samples=num_samples)
         else:
+            # Greedy decoding (argmax)
             return torch.argmax(logits, dim=-1, keepdim=True)

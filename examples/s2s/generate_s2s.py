@@ -129,14 +129,23 @@ def main(kwargs: DictConfig):
 
 	task_type = decode_config.task_type
 	logger.info("decode_config: {}".format(decode_config))	
+	if decode_config.do_sample:
+		logger.info("Decode Strategy: Sampling")
+	else:
+		logger.info("Decode Strategy: Greedy")
 	logger.info("==============Start {task_type} Inference==============".format(task_type=task_type))
 
-	pred_path = kwargs.get('decode_log') + "_pred_text"
-	gt_path = kwargs.get('decode_log') + "_gt_text"
-
-	question_path = kwargs.get('decode_log') + "_question_text"
-	generate_audio_dir = kwargs.get('decode_log') + "_pred_audio"
+	decode_log_dir = kwargs.get('decode_log')
 	decode_text_only = kwargs.get('decode_text_only', False)
+
+	if not os.path.exists(decode_log_dir):
+		os.makedirs(decode_log_dir)
+
+	pred_path = os.path.join(decode_log_dir, "pred_text")
+	gt_path = os.path.join(decode_log_dir, "gt_text")
+	question_path = os.path.join(decode_log_dir, "question_text")
+	generate_audio_dir = os.path.join(decode_log_dir, "pred_audio")
+
 	if not os.path.exists(generate_audio_dir) and not decode_text_only:
 		os.makedirs(generate_audio_dir)
 

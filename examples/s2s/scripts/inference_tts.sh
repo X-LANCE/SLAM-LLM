@@ -17,7 +17,7 @@ tts_adapter=false
 task_type=tts
 split_size=0.00001
 
-ckpt_path=/valleblob/v-wenxichen/exp/s2s/tts_pre-train_v1_gpu4_btz4_lr5e-4_nofp16_epochs10/s2s_epoch_4_step_12946
+ckpt_path=/valleblob/v-wenxichen/exp/s2s/tts_pre-train_v1_gpu4_btz4_lr5e-4_nofp16_epochs10/s2s_epoch_5_step_3928
 split=test
 
 # val_data_path=/home/v-wenxichen/data/s2s/test/${split}.jsonl
@@ -25,14 +25,15 @@ val_data_path="gpt-omni/VoiceAssistant-400K"
 load_from_cache_file=true
 
 repetition_penalty=1.0
-max_new_tokens=300
-dataset_sample_seed=666
+max_new_tokens=500
+dataset_sample_seed=1234
 
-decode_log=$ckpt_path/tts_decode_${split}_rp${repetition_penalty}_seed${dataset_sample_seed}
+decode_log=$ckpt_path/tts_decode_${split}_rp${repetition_penalty}_seed${dataset_sample_seed}_greedy
 decode_text_only=false
+do_sample=false
 
 # -m debugpy --listen 5678 --wait-for-client
-python $code_dir/inference_s2s_batch.py \
+python -m debugpy --listen 5678 --wait-for-client $code_dir/inference_s2s_batch.py \
         --config-path "conf" \
         --config-name "prompt_tts.yaml" \
         hydra.run.dir=$ckpt_path \
@@ -72,5 +73,6 @@ python $code_dir/inference_s2s_batch.py \
         ++decode_config.repetition_penalty=$repetition_penalty \
         ++decode_config.max_new_tokens=$max_new_tokens \
         ++decode_config.task_type=$task_type \
+        ++decode_config.do_sample=$do_sample \
 
 # bash /home/v-wenxichen/SLAM-LLM/examples/s2s/scripts/inference_tts.sh
