@@ -99,8 +99,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.data_list)
 
-    # extract audio feature (raw waveform or mel spectrogram) from audio file
-    # NOTE: here datasets format is just for VoiceAssistant-400K dataset
+    # NOTE: here datasets format is just for VoiceAssistant-400K dataset, and we only support the whisper format
     def extract_audio_feature(self, audio_path):
         # audio path is a dictionary, resample the audio to 16kHz
         if self.manifest_format == "datasets" and isinstance(audio_path, dict):
