@@ -11,6 +11,7 @@ log/
 *.log
 outputs/
 data/
+jobs/
 
 examples/vsr_LRS3/scripts/decode_avhubert_vo_vicuna_7b_noself.sh
 examples/asr_librispeech/scripts/decode_hubert_xtralarge_linear_vicuna_7b_copy.sh

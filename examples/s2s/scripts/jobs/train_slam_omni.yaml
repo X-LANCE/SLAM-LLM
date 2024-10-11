@@ -21,10 +21,17 @@ storage:
     mount_dir: /valleblob
     mount_options: ["-o", "attr_timeout=240"]
 
+#  三位数 A100 
 #  amlt run ./examples/s2s/scripts/jobs/train_slam_omni.yaml 888 -y
 #  amlt run ./examples/s2s/scripts/jobs/train_slam_omni.yaml 777 -y
 #  amlt run ./examples/s2s/scripts/jobs/train_slam_omni.yaml 666 -y
 #  amlt run ./examples/s2s/scripts/jobs/train_slam_omni.yaml 555 -y
+
+# 四位数 H100
+# amlt run ./examples/s2s/scripts/jobs/train_slam_omni.yaml 4444 -y
+# amlt run ./examples/s2s/scripts/jobs/train_slam_omni.yaml 3333 -y
+# amlt run ./examples/s2s/scripts/jobs/train_slam_omni.yaml 2222 -y
+# amlt run ./examples/s2s/scripts/jobs/train_slam_omni.yaml 1111 -y
 
 search:
   job_template:
@@ -45,9 +52,9 @@ search:
       # - export model_path=/valleblob/vzongyili/cv/model/tats/vqgan/vqgan_ucf101_baseline_g{gpus}_b{batch_size}_wandb
       # - bash ./examples/s2s/scripts/finetune_s2s.sh {gpus} #{batch_size} $$model_path
       # - bash ./examples/s2s/scripts/finetune_s2s_fp16.sh {gpus} #{batch_size} $$model_path
-      # - bash ./examples/s2s/scripts/finetune_s2s_audio_embed_only.sh {gpus}
+      - bash ./examples/s2s/scripts/finetune_s2s_audio_embed_only.sh {gpus}
       # - bash ./examples/s2s/scripts/finetune_s2s_embed_only.sh {gpus}
-      - bash ./examples/s2s/scripts/pretrain_tts.sh {gpus}
+      # - bash ./examples/s2s/scripts/pretrain_tts.sh {gpus}
       # - bash test.sh {gpus}
       # - sleep 3h
       - sleep infinity

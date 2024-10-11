@@ -1,4 +1,5 @@
 #!/bin/bash
+# export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 export CUDA_VISIBLE_DEVICES=0,1,2,3
 export TOKENIZERS_PARALLELISM=false
 export OMP_NUM_THREADS=1
@@ -8,27 +9,30 @@ export WANDB_API_KEY=406faa59cf62a3646fa3479a7e133c4cf5a77100       # please rep
 code_dir=examples/s2s
 
 speech_encoder_path="/valleblob/v-wenxichen/models/whisper/small.pt"   # whisper small
-llm_path="/valleblob/v-wenxichen/models/models--Qwen--Qwen2-0.5B/snapshots/ff3a49fac17555b8dfc4db6709f480cc8f16a9fe"
+llm_path="/valleblob/v-wenxichen/models/models--Qwen--Qwen2-0.5B/snapshots/ff3a49fac17555b8dfc4db6709f480cc8f16a9fe"  # Qwen/Qwen2-0.5B
 
 
 train_data_path="/valleblob/v-wenxichen/data/s2s/VoiceAssistant-400K"
 val_data_path="/valleblob/v-wenxichen/data/s2s/VoiceAssistant-400K"
-load_from_cache_file=false
+load_from_cache_file=false  # set to true if you have already generated the cache file, otherwise set to false
 
 batch_size_training=4
-use_fp16=true
+use_fp16=false
 num_epochs=10
+lr=5e-4
 train_audio_embed_only=true
-lr=1e-3
+train_embed_only=false
+tts_adapter=false
+task_type=s2s
 
-exp_name="s2s_train_v0_gpu4_btz${batch_size_training}_lr${lr}_fp16_epochs${num_epochs}_train_audio_embed_only"
+exp_name="s2s_train_v1_gpu4_btz${batch_size_training}_lr${lr}_nofp16_epochs${num_epochs}_train_audio_embed_only"
 # exp_name="s2s_train_v0_gpu24_btz${batch_size_training}_fp16"
 # exp_name="debug"
 
 home_dir=/valleblob/v-wenxichen/exp/s2s
 # output_dir=$home_dir/$(TZ='Asia/Shanghai' date +"%Y_%m_%d")/$(TZ='Asia/Shanghai' date +"%H_%M_%S")
 output_dir=$home_dir/$exp_name
-ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v0_gpu4_btz4_fp16/s2s_epoch_4_step_22946  # this line is for resuming training
+ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v1_gpu4_btz4_lr5e-4_nofp16_epochs10/s2s_epoch_4_step_22946  # this line is for resuming training
 
 if [ "$exp_name" = "debug" ]; then
     use_wandb=false
@@ -47,6 +51,7 @@ hydra.run.dir=$output_dir \
 ++model_config.encoder_path=$speech_encoder_path \
 ++model_config.encoder_dim=768 \
 ++model_config.encoder_projector=linear \
+++model_config.tts_adapter=$tts_adapter \
 ++dataset_config.dataset=speech_dataset_s2s \
 ++dataset_config.train_data_path=$train_data_path \
 ++dataset_config.val_data_path=$val_data_path \
@@ -56,6 +61,7 @@ hydra.run.dir=$output_dir \
 ++dataset_config.manifest_format=datasets \
 ++dataset_config.split_size=0.01 \
 ++dataset_config.load_from_cache_file=$load_from_cache_file \
+++dataset_config.task_type=$task_type \
 ++train_config.model_name=s2s \
 ++train_config.num_epochs=$num_epochs \
 ++train_config.freeze_encoder=true \
@@ -71,18 +77,19 @@ hydra.run.dir=$output_dir \
 ++train_config.output_dir=$output_dir \
 ++train_config.use_fp16=$use_fp16 \
 ++train_config.train_audio_embed_only=$train_audio_embed_only \
+++train_config.train_embed_only=$train_embed_only \
+++train_config.task_type=$task_type \
 ++metric=acc \
 ++log_config.use_wandb=$use_wandb \
 ++log_config.wandb_entity_name=wxc12 \
 ++log_config.wandb_project_name=SLAM-Omni \
 ++log_config.wandb_exp_name=$wandb_exp_name \
-++log_config.wandb_dir=$output_dir \
 ++log_config.log_file=$output_dir/exp.log \
 ++log_config.log_interval=100 \
 ++ckpt_path=$ckpt_path/model.pt \
 "
+# ++ckpt_path=$ckpt_path/model.pt \
 # ↑ this line is for resuming training
-
 
 
 if [[ $CUDA_VISIBLE_DEVICES != *","* ]]; then
@@ -110,11 +117,9 @@ else
         $hydra_args
 fi
 # --rdzv-backend=c10d \
+# rdzv setting maybe useful for multi-node training
 
-# ++train_config.use_fp16=true \
 # bash /home/v-wenxichen/SLAM-LLM/examples/s2s/scripts/finetune_s2s.sh
 
 # 1GPU + 12w steps + btz4 = 1epoch
 # 1GPU + 24w steps + btz2 = 1epoch 
-
-# the two lines for rdzv setting are for multi-node training
