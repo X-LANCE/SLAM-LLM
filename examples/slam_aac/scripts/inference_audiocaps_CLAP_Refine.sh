@@ -8,21 +8,21 @@ code_dir=examples/slam_aac
 
 audio_encoder_path=/data/xiquan.li/models/EAT-base_epoch30_ft.pt
 llm_path=/data/xiquan.li/models/vicuna-7b-v1.5
+clap_dir=/data/xiquan.li/models/clap
 
-seed=42
 encoder_projector_ds_rate=5
 
 inference_data_path=/data/wenxi.chen/data/audiocaps/new_test.jsonl
 output_dir=/data/wenxi.chen/cp/aac_epoch_2_step_182_audiocaps_seed42
 
-# 定义beam范围
+# define the beam size range
 beam_range=(2 3 4 5 6 7 8)
 
 for num_beams in "${beam_range[@]}"; do
     decode_log=$output_dir/decode_beam${num_beams}
 
-    if [ -f "$decode_log" ]; then
-        echo "Decode log $decode_log already exists, skipping this beam size..."
+    if [ -f "${decode_log}_pred" ]; then
+        echo "Decode log ${decode_log}_pred already exists, skipping this beam size..."
         continue
     fi
 
@@ -55,8 +55,8 @@ for num_beams in "${beam_range[@]}"; do
         ++train_config.model_name=aac \
         ++train_config.batching_strategy=custom \
         ++train_config.num_epochs=1 \
-        ++train_config.val_batch_size=8 \
-        ++train_config.num_workers_dataloader=8 \
+        ++train_config.val_batch_size=4 \
+        ++train_config.num_workers_dataloader=0 \
         ++train_config.output_dir=$output_dir \
         ++train_config.freeze_encoder=true \
         ++train_config.freeze_llm=false \
@@ -66,3 +66,17 @@ for num_beams in "${beam_range[@]}"; do
         ++decode_log=$decode_log \
         ++model_config.num_beams=$num_beams
 done
+
+# note: to inference model trained the linear layer only, you could set '++train_config.use_peft=false' and 'train_config.freeze_llm=true'
+
+echo "Running CLAP-Refine"
+
+# -m debugpy --listen 6666 --wait-for-client
+python ${code_dir}/utils/clap_refine.py \
+    --start_beam 2 --end_beam 8 \
+    --clap_ckpt $clap_dir/best_model.pt \
+    --config $clap_dir/clap_config.yaml \
+    --test_jsonl $inference_data_path \
+    --exp_explorer $output_dir
+
+# bash /data/wenxi.chen/SLAM-LLM/examples/slam_aac/scripts/inference_audiocaps_CLAP_Refine.sh

@@ -1,5 +1,5 @@
 #!/bin/bash
-export CUDA_VISIBLE_DEVICES=4
+export CUDA_VISIBLE_DEVICES=1
 export TOKENIZERS_PARALLELISM=false
 
 run_dir=/data/wenxi.chen/SLAM-LLM
@@ -9,9 +9,8 @@ code_dir=examples/slam_aac
 audio_encoder_path=/data/xiquan.li/models/EAT-base_epoch30_ft.pt
 llm_path=/data/xiquan.li/models/vicuna-7b-v1.5
 
-seed=42
 encoder_projector_ds_rate=5
-num_beams=8
+num_beams=4
 
 inference_data_path=/data/wenxi.chen/data/clotho/evaluation_single.jsonl
 output_dir=/data/wenxi.chen/cp/wavcaps_pt_v7_epoch4-clotho_ft-seed10086_btz4_lr8e-6-short_prompt_10w/aac_epoch_1_step_4500

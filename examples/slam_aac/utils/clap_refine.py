@@ -127,8 +127,7 @@ if __name__ == '__main__':
     config = args.config
     exp_explorer, test_jsonl = args.exp_explorer, args.test_jsonl
     start_beam, end_beam = args.start_beam, args.end_beam
-    cand_files = [f'{exp_explorer}/decode_log_test_clean_beam{i}_repetition_penalty1_pred' for i in range(start_beam, end_beam+1)]
-
+    cand_files = [f'{exp_explorer}/decode_beam{i}_pred' for i in range(start_beam, end_beam+1)]
 
     print(f"--Clap re-ranking for beam {start_beam}~{end_beam}--")
 
@@ -163,7 +162,7 @@ if __name__ == '__main__':
         best_captions.append(cand_captions[int(indices[args.rank-1][i])][i])
 
     # Write
-    output_file = exp_explorer + '/' + f"decode_log_test_clean_beam_{start_beam}-{end_beam}_pred"
+    output_file = exp_explorer + '/' + f"decode_beam{start_beam}-{end_beam}_pred"
     with open(output_file, 'w') as f: 
         for i, caption in enumerate(best_captions): 
             audio_id = audio_ids[i]
