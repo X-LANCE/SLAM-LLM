@@ -20,8 +20,7 @@ encoder_projector_ds_rate=5
 train_jsonl_path=/data/wenxi.chen/data/audiocaps/train.jsonl
 val_jsonl_path=/data/wenxi.chen/data/audiocaps/val.jsonl
 
-
-exp_name=slam-aac_AudioCaps
+exp_name=slam-aac_AudioCaps_fine-tune
 output_dir=/data/wenxi.chen/exps/AudioCaps/${exp_name}
 
 ckpt_path=/data/wenxi.chen/cp/wavcaps_pt_v7-seed666_btz16_lr1e-4-short_prompt_10w/aac_epoch_4_step_4001/model.pt   # path to load the pre-trained model
@@ -35,15 +34,15 @@ hydra.run.dir=$output_dir \
 ++model_config.llm_dim=4096 \
 ++model_config.encoder_name=eat \
 ++model_config.encoder_ds_rate=2 \
+++model_config.encoder_projector_ds_rate=$encoder_projector_ds_rate \
 ++model_config.encoder_path=$audio_encoder_path \
 ++model_config.encoder_dim=768 \
 ++model_config.encoder_projector=linear \
-++model_config.encoder_projector_ds_rate=$encoder_projector_ds_rate \
 ++dataset_config.encoder_projector_ds_rate=${encoder_projector_ds_rate} \
-++dataset_config.input_type=mel \
 ++dataset_config.dataset=audio_dataset \
 ++dataset_config.train_data_path=$train_jsonl_path \
 ++dataset_config.val_data_path=$val_jsonl_path \
+++dataset_config.input_type=mel \
 ++dataset_config.fbank_mean=-4.268 \
 ++dataset_config.fbank_std=4.569 \
 ++dataset_config.model_name=eat \

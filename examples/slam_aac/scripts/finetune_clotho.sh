@@ -20,8 +20,7 @@ encoder_projector_ds_rate=5
 train_jsonl_path=/data/wenxi.chen/data/clotho/development.jsonl
 val_jsonl_path=/data/wenxi.chen/data/clotho/validation.jsonl
 
-
-exp_name=slam-aac_Clotho
+exp_name=slam-aac_Clotho_fine-tune
 output_dir=/data/wenxi.chen/exps/Clotho/${exp_name}
 
 ckpt_path=/data/wenxi.chen/cp/wavcaps_pt_v7-seed666_btz16_lr1e-4-short_prompt_10w/aac_epoch_4_step_4001/model.pt   # path to load the pre-trained model

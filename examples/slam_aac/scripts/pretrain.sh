@@ -1,6 +1,6 @@
 #!/bin/bash
 export PYTHONPATH=/root/fairseq:$PYTHONPATH
-export CUDA_VISIBLE_DEVICES=0
+export CUDA_VISIBLE_DEVICES=2
 export TOKENIZERS_PARALLELISM=false
 export OMP_NUM_THREADS=7
 
@@ -20,10 +20,8 @@ encoder_projector_ds_rate=5
 train_jsonl_path=/data/wenxi.chen/data/pretrain/merged_data_v7.jsonl
 val_jsonl_path=/data/wenxi.chen/data/clotho/validation.jsonl
 
-
-exp_name=slam-aac_pretrain
+exp_name=slam-aac_pre-train
 output_dir=/root/exps/test/${exp_name}
-
 
 hydra_args="
 hydra.run.dir=$output_dir \

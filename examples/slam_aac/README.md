@@ -18,7 +18,7 @@ Audio Encoder | LLM | Checkpoint | Pre-training Dataset|
 [EAT-base (fine-tuned)](https://drive.google.com/file/d/1aCYiQmoZv_Gh1FxnR-CCWpNAp6DIJzn6/view?usp=sharing) |[vicuna-7b-v1.5](https://huggingface.co/lmsys/vicuna-7b-v1.5) | [link](https://drive.google.com/drive/folders/10kOjB112AeGYA_0mIUr8f1-i5rSg08_O?usp=sharing) | AudioCaps, Clotho, WavCaps, MACS |
 
 ### Fine-tuning
-We fine-tuned the pre-trained model on the Clotho and AudioCaps datasets, respectively. The evaluation results are based on the CLAP-Refine strategy for decoding.    
+We fine-tuned the pre-trained model on the Clotho and AudioCaps datasets, respectively. The final evaluation was conducted using audio captions generated with the CLAP-Refine decoding strategy.
 Dataset | Audio Encoder | LLM | Checkpoint | METEOR | CIDEr | SPICE | SPIDEr | SPIDEr-FL | FENSE
 |:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
 | Clotho | [EAT-base (fine-tuned)](https://drive.google.com/file/d/1aCYiQmoZv_Gh1FxnR-CCWpNAp6DIJzn6/view?usp=sharing) | [vicuna-7b-v1.5](https://huggingface.co/lmsys/vicuna-7b-v1.5) | [link](https://drive.google.com/drive/folders/1QX7CM9YAddPi02_NRChI5mzsNmBBtA63?usp=sharing) | 19.7 | 51.5 | 14.8 |33.2 | 33.0 | 54.0 |
@@ -34,10 +34,10 @@ Ensure your `jsonl` data follows the structure outlined below:
 In addition, you can refer to the [manifest](https://drive.google.com/drive/folders/1NJinoWg3yXKSPm-pRrhqKLvCD9dtDuDG?usp=sharing) file we've provided, which includes the Clotho dataset enhanced with **paraphrasing augmentation** as bonus.
 
 ## Model Training
-To pre-train the SLAM-AAC model, you can run the following command:
+To pre-train the SLAM-AAC model with pre-training data, you can run the following command:
 ```bash
 # Pre-train the model
-bash scripts/pretrain_audiocaps.sh
+bash scripts/pretrain.sh
 ```
 
 You can fine-tune the model on the AudioCaps or Clotho datasets using the [provided checkpoint](https://drive.google.com/drive/folders/10kOjB112AeGYA_0mIUr8f1-i5rSg08_O?usp=sharing) or your own pre-trained model by running the following commands:
@@ -50,7 +50,10 @@ bash scripts/finetune_audiocaps.sh
 bash scripts/finetune_clotho.sh
 ```
 
-### Note:
+You can also fine-tune the model without loading any pre-trained weights, though this may result in reduced performance.
+
+
+### Note
 In the current version of SLAM-LLM, the `peft_ckpt` parameter is no longer required. However, if you are using the checkpoint provided by us, which was trained with an earlier version, please keep the `peft_ckpt` parameter in your configuration to ensure compatibility.
 
 
@@ -64,7 +67,7 @@ bash scripts/inference_audiocaps_bs.sh
 bash scripts/inference_clotho_bs.sh
 ```
 
-For improved inference results, you can use the CLAP-Refine strategy, which employs multiple beam search decoding and may take longer to run. You can execute the following commands:
+For improved inference results, you can use the CLAP-Refine strategy, which utilizes multiple beam search decoding. Note that this method may take longer to run, but it can provide better quality outputs. You can execute the following commands:
 ```bash
 # Inference on AudioCaps (CLAP-Refine)
 bash scripts/inference_audiocaps_CLAP_Refine.sh
@@ -73,8 +76,15 @@ bash scripts/inference_audiocaps_CLAP_Refine.sh
 bash scripts/inference_clotho_CLAP_Refine.sh
 ```
 
+If you already have the generated candidates and want to directly refine them using the CLAP-Refine strategy, you can run the following command:
+```bash
+bash scripts/clap_refine.sh
+```
+
 <!-- ##  Citation
 You can refer to the paper for more results. 
 ```
 
 ``` -->
+
+<!-- [CLAP](https://drive.google.com/drive/folders/1X4NYE08N-kbOy6s_Itb0wBR_3X8oZF56?usp=sharing) model for post-processing (CLAP-refine) -->
