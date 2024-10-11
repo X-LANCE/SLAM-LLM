@@ -54,8 +54,8 @@ You can also fine-tune the model without loading any pre-trained weights, though
 
 
 ### Note
-In the current version of SLAM-LLM, the `peft_ckpt` parameter is no longer required. However, if you are using the checkpoint provided by us, which was trained with an earlier version, please keep the `peft_ckpt` parameter in your configuration to ensure compatibility.
-
+- In the current version of SLAM-LLM, the `peft_ckpt` parameter is no longer required. However, if you are using the checkpoint provided by us, which was trained with an earlier version, please keep the `peft_ckpt` parameter in your configuration to ensure compatibility.
+- Due to differences in dependency versions, there may be slight variations in the performance of the SLAM-AAC model.
 
 ## Inference
 To perform inference with the trained models, you can use the following commands to decode using the common beam search method:
@@ -67,7 +67,7 @@ bash scripts/inference_audiocaps_bs.sh
 bash scripts/inference_clotho_bs.sh
 ```
 
-For improved inference results, you can use the CLAP-Refine strategy, which utilizes multiple beam search decoding. Note that this method may take longer to run, but it can provide better quality outputs. You can execute the following commands:
+For improved inference results, you can use the CLAP-Refine strategy, which utilizes multiple beam search decoding. To use this method, you need to download and use our pre-trained [CLAP](https://drive.google.com/drive/folders/1X4NYE08N-kbOy6s_Itb0wBR_3X8oZF56?usp=sharing) model. Note that CLAP-Refine may take longer to run, but it can provide better quality outputs. You can execute the following commands:
 ```bash
 # Inference on AudioCaps (CLAP-Refine)
 bash scripts/inference_audiocaps_CLAP_Refine.sh
@@ -86,5 +86,3 @@ You can refer to the paper for more results.
 ```
 
 ``` -->
-
-<!-- [CLAP](https://drive.google.com/drive/folders/1X4NYE08N-kbOy6s_Itb0wBR_3X8oZF56?usp=sharing) model for post-processing (CLAP-refine) -->

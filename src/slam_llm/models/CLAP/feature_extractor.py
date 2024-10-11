@@ -27,10 +27,10 @@ class AudioFeature(nn.Module):
                                           fmin=audio_config["f_min"],
                                           fmax=audio_config["f_max"],
                                           ref=1.0, 
-                                          amin=1e-6,    
+                                          amin=audio_config.get("amin", 1e-6),    
                                           top_db=None,
                                           freeze_parameters=True)
-
+                                          
     def forward(self, input):
         # input: waveform [bs, wav_length]
         mel_feats = self.mel_trans(input)

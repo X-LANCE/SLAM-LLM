@@ -6,8 +6,8 @@ cd $run_dir
 code_dir=examples/slam_aac
 
 clap_dir=/data/xiquan.li/models/clap
-inference_data_path=/data/wenxi.chen/data/clotho/evaluation_single.jsonl
-output_dir=/data/wenxi.chen/cp/wavcaps_pt_v7_epoch4-clotho_ft-seed10086_btz4_lr8e-6-short_prompt_10w/aac_epoch_1_step_4500
+inference_data_path=/data/wenxi.chen/data/audiocaps/new_test.jsonl
+output_dir=/data/wenxi.chen/cp/aac_epoch_2_step_182_audiocaps_seed42
 
 echo "Running CLAP-Refine"
 
