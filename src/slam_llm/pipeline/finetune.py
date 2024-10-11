@@ -160,7 +160,7 @@ def main(kwargs: DictConfig):
 
             freeze_transformer_layers(train_config.num_freeze_layers)
         from torch.distributed.fsdp import ShardingStrategy
-        fsdp_config.sharding_strategy = getattr(ShardingStrategy, fsdp_config.sharding_strategy)
+        sharding_strategy = getattr(ShardingStrategy, fsdp_config.sharding_strategy)
         mixed_precision_policy, wrapping_policy = get_policies(fsdp_config, rank)
         my_auto_wrapping_policy = fsdp_auto_wrap_policy(model, LlamaDecoderLayer)
 
@@ -169,7 +169,7 @@ def main(kwargs: DictConfig):
             auto_wrap_policy= my_auto_wrapping_policy, #(FIX:MZY): Using my_auto_wrapping_policy whether peft or not. This will avoid model shard type check error of requires_grad mismatching.
             cpu_offload=CPUOffload(offload_params=True) if fsdp_config.fsdp_cpu_offload else None,
             mixed_precision=mixed_precision_policy if not fsdp_config.pure_bf16 else None,
-            sharding_strategy=fsdp_config.sharding_strategy,
+            sharding_strategy=sharding_strategy,
             device_id=torch.cuda.current_device(),
             limit_all_gathers=True,
             sync_module_states=train_config.low_cpu_fsdp,
