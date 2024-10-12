@@ -1,18 +1,10 @@
-# import fire
 import random
 import torch
 import logging
-# import argparse
-from slam_llm.models.slam_model import slam_model
-
-from slam_llm.utils.model_utils import get_custom_model_factory
-from slam_llm.utils.dataset_utils import get_preprocessed_dataset
-from utils.snac_utils import reconscruct_snac, reconstruct_tensors
 import os
-import logging
-from tqdm import tqdm
 import soundfile as sf
-
+from slam_llm.utils.model_utils import get_custom_model_factory
+from utils.snac_utils import reconscruct_snac, reconstruct_tensors
 import hydra
 from omegaconf import DictConfig, ListConfig, OmegaConf
 
@@ -40,154 +32,118 @@ def main_hydra(cfg: DictConfig):
 	main(kwargs)
 
 
-def main(kwargs: DictConfig):
-
-	train_config, fsdp_config, model_config, log_config, dataset_config, decode_config = kwargs.train_config, \
-	                                                                      				kwargs.fsdp_config, \
-																						kwargs.model_config, \
-																						kwargs.log_config, \
-																						kwargs.dataset_config, \
-																						kwargs.decode_config
-
-	OmegaConf.set_struct(kwargs,False)
-	del kwargs["train_config"]
-	del kwargs["fsdp_config"]
-	del kwargs["model_config"]
-	del kwargs["log_config"]
-	del kwargs["dataset_config"]
-	del kwargs["decode_config"]
-	OmegaConf.set_struct(kwargs,True)
-
-	# Set log
-	if not os.path.exists(os.path.dirname(log_config.log_file)):
-		os.makedirs(os.path.dirname(log_config.log_file), exist_ok=True)
-	logging.basicConfig(
-		level=logging.INFO, 
-		format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
-		datefmt="%Y-%m-%d %H:%M:%S",
-		filemode='w'
-	)
-
-	logger = logging.getLogger()  
-	logger.setLevel(logging.INFO)
-
-	file_handler = logging.FileHandler(filename=log_config.log_file, mode='w')
-	file_handler.setLevel(logging.INFO)
-	file_formatter = logging.Formatter('[%(asctime)s][%(name)s][%(levelname)s] - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
-	file_handler.setFormatter(file_formatter)
-
-	logger.handlers[0].setLevel(logging.INFO)
-	console_formatter = logging.Formatter('[%(asctime)s][%(name)s][%(levelname)s] - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
-	logger.handlers[0].setFormatter(console_formatter) 
-
-	logger.addHandler(file_handler)
+def generate_from_wav(wav_path, model, tokenizer, codec_decoder, decode_config, logger, device):
+    audio_raw, _ = sf.read(wav_path)
     
-	logger.info("train_config: {}".format(train_config))
-	logger.info("fsdp_config: {}".format(fsdp_config))
-	logger.info("model_config: {}".format(model_config))
+    audio_input = torch.tensor(audio_raw).to(device).unsqueeze(0)  # 添加batch维度
 
-	
-	# Set the seeds for reproducibility
-	torch.cuda.manual_seed(train_config.seed)
-	torch.manual_seed(train_config.seed)
-	random.seed(train_config.seed)
-	
-	model_factory = get_custom_model_factory(model_config, logger)
-	model, tokenizer = model_factory(train_config, model_config, **kwargs)
-	codec_decoder = model.codec_decoder
-	device = torch.device("cuda" if torch.cuda.is_available() else "cpu") # FIX(MZY): put the whole model to device.
-	model.to(device)
-	model.eval()
+    batch = {
+        "audio": audio_input,
+    }
 
-	# dataset_config = generate_dataset_config(train_config, kwargs)
-	logger.info("dataset_config: {}".format(dataset_config))
-	dataset_test = get_preprocessed_dataset(
-        tokenizer,
-        dataset_config,
-        split="test",
+    model_outputs = model.generate(**batch, **decode_config)
+    text_outputs = model_outputs[7]
+    audio_outputs = model_outputs[:7]
+
+    output_text = tokenizer.decode(text_outputs, add_special_tokens=False, skip_special_tokens=True)
+    logger.info(f"Generated Text: {output_text}")
+
+    if decode_config.decode_text_only:
+        return output_text
+
+    audio_tokens = [audio_outputs[layer] for layer in range(7)]
+    audiolist = reconscruct_snac(audio_tokens)
+    audio = reconstruct_tensors(audiolist)
+    with torch.inference_mode():
+        audio_hat = codec_decoder.decode(audio)
+
+    output_wav_path = f"generated_{os.path.basename(wav_path)}"
+    sf.write(output_wav_path, audio_hat.squeeze().cpu().numpy(), 24000)
+    logger.info(f"Generated Audio saved at: {output_wav_path}")
+    
+    return output_wav_path
+
+
+def main(kwargs: DictConfig):
+    train_config, fsdp_config, model_config, log_config, dataset_config, decode_config = kwargs.train_config, \
+                                                                                kwargs.fsdp_config, \
+                                                                                kwargs.model_config, \
+                                                                                kwargs.log_config, \
+                                                                                kwargs.dataset_config, \
+                                                                                kwargs.decode_config
+
+    OmegaConf.set_struct(kwargs, False)
+    del kwargs["train_config"]
+    del kwargs["fsdp_config"]
+    del kwargs["model_config"]
+    del kwargs["log_config"]
+    del kwargs["dataset_config"]
+    del kwargs["decode_config"]
+    OmegaConf.set_struct(kwargs, True)
+
+    # Set log
+    if not os.path.exists(os.path.dirname(log_config.log_file)):
+        os.makedirs(os.path.dirname(log_config.log_file), exist_ok=True)
+    logging.basicConfig(
+        level=logging.INFO, 
+        format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+        filemode='w'
     )
-	if not (train_config.enable_fsdp or train_config.enable_ddp):
-		logger.info(f"--> Training Set Length = {len(dataset_test)}")
 
-	test_dataloader = torch.utils.data.DataLoader(
-            dataset_test,
-            num_workers=train_config.num_workers_dataloader,
-            pin_memory=True,
-			shuffle=False,
-            batch_size=train_config.val_batch_size,
-			drop_last=False,
-			collate_fn=dataset_test.collator
-        )
+    logger = logging.getLogger()  
+    logger.setLevel(logging.INFO)
 
-	task_type = decode_config.task_type
-	logger.info("decode_config: {}".format(decode_config))	
-	if decode_config.do_sample:
-		logger.info("Decode Strategy: Sampling")
-	else:
-		logger.info("Decode Strategy: Greedy")
-	if decode_config.decode_text_only:
-		logger.info("Decode Text Only")
-	else:
-		logger.info("Decode Text & Audio")
-	logger.info("============== Start {task_type} Inference ==============".format(task_type=task_type))
+    file_handler = logging.FileHandler(filename=log_config.log_file, mode='w')
+    file_handler.setLevel(logging.INFO)
+    file_formatter = logging.Formatter('[%(asctime)s][%(name)s][%(levelname)s] - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+    file_handler.setFormatter(file_formatter)
 
-	decode_log_dir = kwargs.get('decode_log')
-	output_text_only = kwargs.get('output_text_only', False)
+    logger.handlers[0].setLevel(logging.INFO)
+    console_formatter = logging.Formatter('[%(asctime)s][%(name)s][%(levelname)s] - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+    logger.handlers[0].setFormatter(console_formatter) 
 
-	if not os.path.exists(decode_log_dir):
-		os.makedirs(decode_log_dir)
+    logger.addHandler(file_handler)
 
-	pred_path = os.path.join(decode_log_dir, "pred_text")
-	gt_path = os.path.join(decode_log_dir, "gt_text")
-	question_path = os.path.join(decode_log_dir, "question_text")
-	generate_audio_dir = os.path.join(decode_log_dir, "pred_audio")
+    logger.info("train_config: {}".format(train_config))
+    logger.info("fsdp_config: {}".format(fsdp_config))
+    logger.info("model_config: {}".format(model_config))
 
-	if not os.path.exists(generate_audio_dir) and not (output_text_only or decode_config.decode_text_only):
-		os.makedirs(generate_audio_dir)
+    torch.cuda.manual_seed(train_config.seed)
+    torch.manual_seed(train_config.seed)
+    random.seed(train_config.seed)
 
-	with open(pred_path, "w") as pred, open(gt_path, "w") as gt, open(question_path, "w") as q:
-		for step, batch in enumerate(test_dataloader):
-			for key in batch.keys():
-				batch[key] = batch[key].to(device) if isinstance(batch[key], torch.Tensor) else batch[key]
-			model_outputs = model.generate(**batch, **decode_config)
-			text_outputs = model_outputs[7]
-			audio_outputs = model_outputs[:7]
-			# output_text = model.tokenizer.batch_decode(text_outputs, add_special_tokens=False, skip_special_tokens=True)
-			output_text = model.tokenizer.decode(text_outputs, add_special_tokens=False, skip_special_tokens=True)
-			for key, source_text, target_text, generated_text in zip(batch["keys"], batch["source_texts"], batch["target_texts"], [output_text]):
-				q.write(key + "\t" + source_text + "\n")
-				gt.write(key + "\t" + target_text + "\n")
-				pred.write(key + "\t" + generated_text + "\n")
+    model_factory = get_custom_model_factory(model_config, logger)
+    model, tokenizer = model_factory(train_config, model_config, **kwargs)
+    codec_decoder = model.codec_decoder
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model.to(device)
+    model.eval()
 
-				if task_type == "s2s":
-					logger.info(f"Question: {source_text}")
-				elif task_type == "tts":
-					logger.info(f"Target Text: {target_text}")
+    task_type = decode_config.task_type
+    logger.info("decode_config: {}".format(decode_config))    
+    if decode_config.do_sample:
+        logger.info("Decode Strategy: Sampling")
+    else:
+        logger.info("Decode Strategy: Greedy")
+    if decode_config.decode_text_only:
+        logger.info("Decode Text Only")
+    else:
+        logger.info("Decode Text & Audio")
 
-				logger.info(f"Generated Text: {generated_text}")
+    logger.info("============== Ready for {task_type} Online Inference ==============".format(task_type=task_type))
 
-			if output_text_only or decode_config.decode_text_only:
-				continue
-				
-			if audio_outputs[0].shape[0] == decode_config.max_new_tokens:	# if the audio token is too long, skip (bad case)
-				logger.warning(f"Audio token is too long, skip. You can try to increase the max_new_tokens in the decode_config.")
-				continue
+    while True:
+        wav_path = input("Please provide the path to a WAV file (or type 'exit' to quit): ")
+        if wav_path.lower() == 'exit':
+            break
 
-			for i, key in enumerate(batch["keys"]):
-				audio_tokens = [audio_outputs[layer] for layer in range(7)]
+        if not os.path.exists(wav_path):
+            print(f"File {wav_path} does not exist. Please try again.")
+            continue
 
-				audiolist = reconscruct_snac(audio_tokens)
-				audio = reconstruct_tensors(audiolist)
-				with torch.inference_mode():
-					audio_hat = codec_decoder.decode(audio)
-
-				if key[-4:] == ".wav":
-					key = key[:-4]
-				sf.write(f"{generate_audio_dir}/{key}.wav", audio_hat.squeeze().cpu().numpy(), 24000)
-				logger.info(f"Generated Audio: {key}.wav")
-
-	logger.info("=====================================")
-	logger.info("Inference finished.")
+        output_wav = generate_from_wav(wav_path, model, tokenizer, codec_decoder, decode_config, logger, device)
+        print(f"Generated WAV file saved at: {output_wav}")
 
 if __name__ == "__main__":
-	main_hydra()
+    main_hydra()
