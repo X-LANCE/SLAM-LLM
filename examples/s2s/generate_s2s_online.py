@@ -4,9 +4,10 @@ import logging
 import os
 import soundfile as sf
 from slam_llm.utils.model_utils import get_custom_model_factory
-from utils.snac_utils import reconscruct_snac, reconstruct_tensors
+from utils.snac_utils import reconscruct_snac, reconstruct_tensors, layershift, get_snac_answer_token
 import hydra
 from omegaconf import DictConfig, ListConfig, OmegaConf
+import whisper
 
 
 @hydra.main(config_name=None, version_base=None)
@@ -32,36 +33,93 @@ def main_hydra(cfg: DictConfig):
 	main(kwargs)
 
 
-def generate_from_wav(wav_path, model, tokenizer, codec_decoder, decode_config, logger, device):
-    audio_raw, _ = sf.read(wav_path)
-    
-    audio_input = torch.tensor(audio_raw).to(device).unsqueeze(0)  # 添加batch维度
+def extract_audio_feature(audio_path, mel_size):
+	audio_raw = whisper.load_audio(audio_path)
+	audio_raw = whisper.pad_or_trim(audio_raw)
+	audio_mel = whisper.log_mel_spectrogram(audio_raw, n_mels=mel_size).permute(1, 0)
+	audio_length = (audio_mel.shape[0] + 1) // 2
+	audio_length = audio_length // 5
+	audio_res = audio_mel
+     
+	return audio_res, audio_length
 
-    batch = {
-        "audio": audio_input,
+
+def get_input_ids(length, special_token_a, special_token_t, vocab_config):
+	input_ids = []
+	for i in range(vocab_config.code_layer):
+		input_ids_item = []
+		input_ids_item.append(layershift(vocab_config.input_a, i))
+		input_ids_item += [layershift(vocab_config.pad_a, i)] * length
+		input_ids_item += [(layershift(vocab_config.eoa, i)), layershift(special_token_a, i)]
+		input_ids.append(torch.tensor(input_ids_item).unsqueeze(0))
+	input_id_T = torch.tensor([vocab_config.input_t] + [vocab_config.pad_t] * length + [vocab_config.eot, special_token_t])
+	input_ids.append(input_id_T.unsqueeze(0))
+	return input_ids
+
+
+def generate_from_wav(wav_path, model, codec_decoder, dataset_config, decode_config, logger, device):
+	mel_size = dataset_config.mel_size
+	prompt = dataset_config.prompt
+	prompt_template = "USER: {}\n ASSISTANT: "
+	vocab_config = dataset_config.vocab_config
+	special_token_a = vocab_config.answer_a
+	special_token_t = vocab_config.answer_t
+	code_layer = vocab_config.code_layer
+	task_type = dataset_config.task_type
+
+	audio_mel, audio_length = extract_audio_feature(wav_path, mel_size)
+
+	prompt = prompt_template.format(prompt)
+	prompt_ids = model.tokenizer.encode(prompt)
+	prompt_length = len(prompt_ids)
+	prompt_ids = torch.tensor(prompt_ids, dtype=torch.int64)
+
+	example_ids = get_input_ids(audio_length + prompt_length, special_token_a, special_token_t, vocab_config)
+	text_layer = example_ids[code_layer]
+	text_layer = torch.cat((text_layer[:,:audio_length + 1], prompt_ids.unsqueeze(0), text_layer[:,-2:]), dim=1)     # <bos> <audio> <prompt> <eos> <task>
+	example_ids[code_layer] = text_layer
+
+	input_length = audio_length
+	example_mask = example_ids[0][0].ge(-1)
+	example_ids = torch.stack(example_ids).squeeze()
+
+	input_ids = example_ids.unsqueeze(0).to(device)
+	attention_mask = example_mask.unsqueeze(0).to(device)
+	audio_mel = audio_mel.unsqueeze(0).to(device)
+	input_length = torch.tensor([input_length]).to(device)
+	audio_length = torch.tensor([audio_length]).to(device)
+	task_type = [task_type]
+
+	modality_mask = torch.zeros_like(attention_mask)
+	padding_left = 1 # +1 for <bos>
+	modality_mask[0, padding_left:padding_left+audio_length] = True
+
+	batch = {
+		"input_ids": input_ids,
+		"attention_mask": attention_mask,
+		"audio_mel": audio_mel,
+		"input_length": input_length,
+		"audio_length": audio_length,
+		"modality_mask": modality_mask,
+		"task_types": task_type,
     }
 
-    model_outputs = model.generate(**batch, **decode_config)
-    text_outputs = model_outputs[7]
-    audio_outputs = model_outputs[:7]
+	model_outputs = model.generate(**batch, **decode_config)
+	text_outputs = model_outputs[7]
+	audio_outputs = model_outputs[:7]	
+	output_text = model.tokenizer.decode(text_outputs, add_special_tokens=False, skip_special_tokens=True)
+	
+	if decode_config.decode_text_only:
+		return None, output_text
+	
+	audio_tokens = [audio_outputs[layer] for layer in range(7)]
+	audiolist = reconscruct_snac(audio_tokens)
+	audio = reconstruct_tensors(audiolist)
+	with torch.inference_mode():
+		audio_hat = codec_decoder.decode(audio)    
+	
 
-    output_text = tokenizer.decode(text_outputs, add_special_tokens=False, skip_special_tokens=True)
-    logger.info(f"Generated Text: {output_text}")
-
-    if decode_config.decode_text_only:
-        return output_text
-
-    audio_tokens = [audio_outputs[layer] for layer in range(7)]
-    audiolist = reconscruct_snac(audio_tokens)
-    audio = reconstruct_tensors(audiolist)
-    with torch.inference_mode():
-        audio_hat = codec_decoder.decode(audio)
-
-    output_wav_path = f"generated_{os.path.basename(wav_path)}"
-    sf.write(output_wav_path, audio_hat.squeeze().cpu().numpy(), 24000)
-    logger.info(f"Generated Audio saved at: {output_wav_path}")
-    
-    return output_wav_path
+	return audio_hat, output_text
 
 
 def main(kwargs: DictConfig):
@@ -120,6 +178,9 @@ def main(kwargs: DictConfig):
     model.to(device)
     model.eval()
 
+    output_dir = log_config.online_output_dir
+    logger.info("output_dir: {}".format(output_dir))
+
     task_type = decode_config.task_type
     logger.info("decode_config: {}".format(decode_config))    
     if decode_config.do_sample:
@@ -134,16 +195,24 @@ def main(kwargs: DictConfig):
     logger.info("============== Ready for {task_type} Online Inference ==============".format(task_type=task_type))
 
     while True:
-        wav_path = input("Please provide the path to a WAV file (or type 'exit' to quit): ")
-        if wav_path.lower() == 'exit':
+        wav_path = input("Please provide the path to a WAV file (or type 'q' to quit): ")
+        if wav_path.lower() == 'q':
             break
 
         if not os.path.exists(wav_path):
             print(f"File {wav_path} does not exist. Please try again.")
             continue
 
-        output_wav = generate_from_wav(wav_path, model, tokenizer, codec_decoder, decode_config, logger, device)
-        print(f"Generated WAV file saved at: {output_wav}")
+        output_wav, output_text = generate_from_wav(wav_path, model, codec_decoder, dataset_config, decode_config, logger, device)
+        logger.info(f"Generated Text: {output_text}")	
+        
+        if output_dir is not None:
+            os.makedirs(output_dir, exist_ok=True)
+            output_wav_path = os.path.join(output_dir, f"generated_{os.path.basename(wav_path)}")
+        else:
+            output_wav_path = f"generated_{os.path.basename(wav_path)}"
+        sf.write(output_wav_path, output_wav.squeeze().cpu().numpy(), 24000)        
+        logger.info(f"Generated Audio saved at: {output_wav_path}")
 
 if __name__ == "__main__":
     main_hydra()

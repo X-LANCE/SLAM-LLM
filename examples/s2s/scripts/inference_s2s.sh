@@ -17,7 +17,7 @@ tts_adapter=false
 task_type=s2s
 split_size=0.00001
 
-ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v1_gpu4_btz4_lr5e-4_nofp16_epochs10_train_audio_embed_only/s2s_epoch_2_step_10982
+ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v1_gpu4_btz4_lr5e-4_nofp16_epochs10/s2s_epoch_4_step_22946
 split=test
 
 # jsonl dataset

@@ -230,4 +230,5 @@ class LogConfig:
     wandb_exp_name: str = "exp_name"
     log_file: str = "/valleblob/v-wenxichen/exp/log/test.log"
     log_interval: int = 10
+    online_output_dir: Optional[str] = None
 

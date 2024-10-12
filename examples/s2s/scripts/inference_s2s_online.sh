@@ -17,7 +17,7 @@ tts_adapter=false
 task_type=s2s
 split_size=0.00001
 
-ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v1_gpu4_btz4_lr5e-4_nofp16_epochs10_train_audio_embed_only/s2s_epoch_2_step_10982
+ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v1_gpu4_btz4_lr5e-4_nofp16_epochs10/s2s_epoch_4_step_22946
 split=test
 
 # jsonl dataset
@@ -42,6 +42,7 @@ decode_text_only=false
 output_text_only=false
 
 inference_online=true
+online_output_dir=/home/v-wenxichen/SLAM-LLM/examples/s2s/output
 
 decode_log=$ckpt_path/s2s_decode_${split}_rp${repetition_penalty}_seed${dataset_sample_seed}_greedy
 if [ "$do_sample" = true ] ; then
@@ -53,7 +54,7 @@ if [ "$decode_text_only" = true ] ; then
 fi
 
 # -m debugpy --listen 5678 --wait-for-client
-python -m debugpy --listen 5678 --wait-for-client $code_dir/inference_s2s.py \
+python $code_dir/inference_s2s.py \
         --config-path "conf" \
         --config-name "prompt.yaml" \
         hydra.run.dir=$ckpt_path \
@@ -95,9 +96,10 @@ python -m debugpy --listen 5678 --wait-for-client $code_dir/inference_s2s.py \
         ++decode_config.top_k=$top_k \
         ++decode_config.temperature=$temperature \
         ++decode_config.decode_text_only=$decode_text_only \
+        ++log_config.online_output_dir=$online_output_dir \
         ++decode_log=$decode_log \
         ++ckpt_path=$ckpt_path/model.pt \
         ++output_text_only=$output_text_only \
         ++inference_online=$inference_online
 
-# bash /home/v-wenxichen/SLAM-LLM/examples/s2s/scripts/inference_s2s.sh
+# bash /home/v-wenxichen/SLAM-LLM/examples/s2s/scripts/inference_s2s_online.sh
