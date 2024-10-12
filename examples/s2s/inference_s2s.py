@@ -1,4 +1,5 @@
-from generate_s2s import main as inference
+from generate_s2s_batch import main as inference
+from generate_s2s_online import main as inference_online
 
 import hydra
 import logging
@@ -34,6 +35,9 @@ class RunConfig:
     output_text_only: bool = field(
         default=False, metadata={"help": "Decode text only"}
     )
+    inference_online: bool = field(
+        default=False, metadata={"help": "Inference online"}
+    )
 
 
 @hydra.main(config_name=None, version_base=None)
@@ -50,8 +54,10 @@ def main_hydra(cfg: DictConfig):
 
         pdb.set_trace()
 
-    inference(cfg)
-
+    if cfg.inference_online:
+        inference_online(cfg)
+    else:
+        inference(cfg)
 
 if __name__ == "__main__":
     main_hydra()

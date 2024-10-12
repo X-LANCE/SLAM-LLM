@@ -14,10 +14,10 @@ llm_path="Qwen/Qwen2-0.5B"
 codec_decoder_path="hubertsiuzdak/snac_24khz"
 
 tts_adapter=false
-task_type=tts
+task_type=s2s
 split_size=0.00001
 
-ckpt_path=/valleblob/v-wenxichen/exp/s2s/tts_pre-train_v1_gpu4_btz4_lr5e-4_nofp16_epochs10/s2s_epoch_5_step_3928
+ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v1_gpu4_btz4_lr5e-4_nofp16_epochs10_train_audio_embed_only/s2s_epoch_2_step_10982
 split=test
 
 # jsonl dataset
@@ -32,7 +32,7 @@ dataset_sample_seed=1234
 
 # decode config
 repetition_penalty=1.0
-max_new_tokens=500
+max_new_tokens=300
 do_sample=false
 top_p=0.9
 top_k=50
@@ -41,9 +41,9 @@ decode_text_only=false
 
 output_text_only=false
 
-inference_online=false
+inference_online=true
 
-decode_log=$ckpt_path/tts_decode_${split}_rp${repetition_penalty}_seed${dataset_sample_seed}_greedy
+decode_log=$ckpt_path/s2s_decode_${split}_rp${repetition_penalty}_seed${dataset_sample_seed}_greedy
 if [ "$do_sample" = true ] ; then
     decode_log=$ckpt_path/s2s_decode_${split}_rp${repetition_penalty}_seed${dataset_sample_seed}_sampling_topk${top_k}_topp${top_p}_temp${temperature}
 fi
@@ -53,9 +53,9 @@ if [ "$decode_text_only" = true ] ; then
 fi
 
 # -m debugpy --listen 5678 --wait-for-client
-python $code_dir/inference_s2s.py \
+python -m debugpy --listen 5678 --wait-for-client $code_dir/inference_s2s.py \
         --config-path "conf" \
-        --config-name "prompt_tts.yaml" \
+        --config-name "prompt.yaml" \
         hydra.run.dir=$ckpt_path \
         ++model_config.llm_name=qwen2-0.5b \
         ++model_config.llm_path=$llm_path \
@@ -100,4 +100,4 @@ python $code_dir/inference_s2s.py \
         ++output_text_only=$output_text_only \
         ++inference_online=$inference_online
 
-# bash /home/v-wenxichen/SLAM-LLM/examples/s2s/scripts/inference_tts.sh
+# bash /home/v-wenxichen/SLAM-LLM/examples/s2s/scripts/inference_s2s.sh
