@@ -28,6 +28,7 @@ developers to train custom multimodal large language model (MLLM), focusing on <
 6. [Citation](#citation)
 
 # News
+- [Update Oct. 12, 2024] Recipes for [SLAM-AAC](examples/slam_aac/README.md) have been supported. 
 - [Update Sep. 28, 2024] Recipes for [CoT-ST](examples/st_covost2/README.md) have been supported. 
 - [Update Sep. 25, 2024] Recipes for [DRCap](examples/drcap_zeroshot_aac/README.md) have been supported. 
 - [Update Jun. 12, 2024] Recipes for [MaLa-ASR](examples/mala_asr_slidespeech/README.md) have been supported. 
@@ -92,6 +93,7 @@ We provide reference implementations of various LLM-based speech, audio, and mus
     
 - **Audio Task**
     - [Automated Audio Captioning (AAC)](examples/aac_audiocaps/README.md)
+      - [SLAM-AAC](examples/slam_aac/README.md)
       - [DRCap](examples/drcap_zeroshot_aac/README.md)
     - Spatial Audio Understanding
       - [BAT](examples/seld_spatialsoundqa/README.md)
@@ -117,7 +119,7 @@ command-line (shell file) > Hydra configuration (yaml file) > dataclass configur
 - We thank the contributors for providing diverse recipes. 
 
 ## Citation
-
+SLAM-ASR:
 ```
 @article{ma2024embarrassingly,
   title={An Embarrassingly Simple Approach for LLM with Strong ASR Capacity},
