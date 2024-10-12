@@ -74,26 +74,5 @@ class slam_model_seld(slam_model):
             tokenizer,
             train_config,
             model_config,
-            **kwargs,
+            **kwargs
         )
-
-    @torch.no_grad()
-    def inference(
-        self,
-        wav_path=None,
-        reverb_path=None,
-        prompt=None,
-        generation_config=None,
-        logits_processor=None,
-        stopping_criteria=None,
-        prefix_allowed_tokens_fn=None,
-        synced_gpus=None,
-        assistant_model=None,
-        streamer=None,
-        negative_prompt_ids=None,
-        negative_prompt_attention_mask=None,
-        **kwargs,
-    ):
-        #!TODO: 
-        # inference for SELD model
-        pass

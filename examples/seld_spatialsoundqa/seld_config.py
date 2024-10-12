@@ -13,6 +13,7 @@ class ModelConfig:
     encoder_ckpt: Optional[str] = None
     encoder_projector: str = "q-former"
     encoder_dim: int = 768
+    qformer_layers: int = 8
 
 @dataclass
 class PeftConfig:

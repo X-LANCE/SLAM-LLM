@@ -36,15 +36,10 @@ class RunConfig:
 def main_hydra(cfg: DictConfig):
     run_config = RunConfig()
     cfg = OmegaConf.merge(run_config, cfg)
-    # kwargs = to_plain_list(cfg)
+    cfg.train_config.peft_config = cfg.peft_config
+
     log_level = getattr(logging, cfg.get("log_level", "INFO").upper())
-
     logging.basicConfig(level=log_level)
-
-    if cfg.get("debug", False):
-        import pdb
-
-        pdb.set_trace()
 
     inference(cfg)
 
