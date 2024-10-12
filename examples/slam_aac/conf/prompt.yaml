@@ -1,0 +1,3 @@
+dataset_config:
+    # we put prompt here, because the hydra override in shell script only support a small subset of chars
+    prompt: "Describe the audio you hear."
