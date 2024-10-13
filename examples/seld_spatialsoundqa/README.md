@@ -4,10 +4,15 @@ This repo hosts the code and models of "[BAT: Learning to Reason about Spatial S
 
 Checkout our [demo page](https://zhishengzheng.com/BAT/) and enjoy a QA game with spatial audio.
 
-## Performance evaluation on **SpatialSoundQA** 
+## Performance evaluation on **SpatialSoundQA**
 We use [Spatial-AST](https://huggingface.co/datasets/zhisheng01/SpatialAudio/blob/main/SpatialAST/finetuned.pth) as audio encoder, [llama-2-7b](https://huggingface.co/meta-llama/Llama-2-7b) as LLM backbone. We finetune the model by adding Q-Former and LoRA. To calculate MAP, you can refer to [calculate_map.py](https://github.com/X-LANCE/SLAM-LLM/blob/main/examples/seld_spatialsoundqa/scripts/calculate_map.py)
 <img src="assets/performance.png" alt="xxx">
 
+
+## Checkpoints
+Encoder | Projector | LLM | 
+|---|---|---|
+[Spatial-AST](https://huggingface.co/datasets/zhisheng01/SpatialAudio/blob/main/SpatialAST/finetuned.pth) | [Q-former](https://huggingface.co/datasets/zhisheng01/SpatialAudio/blob/main/BAT/model.pt)(~73.56M) | [llama-2-7b-hf](https://huggingface.co/meta-llama/Llama-2-7b) |
 
 ## Demo (Spatial Audio Inference)
 Try [`inference.ipynb`](https://github.com/X-LANCE/SLAM-LLM/blob/main/examples/seld_spatialsoundqa/inference.ipynb).
