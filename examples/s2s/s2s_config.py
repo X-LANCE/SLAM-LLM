@@ -187,6 +187,9 @@ class DataConfig:
     vocab_config: VocabConfig = field(default_factory=VocabConfig)
     load_from_cache_file: bool = False
     task_type: str = "s2s"
+    upsample_text_tokens: bool = False
+    upsampling_factor: int = 1
+    upsample_method: str = "repeat"
 
 @dataclass
 class DecodeConfig:
