@@ -7,14 +7,21 @@ export WANDB_API_KEY=406faa59cf62a3646fa3479a7e133c4cf5a77100       # please rep
 
 code_dir=examples/s2s
 
-speech_encoder_path="/valleblob/v-wenxichen/models/whisper/small.pt"   # whisper small
-# speech_encoder_path="medium" # whisper medium
+# speech_encoder_path="/valleblob/v-wenxichen/models/whisper/small.pt"   # whisper small
+# speech_encoder_path="/valleblob/v-wenxichen/models/whisper/medium.pt" # whisper medium
+# speech_encoder_path="tiny" # whisper tiny
+# speech_encoder_path="base" # whisper base
+speech_encoder_path="large" # whisper large
+
 llm_path="/valleblob/v-wenxichen/models/models--Qwen--Qwen2-0.5B/snapshots/ff3a49fac17555b8dfc4db6709f480cc8f16a9fe"  # Qwen/Qwen2-0.5B
 
 
 train_data_path="gpt-omni/VoiceAssistant-400K"
 val_data_path="gpt-omni/VoiceAssistant-400K"
 load_from_cache_file=true  # set to true if you have already generated the cache file, otherwise set to false
+
+encoder_dim=1280 # 384 512 768 1024 1280
+mel_size=128 # 80 128 ( only whisper-large supports 128 )
 
 batch_size_training=4
 use_fp16=false
@@ -26,8 +33,8 @@ tts_adapter=false
 task_type=s2s
 # exp_name="s2s_train_v1_gpu4_btz${batch_size_training}_lr${lr}_nofp16_epochs${num_epochs}"
 # exp_name="s2s_train_v0_gpu24_btz${batch_size_training}_fp16"
-# exp_name="debug"
-exp_name="single_test_whisper-medium"
+exp_name="debug"
+# exp_name="single_test_whisper-medium"
 
 
 home_dir=/valleblob/v-wenxichen/exp/s2s
@@ -50,14 +57,14 @@ hydra.run.dir=$output_dir \
 ++model_config.encoder_name=whisper \
 ++model_config.encoder_projector_ds_rate=5 \
 ++model_config.encoder_path=$speech_encoder_path \
-++model_config.encoder_dim=768 \
+++model_config.encoder_dim=$encoder_dim \
 ++model_config.encoder_projector=linear \
 ++model_config.tts_adapter=$tts_adapter \
 ++dataset_config.dataset=speech_dataset_s2s \
 ++dataset_config.train_data_path=$train_data_path \
 ++dataset_config.val_data_path=$val_data_path \
 ++dataset_config.input_type=mel \
-++dataset_config.mel_size=80 \
+++dataset_config.mel_size=$mel_size \
 ++dataset_config.seed=42 \
 ++dataset_config.manifest_format=datasets \
 ++dataset_config.split_size=0.01 \
@@ -118,4 +125,4 @@ else
 fi
 
 # ++train_config.use_fp16=true \
-# bash /home/v-wenxichen/SLAM-LLM/examples/s2s/scripts/finetune_s2s_debug.sh
+# bash /home/v-wenxichen/SLAM-LLM/examples/s2s/scripts/finetune_s2s_debug_whisper.sh

@@ -8,9 +8,12 @@ export WANDB_API_KEY=406faa59cf62a3646fa3479a7e133c4cf5a77100       # please rep
 
 code_dir=examples/s2s
 
-speech_encoder_path="/valleblob/v-wenxichen/models/whisper/small.pt"   # whisper small
+whisper_size=medium  # tiny base small medium large-v3
+speech_encoder_path="/valleblob/v-wenxichen/models/whisper/${whisper_size}.pt"   # different whisper size
 llm_path="/valleblob/v-wenxichen/models/models--Qwen--Qwen2-0.5B/snapshots/ff3a49fac17555b8dfc4db6709f480cc8f16a9fe"  # Qwen/Qwen2-0.5B
 
+encoder_dim=1024 # 384 512 768 1024 1280
+mel_size=80 # 80 128 ( only whisper-large supports 128 )
 
 train_data_path="/valleblob/v-wenxichen/data/s2s/VoiceAssistant-400K"
 val_data_path="/valleblob/v-wenxichen/data/s2s/VoiceAssistant-400K"
@@ -24,7 +27,7 @@ train_audio_embed_only=false
 train_embed_only=false
 tts_adapter=false
 task_type=s2s
-exp_name="s2s_train_v1_gpu4_btz${batch_size_training}_lr${lr}_nofp16_epochs${num_epochs}"
+exp_name="s2s_train_v1_gpu4_btz${batch_size_training}_lr${lr}_nofp16_epochs${num_epochs}_whisper-${whisper_size}"
 # exp_name="s2s_train_v0_gpu24_btz${batch_size_training}_fp16"
 # exp_name="debug"
 
@@ -48,14 +51,14 @@ hydra.run.dir=$output_dir \
 ++model_config.encoder_name=whisper \
 ++model_config.encoder_projector_ds_rate=5 \
 ++model_config.encoder_path=$speech_encoder_path \
-++model_config.encoder_dim=768 \
+++model_config.encoder_dim=$encoder_dim \
 ++model_config.encoder_projector=linear \
 ++model_config.tts_adapter=$tts_adapter \
 ++dataset_config.dataset=speech_dataset_s2s \
 ++dataset_config.train_data_path=$train_data_path \
 ++dataset_config.val_data_path=$val_data_path \
 ++dataset_config.input_type=mel \
-++dataset_config.mel_size=80 \
+++dataset_config.mel_size=$mel_size \
 ++dataset_config.seed=42 \
 ++dataset_config.manifest_format=datasets \
 ++dataset_config.split_size=0.01 \
