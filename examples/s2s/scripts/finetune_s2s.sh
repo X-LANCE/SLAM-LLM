@@ -8,26 +8,31 @@ export WANDB_API_KEY=406faa59cf62a3646fa3479a7e133c4cf5a77100       # please rep
 
 code_dir=examples/s2s
 
-whisper_size=medium  # tiny base small medium large-v3
+whisper_size=large-v3  # tiny base small medium large-v3
 speech_encoder_path="/valleblob/v-wenxichen/models/whisper/${whisper_size}.pt"   # different whisper size
 llm_path="/valleblob/v-wenxichen/models/models--Qwen--Qwen2-0.5B/snapshots/ff3a49fac17555b8dfc4db6709f480cc8f16a9fe"  # Qwen/Qwen2-0.5B
 
-encoder_dim=1024 # 384 512 768 1024 1280
-mel_size=80 # 80 128 ( only whisper-large supports 128 )
+encoder_dim=1280 # 384 512 768 1024 1280
+mel_size=128 # 80 128 ( only whisper-large supports 128 )
 
 train_data_path="/valleblob/v-wenxichen/data/s2s/VoiceAssistant-400K"
 val_data_path="/valleblob/v-wenxichen/data/s2s/VoiceAssistant-400K"
 load_from_cache_file=false  # set to true if you have already generated the cache file, otherwise set to false
 
 batch_size_training=4
-use_fp16=false
+use_fp16=true
 num_epochs=10
 lr=5e-4
 train_audio_embed_only=false
 train_embed_only=false
 tts_adapter=false
 task_type=s2s
+
 exp_name="s2s_train_v1_gpu4_btz${batch_size_training}_lr${lr}_nofp16_epochs${num_epochs}_whisper-${whisper_size}"
+if [ "$use_fp16" = true ]; then
+    exp_name="s2s_train_v1_gpu4_btz${batch_size_training}_lr${lr}_fp16_epochs${num_epochs}_whisper-${whisper_size}"
+fi
+
 # exp_name="s2s_train_v0_gpu24_btz${batch_size_training}_fp16"
 # exp_name="debug"
 
