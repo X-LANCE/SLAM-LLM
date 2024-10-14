@@ -8,19 +8,19 @@ export WANDB_API_KEY=406faa59cf62a3646fa3479a7e133c4cf5a77100       # please rep
 
 code_dir=examples/s2s
 
-whisper_size=large-v3  # tiny base small medium large-v3
+whisper_size=tiny  # tiny base small medium large-v3
 speech_encoder_path="/valleblob/v-wenxichen/models/whisper/${whisper_size}.pt"   # different whisper size
 llm_path="/valleblob/v-wenxichen/models/models--Qwen--Qwen2-0.5B/snapshots/ff3a49fac17555b8dfc4db6709f480cc8f16a9fe"  # Qwen/Qwen2-0.5B
 
-encoder_dim=1280 # 384 512 768 1024 1280
-mel_size=128 # 80 128 ( only whisper-large supports 128 )
+encoder_dim=384 # 384 512 768 1024 1280
+mel_size=80 # 80 128 ( only whisper-large supports 128 )
 
 train_data_path="/valleblob/v-wenxichen/data/s2s/VoiceAssistant-400K"
 val_data_path="/valleblob/v-wenxichen/data/s2s/VoiceAssistant-400K"
 load_from_cache_file=false  # set to true if you have already generated the cache file, otherwise set to false
 
 batch_size_training=4
-use_fp16=true
+use_fp16=false
 num_epochs=10
 lr=5e-4
 train_audio_embed_only=false

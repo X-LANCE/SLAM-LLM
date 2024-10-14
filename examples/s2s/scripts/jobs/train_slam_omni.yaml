@@ -37,8 +37,8 @@ search:
   job_template:
     name: slam-omni_v1
     # sku: 4x32G8-V100-IB
-    # sku: 1x80G4-A100 
-    sku: 1x80G4-H100
+    sku: 1x80G4-A100 
+    # sku: 1x80G4-H100
     # sku: 1x40G8-A100 
     # sku: 80G8-H100-NvLink
     # sku: 3xND96rs_v4 # 40 8 a100
