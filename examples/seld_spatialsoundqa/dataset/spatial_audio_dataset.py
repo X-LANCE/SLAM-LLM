@@ -37,9 +37,8 @@ class SpatialAudioDatasetJsonl(BaseDataset):
             split,
         ):
         super().__init__()
-        dataset_path = os.path.join(dataset_config['qa_data_root'], dataset_config['stage'], split + '.jsonl')
-        with open(dataset_path) as f:
-            self.data = [json.loads(line) for line in f.readlines()]
+        dataset_path = os.path.join(dataset_config['qa_data_root'], dataset_config['stage'], split + '.json')
+        self.data = json.load(open(dataset_path))["data"]
 
         self.anechoic_data_root = dataset_config['anechoic_data_root'] # which is AudioSet in this case
         self.reverb_data_root = dataset_config['reverb_data_root']
