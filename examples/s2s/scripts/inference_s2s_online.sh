@@ -21,7 +21,7 @@ ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v1_gpu4_btz4_lr5e-4_nofp16_ep
 
 # decode config
 repetition_penalty=1.0
-max_new_tokens=300
+max_new_tokens=350
 do_sample=false
 top_p=0.9
 top_k=50

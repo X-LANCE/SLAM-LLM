@@ -91,6 +91,7 @@ class ModelConfig:
     codec_decoder_path: Optional[str] = None
     tts_adapter: bool = False
     tts_adapter_config: TTSAdapterConfig = field(default_factory=TTSAdapterConfig)
+    encoder_path_hf: Optional[str] = None
 
 
 @dataclass
