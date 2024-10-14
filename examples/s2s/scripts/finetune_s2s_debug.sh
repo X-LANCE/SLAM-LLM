@@ -11,8 +11,8 @@ speech_encoder_path="/valleblob/v-wenxichen/models/whisper/small.pt"   # whisper
 llm_path="/valleblob/v-wenxichen/models/models--Qwen--Qwen2-0.5B/snapshots/ff3a49fac17555b8dfc4db6709f480cc8f16a9fe"  # Qwen/Qwen2-0.5B
 
 
-train_data_path="/valleblob/v-wenxichen/data/s2s/VoiceAssistant-400K"
-val_data_path="/valleblob/v-wenxichen/data/s2s/VoiceAssistant-400K"
+train_data_path="gpt-omni/VoiceAssistant-400K"
+val_data_path="gpt-omni/VoiceAssistant-400K"
 load_from_cache_file=true  # set to true if you have already generated the cache file, otherwise set to false
 
 batch_size_training=4

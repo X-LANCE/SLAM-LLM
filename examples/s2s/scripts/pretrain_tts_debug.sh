@@ -27,7 +27,8 @@ tts_adapter=false
 task_type=tts
 
 # exp_name="s2s_train_v0"
-exp_name="debug"
+# exp_name="debug"
+exp_name="single_test_tts"
 
 home_dir=/home/v-wenxichen/exp/s2s
 # output_dir=$home_dir/$(TZ='Asia/Shanghai' date +"%Y_%m_%d")/$(TZ='Asia/Shanghai' date +"%H_%M_%S")
