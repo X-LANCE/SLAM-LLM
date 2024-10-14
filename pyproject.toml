@@ -21,8 +21,8 @@ tests = ["pytest-mock"]
 auditnlg = ["auditnlg"]
 
 [project.urls]
-"Homepage" = "https://github.com/ddlBoJack/SLAM-LLM"
-"Bug Tracker" = "https://github.com/ddlBoJack/SLAM-LLM/issues"
+"Homepage" = "https://github.com/cwx-worst-one/SLAM-LLM.git"
+"Bug Tracker" = "https://github.com/cwx-worst-one/SLAM-LLM.git/issues"
 
 [tool.hatch.build]
 exclude = [
@@ -34,3 +34,6 @@ packages = ["src/slam_llm"]
 
 [tool.hatch.metadata.hooks.requirements_txt]
 files = ["requirements.txt"]
+
+[tool.hatch.metadata]
+allow-direct-references = true
