@@ -8,6 +8,8 @@ from utils.snac_utils import reconscruct_snac, reconstruct_tensors, layershift, 
 import hydra
 from omegaconf import DictConfig, ListConfig, OmegaConf
 import whisper
+import numpy as np
+import time
 
 
 @hydra.main(config_name=None, version_base=None)
@@ -57,7 +59,7 @@ def get_input_ids(length, special_token_a, special_token_t, vocab_config):
 	return input_ids
 
 
-def generate_from_wav(wav_path, model, codec_decoder, dataset_config, decode_config, logger, device):
+def generate_from_wav_stream(wav_path, model, codec_decoder, dataset_config, decode_config, logger, device):
 	mel_size = dataset_config.mel_size
 	prompt = dataset_config.prompt
 	prompt_template = "USER: {}\n ASSISTANT: "
@@ -104,22 +106,33 @@ def generate_from_wav(wav_path, model, codec_decoder, dataset_config, decode_con
 		"task_types": task_type,
     }
 
-	model_outputs = model.generate(**batch, **decode_config)
-	text_outputs = model_outputs[7]
-	audio_outputs = model_outputs[:7]	
-	output_text = model.tokenizer.decode(text_outputs, add_special_tokens=False, skip_special_tokens=True)
-	
-	if decode_config.decode_text_only:
-		return None, output_text
-	
-	audio_tokens = [audio_outputs[layer] for layer in range(7)]
-	audiolist = reconscruct_snac(audio_tokens)
-	audio = reconstruct_tensors(audiolist)
-	with torch.inference_mode():
-		audio_hat = codec_decoder.decode(audio)    
-	
+	audio_text_generator = model.stream_generate(**batch, **decode_config)
+      
+	return audio_text_generator
 
-	return audio_hat, output_text
+
+def save_streamed_audio(generator, output_wav_path, model, logger, sample_rate=24000):
+    generated_text = ""
+    start_time = time.time()
+    first_chunk_time = None
+
+    with sf.SoundFile(output_wav_path, mode='w', samplerate=sample_rate, channels=1, subtype='PCM_16') as f:
+        for result in generator:
+            if first_chunk_time is None:
+                first_chunk_time = time.time()
+                delay = first_chunk_time - start_time
+                
+            text_tokens = result.get('text_stream')
+            if text_tokens is not None:
+                generated_text += model.tokenizer.decode(torch.tensor(text_tokens))
+
+            audio_bytes = result.get('audio_stream')
+            if audio_bytes is not None:
+                audio_chunk = np.frombuffer(audio_bytes, dtype=np.int16)
+                f.write(audio_chunk)
+                
+    logger.info(f"First Chunk Delay: {delay:.2f} seconds")
+    logger.info(f"Final Generated Text: {generated_text}")
 
 
 def main(kwargs: DictConfig):
@@ -192,7 +205,7 @@ def main(kwargs: DictConfig):
     else:
         logger.info("Decode Text & Audio")
 
-    logger.info("============== Ready for {task_type} Online Inference ==============".format(task_type=task_type))
+    logger.info("============== Ready for {task_type} Online Inference (Streaming Version) ==============".format(task_type=task_type))
 
     while True:
         wav_path = input("Please provide the path to a WAV file (or type 'q' to quit): ")
@@ -202,16 +215,18 @@ def main(kwargs: DictConfig):
         if not os.path.exists(wav_path):
             logger.warning(f"File {wav_path} does not exist. Please try again.")
             continue
-
-        output_wav, output_text = generate_from_wav(wav_path, model, codec_decoder, dataset_config, decode_config, logger, device)
-        logger.info(f"Generated Text: {output_text}")	
         
         if output_dir is not None:
             os.makedirs(output_dir, exist_ok=True)
             output_wav_path = os.path.join(output_dir, f"generated_{os.path.basename(wav_path)}")
         else:
             output_wav_path = f"generated_{os.path.basename(wav_path)}"
-        sf.write(output_wav_path, output_wav.squeeze().cpu().numpy(), 24000)        
+
+        audio_generator = generate_from_wav_stream(
+            wav_path, model, codec_decoder, dataset_config, decode_config, logger, device
+        )
+        save_streamed_audio(audio_generator, output_wav_path, model, logger)
+
         logger.info(f"Generated Audio saved at: {output_wav_path}")
 
 if __name__ == "__main__":

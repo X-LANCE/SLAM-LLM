@@ -71,6 +71,10 @@ We also provide an online inference script for the S2S task. You can just input 
 bash ./examples/s2s/scripts/inference_s2s_online.sh
 ```
 
+Besides, wo also provide streaming online inference script for the S2S task. You can run the following command:
+```bash
+bash ./examples/s2s/scripts/inference_s2s_online_stream.sh
+```
 
 
 
