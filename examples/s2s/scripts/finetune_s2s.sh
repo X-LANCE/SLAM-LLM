@@ -129,3 +129,8 @@ fi
 
 # 1GPU + 12w steps + btz4 = 1epoch
 # 1GPU + 24w steps + btz2 = 1epoch 
+
+# 40GB max batch size = 2
+# 80GB max batch size = 4
+
+# code_path -> /tmp/amlt-code-download

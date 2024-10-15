@@ -7,6 +7,7 @@ export LD_LIBRARY_PATH=/home/v-wenxichen/anaconda3/envs/slam/lib:$LD_LIBRARY_PAT
 export WANDB_API_KEY=406faa59cf62a3646fa3479a7e133c4cf5a77100       # please replace with your own wandb key thxxxx, unless you want to share your experiment results with me :)
 
 code_dir=examples/s2s
+gpu_num=$(( $(echo $CUDA_VISIBLE_DEVICES | tr -cd ',' | wc -c) + 1 ))
 
 whisper_size=small  # tiny base small medium large-v3
 speech_encoder_path="/valleblob/v-wenxichen/models/whisper/${whisper_size}.pt"   # different whisper size
@@ -20,10 +21,10 @@ val_data_path="/valleblob/v-wenxichen/data/s2s/VoiceAssistant-400K"
 load_from_cache_file=false  # set to true if you have already generated the cache file, otherwise set to false
 
 upsample_text_tokens=true
-upsampling_factor=2
+upsampling_factor=4
 upsample_method=repeat  # repeat or blank
 
-batch_size_training=3
+batch_size_training=2
 use_fp16=false
 num_epochs=10
 lr=5e-4
@@ -32,9 +33,9 @@ train_embed_only=false
 tts_adapter=false
 task_type=s2s
 
-exp_name="s2s_train_v1_gpu4_btz${batch_size_training}_lr${lr}_nofp16_epochs${num_epochs}_whisper-${whisper_size}_upsample${upsampling_factor}-${upsample_method}"
+exp_name="s2s-train_v1-gpu${gpu_num}-btz${batch_size_training}-lr${lr}-nofp16-epochs${num_epochs}-whisper_${whisper_size}-upsample${upsampling_factor}_${upsample_method}"
 if [ "$use_fp16" = true ]; then
-    exp_name="s2s_train_v1_gpu4_btz${batch_size_training}_lr${lr}_fp16_epochs${num_epochs}_whisper-${whisper_size}_upsample${upsampling_factor}-${upsample_method}"
+    exp_name="s2s-train_v1-gpu${gpu_num}-btz${batch_size_training}-lr${lr}-fp16-epochs${num_epochs}-whisper_${whisper_size}-upsample${upsampling_factor}_${upsample_method}"
 fi
 
 # exp_name="s2s_train_v0_gpu24_btz${batch_size_training}_fp16"
@@ -120,7 +121,7 @@ if [[ $CUDA_VISIBLE_DEVICES != *","* ]]; then
 else
     torchrun \
         --nnodes 1 \
-        --nproc_per_node 8 \
+        --nproc_per_node $gpu_num \
         --master_port=29503 \
         $code_dir/finetune_s2s.py \
         --config-path "conf" \
@@ -129,6 +130,7 @@ else
         ++train_config.enable_fsdp=false \
         $hydra_args
 fi
+
 # --rdzv-backend=c10d \
 # rdzv setting maybe useful for multi-node training
 
