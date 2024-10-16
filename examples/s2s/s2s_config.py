@@ -212,6 +212,8 @@ class DecodeConfig:
     diversity_penalty: float = 0.0
     task_type: str = "s2s"
     decode_text_only: bool = False
+    streaming: bool = False
+    stream_stride: int = 4
 
 @dataclass
 class FSDPConfig:

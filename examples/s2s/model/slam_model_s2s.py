@@ -11,14 +11,14 @@ from slam_llm.models.slam_model import (
     setup_llm,
 )
 from slam_llm.utils.train_utils import print_model_size
-from typing import List, Optional
+from typing import List, Optional, Generator
 from slam_llm.utils.metric import compute_accuracy
 from transformers import T5ForConditionalGeneration
 from tqdm import tqdm
 from utils.tts_adapter_utils import setup_tts_adapter
 from utils.codec_utils import setup_codec
 from utils.trick_utils import partial_freeze_weights, train_embedding_layer_only
-from utils.snac_utils import layershift
+from utils.snac_utils import layershift, get_snac, generate_audio_data
 
 logger = logging.getLogger(__name__)
 
@@ -384,6 +384,164 @@ class slam_model_s2s(slam_model):
             for i in range(self.code_layer):
                 generated_ids[i].append(next_tokens_audio[i].clone().tolist()[0])  # Audio layers
             generated_ids[self.code_layer].append(next_token_text.clone().tolist()[0])  # Text layer
+
+        # Concatenate the generated tokens to form the complete sequence
+        text_tokens = generated_ids[-1]
+        generated_ids[-1] = text_tokens[: text_tokens.index(eot)] if eot in text_tokens else text_tokens
+        generated_ids = [torch.tensor(layer) for layer in generated_ids] 
+        return generated_ids
+
+
+    @torch.no_grad()
+    def stream_generate(
+        self,
+        input_ids: torch.LongTensor = None,
+        attention_mask: Optional[torch.Tensor] = None,
+        position_ids: Optional[torch.LongTensor] = None,
+        past_key_values: Optional[List[torch.FloatTensor]] = None,
+        inputs_embeds: Optional[torch.FloatTensor] = None,
+        labels: Optional[torch.LongTensor] = None,
+        use_cache: Optional[bool] = None,
+        output_attentions: Optional[bool] = None,
+        output_hidden_states: Optional[bool] = None,
+        return_dict: Optional[bool] = None,
+        **kwargs,
+    ) -> Generator:
+        kwargs["inference_mode"] = True
+        inputs_embeds, attention_mask = self.forward(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            position_ids=position_ids,
+            past_key_values=past_key_values,
+            inputs_embeds=inputs_embeds,
+            labels=labels,
+            use_cache=use_cache,
+            output_attentions=output_attentions,
+            output_hidden_states=output_hidden_states,
+            return_dict=return_dict,
+            **kwargs,
+        )
+
+        text_vocab_size = self.model_config.vocab_config.padded_text_vocabsize
+        audio_vocab_size = self.model_config.vocab_config.padded_audio_vocabsize
+
+        max_new_tokens = kwargs.get("max_new_tokens", 360)
+        repetition_penalty = kwargs.get("repetition_penalty", 1.0)
+        decode_text_only = kwargs.get("decode_text_only", False)
+
+        pad_t = self.model_config.vocab_config.pad_t
+        pad_a = self.model_config.vocab_config.pad_a
+        eot = self.model_config.vocab_config.eot
+        eoa = self.model_config.vocab_config.eoa
+
+        generated_ids = [[] for _ in range((self.code_layer+1))]
+        current_input_text = None
+        current_audio_tokens = [None for _ in range(self.code_layer)]
+        past_key_values = None
+
+        text_end = False
+        audio_end = False
+        begin_generate = False
+        text_stream_end = False
+
+        stream_stride = kwargs.get("stream_stride", 4)
+        current_index = 0
+        index = 0
+        last_text_index = 0
+
+        for step in tqdm(range(max_new_tokens), desc="Generating"):
+            if current_input_text is not None:
+                audio_tokens = torch.cat([layershift(current_audio_tokens[i], i).unsqueeze(1) for i in range(self.code_layer)], dim=1)
+                combined_input_ids = torch.cat([audio_tokens, current_input_text.unsqueeze(1)], dim=1)
+                inputs_embeds = self.llm.model.embed_tokens(combined_input_ids)
+                inputs_embeds = torch.mean(inputs_embeds, dim=1).unsqueeze(1)
+            
+            outputs = self.llm(
+                inputs_embeds=inputs_embeds,                  # [btz, seq_len / 1, emb_dim]
+                attention_mask=attention_mask,                # single sample, no need for attention mask
+                past_key_values=past_key_values,
+                # position_ids=input_pos,
+                use_cache=True,
+            )
+            
+            logits = outputs.logits
+            past_key_values = outputs.past_key_values       # Update past_key_values for the next step
+
+            # Split logits into text and audio layers based on vocab size
+            xt_logits = logits[..., :text_vocab_size]
+            xa_logits = [logits[..., text_vocab_size + audio_vocab_size * i : text_vocab_size + audio_vocab_size * (i + 1)] for i in range(self.code_layer)]
+
+            # Apply repetition penalty to the logits
+            if repetition_penalty != 1.0:
+                xt_logits = self.repetition_penalty(xt_logits, generated_ids[self.code_layer], repetition_penalty)
+                for i in range(self.code_layer):
+                    xa_logits[i] = self.repetition_penalty(xa_logits[i], generated_ids[i], repetition_penalty)
+
+            if not text_end:
+                next_token_text = self.sample_next_token(xt_logits[:, -1, :], **kwargs)
+            else:
+                next_token_text = torch.tensor([pad_t], device=input_ids.device)
+
+            next_tokens_audio = []
+            for i in range(self.code_layer):
+                if not audio_end and not decode_text_only:
+                    next_token_audio = self.sample_next_token(xa_logits[i][:, -1, :], **kwargs)
+                else:
+                    next_token_audio = torch.full((input_ids.size(0),), pad_a, device=input_ids.device)
+                next_tokens_audio.append(next_token_audio)
+
+            if next_tokens_audio[-1] == eoa or decode_text_only:
+                audio_end = True
+            if next_token_text == eot:
+                text_end = True
+            
+            # Update input_ids for the next step
+            current_input_text = next_token_text
+            for i in range(self.code_layer):
+                current_audio_tokens[i] = next_tokens_audio[i]
+
+            # if input_pos.size(-1) > 1:
+            #     input_pos = torch.tensor(input_pos.size(-1), device=input_ids.device).unsqueeze(0)
+            # else:
+            #     input_pos = input_pos.add_(1)
+            attention_mask = torch.cat([attention_mask, torch.ones((input_ids.size(0), 1), device=input_ids.device)], dim=1)
+
+            if audio_end and text_end:
+                break
+
+            # Append generated tokens to the list
+            for i in range(self.code_layer):
+                generated_ids[i].append(next_tokens_audio[i].clone().tolist()[0])  # Audio layers
+            generated_ids[self.code_layer].append(next_token_text.clone().tolist()[0])  # Text layer
+
+            if index == self.code_layer:
+                begin_generate = True
+
+            if begin_generate and not decode_text_only:
+                current_index += 1
+                if current_index == stream_stride:
+                    current_index = 0
+                    snac = get_snac(generated_ids, index, stream_stride)
+                    audio_stream = generate_audio_data(snac, self.codec_decoder, input_ids.device)
+                    text_stream = generated_ids[self.code_layer][last_text_index:index] if not text_stream_end else None
+
+                    if text_stream is not None and eot in text_stream:
+                        text_stream_end = True
+                        text_stream = text_stream[:text_stream.index(eot)]
+
+                    last_text_index = index
+                    yield {
+                        "audio_stream": audio_stream,
+                        "text_stream": text_stream,
+                    }
+
+            if decode_text_only:
+                yield {
+                    "audio_stream": None,
+                    "text_stream": next_token_text,
+                }
+            
+            index += 1
 
         # Concatenate the generated tokens to form the complete sequence
         text_tokens = generated_ids[-1]
