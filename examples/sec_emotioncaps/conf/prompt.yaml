@@ -1,0 +1,3 @@
+dataset_config:
+    # we put prompt here, because the hydra override in shell script only support a small subset of chars
+    prompt: "请用中文用一句话描述上面给出的音频中说话人的情感。"
