@@ -9,15 +9,19 @@ export CUDA_LAUNCH_BLOCKING=1
 
 code_dir=examples/s2s
 
-speech_encoder_path="small"   # whisper small
+whisper_size=small  # tiny base small medium large-v3
+speech_encoder_path="/valleblob/v-wenxichen/models/whisper/${whisper_size}.pt"   # different whisper size
 llm_path="Qwen/Qwen2-0.5B"
 codec_decoder_path="hubertsiuzdak/snac_24khz"
+
+encoder_dim=768 # 384 512 768 1024 1280
+mel_size=80 # 80 128 ( only whisper-large supports 128 )
 
 tts_adapter=false
 task_type=s2s
 split_size=0.00001
 
-ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v1_gpu4_btz4_lr1e-3_nofp16_epochs10/s2s_epoch_4_step_22946
+ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v1_gpu4_btz4_lr5e-4_nofp16_epochs10_whisper-small_upsample3-repeat/s2s_epoch_5_step_23928
 split=test
 
 # jsonl dataset
@@ -38,6 +42,7 @@ top_p=0.9
 top_k=50
 temperature=1.0
 decode_text_only=false
+upsampling_factor=1
 
 output_text_only=false
 
@@ -63,7 +68,7 @@ python $code_dir/inference_s2s.py \
         ++model_config.encoder_name=whisper \
         ++model_config.encoder_projector_ds_rate=5 \
         ++model_config.encoder_path=$speech_encoder_path \
-        ++model_config.encoder_dim=768 \
+        ++model_config.encoder_dim=$encoder_dim \
         ++model_config.encoder_projector=linear \
         ++model_config.codec_decoder_path=$codec_decoder_path \
         ++model_config.codec_decode=true \
@@ -72,7 +77,7 @@ python $code_dir/inference_s2s.py \
         ++dataset_config.val_data_path=$val_data_path \
         ++dataset_config.train_data_path=$val_data_path \
         ++dataset_config.input_type=mel \
-        ++dataset_config.mel_size=80 \
+        ++dataset_config.mel_size=$mel_size \
         ++dataset_config.inference_mode=true \
         ++dataset_config.manifest_format=$manifest_format \
         ++dataset_config.split_size=$split_size \
@@ -95,6 +100,7 @@ python $code_dir/inference_s2s.py \
         ++decode_config.top_k=$top_k \
         ++decode_config.temperature=$temperature \
         ++decode_config.decode_text_only=$decode_text_only \
+        ++decode_config.upsampling_factor=$upsampling_factor \
         ++decode_log=$decode_log \
         ++ckpt_path=$ckpt_path/model.pt \
         ++output_text_only=$output_text_only \

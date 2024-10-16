@@ -214,6 +214,7 @@ class DecodeConfig:
     decode_text_only: bool = False
     streaming: bool = False
     stream_stride: int = 4
+    upsampling_factor: int = 1
 
 @dataclass
 class FSDPConfig:
