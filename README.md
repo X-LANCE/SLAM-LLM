@@ -18,7 +18,6 @@ developers to train custom multimodal large language model (MLLM), focusing on <
 </div>
 
 # Table of Contents
-- [Table of Contents](#table-of-contents)
 - [News](#news)
 - [Installation](#installation)
 - [Usage](#usage)
