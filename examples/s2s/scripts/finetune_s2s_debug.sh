@@ -8,12 +8,17 @@ export WANDB_API_KEY=406faa59cf62a3646fa3479a7e133c4cf5a77100       # please rep
 code_dir=examples/s2s
 
 speech_encoder_path="/valleblob/v-wenxichen/models/whisper/small.pt"   # whisper small
+# speech_encoder_path="medium" # whisper medium
 llm_path="/valleblob/v-wenxichen/models/models--Qwen--Qwen2-0.5B/snapshots/ff3a49fac17555b8dfc4db6709f480cc8f16a9fe"  # Qwen/Qwen2-0.5B
 
 
 train_data_path="gpt-omni/VoiceAssistant-400K"
 val_data_path="gpt-omni/VoiceAssistant-400K"
 load_from_cache_file=true  # set to true if you have already generated the cache file, otherwise set to false
+
+upsample_text_tokens=true
+upsampling_factor=2
+upsample_method=repeat  # repeat or blank
 
 batch_size_training=4
 use_fp16=false
@@ -26,7 +31,7 @@ task_type=s2s
 # exp_name="s2s_train_v1_gpu4_btz${batch_size_training}_lr${lr}_nofp16_epochs${num_epochs}"
 # exp_name="s2s_train_v0_gpu24_btz${batch_size_training}_fp16"
 exp_name="debug"
-# exp_name="single_test"
+# exp_name="single_test_whisper-medium"
 
 
 home_dir=/valleblob/v-wenxichen/exp/s2s
@@ -62,6 +67,9 @@ hydra.run.dir=$output_dir \
 ++dataset_config.split_size=0.01 \
 ++dataset_config.load_from_cache_file=$load_from_cache_file \
 ++dataset_config.task_type=$task_type \
+++dataset_config.upsample_text_tokens=$upsample_text_tokens \
+++dataset_config.upsampling_factor=$upsampling_factor \
+++dataset_config.upsample_method=$upsample_method \
 ++train_config.model_name=s2s \
 ++train_config.num_epochs=$num_epochs \
 ++train_config.freeze_encoder=true \

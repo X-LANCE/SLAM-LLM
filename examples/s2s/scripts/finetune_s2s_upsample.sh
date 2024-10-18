@@ -1,25 +1,30 @@
 #!/bin/bash
-# export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
-export CUDA_VISIBLE_DEVICES=0,1,2,3
+export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
+# export CUDA_VISIBLE_DEVICES=0,1,2,3
 export TOKENIZERS_PARALLELISM=false
 export OMP_NUM_THREADS=1
 export LD_LIBRARY_PATH=/home/v-wenxichen/anaconda3/envs/slam/lib:$LD_LIBRARY_PATH
 export WANDB_API_KEY=406faa59cf62a3646fa3479a7e133c4cf5a77100       # please replace with your own wandb key thxxxx, unless you want to share your experiment results with me :)
 
 code_dir=examples/s2s
+gpu_num=$(( $(echo $CUDA_VISIBLE_DEVICES | tr -cd ',' | wc -c) + 1 ))
 
-whisper_size=tiny  # tiny base small medium large-v3
+whisper_size=small  # tiny base small medium large-v3
 speech_encoder_path="/valleblob/v-wenxichen/models/whisper/${whisper_size}.pt"   # different whisper size
 llm_path="/valleblob/v-wenxichen/models/models--Qwen--Qwen2-0.5B/snapshots/ff3a49fac17555b8dfc4db6709f480cc8f16a9fe"  # Qwen/Qwen2-0.5B
 
-encoder_dim=384 # 384 512 768 1024 1280
+encoder_dim=768 # 384 512 768 1024 1280
 mel_size=80 # 80 128 ( only whisper-large supports 128 )
 
 train_data_path="/valleblob/v-wenxichen/data/s2s/VoiceAssistant-400K"
 val_data_path="/valleblob/v-wenxichen/data/s2s/VoiceAssistant-400K"
 load_from_cache_file=false  # set to true if you have already generated the cache file, otherwise set to false
 
-batch_size_training=4
+upsample_text_tokens=true
+upsampling_factor=4
+upsample_method=repeat  # repeat or blank
+
+batch_size_training=2
 use_fp16=false
 num_epochs=10
 lr=5e-4
@@ -28,10 +33,9 @@ train_embed_only=false
 tts_adapter=false
 task_type=s2s
 
-
-exp_name="s2s_train_v1_gpu4_btz${batch_size_training}_lr${lr}_nofp16_epochs${num_epochs}_whisper-${whisper_size}"
+exp_name="s2s-train_v1-gpu${gpu_num}-btz${batch_size_training}-lr${lr}-nofp16-epochs${num_epochs}-whisper_${whisper_size}-upsample${upsampling_factor}_${upsample_method}"
 if [ "$use_fp16" = true ]; then
-    exp_name="s2s_train_v1_gpu4_btz${batch_size_training}_lr${lr}_fp16_epochs${num_epochs}_whisper-${whisper_size}"
+    exp_name="s2s-train_v1-gpu${gpu_num}-btz${batch_size_training}-lr${lr}-fp16-epochs${num_epochs}-whisper_${whisper_size}-upsample${upsampling_factor}_${upsample_method}"
 fi
 
 # exp_name="s2s_train_v0_gpu24_btz${batch_size_training}_fp16"
@@ -70,6 +74,9 @@ hydra.run.dir=$output_dir \
 ++dataset_config.split_size=0.01 \
 ++dataset_config.load_from_cache_file=$load_from_cache_file \
 ++dataset_config.task_type=$task_type \
+++dataset_config.upsample_text_tokens=$upsample_text_tokens \
+++dataset_config.upsampling_factor=$upsampling_factor \
+++dataset_config.upsample_method=$upsample_method \
 ++train_config.model_name=s2s \
 ++train_config.num_epochs=$num_epochs \
 ++train_config.freeze_encoder=true \
@@ -114,7 +121,7 @@ if [[ $CUDA_VISIBLE_DEVICES != *","* ]]; then
 else
     torchrun \
         --nnodes 1 \
-        --nproc_per_node 4 \
+        --nproc_per_node $gpu_num \
         --master_port=29503 \
         $code_dir/finetune_s2s.py \
         --config-path "conf" \
@@ -123,15 +130,11 @@ else
         ++train_config.enable_fsdp=false \
         $hydra_args
 fi
+
 # --rdzv-backend=c10d \
 # rdzv setting maybe useful for multi-node training
 
-# bash /home/v-wenxichen/SLAM-LLM/examples/s2s/scripts/finetune_s2s.sh
+# bash /home/v-wenxichen/SLAM-LLM/examples/s2s/scripts/finetune_s2s_upsample.sh
 
 # 1GPU + 12w steps + btz4 = 1epoch
 # 1GPU + 24w steps + btz2 = 1epoch 
-
-# 40GB max batch size = 2
-# 80GB max batch size = 4
-
-# code_path -> /tmp/amlt-code-download

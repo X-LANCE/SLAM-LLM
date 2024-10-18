@@ -310,6 +310,7 @@ class slam_model_s2s(slam_model):
         max_new_tokens = kwargs.get("max_new_tokens", 360)
         repetition_penalty = kwargs.get("repetition_penalty", 1.0)
         decode_text_only = kwargs.get("decode_text_only", False)
+        upsampling_factor = kwargs.get("upsampling_factor", 1)
 
         pad_t = self.model_config.vocab_config.pad_t
         pad_a = self.model_config.vocab_config.pad_a
@@ -388,6 +389,16 @@ class slam_model_s2s(slam_model):
         # Concatenate the generated tokens to form the complete sequence
         text_tokens = generated_ids[-1]
         generated_ids[-1] = text_tokens[: text_tokens.index(eot)] if eot in text_tokens else text_tokens
+
+        if eoa in generated_ids[-2]:
+            end_ids = generated_ids[-2].index(eoa)
+            for i in range(self.code_layer):
+                audio_tokens = generated_ids[i]
+                generated_ids[i] = audio_tokens[:end_ids]
+
+        if upsampling_factor > 1:
+            generated_ids[-1] = [generated_ids[-1][i] for i in range(len(generated_ids[-1])) if i % upsampling_factor == 0]
+            
         generated_ids = [torch.tensor(layer) for layer in generated_ids] 
         return generated_ids
 

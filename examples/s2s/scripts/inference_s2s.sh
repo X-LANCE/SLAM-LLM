@@ -9,7 +9,8 @@ export CUDA_LAUNCH_BLOCKING=1
 
 code_dir=examples/s2s
 
-speech_encoder_path="small"   # whisper small
+whisper_size=small  # tiny base small medium large-v3
+speech_encoder_path="/valleblob/v-wenxichen/models/whisper/${whisper_size}.pt"   # different whisper size
 llm_path="Qwen/Qwen2-0.5B"
 codec_decoder_path="hubertsiuzdak/snac_24khz"
 
@@ -41,6 +42,7 @@ top_p=0.9
 top_k=50
 temperature=1.0
 decode_text_only=false
+upsampling_factor=1
 
 output_text_only=false
 
@@ -98,6 +100,7 @@ python $code_dir/inference_s2s.py \
         ++decode_config.top_k=$top_k \
         ++decode_config.temperature=$temperature \
         ++decode_config.decode_text_only=$decode_text_only \
+        ++decode_config.upsampling_factor=$upsampling_factor \
         ++decode_log=$decode_log \
         ++ckpt_path=$ckpt_path/model.pt \
         ++output_text_only=$output_text_only \

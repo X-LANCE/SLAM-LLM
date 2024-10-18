@@ -64,6 +64,11 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         # task config 
         self.task_type = dataset_config.get("task_type", "s2s")
 
+        # upsample config 
+        self.upsample_text_tokens = dataset_config.get("upsample_text_tokens", False)
+        self.upsampling_factor = dataset_config.get("upsampling_factor", 1)
+        self.upsample_method = dataset_config.get("upsample_method", "repeat")
+
         self.data_list = []
 
         # TODO: design a better way to load data
@@ -159,6 +164,40 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         answer_id_T = torch.tensor([self._pad_t] * length)
         answer_ids.append(answer_id_T.unsqueeze(0))
         return answer_ids
+
+    def upsample_tokens(self, tokens, upsampling_factor, method="repeat"):
+        """
+        Upsample the input tokens based on the given method and factor.
+        
+        Args:
+            tokens: List[int], a list of token IDs to be upsampled.
+            upsampling_factor: int, the factor by which the tokens will be upsampled.
+            method: str, the upsampling method, either "repeat" or "blank".
+
+        Returns:
+            List[int], the upsampled token IDs.
+        """
+        if upsampling_factor <= 1:
+            return tokens
+
+        upsampled_tokens = []
+        blank_token = self.tokenizer.pad_token_id  # Use pad token as the blank token
+
+        if method == "repeat":
+            # Repeat each token 'upsampling_factor' times
+            for token in tokens:
+                upsampled_tokens.extend([token] * upsampling_factor)
+
+        elif method == "blank":
+            # Add (upsampling_factor - 1) blank tokens after each token
+            for token in tokens:
+                upsampled_tokens.append(token)
+                upsampled_tokens.extend([blank_token] * (upsampling_factor - 1))
+
+        else:
+            raise ValueError("Unsupported upsampling method. Choose 'repeat' or 'blank'.")
+
+        return upsampled_tokens
     
     def __getitem__(self, index):
         data_dict = self.data_list[index]
@@ -241,6 +280,12 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
 
         answer_text = self.answer_template.format(target_text)
         answer_text_ids = self.tokenizer.encode(answer_text)  # [answer]
+        
+        if self.upsample_text_tokens:
+            answer_text_ids = self.upsample_tokens(answer_text_ids, 
+                                                upsampling_factor=self.upsampling_factor, 
+                                                method=self.upsample_method)
+
         answer_text_ids.append(self._eot) # [answer,eos]
         answer_text_ids = torch.tensor(answer_text_ids, dtype=torch.int64)
 

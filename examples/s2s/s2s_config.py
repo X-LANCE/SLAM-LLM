@@ -187,6 +187,9 @@ class DataConfig:
     vocab_config: VocabConfig = field(default_factory=VocabConfig)
     load_from_cache_file: bool = False
     task_type: str = "s2s"
+    upsample_text_tokens: bool = False
+    upsampling_factor: int = 1
+    upsample_method: str = "repeat"
 
 @dataclass
 class DecodeConfig:
@@ -211,6 +214,7 @@ class DecodeConfig:
     decode_text_only: bool = False
     streaming: bool = False
     stream_stride: int = 4
+    upsampling_factor: int = 1
 
 @dataclass
 class FSDPConfig:
