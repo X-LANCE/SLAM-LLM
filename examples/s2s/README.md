@@ -79,7 +79,6 @@ bash ./examples/s2s/scripts/inference_s2s_online_stream.sh
 
 
 ## TODO
-- [ ] Add ASR pre-training
 - [ ] Release baseline pre-trained models
 - [ ] Add more datasets
 - [ ] Add evaluation scripts

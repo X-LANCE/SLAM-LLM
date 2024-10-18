@@ -1,5 +1,6 @@
 from generate_s2s_batch import main as inference
-from generate_s2s_online import main as inference_online_not_stream
+from generate_s2s_batch_stream import main as inference_stream
+from generate_s2s_online import main as inference_online
 from generate_s2s_online_stream import main as inference_online_stream
 
 import hydra
@@ -62,9 +63,12 @@ def main_hydra(cfg: DictConfig):
         if cfg.inference_streaming:
             inference_online_stream(cfg)
         else:
-            inference_online_not_stream(cfg)
+            inference_online(cfg)
     else:
-        inference(cfg)
+        if cfg.inference_streaming:
+            inference_stream(cfg)
+        else:
+            inference(cfg)
 
 if __name__ == "__main__":
     main_hydra()

@@ -14,14 +14,14 @@ speech_encoder_path="/valleblob/v-wenxichen/models/whisper/${whisper_size}.pt"  
 llm_path="Qwen/Qwen2-0.5B"
 codec_decoder_path="hubertsiuzdak/snac_24khz"
 
-encoder_dim=768 # 384 512 768 1024 1280
-mel_size=80 # 80 128 ( only whisper-large supports 128 )
+encoder_dim=768  # 384 512 768 896 1024 1280 
+mel_size=80      # 80 128 (128 for whisper-large only)
 
 tts_adapter=false
 task_type=s2s
 split_size=0.00001
 
-ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v1_gpu4_btz4_lr5e-4_nofp16_epochs10_whisper-small_upsample3-repeat/s2s_epoch_5_step_23928
+ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v2_gpu4_btz4_lr5e-4_nofp16_epochs10/s2s_epoch_4_step_22946
 split=test
 
 # jsonl dataset
@@ -36,7 +36,7 @@ dataset_sample_seed=1234
 
 # decode config
 repetition_penalty=1.0
-max_new_tokens=350
+max_new_tokens=500
 do_sample=false
 top_p=0.9
 top_k=50

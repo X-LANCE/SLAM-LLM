@@ -20,7 +20,18 @@ tts_adapter=false
 task_type=s2s
 split_size=0.00001
 
-ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v2_gpu4_btz4_lr5e-4_nofp16_epochs10/s2s_epoch_4_step_22946
+ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v2_gpu4_btz4_lr5e-4_fp16_epochs10/s2s_epoch_4_step_22946
+split=test
+
+# jsonl dataset
+# manifest_format=jsonl
+# val_data_path=/home/v-wenxichen/SLAM-LLM/examples/s2s/demo/data/${split}.jsonl
+
+# huggingface dataset
+manifest_format=datasets
+val_data_path="gpt-omni/VoiceAssistant-400K"
+load_from_cache_file=true
+dataset_sample_seed=1234
 
 # decode config
 repetition_penalty=1.0
@@ -33,14 +44,13 @@ decode_text_only=false
 
 output_text_only=false
 
-inference_online=true
+inference_online=false
 streaming=true
-stream_stride=5
-online_output_dir=/home/v-wenxichen/exp/streaming1/stride${stream_stride}
+stream_stride=3
 
-decode_log=$ckpt_path/s2s_decode_${split}_rp${repetition_penalty}_seed${dataset_sample_seed}_greedy
+decode_log=$ckpt_path/s2s_decode_${split}_rp${repetition_penalty}_seed${dataset_sample_seed}_greedy_stream${stream_stride}
 if [ "$do_sample" = true ] ; then
-    decode_log=$ckpt_path/s2s_decode_${split}_rp${repetition_penalty}_seed${dataset_sample_seed}_sampling_topk${top_k}_topp${top_p}_temp${temperature}
+    decode_log=$ckpt_path/s2s_decode_${split}_rp${repetition_penalty}_seed${dataset_sample_seed}_sampling_topk${top_k}_topp${top_p}_temp${temperature}_stream${stream_stride}
 fi
 
 if [ "$decode_text_only" = true ] ; then
@@ -64,11 +74,16 @@ python $code_dir/inference_s2s.py \
         ++model_config.codec_decode=true \
         ++model_config.tts_adapter=$tts_adapter \
         ++dataset_config.dataset=speech_dataset_s2s \
+        ++dataset_config.val_data_path=$val_data_path \
+        ++dataset_config.train_data_path=$val_data_path \
         ++dataset_config.input_type=mel \
         ++dataset_config.mel_size=$mel_size \
         ++dataset_config.inference_mode=true \
+        ++dataset_config.manifest_format=$manifest_format \
         ++dataset_config.split_size=$split_size \
+        ++dataset_config.load_from_cache_file=$load_from_cache_file \
         ++dataset_config.task_type=$task_type \
+        ++dataset_config.seed=$dataset_sample_seed \
         ++train_config.model_name=s2s \
         ++train_config.freeze_encoder=true \
         ++train_config.freeze_llm=true \
@@ -87,11 +102,10 @@ python $code_dir/inference_s2s.py \
         ++decode_config.decode_text_only=$decode_text_only \
         ++decode_config.streaming=$streaming \
         ++decode_config.stream_stride=$stream_stride \
-        ++log_config.online_output_dir=$online_output_dir \
         ++decode_log=$decode_log \
         ++ckpt_path=$ckpt_path/model.pt \
         ++output_text_only=$output_text_only \
         ++inference_online=$inference_online \
         ++inference_streaming=$streaming
 
-# bash /home/v-wenxichen/SLAM-LLM/examples/s2s/scripts/inference_s2s_online_stream.sh
+# bash /home/v-wenxichen/SLAM-LLM/examples/s2s/scripts/inference_s2s_stream.sh
