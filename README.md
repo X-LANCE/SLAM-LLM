@@ -18,14 +18,15 @@ developers to train custom multimodal large language model (MLLM), focusing on <
 </div>
 
 # Table of Contents
-1. [News](#news)
-2. [Installation](#installation)
-3. [Uasge](#uasge)
-    - [List of Recipes](#list-of-recipes)
-    - [Configuration Priority](#configuration-priority)
-4. [Features](#features)
-5. [Acknowledge](#acknowledge)
-6. [Citation](#citation)
+- [Table of Contents](#table-of-contents)
+- [News](#news)
+- [Installation](#installation)
+- [Usage](#usage)
+  - [List of Recipes](#list-of-recipes)
+  - [Configuration Priority](#configuration-priority)
+- [Features](#features)
+- [Acknowledge](#acknowledge)
+  - [Citation](#citation)
 
 # News
 - [Update Oct. 12, 2024] Recipes for [SLAM-AAC](examples/slam_aac/README.md) have been supported. 
@@ -128,4 +129,15 @@ SLAM-ASR:
   year={2024}
 }
 ```
+
+SLAM-AAC:
+```
+@article{chen2024slam,
+  title={SLAM-AAC: Enhancing Audio Captioning with Paraphrasing Augmentation and CLAP-Refine through LLMs},
+  author={Chen, Wenxi and Ma, Ziyang and Li, Xiquan and Xu, Xuenan and Liang, Yuzhe and Zheng, Zhisheng and Yu, Kai and Chen, Xie},
+  journal={arXiv preprint arXiv:2410.09503},
+  year={2024}
+}
+```
+
 
