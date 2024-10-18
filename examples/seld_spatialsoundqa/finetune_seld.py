@@ -1,5 +1,6 @@
 import hydra
 import logging
+from typing import Optional
 from dataclasses import dataclass, field
 from omegaconf import DictConfig, ListConfig, OmegaConf
 
@@ -16,32 +17,20 @@ class RunConfig:
     peft_config: PeftConfig = field(default_factory=PeftConfig)
     debug: bool = field(default=False, metadata={"help": "Use pdb when true"})
     metric: str = field(default="acc", metadata={"help": "The metric for evaluation"})
-    ckpt_path: str = field(
-        default="output/model.pt", metadata={"help": "The path to projector checkpoint"}
+    ckpt_path: Optional[str] = field(
+        default=None, metadata={"help": "The path to projector checkpoint"}
     )
 
 @hydra.main(config_name=None, version_base=None)
 def main_hydra(cfg: DictConfig):
     run_config = RunConfig()
     cfg = OmegaConf.merge(run_config, cfg)
-    def to_plain_list(cfg_item):
-        if isinstance(cfg_item, ListConfig):
-            return OmegaConf.to_container(cfg_item, resolve=True)
-        elif isinstance(cfg_item, DictConfig):
-            return {k: to_plain_list(v) for k, v in cfg_item.items()}
-        else:
-            return cfg_item
-    
-    # kwargs = to_plain_list(cfg)
-    kwargs = cfg
-    log_level = getattr(logging, kwargs.get("log_level", "INFO").upper())
+    cfg.train_config.peft_config = cfg.peft_config
+
+    log_level = getattr(logging, cfg.get("log_level", "INFO").upper())
     logging.basicConfig(level=log_level)
-    
-    if kwargs.get("debug", False):
-        import pdb;
-        pdb.set_trace()
         
-    train(kwargs)
+    train(cfg)
 
 
 if __name__ == "__main__":

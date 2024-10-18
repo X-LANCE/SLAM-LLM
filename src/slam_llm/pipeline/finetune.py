@@ -159,8 +159,8 @@ def main(kwargs: DictConfig):
         if not train_config.use_peft and train_config.freeze_layers:
 
             freeze_transformer_layers(train_config.num_freeze_layers)
-        from torch.distributed.fsdp import ShardingStrategy
-        fsdp_config.sharding_strategy = getattr(ShardingStrategy, fsdp_config.sharding_strategy)
+        # from torch.distributed.fsdp import ShardingStrategy
+        # fsdp_config.sharding_strategy = getattr(ShardingStrategy, fsdp_config.sharding_strategy)
         mixed_precision_policy, wrapping_policy = get_policies(fsdp_config, rank)
         my_auto_wrapping_policy = fsdp_auto_wrap_policy(model, LlamaDecoderLayer)
 
