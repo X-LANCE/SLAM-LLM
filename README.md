@@ -18,14 +18,14 @@ developers to train custom multimodal large language model (MLLM), focusing on <
 </div>
 
 # Table of Contents
-- [News](#news)
-- [Installation](#installation)
-- [Usage](#usage)
+1. [News](#news)
+2. [Installation](#installation)
+3. [Usage](#usage)
   - [List of Recipes](#list-of-recipes)
   - [Configuration Priority](#configuration-priority)
-- [Features](#features)
-- [Acknowledge](#acknowledge)
-  - [Citation](#citation)
+4. [Features](#features)
+5. [Acknowledge](#acknowledge)
+6. [Citation](#citation)
 
 # News
 - [Update Oct. 12, 2024] Recipes for [SLAM-AAC](examples/slam_aac/README.md) have been supported. 
