@@ -13,15 +13,18 @@ speech_encoder_path="small"   # whisper small
 llm_path="Qwen/Qwen2-0.5B"
 codec_decoder_path="hubertsiuzdak/snac_24khz"
 
+encoder_dim=768  # 384 512 768 896 1024 1280 
+mel_size=80      # 80 128 (128 for whisper-large only)
+
 tts_adapter=false
 task_type=s2s
 split_size=0.00001
 
-ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v1_gpu4_btz4_lr5e-4_nofp16_epochs10/s2s_epoch_4_step_22946_baseline
+ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v2_gpu4_btz4_lr5e-4_nofp16_epochs10/s2s_epoch_4_step_22946
 
 # decode config
 repetition_penalty=1.0
-max_new_tokens=350
+max_new_tokens=500
 do_sample=false
 top_p=0.9
 top_k=50
@@ -31,7 +34,7 @@ decode_text_only=false
 output_text_only=false
 
 inference_online=true
-online_output_dir=/home/v-wenxichen/SLAM-LLM/examples/s2s/output
+online_output_dir=/home/v-wenxichen/exp/online_test1
 
 decode_log=$ckpt_path/s2s_decode_${split}_rp${repetition_penalty}_seed${dataset_sample_seed}_greedy
 if [ "$do_sample" = true ] ; then
@@ -53,14 +56,14 @@ python $code_dir/inference_s2s.py \
         ++model_config.encoder_name=whisper \
         ++model_config.encoder_projector_ds_rate=5 \
         ++model_config.encoder_path=$speech_encoder_path \
-        ++model_config.encoder_dim=768 \
+        ++model_config.encoder_dim=$encoder_dim \
         ++model_config.encoder_projector=linear \
         ++model_config.codec_decoder_path=$codec_decoder_path \
         ++model_config.codec_decode=true \
         ++model_config.tts_adapter=$tts_adapter \
         ++dataset_config.dataset=speech_dataset_s2s \
         ++dataset_config.input_type=mel \
-        ++dataset_config.mel_size=80 \
+        ++dataset_config.mel_size=$mel_size \
         ++dataset_config.inference_mode=true \
         ++dataset_config.split_size=$split_size \
         ++dataset_config.task_type=$task_type \

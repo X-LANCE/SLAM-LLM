@@ -6,9 +6,11 @@ import logging
 from slam_llm.utils.model_utils import get_custom_model_factory
 from slam_llm.utils.dataset_utils import get_preprocessed_dataset
 from utils.snac_utils import reconscruct_snac, reconstruct_tensors
+import numpy as np
 import os
 import logging
 import soundfile as sf
+import time
 
 import hydra
 from omegaconf import DictConfig, ListConfig, OmegaConf
@@ -126,7 +128,7 @@ def main(kwargs: DictConfig):
 		logger.info("Decode Text Only")
 	else:
 		logger.info("Decode Text & Audio")
-	logger.info("============== Start {task_type} Inference ==============".format(task_type=task_type))
+	logger.info("============== Start {task_type} Inference (Streaming Version) ==============".format(task_type=task_type))
 
 	decode_log_dir = kwargs.get('decode_log')
 	output_text_only = kwargs.get('output_text_only', False)
@@ -134,10 +136,10 @@ def main(kwargs: DictConfig):
 	if not os.path.exists(decode_log_dir):
 		os.makedirs(decode_log_dir)
 
-	pred_path = os.path.join(decode_log_dir, "pred_text")
+	pred_path = os.path.join(decode_log_dir, "pred_text_stream")
 	gt_path = os.path.join(decode_log_dir, "gt_text")
 	question_path = os.path.join(decode_log_dir, "question_text")
-	generate_audio_dir = os.path.join(decode_log_dir, "pred_audio")
+	generate_audio_dir = os.path.join(decode_log_dir, "pred_audio_stream")
 
 	if not os.path.exists(generate_audio_dir) and not (output_text_only or decode_config.decode_text_only):
 		os.makedirs(generate_audio_dir)
@@ -146,44 +148,63 @@ def main(kwargs: DictConfig):
 		for step, batch in enumerate(test_dataloader):
 			for key in batch.keys():
 				batch[key] = batch[key].to(device) if isinstance(batch[key], torch.Tensor) else batch[key]
-			model_outputs = model.generate(**batch, **decode_config)
-			text_outputs = model_outputs[7]
-			audio_outputs = model_outputs[:7]
-			# output_text = model.tokenizer.batch_decode(text_outputs, add_special_tokens=False, skip_special_tokens=True)
-			output_text = model.tokenizer.decode(text_outputs, add_special_tokens=False, skip_special_tokens=True)
-			for key, source_text, target_text, generated_text in zip(batch["keys"], batch["source_texts"], batch["target_texts"], [output_text]):
-				q.write(key + "\t" + source_text + "\n")
-				gt.write(key + "\t" + target_text + "\n")
-				pred.write(key + "\t" + generated_text + "\n")
+			
+			audio_text_generator = model.stream_generate(**batch, **decode_config)
+			output_text = ""
+
+			if output_text_only or decode_config.decode_text_only:
+				for result in audio_text_generator:
+					text_tokens = result.get('text_stream')
+					if text_tokens is not None:
+						output_text += model.tokenizer.decode(torch.tensor(text_tokens))
+				for key, source_text, target_text, generated_text in zip(batch["keys"], batch["source_texts"], batch["target_texts"], [output_text]):
+					q.write(key + "\t" + source_text + "\n")
+					gt.write(key + "\t" + target_text + "\n")
+					pred.write(key + "\t" + generated_text + "\n")
 
 				if task_type == "s2s":
 					logger.info(f"Question: {source_text}")
 				elif task_type == "tts":
 					logger.info(f"Target Text: {target_text}")
 
-				logger.info(f"Generated Text: {generated_text}")
+				logger.info(f"Generated Text: {output_text}")
+				continue			
+			else:
+				key = batch["keys"][0]
+				audio_key = key[:-4] if key[-4:] == ".wav" else key
+				start_time = time.time()
+				first_chunk_time = None
 
-			if output_text_only or decode_config.decode_text_only:
-				continue
+				with sf.SoundFile(f"{generate_audio_dir}/{audio_key}.wav", mode='w', samplerate=24000, channels=1, subtype='PCM_16') as f:
+					for result in audio_text_generator:
+						if first_chunk_time is None:
+							first_chunk_time = time.time()
+							delay = first_chunk_time - start_time
+
+						text_tokens = result.get('text_stream')
+						if text_tokens is not None:
+							output_text += model.tokenizer.decode(torch.tensor(text_tokens))
+
+						audio_bytes = result.get('audio_stream')
+						if audio_bytes is not None:
+							audio_chunk = np.frombuffer(audio_bytes, dtype=np.int16)
+							f.write(audio_chunk)
 				
-			if audio_outputs[0].shape[0] == decode_config.max_new_tokens:	# if the audio token is too long, skip (bad case)
-				logger.warning(f"Audio token is too long, skip. You can try to increase the max_new_tokens in the decode_config.")
-				continue
+				for key, source_text, target_text, generated_text in zip(batch["keys"], batch["source_texts"], batch["target_texts"], [output_text]):
+					q.write(key + "\t" + source_text + "\n")
+					gt.write(key + "\t" + target_text + "\n")
+					pred.write(key + "\t" + generated_text + "\n")
 
-			for i, key in enumerate(batch["keys"]):
-				audio_tokens = [audio_outputs[layer] for layer in range(7)]
+				if task_type == "s2s":
+					logger.info(f"Question: {source_text}")
+				elif task_type == "tts":
+					logger.info(f"Target Text: {target_text}")
+				
+				logger.info(f"Generated Text: {output_text}")
+				logger.info(f"Generated Audio: {audio_key}.wav")
+				logger.info(f"First Chunk Delay: {delay:.2f} seconds")
 
-				audiolist = reconscruct_snac(audio_tokens)
-				audio = reconstruct_tensors(audiolist)
-				with torch.inference_mode():
-					audio_hat = codec_decoder.decode(audio)
-
-				if key[-4:] == ".wav":
-					key = key[:-4]
-				sf.write(f"{generate_audio_dir}/{key}.wav", audio_hat.squeeze().cpu().numpy(), 24000)
-				logger.info(f"Generated Audio: {key}.wav")
-
-	logger.info("============== Inference Finished ==============")
+	logger.info("============== Inference (Streaming Version) Finished ==============")
 
 if __name__ == "__main__":
 	main_hydra()

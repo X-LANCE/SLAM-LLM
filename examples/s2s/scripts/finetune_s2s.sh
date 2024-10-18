@@ -24,7 +24,7 @@ train_audio_embed_only=false
 train_embed_only=false
 tts_adapter=false
 task_type=s2s
-exp_name="s2s_train_v1_gpu4_btz${batch_size_training}_lr${lr}_nofp16_epochs${num_epochs}"
+exp_name="s2s_train_v2_gpu4_btz${batch_size_training}_lr${lr}_nofp16_epochs${num_epochs}"
 # exp_name="s2s_train_v0_gpu24_btz${batch_size_training}_fp16"
 # exp_name="debug"
 

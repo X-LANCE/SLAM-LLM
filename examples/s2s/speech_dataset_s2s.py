@@ -140,6 +140,16 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         input_ids.append(input_id_T.unsqueeze(0))
         return input_ids
 
+    def get_padded_input(self, text_input_idx, text_index_length):
+        padded_input = []
+        for i in range(self.code_layer):
+            padded_input_item = [layershift(self._pad_a, i)] * text_index_length
+            padded_input.append(torch.tensor(padded_input_item).unsqueeze(0))
+        
+        final_layer_input = torch.tensor(text_input_idx)
+        padded_input.append(final_layer_input.unsqueeze(0))
+        return padded_input
+
     def get_answer_ids(self, length):
         answer_ids = []
         for i in range(self.code_layer):
@@ -187,22 +197,22 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         prompt = self.prompt
         prompt = self.prompt_template.format(prompt)
         prompt_ids = self.tokenizer.encode(prompt)
+        prompt_ids = [self._input_t] + prompt_ids + [self._eot]
         prompt_length = len(prompt_ids)
-        prompt_ids = torch.tensor(prompt_ids, dtype=torch.int64)
+        prompt_ids = self.get_padded_input(prompt_ids, prompt_length)
 
         if task_type == "s2s" or task_type == "asr":
-            example_ids = self.get_input_ids(audio_length + prompt_length, self.special_token_a, self.special_token_t)
-            text_layer = example_ids[self.code_layer]
-            text_layer = torch.cat((text_layer[:,:audio_length + 1], prompt_ids.unsqueeze(0), text_layer[:,-2:]), dim=1)     # <bos> <audio> <prompt> <eos> <task>
-            example_ids[self.code_layer] = text_layer
+            example_ids = self.get_input_ids(audio_length, self.special_token_a, self.special_token_t)
+            example_ids = [torch.cat((prompt_ids[i], example_ids[i]), dim = 1) for i in range(self.code_layer + 1)]
         elif task_type == "tts":
             target_text_ids = self.tokenizer.encode(target_text)
             target_text_length = len(target_text_ids)
             target_text_ids = torch.tensor(target_text_ids, dtype=torch.int64)
-            example_ids = self.get_input_ids(target_text_length + prompt_length, self.special_token_a, self.special_token_t) # <bos> <text> <prompt> <eos> <task>
+            example_ids = self.get_input_ids(target_text_length, self.special_token_a, self.special_token_t) # <prompt> <bos> <text> <eos> <task>
             text_layer = example_ids[self.code_layer]
-            text_layer = torch.cat((text_layer[:,:1], target_text_ids.unsqueeze(0), prompt_ids.unsqueeze(0), text_layer[:,-2:]), dim=1)
+            text_layer = torch.cat((text_layer[:,:1], target_text_ids.unsqueeze(0), text_layer[:,-2:]), dim=1)
             example_ids[self.code_layer] = text_layer
+            example_ids = [torch.cat((prompt_ids[i], example_ids[i]), dim = 1) for i in range(self.code_layer + 1)]
         else:
             raise ValueError(f"task_type {task_type} is not supported")
 
@@ -248,7 +258,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
                 answer_ids[i] = torch.cat((layershift(target_audio[i], i).unsqueeze(0), labels_ids[i][:,target_audio_length:]), dim=1)
 
         for i in range(self.code_layer + 1):
-            example_ids[i] = torch.cat((ori_example_ids[i], answer_ids[i]), dim=1)  # [audio,prompt,answer,eos]
+            example_ids[i] = torch.cat((ori_example_ids[i], answer_ids[i]), dim=1)  # [prompt,audio,answer,eos]
             labels_ids[i] = torch.cat((ori_example_ids[i], labels_ids[i]), dim=1)
 
         example_ids = torch.stack(example_ids).squeeze()
@@ -342,12 +352,13 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
 
     def collator(self, samples):
         assert samples is not None 
-        input_prompt_lengths = [s["input_length"] + s['prompt_length'] + 3 for s in samples] #[319, 319, 319, 319]
+        input_prompt_lengths = [s["input_length"] + s['prompt_length'] + 3 for s in samples] #[321, 321, 321, 321]
         input_answer_lengths = [len(s["input_ids"][0]) - s["input_length"] - s['prompt_length'] - 3 for s in samples]  #[264, 99, 206, 141]
 
         input_prompt_max_length = max(input_prompt_lengths)
         input_answer_max_length = max(input_answer_lengths)
         
+        # NOTE: left padding for prompt and right padding for answer 
         input_ids = torch.stack([
             self.padding(
                 self.padding(samples[index]["input_ids"], input_prompt_max_length - input_prompt_lengths[index], self.tokenizer.pad_token_id, padding_side="left"),
@@ -386,7 +397,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
     
         modality_mask = torch.zeros_like(attention_mask)
         for index in range(len(samples)):
-            padding_left = input_prompt_max_length - input_prompt_lengths[index] + 1 # +1 for <bos>
+            padding_left = input_prompt_max_length - input_prompt_lengths[index] + 1 + samples[index]['prompt_length'] # +1 for <bos>
             modality_mask[index, padding_left:padding_left+samples[index]["audio_length"]] = True
 
         task_type = [s['task_type'] for s in samples]

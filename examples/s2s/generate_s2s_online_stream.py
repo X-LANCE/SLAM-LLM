@@ -58,6 +58,16 @@ def get_input_ids(length, special_token_a, special_token_t, vocab_config):
 	input_ids.append(input_id_T.unsqueeze(0))
 	return input_ids
 
+def get_padded_input(text_input_idx, text_index_length, code_layer, _pad_a):
+	padded_input = []
+	for i in range(code_layer):
+		padded_input_item = [layershift(_pad_a, i)] * text_index_length
+		padded_input.append(torch.tensor(padded_input_item).unsqueeze(0))
+	
+	final_layer_input = torch.tensor(text_input_idx)
+	padded_input.append(final_layer_input.unsqueeze(0))
+	return padded_input
+
 
 def generate_from_wav_stream(wav_path, model, codec_decoder, dataset_config, decode_config, logger, device):
 	mel_size = dataset_config.mel_size
@@ -66,6 +76,8 @@ def generate_from_wav_stream(wav_path, model, codec_decoder, dataset_config, dec
 	vocab_config = dataset_config.vocab_config
 	special_token_a = vocab_config.answer_a
 	special_token_t = vocab_config.answer_t
+	_input_t = vocab_config.input_t
+	_eot = vocab_config.eot
 	code_layer = vocab_config.code_layer
 	task_type = dataset_config.task_type
 
@@ -73,13 +85,12 @@ def generate_from_wav_stream(wav_path, model, codec_decoder, dataset_config, dec
 
 	prompt = prompt_template.format(prompt)
 	prompt_ids = model.tokenizer.encode(prompt)
+	prompt_ids = [_input_t] + prompt_ids + [_eot]
 	prompt_length = len(prompt_ids)
-	prompt_ids = torch.tensor(prompt_ids, dtype=torch.int64)
+	prompt_ids = get_padded_input(prompt_ids, prompt_length, code_layer, vocab_config.pad_a)
 
-	example_ids = get_input_ids(audio_length + prompt_length, special_token_a, special_token_t, vocab_config)
-	text_layer = example_ids[code_layer]
-	text_layer = torch.cat((text_layer[:,:audio_length + 1], prompt_ids.unsqueeze(0), text_layer[:,-2:]), dim=1)     # <bos> <audio> <prompt> <eos> <task>
-	example_ids[code_layer] = text_layer
+	example_ids = get_input_ids(audio_length, special_token_a, special_token_t, vocab_config)
+	example_ids = [torch.cat((prompt_ids[i], example_ids[i]), dim = 1) for i in range(code_layer + 1)]
 
 	input_length = audio_length
 	example_mask = example_ids[0][0].ge(-1)
@@ -93,7 +104,7 @@ def generate_from_wav_stream(wav_path, model, codec_decoder, dataset_config, dec
 	task_type = [task_type]
 
 	modality_mask = torch.zeros_like(attention_mask)
-	padding_left = 1 # +1 for <bos>
+	padding_left = prompt_length + 1 # +1 for <bos>
 	modality_mask[0, padding_left:padding_left+audio_length] = True
 
 	batch = {
@@ -228,6 +239,8 @@ def main(kwargs: DictConfig):
         save_streamed_audio(audio_generator, output_wav_path, model, logger)
 
         logger.info(f"Generated Audio saved at: {output_wav_path}")
+    
+    logger.info("============== Online Inference (Streaming Version) Finished ==============")
 
 if __name__ == "__main__":
     main_hydra()
