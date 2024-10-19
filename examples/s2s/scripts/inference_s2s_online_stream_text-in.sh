@@ -30,11 +30,14 @@ top_p=0.9
 top_k=50
 temperature=1.0
 decode_text_only=false
+input_text=true
 
 output_text_only=false
 
 inference_online=true
-online_output_dir=/home/v-wenxichen/exp/common
+streaming=true
+stream_stride=4
+online_output_dir=/home/v-wenxichen/exp/streaming-text_in/stride${stream_stride}
 
 decode_log=$ckpt_path/s2s_decode_${split}_rp${repetition_penalty}_seed${dataset_sample_seed}_greedy
 if [ "$do_sample" = true ] ; then
@@ -83,10 +86,14 @@ python $code_dir/inference_s2s.py \
         ++decode_config.top_k=$top_k \
         ++decode_config.temperature=$temperature \
         ++decode_config.decode_text_only=$decode_text_only \
+        ++decode_config.streaming=$streaming \
+        ++decode_config.stream_stride=$stream_stride \
+        ++decode_config.input_text=$input_text \
         ++log_config.online_output_dir=$online_output_dir \
         ++decode_log=$decode_log \
         ++ckpt_path=$ckpt_path/model.pt \
         ++output_text_only=$output_text_only \
-        ++inference_online=$inference_online
+        ++inference_online=$inference_online \
+        ++inference_streaming=$streaming
 
-# bash /home/v-wenxichen/SLAM-LLM/examples/s2s/scripts/inference_s2s_online.sh
+# bash /home/v-wenxichen/SLAM-LLM/examples/s2s/scripts/inference_s2s_online_stream_text-in.sh
