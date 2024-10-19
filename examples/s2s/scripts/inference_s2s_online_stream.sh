@@ -20,7 +20,7 @@ tts_adapter=false
 task_type=s2s
 split_size=0.00001
 
-ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v2_gpu4_btz4_lr5e-4_nofp16_epochs10/s2s_epoch_4_step_22946
+ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v2_gpu4_btz4_lr5e-4_nofp16_epochs10/s2s_train_v2_gpu4_btz4_lr5e-4_nofp16_epochs10-s2s_epoch_4_step_22946
 
 # decode config
 repetition_penalty=1.0
@@ -35,7 +35,7 @@ output_text_only=false
 
 inference_online=true
 streaming=true
-stream_stride=5
+stream_stride=4
 online_output_dir=/home/v-wenxichen/exp/streaming1/stride${stream_stride}
 
 decode_log=$ckpt_path/s2s_decode_${split}_rp${repetition_penalty}_seed${dataset_sample_seed}_greedy

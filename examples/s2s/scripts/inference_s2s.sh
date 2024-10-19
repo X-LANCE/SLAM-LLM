@@ -21,7 +21,7 @@ tts_adapter=false
 task_type=s2s
 split_size=0.00001
 
-ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v2_gpu4_btz4_lr5e-4_nofp16_epochs10/s2s_epoch_4_step_22946
+ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v2_gpu4_btz4_lr5e-4_fp16_epochs10/s2s_train_v2_gpu4_btz4_lr5e-4_fp16_epochs10-s2s_epoch_4_step_22946
 split=test
 
 # jsonl dataset
@@ -32,7 +32,7 @@ split=test
 manifest_format=datasets
 val_data_path="gpt-omni/VoiceAssistant-400K"
 load_from_cache_file=true
-dataset_sample_seed=1234
+dataset_sample_seed=777
 
 # decode config
 repetition_penalty=1.0

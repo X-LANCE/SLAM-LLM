@@ -233,6 +233,9 @@ def main(kwargs: DictConfig):
         else:
             output_wav_path = f"generated_{os.path.basename(wav_path)}"
 
+        if not output_wav_path.lower().endswith('.wav'):
+            output_wav_path = os.path.splitext(output_wav_path)[0] + '.wav'
+
         audio_generator = generate_from_wav_stream(
             wav_path, model, codec_decoder, dataset_config, decode_config, logger, device
         )
