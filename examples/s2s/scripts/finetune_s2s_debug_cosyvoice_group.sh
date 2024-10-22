@@ -13,13 +13,14 @@ llm_path="/valleblob/v-wenxichen/models/models--Qwen--Qwen2-0.5B/snapshots/ff3a4
 
 
 # vocabulary settings
-code_layer=1            # 1 single semantic code layer   2 3 4 5 6 7 8 group semantic code layers 
+code_layer=4            # 1 single semantic code layer   2 3 4 5 6 7 8 group semantic code layers 
+total_audio_vocabsize=4160
 total_vocabsize=156160  # 152000 + 4160 Sry: Here is not elegant to set the total_vocabsize manually, I may fix it later :)
 
 # code settings
 code_type=CosyVoice     # CosyVoice or SNAC
 num_latency_tokens=1    # number of latency tokens
-do_layershift=true      # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
+do_layershift=false     # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
 
 # dataset settings
 train_data_path="/valleblob/v-wenxichen/data/s2s/VoiceAssistant-400K-v1/debug"
@@ -38,10 +39,14 @@ num_epochs=10
 lr=5e-4
 train_audio_embed_only=false
 train_embed_only=false
-tts_adapter=false
 task_type=s2s
 validation_interval=10
 split_size=0.2
+
+# model settings
+tts_adapter=false
+group_decode_adapter=true
+group_decode_adapter_type=linear
 
 # exp_name="s2s_train_v1_gpu4_btz${batch_size_training}_lr${lr}_nofp16_epochs${num_epochs}"
 # exp_name="s2s_train_v0_gpu24_btz${batch_size_training}_fp16"
@@ -73,8 +78,11 @@ hydra.run.dir=$output_dir \
 ++model_config.encoder_projector=linear \
 ++model_config.tts_adapter=$tts_adapter \
 ++model_config.vocab_config.code_layer=$code_layer \
+++model_config.vocab_config.total_audio_vocabsize=$total_audio_vocabsize \
 ++model_config.vocab_config.total_vocabsize=$total_vocabsize \
 ++model_config.code_type=$code_type \
+++model_config.group_decode_adapter=$group_decode_adapter \
+++model_config.group_decode_adapter_type=$group_decode_adapter_type \
 ++dataset_config.dataset=speech_dataset_s2s \
 ++dataset_config.train_data_path=$train_data_path \
 ++dataset_config.val_data_path=$val_data_path \
@@ -89,6 +97,7 @@ hydra.run.dir=$output_dir \
 ++dataset_config.upsampling_factor=$upsampling_factor \
 ++dataset_config.upsample_method=$upsample_method \
 ++dataset_config.vocab_config.code_layer=$code_layer \
+++dataset_config.vocab_config.total_audio_vocabsize=$total_audio_vocabsize \
 ++dataset_config.vocab_config.total_vocabsize=$total_vocabsize \
 ++dataset_config.code_type=$code_type \
 ++dataset_config.num_latency_tokens=$num_latency_tokens \
@@ -148,4 +157,4 @@ else
 fi
 
 # ++train_config.use_fp16=true \
-# bash /home/v-wenxichen/SLAM-LLM/examples/s2s/scripts/finetune_s2s_debug_cosyvoice.sh
+# bash /home/v-wenxichen/SLAM-LLM/examples/s2s/scripts/finetune_s2s_debug_cosyvoice_group.sh

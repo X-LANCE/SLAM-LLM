@@ -13,23 +13,26 @@ def setup_codec(train_config, model_config, **kwargs):
     return codec_decoder
 
 def get_single_layer_answer_token(audio_tokens, num_latency_tokens, padding_token, end_of_audio):
-    audio_length = len(audio_tokens) + num_latency_tokens + 1   # 1 is due to end of audio token
-    result = []
-    result.extend([padding_token] * num_latency_tokens)
-    result.extend([audio_tokens[i] for i in range(len(audio_tokens))])
-    result.append(end_of_audio)
-    result_tensor = torch.tensor([int(token) for token in result])
-    result_tensor = result_tensor.unsqueeze(0)
+    audio_length = len(audio_tokens) + num_latency_tokens + 1  # 1 is due to end of audio token
+    result = [padding_token] * num_latency_tokens + list(audio_tokens) + [end_of_audio]
+    result_tensor = torch.tensor(result).unsqueeze(0)
     return result_tensor, audio_length
 
 def get_group_answer_token(audio_tokens, num_latency_tokens, padding_token, end_of_audio, num_layers):
-    audio_length = len(audio_tokens) // num_layers + num_latency_tokens + 1   # 1 is due to end of audio token
+    padded_audio_tokens = audio_tokens + [end_of_audio]
+    padding_needed = (num_layers - len(padded_audio_tokens) % num_layers ) % num_layers
+    
+    # Add padding to ensure even distribution across layers
+    padded_audio_tokens = padded_audio_tokens + [padding_token] * padding_needed
+    total_length = len(padded_audio_tokens)
+    audio_length = total_length // num_layers + num_latency_tokens
+
+    # Create the result for each layer
     result = []
-    for layer in range(1, num_layers + 1):
-        layer_tokens = []
-        layer_tokens.extend([padding_token] * num_latency_tokens)
-        layer_tokens.extend([audio_tokens[i] for i in range(len(audio_tokens)) if i % num_layers == layer - 1])
-        layer_tokens.append(end_of_audio)
-        result.append(torch.tensor([int(token) for token in layer_tokens]))
+    for layer in range(num_layers):
+        layer_tokens = [padding_token] * num_latency_tokens
+        layer_tokens.extend(padded_audio_tokens[layer::num_layers])
+        result.append(torch.tensor(layer_tokens))
+    
     result_tensor = torch.stack(result)
     return result_tensor, audio_length

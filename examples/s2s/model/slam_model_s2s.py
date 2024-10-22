@@ -19,6 +19,7 @@ from utils.tts_adapter_utils import setup_tts_adapter
 from utils.codec_utils import setup_codec
 from utils.trick_utils import partial_freeze_weights, train_embedding_layer_only
 from utils.snac_utils import layershift, get_snac, generate_audio_data
+from utils.projector_utils import setup_group_decode_adapter
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +55,10 @@ def model_factory(train_config, model_config, **kwargs):
         adapter_config = model_config.tts_adapter_config
         tts_adapter = setup_tts_adapter(adapter_config, model_config, **kwargs)
 
+    group_decode_adapter = None
+    if model_config.group_decode_adapter:
+        group_decode_adapter = setup_group_decode_adapter(model_config, train_config, **kwargs)
+
     model = slam_model_s2s(
         encoder,
         llm,
@@ -61,6 +66,7 @@ def model_factory(train_config, model_config, **kwargs):
         tokenizer,
         tts_adapter,
         codec_decoder,
+        group_decode_adapter,
         train_config,
         model_config,
         **kwargs,
@@ -101,6 +107,7 @@ class slam_model_s2s(slam_model):
         tokenizer,
         tts_adapter,
         codec_decoder,
+        group_decode_adapter,
         train_config,
         model_config,
         **kwargs,
@@ -126,6 +133,7 @@ class slam_model_s2s(slam_model):
         self.codec_decoder = codec_decoder
         self.tts_adapter = tts_adapter
         self.code_layer = self.model_config.vocab_config.code_layer
+        self.group_decode_adapter = group_decode_adapter
 
 
     def forward(self,
@@ -218,8 +226,15 @@ class slam_model_s2s(slam_model):
         audio_vocab_size = self.model_config.vocab_config.padded_audio_vocabsize
         xt = x_ori[..., :text_vocab_size]
         xa = []
-        for i in range(self.code_layer):
-            xa.append(x_ori[..., text_vocab_size + audio_vocab_size * i : text_vocab_size + audio_vocab_size * (i + 1)])
+
+        if self.group_decode_adapter is not None:
+            x_audio_ori = x_ori[..., text_vocab_size:]
+            x_audio = self.group_decode_adapter(x_audio_ori)
+            for i in range(self.code_layer):
+                xa.append(x_audio[..., i * audio_vocab_size : (i + 1) * audio_vocab_size])
+        else:
+            for i in range(self.code_layer):
+                xa.append(x_ori[..., text_vocab_size + audio_vocab_size * i : text_vocab_size + audio_vocab_size * (i + 1)])
 
         loss_recorder = []
         total_loss, loss_recorder = self.compute_parallel_loss(xt, text_labels, xa, audio_labels)

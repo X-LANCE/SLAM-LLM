@@ -94,6 +94,8 @@ class ModelConfig:
     tts_adapter_config: TTSAdapterConfig = field(default_factory=TTSAdapterConfig)
     encoder_path_hf: Optional[str] = None
     code_type: str = "SNAC" 
+    group_decode_adapter: bool = False
+    group_decode_adapter_type: str = "linear"
 
 
 @dataclass
@@ -194,6 +196,7 @@ class DataConfig:
     upsample_method: str = "repeat"
     code_type: str = "SNAC" 
     num_latency_tokens: int = 1
+    do_layershift: bool = True
 
 @dataclass
 class DecodeConfig:
@@ -220,6 +223,7 @@ class DecodeConfig:
     stream_stride: int = 4
     upsampling_factor: int = 1
     input_text: bool = False
+    do_layershift: bool = True
 
 @dataclass
 class FSDPConfig:

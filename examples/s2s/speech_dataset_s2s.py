@@ -6,7 +6,7 @@ import numpy as np
 import torch
 import whisper
 from slam_llm.utils.compute_utils import calculate_output_length_1d
-from utils.snac_utils import layershift, get_snac_answer_token
+from utils.snac_utils import layershift, get_snac_answer_token, simple_shift
 from utils.codec_utils import get_single_layer_answer_token, get_group_answer_token
 import librosa
 
@@ -77,6 +77,14 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         
         # number of tokens for latency
         self.num_latency_tokens = dataset_config.get("num_latency_tokens", 1)
+
+        # layershift config
+        self.do_layershift = dataset_config.get("do_layershift", True)
+        if self.do_layershift:
+            self.layershift = layershift
+        else:
+            self.layershift = simple_shift
+        
 
         self.data_list = []
 
@@ -155,9 +163,9 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         input_ids = []
         for i in range(self.code_layer):
             input_ids_item = []
-            input_ids_item.append(layershift(self._input_a, i))
-            input_ids_item += [layershift(self._pad_a, i)] * length
-            input_ids_item += [(layershift(self._eoa, i)), layershift(special_token_a, i)]
+            input_ids_item.append(self.layershift(self._input_a, i))
+            input_ids_item += [self.layershift(self._pad_a, i)] * length
+            input_ids_item += [(self.layershift(self._eoa, i)), self.layershift(special_token_a, i)]
             input_ids.append(torch.tensor(input_ids_item).unsqueeze(0))
         input_id_T = torch.tensor([self._input_t] + [self._pad_t] * length + [self._eot, special_token_t])
         input_ids.append(input_id_T.unsqueeze(0))
@@ -166,7 +174,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
     def get_padded_input(self, text_input_idx, text_index_length):
         padded_input = []
         for i in range(self.code_layer):
-            padded_input_item = [layershift(self._pad_a, i)] * text_index_length
+            padded_input_item = [self.layershift(self._pad_a, i)] * text_index_length
             padded_input.append(torch.tensor(padded_input_item).unsqueeze(0))
         
         final_layer_input = torch.tensor(text_input_idx)
@@ -177,7 +185,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         answer_ids = []
         for i in range(self.code_layer):
             answer_ids_item = []
-            answer_ids_item += [layershift(self._pad_a, i)] * length
+            answer_ids_item += [self.layershift(self._pad_a, i)] * length
             answer_ids.append(torch.tensor(answer_ids_item).unsqueeze(0))
         answer_id_T = torch.tensor([self._pad_t] * length)
         answer_ids.append(answer_id_T.unsqueeze(0))
@@ -321,7 +329,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         if target_audio is not None:    
             for i in range(self.code_layer):
                 labels_ids[i] = torch.cat((target_audio[i].unsqueeze(0), answer_ids[i][:,target_audio_length:]), dim=1)
-                answer_ids[i] = torch.cat((layershift(target_audio[i], i).unsqueeze(0), labels_ids[i][:,target_audio_length:]), dim=1)
+                answer_ids[i] = torch.cat((self.layershift(target_audio[i], i).unsqueeze(0), labels_ids[i][:,target_audio_length:]), dim=1)
 
         for i in range(self.code_layer + 1):
             example_ids[i] = torch.cat((ori_example_ids[i], answer_ids[i]), dim=1)  # [prompt,audio,answer,eos]
