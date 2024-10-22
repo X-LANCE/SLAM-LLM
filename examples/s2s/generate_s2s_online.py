@@ -116,14 +116,14 @@ def generate_from_wav(wav_path, model, codec_decoder, dataset_config, decode_con
 	}
 
 	model_outputs = model.generate(**batch, **decode_config)
-	text_outputs = model_outputs[7]
-	audio_outputs = model_outputs[:7]	
+	text_outputs = model_outputs[code_layer]
+	audio_outputs = model_outputs[:code_layer]	
 	output_text = model.tokenizer.decode(text_outputs, add_special_tokens=False, skip_special_tokens=True)
 	
 	if decode_config.decode_text_only:
 		return None, output_text
 	
-	audio_tokens = [audio_outputs[layer] for layer in range(7)]
+	audio_tokens = [audio_outputs[layer] for layer in range(code_layer)]
 	audiolist = reconscruct_snac(audio_tokens)
 	audio = reconstruct_tensors(audiolist)
 	with torch.inference_mode():
@@ -180,14 +180,14 @@ def generate_from_text(text_input, model, codec_decoder, dataset_config, decode_
 	}
 
 	model_outputs = model.generate(**batch, **decode_config)
-	text_outputs = model_outputs[7]
-	audio_outputs = model_outputs[:7]	
+	text_outputs = model_outputs[code_layer]
+	audio_outputs = model_outputs[:code_layer]	
 	output_text = model.tokenizer.decode(text_outputs, add_special_tokens=False, skip_special_tokens=True)
 	
 	if decode_config.decode_text_only:
 		return None, output_text
 	
-	audio_tokens = [audio_outputs[layer] for layer in range(7)]
+	audio_tokens = [audio_outputs[layer] for layer in range(code_layer)]
 	audiolist = reconscruct_snac(audio_tokens)
 	audio = reconstruct_tensors(audiolist)
 	with torch.inference_mode():

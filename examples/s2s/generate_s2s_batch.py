@@ -117,6 +117,8 @@ def main(kwargs: DictConfig):
         )
 
 	task_type = decode_config.task_type
+	code_layer = model_config.vocab_config.code_layer
+
 	logger.info("decode_config: {}".format(decode_config))	
 	if decode_config.do_sample:
 		logger.info("Decode Strategy: Sampling")
@@ -147,8 +149,8 @@ def main(kwargs: DictConfig):
 			for key in batch.keys():
 				batch[key] = batch[key].to(device) if isinstance(batch[key], torch.Tensor) else batch[key]
 			model_outputs = model.generate(**batch, **decode_config)
-			text_outputs = model_outputs[7]
-			audio_outputs = model_outputs[:7]
+			text_outputs = model_outputs[code_layer]
+			audio_outputs = model_outputs[:code_layer]
 			# output_text = model.tokenizer.batch_decode(text_outputs, add_special_tokens=False, skip_special_tokens=True)
 			output_text = model.tokenizer.decode(text_outputs, add_special_tokens=False, skip_special_tokens=True)
 			for key, source_text, target_text, generated_text in zip(batch["keys"], batch["source_texts"], batch["target_texts"], [output_text]):

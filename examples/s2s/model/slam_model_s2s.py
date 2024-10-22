@@ -18,7 +18,8 @@ from tqdm import tqdm
 from utils.tts_adapter_utils import setup_tts_adapter
 from utils.codec_utils import setup_codec
 from utils.trick_utils import partial_freeze_weights, train_embedding_layer_only
-from utils.snac_utils import layershift, get_snac, generate_audio_data, simple_shift
+from utils.snac_utils import get_snac, generate_audio_data, simple_shift
+from utils.snac_utils import layershift as layer_shift
 from utils.projector_utils import setup_group_decode_adapter
 
 logger = logging.getLogger(__name__)
@@ -328,7 +329,7 @@ class slam_model_s2s(slam_model):
         upsampling_factor = kwargs.get("upsampling_factor", 1)
         do_layershift = kwargs.get("do_layershift", True)
         if do_layershift:
-            layershift = layershift
+            layershift = layer_shift
         else:
             layershift = simple_shift
 
