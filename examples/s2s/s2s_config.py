@@ -7,12 +7,12 @@ class VocabConfig:
     text_specialtokens: int = 64
     audio_vocabsize: int = 4096
     audio_specialtokens: int = 64
-    total_vocabsize: int = 181120
     code_layer: int = 7
 
     padded_text_vocabsize: int = field(init=False)
     padded_audio_vocabsize: int = field(init=False)
     total_audio_vocabsize: int = field(init=False)
+    total_vocabsize: int = field(init=False)
 
     eot: int = field(init=False)   # end of text token
     pad_t: int = field(init=False) # padding text token
@@ -30,6 +30,7 @@ class VocabConfig:
         self.padded_text_vocabsize = self.text_vocabsize + self.text_specialtokens
         self.padded_audio_vocabsize = self.audio_vocabsize + self.audio_specialtokens
         self.total_audio_vocabsize = self.padded_audio_vocabsize * self.code_layer
+        self.total_vocabsize = self.padded_text_vocabsize + self.total_audio_vocabsize
 
         self.eot = self.text_vocabsize
         self.pad_t = self.text_vocabsize + 1
@@ -92,6 +93,7 @@ class ModelConfig:
     tts_adapter: bool = False
     tts_adapter_config: TTSAdapterConfig = field(default_factory=TTSAdapterConfig)
     encoder_path_hf: Optional[str] = None
+    code_type: str = "SNAC" 
 
 
 @dataclass
@@ -190,6 +192,8 @@ class DataConfig:
     upsample_text_tokens: bool = False
     upsampling_factor: int = 1
     upsample_method: str = "repeat"
+    code_type: str = "SNAC" 
+    num_latency_tokens: int = 1
 
 @dataclass
 class DecodeConfig:

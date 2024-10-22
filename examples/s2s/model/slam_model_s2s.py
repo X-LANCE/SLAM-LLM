@@ -176,20 +176,20 @@ class slam_model_s2s(slam_model):
                 encoder_outs = self.encoder_projector(encoder_outs)
 
         if input_ids is not None:
-            input_ids[input_ids == -1] = 0  # [btz, 8, seq_length]
+            input_ids[input_ids == -1] = 0  # [btz, code_layer + 1, seq_length]
 
             if isinstance(self.llm, T5ForConditionalGeneration):
                 inputs_embeds = self.llm.shared(input_ids)
             else:
                 if hasattr(self.llm.model, "embed_tokens"):
-                    inputs_embeds = self.llm.model.embed_tokens(input_ids)  # [btz, 8, seq_length, emb_dim]
+                    inputs_embeds = self.llm.model.embed_tokens(input_ids)  # [btz, code_layer + 1, seq_length, emb_dim]
                 elif hasattr(self.llm.model.model, "embed_tokens"):
                     inputs_embeds = self.llm.model.model.embed_tokens(input_ids)
                 else:
                     inputs_embeds = self.llm.model.model.model.embed_tokens(input_ids)
 
         if modality_mask is not None and encoder_outs is not None:
-            modality_mask = modality_mask.unsqueeze(1).repeat(1, self.code_layer, 1)  # [btz, 8, seq_length]
+            modality_mask = modality_mask.unsqueeze(1).repeat(1, self.code_layer, 1)  # [btz, code_layer, seq_length]
             modality_mask_start_indices = (modality_mask == True).float().argmax(dim=2)
             modality_lengths = torch.clamp(modality_mask.sum(dim=2), max=encoder_outs.shape[1]).tolist()
 
@@ -202,7 +202,7 @@ class slam_model_s2s(slam_model):
             
             inputs_embeds[:, :self.code_layer, :, :] = encoder_outs_pad[:, :self.code_layer, :, :] + inputs_embeds[:, :self.code_layer, :, :] * (~modality_mask[:, :, :, None])
         
-        inputs_embeds = torch.mean(inputs_embeds, dim=1)  # [btz, seq_length, emb_dim], average over the 8 layers
+        inputs_embeds = torch.mean(inputs_embeds, dim=1)  # [btz, seq_length, emb_dim], average over the code layers
 
         if kwargs.get("inference_mode", False):
             return inputs_embeds, attention_mask

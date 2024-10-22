@@ -7,6 +7,7 @@ import torch
 import whisper
 from slam_llm.utils.compute_utils import calculate_output_length_1d
 from utils.snac_utils import layershift, get_snac_answer_token
+from utils.codec_utils import get_single_layer_answer_token, get_group_answer_token
 import librosa
 
 
@@ -69,6 +70,14 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         self.upsampling_factor = dataset_config.get("upsampling_factor", 1)
         self.upsample_method = dataset_config.get("upsample_method", "repeat")
 
+        # code type config
+        self.code_type = dataset_config.get("code_type", "SNAC")
+        if self.code_type != "SNAC" and self.code_type != "CosyVoice":
+            raise ValueError("code_type must be one of [SNAC, CosyVoice]")
+        
+        # number of tokens for latency
+        self.num_latency_tokens = dataset_config.get("num_latency_tokens", 1)
+
         self.data_list = []
 
         # TODO: design a better way to load data
@@ -110,9 +119,18 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         if self.manifest_format == "datasets" and isinstance(audio_path, dict):
             audio_raw = audio_path['array']
             audio_raw_sr = audio_path['sampling_rate']
+            if not isinstance(audio_raw, np.ndarray):
+                audio_raw = np.array(audio_raw)
             audio_raw = librosa.resample(audio_raw, orig_sr=audio_raw_sr, target_sr=16000).astype(np.float32)
-        elif self.manifest_format == "datasets" and isinstance(audio_path, str):
-            audio_res, audio_length = get_snac_answer_token(audio_path)
+        elif self.manifest_format == "datasets" and (isinstance(audio_path, str) or isinstance(audio_path, list)):
+            if self.code_type == "SNAC":
+                audio_res, audio_length = get_snac_answer_token(audio_path)
+            elif self.code_type == "CosyVoice":
+                audio_tokens = audio_path
+                if self.code_layer == 1:
+                    audio_res, audio_length = get_single_layer_answer_token(audio_tokens, self.num_latency_tokens, self._pad_a, self._eoa)
+                else:
+                    audio_res, audio_length = get_group_answer_token(audio_tokens, self.num_latency_tokens, self._pad_a, self._eoa, self.code_layer)
             return audio_res, audio_length
         else:
             audio_raw = whisper.load_audio(audio_path)
@@ -210,7 +228,10 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
 
         if self.manifest_format == "datasets":
             source_audio = data_dict.get("question_audio", None)
-            target_audio = data_dict.get("answer_snac", None)
+            if self.code_type == "SNAC":
+                target_audio = data_dict.get("answer_snac", None)
+            elif self.code_type == "CosyVoice":
+                target_audio = data_dict.get("answer_cosyvoice_speech_token", None)
             source_text = data_dict.get("question", None)
             target_text = data_dict.get("answer", None)
             if source_audio is not None:
@@ -242,7 +263,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
 
         if task_type == "s2s" or task_type == "asr":
             example_ids = self.get_input_ids(audio_length, self.special_token_a, self.special_token_t)
-            example_ids = [torch.cat((prompt_ids[i], example_ids[i]), dim = 1) for i in range(self.code_layer + 1)]
+            example_ids = [torch.cat((prompt_ids[i], example_ids[i]), dim = 1) for i in range(self.code_layer + 1)] # 1 for text layer
         elif task_type == "tts":
             target_text_ids = self.tokenizer.encode(target_text)
             target_text_length = len(target_text_ids)
