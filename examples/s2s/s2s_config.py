@@ -94,7 +94,7 @@ class ModelConfig:
     tts_adapter_config: TTSAdapterConfig = field(default_factory=TTSAdapterConfig)
     encoder_path_hf: Optional[str] = None
     code_type: str = "SNAC" 
-    group_decode_adapter: bool = False
+    group_decode: bool = False
     group_decode_adapter_type: str = "linear"
 
 

@@ -45,7 +45,7 @@ split_size=0.2
 
 # model settings
 tts_adapter=false
-group_decode_adapter=true
+group_decode=true
 group_decode_adapter_type=linear
 
 # exp_name="s2s_train_v1_gpu4_btz${batch_size_training}_lr${lr}_nofp16_epochs${num_epochs}"
@@ -81,7 +81,7 @@ hydra.run.dir=$output_dir \
 ++model_config.vocab_config.total_audio_vocabsize=$total_audio_vocabsize \
 ++model_config.vocab_config.total_vocabsize=$total_vocabsize \
 ++model_config.code_type=$code_type \
-++model_config.group_decode_adapter=$group_decode_adapter \
+++model_config.group_decode=$group_decode \
 ++model_config.group_decode_adapter_type=$group_decode_adapter_type \
 ++dataset_config.dataset=speech_dataset_s2s \
 ++dataset_config.train_data_path=$train_data_path \

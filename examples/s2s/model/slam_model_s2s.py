@@ -18,7 +18,7 @@ from tqdm import tqdm
 from utils.tts_adapter_utils import setup_tts_adapter
 from utils.codec_utils import setup_codec
 from utils.trick_utils import partial_freeze_weights, train_embedding_layer_only
-from utils.snac_utils import layershift, get_snac, generate_audio_data
+from utils.snac_utils import layershift, get_snac, generate_audio_data, simple_shift
 from utils.projector_utils import setup_group_decode_adapter
 
 logger = logging.getLogger(__name__)
@@ -56,7 +56,7 @@ def model_factory(train_config, model_config, **kwargs):
         tts_adapter = setup_tts_adapter(adapter_config, model_config, **kwargs)
 
     group_decode_adapter = None
-    if model_config.group_decode_adapter:
+    if model_config.group_decode:
         group_decode_adapter = setup_group_decode_adapter(model_config, train_config, **kwargs)
 
     model = slam_model_s2s(
@@ -326,6 +326,11 @@ class slam_model_s2s(slam_model):
         repetition_penalty = kwargs.get("repetition_penalty", 1.0)
         decode_text_only = kwargs.get("decode_text_only", False)
         upsampling_factor = kwargs.get("upsampling_factor", 1)
+        do_layershift = kwargs.get("do_layershift", True)
+        if do_layershift:
+            layershift = layershift
+        else:
+            layershift = simple_shift
 
         pad_t = self.model_config.vocab_config.pad_t
         pad_a = self.model_config.vocab_config.pad_a
