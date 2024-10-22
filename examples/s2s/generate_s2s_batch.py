@@ -118,6 +118,7 @@ def main(kwargs: DictConfig):
 
 	task_type = decode_config.task_type
 	code_layer = model_config.vocab_config.code_layer
+	code_type = model_config.code_type
 
 	logger.info("decode_config: {}".format(decode_config))	
 	if decode_config.do_sample:
@@ -132,6 +133,7 @@ def main(kwargs: DictConfig):
 
 	decode_log_dir = kwargs.get('decode_log')
 	output_text_only = kwargs.get('output_text_only', False)
+	speech_sample_rate = kwargs.get('speech_sample_rate', 24000)
 
 	if not os.path.exists(decode_log_dir):
 		os.makedirs(decode_log_dir)
@@ -173,16 +175,17 @@ def main(kwargs: DictConfig):
 				continue
 
 			for i, key in enumerate(batch["keys"]):
-				audio_tokens = [audio_outputs[layer] for layer in range(7)]
+				audio_tokens = [audio_outputs[layer] for layer in range(code_layer)]
 
-				audiolist = reconscruct_snac(audio_tokens)
-				audio = reconstruct_tensors(audiolist)
-				with torch.inference_mode():
-					audio_hat = codec_decoder.decode(audio)
+				if code_type == "SNAC":
+					audiolist = reconscruct_snac(audio_tokens)
+					audio = reconstruct_tensors(audiolist)
+					with torch.inference_mode():
+						audio_hat = codec_decoder.decode(audio)
 
 				if key[-4:] == ".wav":
 					key = key[:-4]
-				sf.write(f"{generate_audio_dir}/{key}.wav", audio_hat.squeeze().cpu().numpy(), 24000)
+				sf.write(f"{generate_audio_dir}/{key}.wav", audio_hat.squeeze().cpu().numpy(), speech_sample_rate)
 				logger.info(f"Generated Audio: {key}.wav")
 
 	logger.info("============== Inference Finished ==============")

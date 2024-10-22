@@ -54,7 +54,7 @@ decode_text_only=false
 upsampling_factor=1
 
 output_text_only=false
-
+speech_sample_rate=24000
 inference_online=false
 
 decode_log=$ckpt_path/s2s_decode_${split}_rp${repetition_penalty}_seed${dataset_sample_seed}_greedy
@@ -122,6 +122,7 @@ python -m debugpy --listen 5678 --wait-for-client $code_dir/inference_s2s.py \
         ++decode_log=$decode_log \
         ++ckpt_path=$ckpt_path/model.pt \
         ++output_text_only=$output_text_only \
-        ++inference_online=$inference_online
+        ++inference_online=$inference_online \
+        ++speech_sample_rate=$speech_sample_rate \
 
 # bash /home/v-wenxichen/SLAM-LLM/examples/s2s/scripts/inference_s2s_cosyvoice.sh

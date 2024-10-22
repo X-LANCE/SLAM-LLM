@@ -132,6 +132,7 @@ def main(kwargs: DictConfig):
 
 	decode_log_dir = kwargs.get('decode_log')
 	output_text_only = kwargs.get('output_text_only', False)
+	speech_sample_rate = kwargs.get('speech_sample_rate', 24000)
 
 	if not os.path.exists(decode_log_dir):
 		os.makedirs(decode_log_dir)
@@ -175,7 +176,7 @@ def main(kwargs: DictConfig):
 				start_time = time.time()
 				first_chunk_time = None
 
-				with sf.SoundFile(f"{generate_audio_dir}/{audio_key}.wav", mode='w', samplerate=24000, channels=1, subtype='PCM_16') as f:
+				with sf.SoundFile(f"{generate_audio_dir}/{audio_key}.wav", mode='w', samplerate=speech_sample_rate, channels=1, subtype='PCM_16') as f:
 					for result in audio_text_generator:
 						if first_chunk_time is None:
 							first_chunk_time = time.time()
