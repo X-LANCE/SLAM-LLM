@@ -27,6 +27,7 @@ total_vocabsize=156160  # 152000 + 4160 Sry: Here is not elegant to set the tota
 
 # code settings
 code_type=CosyVoice     # CosyVoice or SNAC
+codec_decoder_type=CosyVoice
 num_latency_tokens=1    # number of latency tokens
 do_layershift=true      # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
 
@@ -85,6 +86,7 @@ python -m debugpy --listen 5678 --wait-for-client $code_dir/inference_s2s.py \
         ++model_config.vocab_config.code_layer=$code_layer \
         ++model_config.vocab_config.total_vocabsize=$total_vocabsize \
         ++model_config.code_type=$code_type \
+        ++model_config.codec_decoder_type=$codec_decoder_type \
         ++dataset_config.dataset=speech_dataset_s2s \
         ++dataset_config.val_data_path=$val_data_path \
         ++dataset_config.train_data_path=$val_data_path \

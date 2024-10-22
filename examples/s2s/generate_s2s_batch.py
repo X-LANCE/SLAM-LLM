@@ -182,6 +182,10 @@ def main(kwargs: DictConfig):
 					audio = reconstruct_tensors(audiolist)
 					with torch.inference_mode():
 						audio_hat = codec_decoder.decode(audio)
+				elif code_type == "CosyVoice":
+					audio_hat = codec_decoder.model.token2wav(token=audio_tokens)
+				else:
+					raise NotImplementedError
 
 				if key[-4:] == ".wav":
 					key = key[:-4]
