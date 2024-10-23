@@ -9,6 +9,7 @@ from utils.snac_utils import reconscruct_snac, reconstruct_tensors
 import os
 import logging
 import soundfile as sf
+import torchaudio
 
 import hydra
 from omegaconf import DictConfig, ListConfig, OmegaConf
@@ -134,6 +135,7 @@ def main(kwargs: DictConfig):
 	decode_log_dir = kwargs.get('decode_log')
 	output_text_only = kwargs.get('output_text_only', False)
 	speech_sample_rate = kwargs.get('speech_sample_rate', 24000)
+	audio_prompt_path = kwargs.get('audio_prompt_path', None)
 
 	if not os.path.exists(decode_log_dir):
 		os.makedirs(decode_log_dir)
@@ -185,11 +187,22 @@ def main(kwargs: DictConfig):
 				elif code_type == "CosyVoice":
 					import uuid
 					audio_tokens = torch.cat(audio_tokens, dim=-1)	# FIXME: check the dimension
-					flow_prompt_speech_token = torch.zeros(1, 0, dtype=torch.int32)
-					prompt_speech_feat = torch.zeros(1, 0, 80)
 					speed = 1.0
 					this_uuid = str(uuid.uuid1())
-					flow_embedding = codec_decoder.frontend.spk2info['英文女']['embedding']
+
+					if audio_prompt_path is None:
+						flow_embedding = codec_decoder.frontend.spk2info['英文女']['embedding']
+						flow_prompt_speech_token = torch.zeros(1, 0, dtype=torch.int32)
+						prompt_speech_feat = torch.zeros(1, 0, 80)
+
+					else: 
+						from utils.cosyvoice.utils.file_utils import load_wav
+						prompt_speech_16k = load_wav(audio_prompt_path, 16000)
+						flow_prompt_speech_token, flow_prompt_speech_token_len = codec_decoder.frontend._extract_speech_token(prompt_speech_16k)
+						prompt_speech_22050 = torchaudio.transforms.Resample(orig_freq=16000, new_freq=22050)(prompt_speech_16k)
+						prompt_speech_feat, prompt_speech_feat_len = codec_decoder.frontend._extract_speech_feat(prompt_speech_22050)
+						flow_embedding = codec_decoder.frontend._extract_spk_embedding(prompt_speech_16k)
+					
 					audio_hat = codec_decoder.model.token2wav(token=audio_tokens,
 															prompt_token=flow_prompt_speech_token,
 															prompt_feat=prompt_speech_feat,

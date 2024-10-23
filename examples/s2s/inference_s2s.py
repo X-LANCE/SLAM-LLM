@@ -46,6 +46,9 @@ class RunConfig:
     speech_sample_rate: int = field(
         default=24000, metadata={"help": "The sample rate for speech"}
     )
+    audio_prompt_path: Optional[str] = field(
+        default=None, metadata={"help": "The path to audio prompt"}
+    )
 
 
 @hydra.main(config_name=None, version_base=None)
