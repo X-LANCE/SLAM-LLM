@@ -183,7 +183,7 @@ def main(kwargs: DictConfig):
 					with torch.inference_mode():
 						audio_hat = codec_decoder.decode(audio)
 				elif code_type == "CosyVoice":
-					audio_hat = codec_decoder.model.token2wav(token=audio_tokens)
+					audio_hat = codec_decoder.token2wav(token=audio_tokens)
 				else:
 					raise NotImplementedError
 

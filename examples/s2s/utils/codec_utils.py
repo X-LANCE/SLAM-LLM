@@ -17,7 +17,7 @@ def setup_codec(train_config, model_config, **kwargs):
         codec_decoder_module = nn.ModuleList((codec_decoder.flow,codec_decoder.hift))
     else:
         raise NotImplementedError
-    print_module_size(codec_decoder_module, model_config.codec_decoder_type, int(os.environ["RANK"]) if train_config.enable_fsdp or train_config.enable_ddp else 0)
+    print_module_size(codec_decoder_module, model_config.codec_decoder_type + " Codec", int(os.environ["RANK"]) if train_config.enable_fsdp or train_config.enable_ddp else 0)
     
     return codec_decoder
 
