@@ -43,6 +43,9 @@ class RunConfig:
     inference_streaming: bool = field(
         default=False, metadata={"help": "Inference stream"}
     )
+    speech_sample_rate: int = field(
+        default=24000, metadata={"help": "The sample rate for speech"}
+    )
 
 
 @hydra.main(config_name=None, version_base=None)

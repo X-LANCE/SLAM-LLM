@@ -12,7 +12,7 @@ code_dir=examples/s2s
 whisper_size=small  # tiny base small medium large-v3
 speech_encoder_path="/valleblob/v-wenxichen/models/whisper/${whisper_size}.pt"   # different whisper size
 llm_path="Qwen/Qwen2-0.5B"
-codec_decoder_path="hubertsiuzdak/snac_24khz"
+codec_decoder_path="/valleblob/v-wenxichen/models/CosyVoice/CosyVoice-300M-SFT"
 
 encoder_dim=768  # 384 512 768 896 1024 1280 
 mel_size=80      # 80 128 (128 for whisper-large only)
@@ -55,7 +55,7 @@ decode_text_only=false
 upsampling_factor=1
 
 output_text_only=false
-speech_sample_rate=24000
+speech_sample_rate=22050
 inference_online=false
 
 decode_log=$ckpt_path/s2s_decode_${split}_rp${repetition_penalty}_seed${dataset_sample_seed}_greedy

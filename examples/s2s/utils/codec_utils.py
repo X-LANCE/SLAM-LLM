@@ -1,17 +1,23 @@
 from slam_llm.utils.train_utils import print_module_size
 import torch
 import os
+import torch.nn as nn
 
 def setup_codec(train_config, model_config, **kwargs):
     if model_config.codec_decoder_type == "SNAC":
         from snac import SNAC
         codec_decoder = SNAC.from_pretrained(model_config.codec_decoder_path).eval()
+        codec_decoder_module = codec_decoder
     elif model_config.codec_decoder_type == "CosyVoice":
+        import sys
+        sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+        sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "third_party/Matcha-TTS"))
         from cosyvoice.cli.cosyvoice import CosyVoice
-        codec_decoder = CosyVoice(model_config.codec_decoder_path, load_jit=True, load_onnx=False, fp16=True)
+        codec_decoder = CosyVoice(model_config.codec_decoder_path, load_jit=True, load_onnx=False, fp16=True).model
+        codec_decoder_module = nn.ModuleList((codec_decoder.flow,codec_decoder.hift))
     else:
         raise NotImplementedError
-    print_module_size(codec_decoder, model_config.codec_decoder_type, int(os.environ["RANK"]) if train_config.enable_fsdp or train_config.enable_ddp else 0)
+    print_module_size(codec_decoder_module, model_config.codec_decoder_type, int(os.environ["RANK"]) if train_config.enable_fsdp or train_config.enable_ddp else 0)
     
     return codec_decoder
 
