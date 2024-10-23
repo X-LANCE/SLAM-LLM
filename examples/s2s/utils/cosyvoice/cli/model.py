@@ -108,14 +108,14 @@ class CosyVoiceModel:
                                                   prompt_feat=prompt_feat.to(self.device),
                                                   prompt_feat_len=torch.tensor([prompt_feat.shape[1]], dtype=torch.int32).to(self.device),
                                                   embedding=embedding.to(self.device),
-                                                  flow_cache=self.flow_cache_dict[uuid])
+                                                  flow_cache=self.flow_cache_dict[uuid] if uuid in self.flow_cache_dict else torch.zeros(1, 80, 0, 2))
         self.flow_cache_dict[uuid] = flow_cache
 
         # mel overlap fade in out
-        if self.mel_overlap_dict[uuid].shape[2] != 0:
+        if uuid in self.mel_overlap_dict and self.mel_overlap_dict[uuid].shape[2] != 0:
             tts_mel = fade_in_out(tts_mel, self.mel_overlap_dict[uuid], self.mel_window)
         # append hift cache
-        if self.hift_cache_dict[uuid] is not None:
+        if uuid in self.hift_cache_dict and self.hift_cache_dict[uuid] is not None:
             hift_cache_mel, hift_cache_source = self.hift_cache_dict[uuid]['mel'], self.hift_cache_dict[uuid]['source']
             tts_mel = torch.concat([hift_cache_mel, tts_mel], dim=2)
         else:
@@ -136,7 +136,7 @@ class CosyVoiceModel:
                 assert self.hift_cache_dict[uuid] is None, 'speed change only support non-stream inference mode'
                 tts_mel = F.interpolate(tts_mel, size=int(tts_mel.shape[2] / speed), mode='linear')
             tts_speech, tts_source = self.hift.inference(speech_feat=tts_mel, cache_source=hift_cache_source)
-            if self.hift_cache_dict[uuid] is not None:
+            if uuid in self.hift_cache_dict and self.hift_cache_dict[uuid] is not None:
                 tts_speech = fade_in_out(tts_speech, self.hift_cache_dict[uuid]['speech'], self.speech_window)
         return tts_speech
 

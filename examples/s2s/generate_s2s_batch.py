@@ -183,7 +183,20 @@ def main(kwargs: DictConfig):
 					with torch.inference_mode():
 						audio_hat = codec_decoder.decode(audio)
 				elif code_type == "CosyVoice":
-					audio_hat = codec_decoder.token2wav(token=audio_tokens)
+					import uuid
+					audio_tokens = torch.cat(audio_tokens, dim=-1)	# FIXME: check the dimension
+					flow_prompt_speech_token = torch.zeros(1, 0, dtype=torch.int32)
+					prompt_speech_feat = torch.zeros(1, 0, 80)
+					speed = 1.0
+					this_uuid = str(uuid.uuid1())
+					flow_embedding = codec_decoder.frontend.spk2info['英文女']['embedding']
+					audio_hat = codec_decoder.model.token2wav(token=audio_tokens,
+															prompt_token=flow_prompt_speech_token,
+															prompt_feat=prompt_speech_feat,
+															embedding=flow_embedding,
+															uuid=this_uuid,
+															finalize=True,
+															speed=speed)
 				else:
 					raise NotImplementedError
 
