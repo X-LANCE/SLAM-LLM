@@ -9,19 +9,22 @@ code_dir=examples/s2s
 
 speech_encoder_path="/valleblob/v-wenxichen/models/whisper/small.pt"   # whisper small
 # speech_encoder_path="medium" # whisper medium
-llm_path="/valleblob/v-wenxichen/models/models--Qwen--Qwen2-0.5B/snapshots/ff3a49fac17555b8dfc4db6709f480cc8f16a9fe"  # Qwen/Qwen2-0.5B
+# llm_path="/valleblob/v-wenxichen/models/models--Qwen--Qwen2-0.5B/snapshots/ff3a49fac17555b8dfc4db6709f480cc8f16a9fe"  # Qwen/Qwen2-0.5B
+llm_path="Qwen/Qwen2.5-7B"  # Qwen/Qwen2.5-0.5B Qwen/Qwen2.5-1.5B Qwen/Qwen2.5-3B Qwen/Qwen2.5-7B
 
+
+llm_dim=3584     # 896 1536 2048 3584  -> 0.5B 1.5B 3B 7B
 
 train_data_path="gpt-omni/VoiceAssistant-400K"
 val_data_path="gpt-omni/VoiceAssistant-400K"
 load_from_cache_file=true  # set to true if you have already generated the cache file, otherwise set to false
 
-upsample_text_tokens=true
-upsampling_factor=2
+upsample_text_tokens=false
+upsampling_factor=1
 upsample_method=repeat  # repeat or blank
 
-batch_size_training=4
-use_fp16=false
+batch_size_training=2
+use_fp16=true
 num_epochs=10
 lr=5e-4
 train_audio_embed_only=false
@@ -48,9 +51,9 @@ wandb_exp_name=$exp_name
 
 hydra_args="
 hydra.run.dir=$output_dir \
-++model_config.llm_name=qwen2-0.5b \
+++model_config.llm_name=qwen2.5-1.5b \
 ++model_config.llm_path=$llm_path \
-++model_config.llm_dim=896 \
+++model_config.llm_dim=$llm_dim \
 ++model_config.encoder_name=whisper \
 ++model_config.encoder_projector_ds_rate=5 \
 ++model_config.encoder_path=$speech_encoder_path \

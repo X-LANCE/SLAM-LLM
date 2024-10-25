@@ -186,6 +186,7 @@ def main(kwargs: DictConfig):
 						audio_hat = codec_decoder.decode(audio)
 				elif code_type == "CosyVoice":
 					import uuid
+					# if code_layer > 1: # TODO: support multi-layer
 					audio_tokens = torch.cat(audio_tokens, dim=-1)	# FIXME: check the dimension
 					speed = 1.0
 					this_uuid = str(uuid.uuid1())
