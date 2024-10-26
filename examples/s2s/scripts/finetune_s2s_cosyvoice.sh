@@ -8,7 +8,9 @@ export LD_LIBRARY_PATH=/home/v-wenxichen/anaconda3/envs/slam/lib:$LD_LIBRARY_PAT
 export WANDB_API_KEY=406faa59cf62a3646fa3479a7e133c4cf5a77100       # please replace with your own wandb key thxxxx, unless you want to share your experiment results with me :)
 
 code_dir=examples/s2s
-num_gpus=$(( $(echo ${CUDA_VISIBLE_DEVICES} | tr -cd ',' | wc -c) + 1 ))
+num_gpus_per_node=$(( $(echo ${CUDA_VISIBLE_DEVICES} | tr -cd ',' | wc -c) + 1 ))
+num_nodes=1
+num_gpus=$(( num_gpus_per_node * num_nodes ))
 
 whisper_size=small  # tiny base small medium large-v3
 speech_encoder_path="/valleblob/v-wenxichen/models/whisper/${whisper_size}.pt"   # different whisper size
@@ -30,7 +32,7 @@ do_layershift=true      # if false, tokens in each layers use the same codebook,
 # dataset settings
 train_data_path="/valleblob/v-wenxichen/data/s2s/VoiceAssistant-400K-CosyVoice"
 val_data_path="/valleblob/v-wenxichen/data/s2s/VoiceAssistant-400K-CosyVoice"
-load_from_cache_file=true  # set to true if you have already generated the cache file, otherwise set to false
+load_from_cache_file=false  # set to true if you have already generated the cache file, otherwise set to false
 
 # upsample settings
 upsample_text_tokens=false
@@ -145,8 +147,8 @@ if [[ $CUDA_VISIBLE_DEVICES != *","* ]]; then
     fi
 else
     torchrun \
-        --nnodes 1 \
-        --nproc_per_node $num_gpus \
+        --nnodes $num_nodes \
+        --nproc_per_node $num_gpus_per_node \
         --master_port=29503 \
         $code_dir/finetune_s2s.py \
         --config-path "conf" \

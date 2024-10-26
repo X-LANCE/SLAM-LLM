@@ -1,0 +1,1 @@
+{"project_name": "slam-omni", "storage_account_name": "msramcgblob", "container_name": "amulet", "blob_storage_account_name": "msramcgblob", "registry_name": "projects", "local_path": "/home/v-wenxichen/SLAM-LLM", "default_output_dir": "/home/v-wenxichen/SLAM-LLM/amlt", "project_uuid": "7270140778.09249-e66419e4-b9d8-4b51-b443-d85168f29c01", "version": "10.6.3"}
