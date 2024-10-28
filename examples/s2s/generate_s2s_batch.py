@@ -13,6 +13,7 @@ import torchaudio
 
 import hydra
 from omegaconf import DictConfig, ListConfig, OmegaConf
+import time
 
 
 @hydra.main(config_name=None, version_base=None)
@@ -120,17 +121,7 @@ def main(kwargs: DictConfig):
 	task_type = decode_config.task_type
 	code_layer = model_config.vocab_config.code_layer
 	code_type = model_config.code_type
-
-	logger.info("decode_config: {}".format(decode_config))	
-	if decode_config.do_sample:
-		logger.info("Decode Strategy: Sampling")
-	else:
-		logger.info("Decode Strategy: Greedy")
-	if decode_config.decode_text_only:
-		logger.info("Decode Text Only")
-	else:
-		logger.info("Decode Text & Audio")
-	logger.info("============== Start {task_type} Inference ==============".format(task_type=task_type))
+	num_latency_tokens = dataset_config.num_latency_tokens
 
 	decode_log_dir = kwargs.get('decode_log')
 	output_text_only = kwargs.get('output_text_only', False)
@@ -145,13 +136,35 @@ def main(kwargs: DictConfig):
 	question_path = os.path.join(decode_log_dir, "question_text")
 	generate_audio_dir = os.path.join(decode_log_dir, "pred_audio")
 
-	if not os.path.exists(generate_audio_dir) and not (output_text_only or decode_config.decode_text_only):
-		os.makedirs(generate_audio_dir)
+	if audio_prompt_path is None or not os.path.exists(audio_prompt_path):
+		tone_dir = "default_tone"
+	else:
+		tone_dir = os.path.basename(audio_prompt_path).split('.')[0]
+	tone_audio_dir = os.path.join(generate_audio_dir, tone_dir)
+
+	if not os.path.exists(tone_audio_dir) and not (output_text_only or decode_config.decode_text_only):
+		os.makedirs(tone_audio_dir)
+
+	logger.info("decode_config: {}".format(decode_config))	
+	if decode_config.do_sample:
+		logger.info("Decode Strategy: Sampling")
+	else:
+		logger.info("Decode Strategy: Greedy")
+	if decode_config.decode_text_only:
+		logger.info("Decode Text Only")
+	else:
+		logger.info("Decode Text & Audio")
+	logger.info("Decode Codec Type: {}".format(code_type))
+	logger.info("Decode Code Layer: {}".format(code_layer))
+	logger.info("Tone for Audio Generation: {}".format(tone_dir))
+
+	logger.info("============== Start {task_type} Inference ==============".format(task_type=task_type))
 
 	with open(pred_path, "w") as pred, open(gt_path, "w") as gt, open(question_path, "w") as q:
 		for step, batch in enumerate(test_dataloader):
 			for key in batch.keys():
 				batch[key] = batch[key].to(device) if isinstance(batch[key], torch.Tensor) else batch[key]
+			start_time = time.time()
 			model_outputs = model.generate(**batch, **decode_config)
 			text_outputs = model_outputs[code_layer]
 			audio_outputs = model_outputs[:code_layer]
@@ -186,12 +199,26 @@ def main(kwargs: DictConfig):
 						audio_hat = codec_decoder.decode(audio)
 				elif code_type == "CosyVoice":
 					import uuid
-					# if code_layer > 1: # TODO: support multi-layer
-					audio_tokens = torch.cat(audio_tokens, dim=-1)	# FIXME: check the dimension
+					if code_layer > 1:
+						audio_tokens_tensor = torch.stack(audio_tokens, dim=0)
+						audio_tokens_permuted = audio_tokens_tensor.permute(1, 0)
+						audio_tokens = audio_tokens_permuted.reshape(-1).unsqueeze(0)
+						audio_tokens = audio_tokens[...,num_latency_tokens*code_layer:]
+					else:
+						audio_tokens = torch.cat(audio_tokens, dim=-1).unsqueeze(0)
+						audio_tokens = audio_tokens[...,num_latency_tokens:]
+					eoa = model_config.vocab_config.eoa
+					pad_a = model_config.vocab_config.pad_a
+					end_index = torch.nonzero(audio_tokens[0] == eoa)[0]
+					audio_tokens = audio_tokens[...,:end_index]
 					speed = 1.0
 					this_uuid = str(uuid.uuid1())
 
-					if audio_prompt_path is None:
+					if pad_a in audio_tokens:	# FIXME: this is a temporary fix for the padding issue, where the padding token may be included in the audio tokens
+						end_index = torch.nonzero(audio_tokens[0] == pad_a)[0]
+						audio_tokens = audio_tokens[..., :end_index]
+
+					if tone_dir == "default_tone":
 						flow_embedding = codec_decoder.frontend.spk2info['英文女']['embedding']
 						flow_prompt_speech_token = torch.zeros(1, 0, dtype=torch.int32)
 						prompt_speech_feat = torch.zeros(1, 0, 80)
@@ -216,8 +243,11 @@ def main(kwargs: DictConfig):
 
 				if key[-4:] == ".wav":
 					key = key[:-4]
-				sf.write(f"{generate_audio_dir}/{key}.wav", audio_hat.squeeze().cpu().numpy(), speech_sample_rate)
-				logger.info(f"Generated Audio: {key}.wav")
+				end_time = time.time()
+				audio_length = audio_hat.shape[1] / speech_sample_rate
+				RTF = (end_time - start_time) / audio_length
+				sf.write(f"{tone_audio_dir}/{key}.wav", audio_hat.squeeze().cpu().numpy(), speech_sample_rate)
+				logger.info(f"Generated Audio: {tone_dir}/{key}.wav, RTF = {RTF:.5f}")
 
 	logger.info("============== Inference Finished ==============")
 

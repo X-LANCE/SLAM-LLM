@@ -16,13 +16,14 @@ codec_decoder_path="/valleblob/v-wenxichen/models/CosyVoice/CosyVoice-300M-SFT"
 
 encoder_dim=768  # 384 512 768 896 1024 1280 
 mel_size=80      # 80 128 (128 for whisper-large only)
+llm_dim=896     # 896 1536 3584 8192  -> 0.5B 1.5B 3.5B 7B
 
-tts_adapter=false
 task_type=s2s
 split_size=0.002
 
 # vocabulary settings
-code_layer=1            # 1 single semantic code layer   2 3 4 5 6 7 8 group semantic code layers 
+code_layer=2            # 1 single semantic code layer   2 3 4 5 6 7 8 group semantic code layers 
+total_audio_vocabsize=4160
 total_vocabsize=156160  # 152000 + 4160 Sry: Here is not elegant to set the total_vocabsize manually, I may fix it later :)
 
 # code settings
@@ -31,7 +32,7 @@ codec_decoder_type=CosyVoice
 num_latency_tokens=1    # number of latency tokens
 do_layershift=false      # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
 
-ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v3_gpu4_btz2_lr5e-4_fp16_epochs10_whisper-small/s2s_epoch_3_step_4714
+ckpt_path=/valleblob_ori/v-wenxichen/exp/s2s/s2s_train_v3_gpu4_btz3_lr5e-4_fp16_epochs10_whisper-small_group2/s2s_epoch_1_step_20000
 split=test
 
 # jsonl dataset
@@ -42,7 +43,12 @@ split=test
 manifest_format=datasets
 val_data_path="/valleblob/v-wenxichen/data/s2s/VoiceAssistant-400K-v1/test"
 load_from_cache_file=false
-dataset_sample_seed=777
+dataset_sample_seed=1234
+
+# model settings
+tts_adapter=false
+group_decode=true
+group_decode_adapter_type=linear
 
 # decode config
 repetition_penalty=1.0
@@ -57,7 +63,7 @@ upsampling_factor=1
 output_text_only=false
 speech_sample_rate=22050
 inference_online=false
-# audio_prompt_path=/home/v-wenxichen/SLAM-LLM/examples/s2s/prompt/promt_6.wav
+audio_prompt_path=/home/v-wenxichen/SLAM-LLM/examples/s2s/prompt/promt_6.wav
 
 decode_log=$ckpt_path/s2s_decode_${split}_rp${repetition_penalty}_seed${dataset_sample_seed}_greedy
 if [ "$do_sample" = true ] ; then
@@ -75,7 +81,7 @@ python $code_dir/inference_s2s.py \
         hydra.run.dir=$ckpt_path \
         ++model_config.llm_name=qwen2-0.5b \
         ++model_config.llm_path=$llm_path \
-        ++model_config.llm_dim=896 \
+        ++model_config.llm_dim=$llm_dim \
         ++model_config.encoder_name=whisper \
         ++model_config.encoder_projector_ds_rate=5 \
         ++model_config.encoder_path=$speech_encoder_path \
@@ -85,9 +91,12 @@ python $code_dir/inference_s2s.py \
         ++model_config.codec_decode=true \
         ++model_config.tts_adapter=$tts_adapter \
         ++model_config.vocab_config.code_layer=$code_layer \
+        ++model_config.vocab_config.total_audio_vocabsize=$total_audio_vocabsize \
         ++model_config.vocab_config.total_vocabsize=$total_vocabsize \
         ++model_config.code_type=$code_type \
         ++model_config.codec_decoder_type=$codec_decoder_type \
+        ++model_config.group_decode=$group_decode \
+        ++model_config.group_decode_adapter_type=$group_decode_adapter_type \
         ++dataset_config.dataset=speech_dataset_s2s \
         ++dataset_config.val_data_path=$val_data_path \
         ++dataset_config.train_data_path=$val_data_path \
@@ -100,6 +109,7 @@ python $code_dir/inference_s2s.py \
         ++dataset_config.task_type=$task_type \
         ++dataset_config.seed=$dataset_sample_seed \
         ++dataset_config.vocab_config.code_layer=$code_layer \
+        ++dataset_config.vocab_config.total_audio_vocabsize=$total_audio_vocabsize \
         ++dataset_config.vocab_config.total_vocabsize=$total_vocabsize \
         ++dataset_config.code_type=$code_type \
         ++dataset_config.num_latency_tokens=$num_latency_tokens \
@@ -129,4 +139,4 @@ python $code_dir/inference_s2s.py \
         ++speech_sample_rate=$speech_sample_rate \
         ++audio_prompt_path=$audio_prompt_path
 
-# bash ./examples/s2s/scripts/inference_s2s_cosyvoice.sh
+# bash ./examples/s2s/scripts/inference_s2s_cosyvoice_group.sh

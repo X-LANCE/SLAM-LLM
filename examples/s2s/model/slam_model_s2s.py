@@ -387,7 +387,8 @@ class slam_model_s2s(slam_model):
                     next_token_audio = torch.full((input_ids.size(0),), pad_a, device=input_ids.device)
                 next_tokens_audio.append(next_token_audio)
 
-            if next_tokens_audio[-1] == eoa or decode_text_only:
+            # if next_tokens_audio[-1] == eoa or decode_text_only:
+            if eoa in next_tokens_audio or decode_text_only:
                 audio_end = True
             if next_token_text == eot:
                 text_end = True
@@ -403,19 +404,19 @@ class slam_model_s2s(slam_model):
             #     input_pos = input_pos.add_(1)
             attention_mask = torch.cat([attention_mask, torch.ones((input_ids.size(0), 1), device=input_ids.device)], dim=1)
 
-            if audio_end and text_end:
-                break
-
             # Append generated tokens to the list
             for i in range(self.code_layer):
                 generated_ids[i].append(next_tokens_audio[i].clone().tolist()[0])  # Audio layers
             generated_ids[self.code_layer].append(next_token_text.clone().tolist()[0])  # Text layer
 
+            if audio_end and text_end:
+                break
+
         # Concatenate the generated tokens to form the complete sequence
         text_tokens = generated_ids[-1]
         generated_ids[-1] = text_tokens[: text_tokens.index(eot)] if eot in text_tokens else text_tokens
 
-        if eoa in generated_ids[-2]:
+        if eoa in generated_ids[-2] and do_layershift:
             end_ids = generated_ids[-2].index(eoa)
             for i in range(self.code_layer):
                 audio_tokens = generated_ids[i]
@@ -464,6 +465,12 @@ class slam_model_s2s(slam_model):
         max_new_tokens = kwargs.get("max_new_tokens", 360)
         repetition_penalty = kwargs.get("repetition_penalty", 1.0)
         decode_text_only = kwargs.get("decode_text_only", False)
+        upsampling_factor = kwargs.get("upsampling_factor", 1)
+        do_layershift = kwargs.get("do_layershift", True)
+        if do_layershift:
+            layershift = layer_shift
+        else:
+            layershift = simple_shift
 
         pad_t = self.model_config.vocab_config.pad_t
         pad_a = self.model_config.vocab_config.pad_a

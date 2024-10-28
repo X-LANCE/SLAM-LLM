@@ -27,7 +27,7 @@ total_vocabsize=156160  # 152000 + 4160 Sry: Here is not elegant to set the tota
 # code settings
 code_type=CosyVoice     # CosyVoice or SNAC
 num_latency_tokens=1    # number of latency tokens (in front of the generated audio tokens)
-do_layershift=true      # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
+do_layershift=false      # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
 
 # dataset settings
 train_data_path="/valleblob/v-wenxichen/data/s2s/VoiceAssistant-400K-CosyVoice"
@@ -40,7 +40,7 @@ upsampling_factor=1
 upsample_method=repeat  # repeat or blank
 
 # training settings
-batch_size_training=4
+batch_size_training=2
 use_fp16=true
 num_epochs=10
 lr=5e-4
@@ -159,7 +159,7 @@ else
 fi
 
 # ++train_config.use_fp16=true \
-# bash /home/v-wenxichen/SLAM-LLM/examples/s2s/scripts/finetune_s2s_cosyvoice.sh
+# bash ./examples/s2s/scripts/finetune_s2s_cosyvoice.sh
 
 # 1GPU + 12w steps + btz4 = 1epoch
 # 1GPU + 24w steps + btz2 = 1epoch 
