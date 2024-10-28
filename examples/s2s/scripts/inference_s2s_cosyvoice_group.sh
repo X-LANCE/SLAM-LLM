@@ -32,7 +32,7 @@ codec_decoder_type=CosyVoice
 num_latency_tokens=1    # number of latency tokens
 do_layershift=false      # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
 
-ckpt_path=/valleblob_ori/v-wenxichen/exp/s2s/s2s_train_v3_gpu4_btz3_lr5e-4_fp16_epochs10_whisper-small_group2/s2s_epoch_1_step_20000
+ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v3_gpu4_btz3_lr5e-4_fp16_epochs10_whisper-small_group2/s2s_epoch_1_step_20000
 split=test
 
 # jsonl dataset
