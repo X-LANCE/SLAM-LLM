@@ -42,10 +42,11 @@ split=test
 manifest_format=datasets
 val_data_path="/valleblob/v-wenxichen/data/s2s/VoiceAssistant-400K-v1/test"
 load_from_cache_file=false
-dataset_sample_seed=777
+dataset_sample_seed=1234
 
 # decode config
-repetition_penalty=1.0
+text_repetition_penalty=1.0
+audio_repetition_penalty=1.2
 max_new_tokens=3000
 do_sample=false
 top_p=0.9
@@ -59,9 +60,9 @@ speech_sample_rate=22050
 inference_online=false
 # audio_prompt_path=/home/v-wenxichen/SLAM-LLM/examples/s2s/prompt/promt_6.wav
 
-decode_log=$ckpt_path/s2s_decode_${split}_rp${repetition_penalty}_seed${dataset_sample_seed}_greedy
+decode_log=$ckpt_path/s2s_decode_${split}_trp${text_repetition_penalty}_arp${text_repetition_penalty}_seed${dataset_sample_seed}_greedy
 if [ "$do_sample" = true ] ; then
-    decode_log=$ckpt_path/s2s_decode_${split}_rp${repetition_penalty}_seed${dataset_sample_seed}_sampling_topk${top_k}_topp${top_p}_temp${temperature}
+    decode_log=$ckpt_path/s2s_decode_${split}_trp${text_repetition_penalty}_arp${text_repetition_penalty}_seed${dataset_sample_seed}_sampling_topk${top_k}_topp${top_p}_temp${temperature}
 fi
 
 if [ "$decode_text_only" = true ] ; then
@@ -69,7 +70,7 @@ if [ "$decode_text_only" = true ] ; then
 fi
 
 # -m debugpy --listen 5678 --wait-for-client
-python $code_dir/inference_s2s.py \
+python -m debugpy --listen 5678 --wait-for-client $code_dir/inference_s2s.py \
         --config-path "conf" \
         --config-name "prompt.yaml" \
         hydra.run.dir=$ckpt_path \
@@ -112,7 +113,8 @@ python $code_dir/inference_s2s.py \
         ++train_config.val_batch_size=1 \
         ++train_config.num_workers_dataloader=2 \
         ++train_config.task_type=$task_type \
-        ++decode_config.repetition_penalty=$repetition_penalty \
+        ++decode_config.text_repetition_penalty=$text_repetition_penalty \
+        ++decode_config.audio_repetition_penalty=$audio_repetition_penalty \
         ++decode_config.max_new_tokens=$max_new_tokens \
         ++decode_config.task_type=$task_type \
         ++decode_config.do_sample=$do_sample \

@@ -210,7 +210,8 @@ class DecodeConfig:
     num_return_sequences: int = 1
     num_samples: int = 1
     max_time: float = 0.0
-    repetition_penalty: float = 1.0
+    text_repetition_penalty: float = 1.0
+    audio_repetition_penalty: float = 1.0
     length_penalty: float = 1.0
     early_stopping: bool = False
     no_repeat_ngram_size: int = 0

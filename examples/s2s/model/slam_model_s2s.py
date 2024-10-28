@@ -324,7 +324,8 @@ class slam_model_s2s(slam_model):
         audio_vocab_size = self.model_config.vocab_config.padded_audio_vocabsize
 
         max_new_tokens = kwargs.get("max_new_tokens", 360)
-        repetition_penalty = kwargs.get("repetition_penalty", 1.0)
+        text_repetition_penalty = kwargs.get("text_repetition_penalty", 1.0)
+        audio_repetition_penalty = kwargs.get("audio_repetition_penalty", 1.0)
         decode_text_only = kwargs.get("decode_text_only", False)
         upsampling_factor = kwargs.get("upsampling_factor", 1)
         do_layershift = kwargs.get("do_layershift", True)
@@ -369,10 +370,11 @@ class slam_model_s2s(slam_model):
                 xa_logits = [logits[..., text_vocab_size + audio_vocab_size * i : text_vocab_size + audio_vocab_size * (i + 1)] for i in range(self.code_layer)]
 
             # Apply repetition penalty to the logits
-            if repetition_penalty != 1.0:
-                xt_logits = self.repetition_penalty(xt_logits, generated_ids[self.code_layer], repetition_penalty)
+            if text_repetition_penalty != 1.0:
+                xt_logits = self.repetition_penalty(xt_logits, generated_ids[self.code_layer], text_repetition_penalty)
+            if audio_repetition_penalty != 1.0:
                 for i in range(self.code_layer):
-                    xa_logits[i] = self.repetition_penalty(xa_logits[i], generated_ids[i], repetition_penalty)
+                    xa_logits[i] = self.repetition_penalty(xa_logits[i], generated_ids[i], audio_repetition_penalty)
 
             if not text_end:
                 next_token_text = self.sample_next_token(xt_logits[:, -1, :], **kwargs)
@@ -463,7 +465,8 @@ class slam_model_s2s(slam_model):
         audio_vocab_size = self.model_config.vocab_config.padded_audio_vocabsize
 
         max_new_tokens = kwargs.get("max_new_tokens", 360)
-        repetition_penalty = kwargs.get("repetition_penalty", 1.0)
+        text_repetition_penalty = kwargs.get("text_repetition_penalty", 1.0)
+        audio_repetition_penalty = kwargs.get("audio_repetition_penalty", 1.0)
         decode_text_only = kwargs.get("decode_text_only", False)
         upsampling_factor = kwargs.get("upsampling_factor", 1)
         do_layershift = kwargs.get("do_layershift", True)
@@ -515,10 +518,11 @@ class slam_model_s2s(slam_model):
             xa_logits = [logits[..., text_vocab_size + audio_vocab_size * i : text_vocab_size + audio_vocab_size * (i + 1)] for i in range(self.code_layer)]
 
             # Apply repetition penalty to the logits
-            if repetition_penalty != 1.0:
-                xt_logits = self.repetition_penalty(xt_logits, generated_ids[self.code_layer], repetition_penalty)
+            if text_repetition_penalty != 1.0:
+                xt_logits = self.repetition_penalty(xt_logits, generated_ids[self.code_layer], text_repetition_penalty)
+            if audio_repetition_penalty != 1.0:
                 for i in range(self.code_layer):
-                    xa_logits[i] = self.repetition_penalty(xa_logits[i], generated_ids[i], repetition_penalty)
+                    xa_logits[i] = self.repetition_penalty(xa_logits[i], generated_ids[i], audio_repetition_penalty)
 
             if not text_end:
                 next_token_text = self.sample_next_token(xt_logits[:, -1, :], **kwargs)
