@@ -42,11 +42,11 @@ split=test
 manifest_format=datasets
 val_data_path="/valleblob/v-wenxichen/data/s2s/VoiceAssistant-400K-v1/test"
 load_from_cache_file=false
-dataset_sample_seed=1234
+dataset_sample_seed=999
 
 # decode config
 text_repetition_penalty=1.0
-audio_repetition_penalty=1.2
+audio_repetition_penalty=1.0
 max_new_tokens=3000
 do_sample=false
 top_p=0.9
@@ -70,7 +70,7 @@ if [ "$decode_text_only" = true ] ; then
 fi
 
 # -m debugpy --listen 5678 --wait-for-client
-python -m debugpy --listen 5678 --wait-for-client $code_dir/inference_s2s.py \
+python $code_dir/inference_s2s.py \
         --config-path "conf" \
         --config-name "prompt.yaml" \
         hydra.run.dir=$ckpt_path \

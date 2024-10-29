@@ -5,6 +5,7 @@ import os
 import soundfile as sf
 from slam_llm.utils.model_utils import get_custom_model_factory
 from utils.snac_utils import reconscruct_snac, reconstruct_tensors, layershift, get_snac_answer_token
+from utils.codec_utils import audio_decode_cosyvoice
 import hydra
 from omegaconf import DictConfig, ListConfig, OmegaConf
 import whisper
@@ -67,7 +68,7 @@ def get_padded_input(text_input_idx, text_index_length, code_layer, _pad_a):
 	return padded_input
 
 
-def generate_from_wav(wav_path, model, codec_decoder, dataset_config, decode_config, logger, device):
+def generate_from_wav(wav_path, model, codec_decoder, dataset_config, decode_config, logger, device, model_config, tone_dir, audio_prompt_path=None, output_text_only=False):
 	mel_size = dataset_config.mel_size
 	prompt = dataset_config.prompt
 	prompt_template = "USER: {}\n ASSISTANT: "
@@ -78,6 +79,8 @@ def generate_from_wav(wav_path, model, codec_decoder, dataset_config, decode_con
 	_eot = vocab_config.eot
 	code_layer = vocab_config.code_layer
 	task_type = dataset_config.task_type
+	code_type = model_config.code_type
+	num_latency_tokens = dataset_config.num_latency_tokens
 
 	audio_mel, audio_length = extract_audio_feature(wav_path, mel_size)
 
@@ -120,19 +123,29 @@ def generate_from_wav(wav_path, model, codec_decoder, dataset_config, decode_con
 	audio_outputs = model_outputs[:code_layer]	
 	output_text = model.tokenizer.decode(text_outputs, add_special_tokens=False, skip_special_tokens=True)
 	
-	if decode_config.decode_text_only:
+	if decode_config.decode_text_only or output_text_only:
+		return None, output_text
+
+	if audio_outputs[0].shape[0] == decode_config.max_new_tokens:
+		logger.warning(f"Audio token is too long, skip. You can try to increase the max_new_tokens in the decode_config.")
 		return None, output_text
 	
 	audio_tokens = [audio_outputs[layer] for layer in range(code_layer)]
-	audiolist = reconscruct_snac(audio_tokens)
-	audio = reconstruct_tensors(audiolist)
-	with torch.inference_mode():
-		audio_hat = codec_decoder.decode(audio)	
+
+	if code_type == "SNAC":
+		audiolist = reconscruct_snac(audio_tokens)
+		audio = reconstruct_tensors(audiolist)
+		with torch.inference_mode():
+			audio_hat = codec_decoder.decode(audio)
+	elif code_type == "CosyVoice":
+		audio_hat = audio_decode_cosyvoice(audio_tokens, model_config, codec_decoder, tone_dir, audio_prompt_path, code_layer, num_latency_tokens, speed=1.0)
+	else:
+		raise NotImplementedError
 
 	return audio_hat, output_text
 
 
-def generate_from_text(text_input, model, codec_decoder, dataset_config, decode_config, logger, device):
+def generate_from_text(text_input, model, codec_decoder, dataset_config, decode_config, logger, device, model_config, tone_dir, audio_prompt_path=None, output_text_only=False):
 	prompt = dataset_config.prompt
 	prompt_template = "USER: {}\n ASSISTANT: "
 	vocab_config = dataset_config.vocab_config
@@ -142,6 +155,8 @@ def generate_from_text(text_input, model, codec_decoder, dataset_config, decode_
 	_eot = vocab_config.eot
 	code_layer = vocab_config.code_layer
 	task_type = dataset_config.task_type
+	code_type = model_config.code_type
+	num_latency_tokens = dataset_config.num_latency_tokens
 
 	prompt = prompt_template.format(prompt)
 	prompt_ids = model.tokenizer.encode(prompt)
@@ -184,14 +199,24 @@ def generate_from_text(text_input, model, codec_decoder, dataset_config, decode_
 	audio_outputs = model_outputs[:code_layer]	
 	output_text = model.tokenizer.decode(text_outputs, add_special_tokens=False, skip_special_tokens=True)
 	
-	if decode_config.decode_text_only:
+	if decode_config.decode_text_only or output_text_only:
+		return None, output_text
+
+	if audio_outputs[0].shape[0] == decode_config.max_new_tokens:
+		logger.warning(f"Audio token is too long, skip. You can try to increase the max_new_tokens in the decode_config.")
 		return None, output_text
 	
 	audio_tokens = [audio_outputs[layer] for layer in range(code_layer)]
-	audiolist = reconscruct_snac(audio_tokens)
-	audio = reconstruct_tensors(audiolist)
-	with torch.inference_mode():
-		audio_hat = codec_decoder.decode(audio)	
+
+	if code_type == "SNAC":
+		audiolist = reconscruct_snac(audio_tokens)
+		audio = reconstruct_tensors(audiolist)
+		with torch.inference_mode():
+			audio_hat = codec_decoder.decode(audio)
+	elif code_type == "CosyVoice":
+		audio_hat = audio_decode_cosyvoice(audio_tokens, model_config, codec_decoder, tone_dir, audio_prompt_path, code_layer, num_latency_tokens, speed=1.0)
+	else:
+		raise NotImplementedError
 	
 	return audio_hat, output_text
 
@@ -252,8 +277,25 @@ def main(kwargs: DictConfig):
 	model.to(device)
 	model.eval()
 
+	task_type = decode_config.task_type
+	code_layer = model_config.vocab_config.code_layer
+	code_type = model_config.code_type
+
+	output_text_only = kwargs.get('output_text_only', False)
+	speech_sample_rate = kwargs.get('speech_sample_rate', 24000)
+	audio_prompt_path = kwargs.get('audio_prompt_path', None)
+
 	output_dir = log_config.online_output_dir
 	logger.info("output_dir: {}".format(output_dir))
+
+	if audio_prompt_path is None or not os.path.exists(audio_prompt_path):
+		tone_dir = "default_tone"
+	else:
+		tone_dir = os.path.basename(audio_prompt_path).split('.')[0]
+	tone_audio_dir = os.path.join(output_dir, tone_dir)
+
+	if not os.path.exists(tone_audio_dir) and not (output_text_only or decode_config.decode_text_only):
+		os.makedirs(tone_audio_dir)
 
 	task_type = decode_config.task_type
 	logger.info("decode_config: {}".format(decode_config))
@@ -268,12 +310,13 @@ def main(kwargs: DictConfig):
 	else:
 		logger.info("Input Audio")
 
-
 	if decode_config.decode_text_only:
 		logger.info("Decode Text Only")
 	else:
 		logger.info("Decode Text & Audio")
-
+	logger.info("Decode Codec Type: {}".format(code_type))
+	logger.info("Decode Code Layer: {}".format(code_layer))
+	logger.info("Tone for Audio Generation: {}".format(tone_dir))
 
 	if decode_config.input_text:
 		logger.info("============== Ready for t2s Online Inference ==============")
@@ -282,15 +325,15 @@ def main(kwargs: DictConfig):
 			if text_input.lower() == 'q':
 				break
 
-			audio_hat, output_text = generate_from_text(text_input, model, codec_decoder, dataset_config, decode_config, logger, device)
+			audio_hat, output_text = generate_from_text(text_input, model, codec_decoder, dataset_config, decode_config, logger, device, model_config, tone_dir, audio_prompt_path, output_text_only)
 			logger.info(f"Generated Text: {output_text}")
 
-			if output_dir is not None:
-				os.makedirs(output_dir, exist_ok=True)
-				output_wav_path = os.path.join(output_dir, f"generated_{text_input.replace(' ', '_')[:20]}.wav")
+			if tone_audio_dir is not None:
+				os.makedirs(tone_audio_dir, exist_ok=True)
+				output_wav_path = os.path.join(tone_audio_dir, f"generated_{text_input.replace(' ', '_')[:20]}.wav")
 			else:
 				output_wav_path = f"generated_{text_input.replace(' ', '_')}.wav"
-			sf.write(output_wav_path, audio_hat.squeeze().cpu().numpy(), 24000)
+			sf.write(output_wav_path, audio_hat.squeeze().cpu().numpy(), speech_sample_rate)
 			logger.info(f"Generated Audio saved at: {output_wav_path}")
 	else:
 		logger.info("============== Ready for {task_type} Online Inference ==============".format(task_type=task_type))
@@ -303,19 +346,23 @@ def main(kwargs: DictConfig):
 				logger.warning(f"File {wav_path} does not exist. Please try again.")
 				continue
 
-			output_wav, output_text = generate_from_wav(wav_path, model, codec_decoder, dataset_config, decode_config, logger, device)
+			output_wav, output_text = generate_from_wav(wav_path, model, codec_decoder, dataset_config, decode_config, logger, device, model_config, tone_dir, audio_prompt_path, output_text_only)
 			logger.info(f"Generated Text: {output_text}")	
+
+			if output_wav is None:
+				logger.warning(f"Generated Audio is None. Please try again.")
+				continue
 			
-			if output_dir is not None:
-				os.makedirs(output_dir, exist_ok=True)
-				output_wav_path = os.path.join(output_dir, f"generated_{os.path.basename(wav_path)}")
+			if tone_audio_dir is not None:
+				os.makedirs(tone_audio_dir, exist_ok=True)
+				output_wav_path = os.path.join(tone_audio_dir, f"generated_{os.path.basename(wav_path)}")
 			else:
 				output_wav_path = f"generated_{os.path.basename(wav_path)}"
 
 			if not output_wav_path.lower().endswith('.wav'):
 				output_wav_path = os.path.splitext(output_wav_path)[0] + '.wav'
 
-			sf.write(output_wav_path, output_wav.squeeze().cpu().numpy(), 24000)		
+			sf.write(output_wav_path, output_wav.squeeze().cpu().numpy(), speech_sample_rate)		
 			logger.info(f"Generated Audio saved at: {output_wav_path}")
 		
 	logger.info("============== Online Inference Finished ==============")

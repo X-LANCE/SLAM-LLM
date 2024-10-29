@@ -6,6 +6,7 @@ import logging
 from slam_llm.utils.model_utils import get_custom_model_factory
 from slam_llm.utils.dataset_utils import get_preprocessed_dataset
 from utils.snac_utils import reconscruct_snac, reconstruct_tensors
+from utils.codec_utils import audio_decode_cosyvoice
 import os
 import logging
 import soundfile as sf
@@ -198,46 +199,7 @@ def main(kwargs: DictConfig):
 					with torch.inference_mode():
 						audio_hat = codec_decoder.decode(audio)
 				elif code_type == "CosyVoice":
-					import uuid
-					if code_layer > 1:
-						audio_tokens_tensor = torch.stack(audio_tokens, dim=0)
-						audio_tokens_permuted = audio_tokens_tensor.permute(1, 0)
-						audio_tokens = audio_tokens_permuted.reshape(-1).unsqueeze(0)
-						audio_tokens = audio_tokens[...,num_latency_tokens*code_layer:]
-					else:
-						audio_tokens = torch.cat(audio_tokens, dim=-1).unsqueeze(0)
-						audio_tokens = audio_tokens[...,num_latency_tokens:]
-					eoa = model_config.vocab_config.eoa
-					pad_a = model_config.vocab_config.pad_a
-					end_index = torch.nonzero(audio_tokens[0] == eoa)[0]
-					audio_tokens = audio_tokens[...,:end_index]
-					speed = 1.0
-					this_uuid = str(uuid.uuid1())
-
-					if pad_a in audio_tokens:	# FIXME: this is a temporary fix for the padding issue, where the padding token may be included in the audio tokens
-						end_index = torch.nonzero(audio_tokens[0] == pad_a)[0]
-						audio_tokens = audio_tokens[..., :end_index]
-
-					if tone_dir == "default_tone":
-						flow_embedding = codec_decoder.frontend.spk2info['英文女']['embedding']
-						flow_prompt_speech_token = torch.zeros(1, 0, dtype=torch.int32)
-						prompt_speech_feat = torch.zeros(1, 0, 80)
-
-					else: 
-						from utils.cosyvoice.utils.file_utils import load_wav
-						prompt_speech_16k = load_wav(audio_prompt_path, 16000)
-						flow_prompt_speech_token, flow_prompt_speech_token_len = codec_decoder.frontend._extract_speech_token(prompt_speech_16k)
-						prompt_speech_22050 = torchaudio.transforms.Resample(orig_freq=16000, new_freq=22050)(prompt_speech_16k)
-						prompt_speech_feat, prompt_speech_feat_len = codec_decoder.frontend._extract_speech_feat(prompt_speech_22050)
-						flow_embedding = codec_decoder.frontend._extract_spk_embedding(prompt_speech_16k)
-					
-					audio_hat = codec_decoder.model.token2wav(token=audio_tokens,
-															prompt_token=flow_prompt_speech_token,
-															prompt_feat=prompt_speech_feat,
-															embedding=flow_embedding,
-															uuid=this_uuid,
-															finalize=True,
-															speed=speed)
+					audio_hat = audio_decode_cosyvoice(audio_tokens, model_config, codec_decoder, tone_dir, audio_prompt_path, code_layer, num_latency_tokens, speed=1.0)
 				else:
 					raise NotImplementedError
 

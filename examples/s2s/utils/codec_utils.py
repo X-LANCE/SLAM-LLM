@@ -1,7 +1,9 @@
 from slam_llm.utils.train_utils import print_module_size
 import torch
+import torchaudio
 import os
 import torch.nn as nn
+import uuid
 
 def setup_codec(train_config, model_config, **kwargs):
     if model_config.codec_decoder_type == "SNAC":
@@ -45,3 +47,73 @@ def get_group_answer_token(audio_tokens, num_latency_tokens, padding_token, end_
     
     result_tensor = torch.stack(result)
     return result_tensor, audio_length
+
+def audio_decode_cosyvoice(audio_tokens, model_config, codec_decoder, tone_dir, audio_prompt_path=None, code_layer=1, num_latency_tokens=1, speed=1.0):
+    """
+    Generate audio from tokens with optional tone and prompt embedding.
+
+    Args:
+        audio_tokens (list): List of audio tokens to be processed.
+        model_config: Configuration object containing vocab settings.
+        codec_decoder: Codec decoder for generating audio.
+        tone_dir (str): The tone directory or setting.
+        audio_prompt_path (str, optional): Path to the audio prompt file. Required when tone_dir is not "default_tone".
+        code_layer (int, optional): Number of code layers. Defaults to 1.
+        num_latency_tokens (int, optional): Number of latency tokens to ignore. Defaults to 0.
+        speed (float, optional): Speed factor for audio generation. Defaults to 1.0.
+    
+    Returns:
+        torch.Tensor: Generated audio waveform.
+    """
+    
+    # Reshape audio tokens based on code_layer
+    if code_layer > 1:
+        audio_tokens_tensor = torch.stack(audio_tokens, dim=0)
+        audio_tokens_permuted = audio_tokens_tensor.permute(1, 0)
+        audio_tokens = audio_tokens_permuted.reshape(-1).unsqueeze(0)
+        audio_tokens = audio_tokens[..., num_latency_tokens * code_layer:]
+    else:
+        audio_tokens = torch.cat(audio_tokens, dim=-1).unsqueeze(0)
+        audio_tokens = audio_tokens[..., num_latency_tokens:]
+
+    # Get vocabulary configuration for end of audio (EOA) and padding token
+    eoa = model_config.vocab_config.eoa
+    pad_a = model_config.vocab_config.pad_a
+
+    # Truncate audio tokens at the EOA token 
+    end_index = torch.nonzero(audio_tokens[0] == eoa)[0]
+    audio_tokens = audio_tokens[..., :end_index]
+
+    # Handle padding tokens if present, # FIXME: this is a temporary fix for the padding issue, where the padding token may be included in the audio tokens
+    if pad_a in audio_tokens:
+        end_index = torch.nonzero(audio_tokens[0] == pad_a)[0]
+        audio_tokens = audio_tokens[..., :end_index]
+
+    # Generate a unique ID for this audio generation
+    this_uuid = str(uuid.uuid1())
+
+    # Set up the prompt speech features and speaker embedding
+    if tone_dir == "default_tone":
+        flow_embedding = codec_decoder.frontend.spk2info['英文女']['embedding']
+        flow_prompt_speech_token = torch.zeros(1, 0, dtype=torch.int32)
+        prompt_speech_feat = torch.zeros(1, 0, 80)
+    else:
+        from utils.cosyvoice.utils.file_utils import load_wav
+        prompt_speech_16k = load_wav(audio_prompt_path, 16000)
+        flow_prompt_speech_token, flow_prompt_speech_token_len = codec_decoder.frontend._extract_speech_token(prompt_speech_16k)
+        prompt_speech_22050 = torchaudio.transforms.Resample(orig_freq=16000, new_freq=22050)(prompt_speech_16k)
+        prompt_speech_feat, prompt_speech_feat_len = codec_decoder.frontend._extract_speech_feat(prompt_speech_22050)
+        flow_embedding = codec_decoder.frontend._extract_spk_embedding(prompt_speech_16k)
+
+    # Convert tokens to audio waveform
+    audio_hat = codec_decoder.model.token2wav(
+        token=audio_tokens,
+        prompt_token=flow_prompt_speech_token,
+        prompt_feat=prompt_speech_feat,
+        embedding=flow_embedding,
+        uuid=this_uuid,
+        finalize=True,
+        speed=speed
+    )
+
+    return audio_hat
