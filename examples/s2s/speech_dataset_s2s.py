@@ -6,7 +6,8 @@ import numpy as np
 import torch
 import whisper
 from slam_llm.utils.compute_utils import calculate_output_length_1d
-from utils.snac_utils import layershift, get_snac_answer_token
+from utils.snac_utils import layershift, get_snac_answer_token, simple_shift
+from utils.codec_utils import get_single_layer_answer_token, get_group_answer_token
 import librosa
 
 
@@ -69,6 +70,22 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         self.upsampling_factor = dataset_config.get("upsampling_factor", 1)
         self.upsample_method = dataset_config.get("upsample_method", "repeat")
 
+        # code type config
+        self.code_type = dataset_config.get("code_type", "SNAC")
+        if self.code_type != "SNAC" and self.code_type != "CosyVoice":
+            raise ValueError("code_type must be one of [SNAC, CosyVoice]")
+        
+        # number of tokens for latency
+        self.num_latency_tokens = dataset_config.get("num_latency_tokens", 1)
+
+        # layershift config
+        self.do_layershift = dataset_config.get("do_layershift", True)
+        if self.do_layershift:
+            self.layershift = layershift
+        else:
+            self.layershift = simple_shift
+        
+
         self.data_list = []
 
         # TODO: design a better way to load data
@@ -110,9 +127,18 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         if self.manifest_format == "datasets" and isinstance(audio_path, dict):
             audio_raw = audio_path['array']
             audio_raw_sr = audio_path['sampling_rate']
+            if not isinstance(audio_raw, np.ndarray):
+                audio_raw = np.array(audio_raw)
             audio_raw = librosa.resample(audio_raw, orig_sr=audio_raw_sr, target_sr=16000).astype(np.float32)
-        elif self.manifest_format == "datasets" and isinstance(audio_path, str):
-            audio_res, audio_length = get_snac_answer_token(audio_path)
+        elif self.manifest_format == "datasets" and (isinstance(audio_path, str) or isinstance(audio_path, list)):
+            if self.code_type == "SNAC":
+                audio_res, audio_length = get_snac_answer_token(audio_path)
+            elif self.code_type == "CosyVoice":
+                audio_tokens = audio_path
+                if self.code_layer == 1:
+                    audio_res, audio_length = get_single_layer_answer_token(audio_tokens, self.num_latency_tokens, self._pad_a, self._eoa)
+                else:
+                    audio_res, audio_length = get_group_answer_token(audio_tokens, self.num_latency_tokens, self._pad_a, self._eoa, self.code_layer)
             return audio_res, audio_length
         else:
             audio_raw = whisper.load_audio(audio_path)
@@ -137,9 +163,9 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         input_ids = []
         for i in range(self.code_layer):
             input_ids_item = []
-            input_ids_item.append(layershift(self._input_a, i))
-            input_ids_item += [layershift(self._pad_a, i)] * length
-            input_ids_item += [(layershift(self._eoa, i)), layershift(special_token_a, i)]
+            input_ids_item.append(self.layershift(self._input_a, i))
+            input_ids_item += [self.layershift(self._pad_a, i)] * length
+            input_ids_item += [(self.layershift(self._eoa, i)), self.layershift(special_token_a, i)]
             input_ids.append(torch.tensor(input_ids_item).unsqueeze(0))
         input_id_T = torch.tensor([self._input_t] + [self._pad_t] * length + [self._eot, special_token_t])
         input_ids.append(input_id_T.unsqueeze(0))
@@ -148,7 +174,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
     def get_padded_input(self, text_input_idx, text_index_length):
         padded_input = []
         for i in range(self.code_layer):
-            padded_input_item = [layershift(self._pad_a, i)] * text_index_length
+            padded_input_item = [self.layershift(self._pad_a, i)] * text_index_length
             padded_input.append(torch.tensor(padded_input_item).unsqueeze(0))
         
         final_layer_input = torch.tensor(text_input_idx)
@@ -159,7 +185,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         answer_ids = []
         for i in range(self.code_layer):
             answer_ids_item = []
-            answer_ids_item += [layershift(self._pad_a, i)] * length
+            answer_ids_item += [self.layershift(self._pad_a, i)] * length
             answer_ids.append(torch.tensor(answer_ids_item).unsqueeze(0))
         answer_id_T = torch.tensor([self._pad_t] * length)
         answer_ids.append(answer_id_T.unsqueeze(0))
@@ -210,7 +236,10 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
 
         if self.manifest_format == "datasets":
             source_audio = data_dict.get("question_audio", None)
-            target_audio = data_dict.get("answer_snac", None)
+            if self.code_type == "SNAC":
+                target_audio = data_dict.get("answer_snac", None)
+            elif self.code_type == "CosyVoice":
+                target_audio = data_dict.get("answer_cosyvoice_speech_token", None)
             source_text = data_dict.get("question", None)
             target_text = data_dict.get("answer", None)
             if source_audio is not None:
@@ -242,7 +271,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
 
         if task_type == "s2s" or task_type == "asr":
             example_ids = self.get_input_ids(audio_length, self.special_token_a, self.special_token_t)
-            example_ids = [torch.cat((prompt_ids[i], example_ids[i]), dim = 1) for i in range(self.code_layer + 1)]
+            example_ids = [torch.cat((prompt_ids[i], example_ids[i]), dim = 1) for i in range(self.code_layer + 1)] # 1 for text layer
         elif task_type == "tts":
             target_text_ids = self.tokenizer.encode(target_text)
             target_text_length = len(target_text_ids)
@@ -300,7 +329,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         if target_audio is not None:    
             for i in range(self.code_layer):
                 labels_ids[i] = torch.cat((target_audio[i].unsqueeze(0), answer_ids[i][:,target_audio_length:]), dim=1)
-                answer_ids[i] = torch.cat((layershift(target_audio[i], i).unsqueeze(0), labels_ids[i][:,target_audio_length:]), dim=1)
+                answer_ids[i] = torch.cat((self.layershift(target_audio[i], i).unsqueeze(0), labels_ids[i][:,target_audio_length:]), dim=1)
 
         for i in range(self.code_layer + 1):
             example_ids[i] = torch.cat((ori_example_ids[i], answer_ids[i]), dim=1)  # [prompt,audio,answer,eos]

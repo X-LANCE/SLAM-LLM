@@ -18,7 +18,9 @@ from tqdm import tqdm
 from utils.tts_adapter_utils import setup_tts_adapter
 from utils.codec_utils import setup_codec
 from utils.trick_utils import partial_freeze_weights, train_embedding_layer_only
-from utils.snac_utils import layershift, get_snac, generate_audio_data
+from utils.snac_utils import get_snac, generate_audio_data, simple_shift
+from utils.snac_utils import layershift as layer_shift
+from utils.projector_utils import setup_group_decode_adapter
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +56,10 @@ def model_factory(train_config, model_config, **kwargs):
         adapter_config = model_config.tts_adapter_config
         tts_adapter = setup_tts_adapter(adapter_config, model_config, **kwargs)
 
+    group_decode_adapter = None
+    if model_config.group_decode:
+        group_decode_adapter = setup_group_decode_adapter(model_config, train_config, **kwargs)
+
     model = slam_model_s2s(
         encoder,
         llm,
@@ -61,6 +67,7 @@ def model_factory(train_config, model_config, **kwargs):
         tokenizer,
         tts_adapter,
         codec_decoder,
+        group_decode_adapter,
         train_config,
         model_config,
         **kwargs,
@@ -101,6 +108,7 @@ class slam_model_s2s(slam_model):
         tokenizer,
         tts_adapter,
         codec_decoder,
+        group_decode_adapter,
         train_config,
         model_config,
         **kwargs,
@@ -126,6 +134,7 @@ class slam_model_s2s(slam_model):
         self.codec_decoder = codec_decoder
         self.tts_adapter = tts_adapter
         self.code_layer = self.model_config.vocab_config.code_layer
+        self.group_decode_adapter = group_decode_adapter
 
 
     def forward(self,
@@ -176,20 +185,20 @@ class slam_model_s2s(slam_model):
                 encoder_outs = self.encoder_projector(encoder_outs)
 
         if input_ids is not None:
-            input_ids[input_ids == -1] = 0  # [btz, 8, seq_length]
+            input_ids[input_ids == -1] = 0  # [btz, code_layer + 1, seq_length]
 
             if isinstance(self.llm, T5ForConditionalGeneration):
                 inputs_embeds = self.llm.shared(input_ids)
             else:
                 if hasattr(self.llm.model, "embed_tokens"):
-                    inputs_embeds = self.llm.model.embed_tokens(input_ids)  # [btz, 8, seq_length, emb_dim]
+                    inputs_embeds = self.llm.model.embed_tokens(input_ids)  # [btz, code_layer + 1, seq_length, emb_dim]
                 elif hasattr(self.llm.model.model, "embed_tokens"):
                     inputs_embeds = self.llm.model.model.embed_tokens(input_ids)
                 else:
                     inputs_embeds = self.llm.model.model.model.embed_tokens(input_ids)
 
         if modality_mask is not None and encoder_outs is not None:
-            modality_mask = modality_mask.unsqueeze(1).repeat(1, self.code_layer, 1)  # [btz, 8, seq_length]
+            modality_mask = modality_mask.unsqueeze(1).repeat(1, self.code_layer, 1)  # [btz, code_layer, seq_length]
             modality_mask_start_indices = (modality_mask == True).float().argmax(dim=2)
             modality_lengths = torch.clamp(modality_mask.sum(dim=2), max=encoder_outs.shape[1]).tolist()
 
@@ -202,7 +211,7 @@ class slam_model_s2s(slam_model):
             
             inputs_embeds[:, :self.code_layer, :, :] = encoder_outs_pad[:, :self.code_layer, :, :] + inputs_embeds[:, :self.code_layer, :, :] * (~modality_mask[:, :, :, None])
         
-        inputs_embeds = torch.mean(inputs_embeds, dim=1)  # [btz, seq_length, emb_dim], average over the 8 layers
+        inputs_embeds = torch.mean(inputs_embeds, dim=1)  # [btz, seq_length, emb_dim], average over the code layers
 
         if kwargs.get("inference_mode", False):
             return inputs_embeds, attention_mask
@@ -218,8 +227,15 @@ class slam_model_s2s(slam_model):
         audio_vocab_size = self.model_config.vocab_config.padded_audio_vocabsize
         xt = x_ori[..., :text_vocab_size]
         xa = []
-        for i in range(self.code_layer):
-            xa.append(x_ori[..., text_vocab_size + audio_vocab_size * i : text_vocab_size + audio_vocab_size * (i + 1)])
+
+        if self.group_decode_adapter is not None:
+            x_audio_ori = x_ori[..., text_vocab_size:]
+            x_audio = self.group_decode_adapter(x_audio_ori)
+            for i in range(self.code_layer):
+                xa.append(x_audio[..., i * audio_vocab_size : (i + 1) * audio_vocab_size])
+        else:
+            for i in range(self.code_layer):
+                xa.append(x_ori[..., text_vocab_size + audio_vocab_size * i : text_vocab_size + audio_vocab_size * (i + 1)])
 
         loss_recorder = []
         total_loss, loss_recorder = self.compute_parallel_loss(xt, text_labels, xa, audio_labels)
@@ -308,9 +324,15 @@ class slam_model_s2s(slam_model):
         audio_vocab_size = self.model_config.vocab_config.padded_audio_vocabsize
 
         max_new_tokens = kwargs.get("max_new_tokens", 360)
-        repetition_penalty = kwargs.get("repetition_penalty", 1.0)
+        text_repetition_penalty = kwargs.get("text_repetition_penalty", 1.0)
+        audio_repetition_penalty = kwargs.get("audio_repetition_penalty", 1.0)
         decode_text_only = kwargs.get("decode_text_only", False)
         upsampling_factor = kwargs.get("upsampling_factor", 1)
+        do_layershift = kwargs.get("do_layershift", True)
+        if do_layershift:
+            layershift = layer_shift
+        else:
+            layershift = simple_shift
 
         pad_t = self.model_config.vocab_config.pad_t
         pad_a = self.model_config.vocab_config.pad_a
@@ -341,13 +363,18 @@ class slam_model_s2s(slam_model):
 
             # Split logits into text and audio layers based on vocab size
             xt_logits = logits[..., :text_vocab_size]
-            xa_logits = [logits[..., text_vocab_size + audio_vocab_size * i : text_vocab_size + audio_vocab_size * (i + 1)] for i in range(self.code_layer)]
+            if self.group_decode_adapter is not None:
+                xa_logits = self.group_decode_adapter(logits[..., text_vocab_size:])
+                xa_logits = [xa_logits[..., i * audio_vocab_size : (i + 1) * audio_vocab_size] for i in range(self.code_layer)]
+            else:
+                xa_logits = [logits[..., text_vocab_size + audio_vocab_size * i : text_vocab_size + audio_vocab_size * (i + 1)] for i in range(self.code_layer)]
 
             # Apply repetition penalty to the logits
-            if repetition_penalty != 1.0:
-                xt_logits = self.repetition_penalty(xt_logits, generated_ids[self.code_layer], repetition_penalty)
+            if text_repetition_penalty != 1.0:
+                xt_logits = self.repetition_penalty(xt_logits, generated_ids[self.code_layer], text_repetition_penalty)
+            if audio_repetition_penalty != 1.0:
                 for i in range(self.code_layer):
-                    xa_logits[i] = self.repetition_penalty(xa_logits[i], generated_ids[i], repetition_penalty)
+                    xa_logits[i] = self.repetition_penalty(xa_logits[i], generated_ids[i], audio_repetition_penalty)
 
             if not text_end:
                 next_token_text = self.sample_next_token(xt_logits[:, -1, :], **kwargs)
@@ -362,7 +389,8 @@ class slam_model_s2s(slam_model):
                     next_token_audio = torch.full((input_ids.size(0),), pad_a, device=input_ids.device)
                 next_tokens_audio.append(next_token_audio)
 
-            if next_tokens_audio[-1] == eoa or decode_text_only:
+            # if next_tokens_audio[-1] == eoa or decode_text_only:
+            if eoa in next_tokens_audio or decode_text_only:
                 audio_end = True
             if next_token_text == eot:
                 text_end = True
@@ -378,19 +406,19 @@ class slam_model_s2s(slam_model):
             #     input_pos = input_pos.add_(1)
             attention_mask = torch.cat([attention_mask, torch.ones((input_ids.size(0), 1), device=input_ids.device)], dim=1)
 
-            if audio_end and text_end:
-                break
-
             # Append generated tokens to the list
             for i in range(self.code_layer):
                 generated_ids[i].append(next_tokens_audio[i].clone().tolist()[0])  # Audio layers
             generated_ids[self.code_layer].append(next_token_text.clone().tolist()[0])  # Text layer
 
+            if audio_end and text_end:
+                break
+
         # Concatenate the generated tokens to form the complete sequence
         text_tokens = generated_ids[-1]
         generated_ids[-1] = text_tokens[: text_tokens.index(eot)] if eot in text_tokens else text_tokens
 
-        if eoa in generated_ids[-2]:
+        if eoa in generated_ids[-2] and do_layershift:
             end_ids = generated_ids[-2].index(eoa)
             for i in range(self.code_layer):
                 audio_tokens = generated_ids[i]
@@ -437,8 +465,15 @@ class slam_model_s2s(slam_model):
         audio_vocab_size = self.model_config.vocab_config.padded_audio_vocabsize
 
         max_new_tokens = kwargs.get("max_new_tokens", 360)
-        repetition_penalty = kwargs.get("repetition_penalty", 1.0)
+        text_repetition_penalty = kwargs.get("text_repetition_penalty", 1.0)
+        audio_repetition_penalty = kwargs.get("audio_repetition_penalty", 1.0)
         decode_text_only = kwargs.get("decode_text_only", False)
+        upsampling_factor = kwargs.get("upsampling_factor", 1)
+        do_layershift = kwargs.get("do_layershift", True)
+        if do_layershift:
+            layershift = layer_shift
+        else:
+            layershift = simple_shift
 
         pad_t = self.model_config.vocab_config.pad_t
         pad_a = self.model_config.vocab_config.pad_a
@@ -483,10 +518,11 @@ class slam_model_s2s(slam_model):
             xa_logits = [logits[..., text_vocab_size + audio_vocab_size * i : text_vocab_size + audio_vocab_size * (i + 1)] for i in range(self.code_layer)]
 
             # Apply repetition penalty to the logits
-            if repetition_penalty != 1.0:
-                xt_logits = self.repetition_penalty(xt_logits, generated_ids[self.code_layer], repetition_penalty)
+            if text_repetition_penalty != 1.0:
+                xt_logits = self.repetition_penalty(xt_logits, generated_ids[self.code_layer], text_repetition_penalty)
+            if audio_repetition_penalty != 1.0:
                 for i in range(self.code_layer):
-                    xa_logits[i] = self.repetition_penalty(xa_logits[i], generated_ids[i], repetition_penalty)
+                    xa_logits[i] = self.repetition_penalty(xa_logits[i], generated_ids[i], audio_repetition_penalty)
 
             if not text_end:
                 next_token_text = self.sample_next_token(xt_logits[:, -1, :], **kwargs)

@@ -6,12 +6,15 @@ import logging
 from slam_llm.utils.model_utils import get_custom_model_factory
 from slam_llm.utils.dataset_utils import get_preprocessed_dataset
 from utils.snac_utils import reconscruct_snac, reconstruct_tensors
+from utils.codec_utils import audio_decode_cosyvoice
 import os
 import logging
 import soundfile as sf
+import torchaudio
 
 import hydra
 from omegaconf import DictConfig, ListConfig, OmegaConf
+import time
 
 
 @hydra.main(config_name=None, version_base=None)
@@ -117,19 +120,14 @@ def main(kwargs: DictConfig):
         )
 
 	task_type = decode_config.task_type
-	logger.info("decode_config: {}".format(decode_config))	
-	if decode_config.do_sample:
-		logger.info("Decode Strategy: Sampling")
-	else:
-		logger.info("Decode Strategy: Greedy")
-	if decode_config.decode_text_only:
-		logger.info("Decode Text Only")
-	else:
-		logger.info("Decode Text & Audio")
-	logger.info("============== Start {task_type} Inference ==============".format(task_type=task_type))
+	code_layer = model_config.vocab_config.code_layer
+	code_type = model_config.code_type
+	num_latency_tokens = dataset_config.num_latency_tokens
 
 	decode_log_dir = kwargs.get('decode_log')
 	output_text_only = kwargs.get('output_text_only', False)
+	speech_sample_rate = kwargs.get('speech_sample_rate', 24000)
+	audio_prompt_path = kwargs.get('audio_prompt_path', None)
 
 	if not os.path.exists(decode_log_dir):
 		os.makedirs(decode_log_dir)
@@ -139,16 +137,38 @@ def main(kwargs: DictConfig):
 	question_path = os.path.join(decode_log_dir, "question_text")
 	generate_audio_dir = os.path.join(decode_log_dir, "pred_audio")
 
-	if not os.path.exists(generate_audio_dir) and not (output_text_only or decode_config.decode_text_only):
-		os.makedirs(generate_audio_dir)
+	if audio_prompt_path is None or not os.path.exists(audio_prompt_path):
+		tone_dir = "default_tone"
+	else:
+		tone_dir = os.path.basename(audio_prompt_path).split('.')[0]
+	tone_audio_dir = os.path.join(generate_audio_dir, tone_dir)
+
+	if not os.path.exists(tone_audio_dir) and not (output_text_only or decode_config.decode_text_only):
+		os.makedirs(tone_audio_dir)
+
+	logger.info("decode_config: {}".format(decode_config))	
+	if decode_config.do_sample:
+		logger.info("Decode Strategy: Sampling")
+	else:
+		logger.info("Decode Strategy: Greedy")
+	if decode_config.decode_text_only:
+		logger.info("Decode Text Only")
+	else:
+		logger.info("Decode Text & Audio")
+	logger.info("Decode Codec Type: {}".format(code_type))
+	logger.info("Decode Code Layer: {}".format(code_layer))
+	logger.info("Tone for Audio Generation: {}".format(tone_dir))
+
+	logger.info("============== Start {task_type} Inference ==============".format(task_type=task_type))
 
 	with open(pred_path, "w") as pred, open(gt_path, "w") as gt, open(question_path, "w") as q:
 		for step, batch in enumerate(test_dataloader):
 			for key in batch.keys():
 				batch[key] = batch[key].to(device) if isinstance(batch[key], torch.Tensor) else batch[key]
+			start_time = time.time()
 			model_outputs = model.generate(**batch, **decode_config)
-			text_outputs = model_outputs[7]
-			audio_outputs = model_outputs[:7]
+			text_outputs = model_outputs[code_layer]
+			audio_outputs = model_outputs[:code_layer]
 			# output_text = model.tokenizer.batch_decode(text_outputs, add_special_tokens=False, skip_special_tokens=True)
 			output_text = model.tokenizer.decode(text_outputs, add_special_tokens=False, skip_special_tokens=True)
 			for key, source_text, target_text, generated_text in zip(batch["keys"], batch["source_texts"], batch["target_texts"], [output_text]):
@@ -171,17 +191,25 @@ def main(kwargs: DictConfig):
 				continue
 
 			for i, key in enumerate(batch["keys"]):
-				audio_tokens = [audio_outputs[layer] for layer in range(7)]
+				audio_tokens = [audio_outputs[layer] for layer in range(code_layer)]
 
-				audiolist = reconscruct_snac(audio_tokens)
-				audio = reconstruct_tensors(audiolist)
-				with torch.inference_mode():
-					audio_hat = codec_decoder.decode(audio)
+				if code_type == "SNAC":
+					audiolist = reconscruct_snac(audio_tokens)
+					audio = reconstruct_tensors(audiolist)
+					with torch.inference_mode():
+						audio_hat = codec_decoder.decode(audio)
+				elif code_type == "CosyVoice":
+					audio_hat = audio_decode_cosyvoice(audio_tokens, model_config, codec_decoder, tone_dir, audio_prompt_path, code_layer, num_latency_tokens, speed=1.0)
+				else:
+					raise NotImplementedError
 
 				if key[-4:] == ".wav":
 					key = key[:-4]
-				sf.write(f"{generate_audio_dir}/{key}.wav", audio_hat.squeeze().cpu().numpy(), 24000)
-				logger.info(f"Generated Audio: {key}.wav")
+				end_time = time.time()
+				audio_length = audio_hat.shape[1] / speech_sample_rate
+				RTF = (end_time - start_time) / audio_length
+				sf.write(f"{tone_audio_dir}/{key}.wav", audio_hat.squeeze().cpu().numpy(), speech_sample_rate)
+				logger.info(f"Generated Audio: {tone_dir}/{key}.wav, audio length: {audio_length:.2f}s, generation time: {end_time - start_time:.2f}s, RTF: {RTF:.2f}")
 
 	logger.info("============== Inference Finished ==============")
 

@@ -21,6 +21,9 @@ def get_time_str():
 def layershift(input_id, layer, stride=4160, shift=152000):
     return input_id + shift + layer * stride
 
+def simple_shift(input_id, layer, stride=4160, shift=152000):
+    return input_id + shift
+
     
 def generate_audio_data(snac_tokens, snacmodel, device=None):
     audio = reconstruct_tensors(snac_tokens, device)

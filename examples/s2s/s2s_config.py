@@ -7,12 +7,12 @@ class VocabConfig:
     text_specialtokens: int = 64
     audio_vocabsize: int = 4096
     audio_specialtokens: int = 64
-    total_vocabsize: int = 181120
     code_layer: int = 7
 
     padded_text_vocabsize: int = field(init=False)
     padded_audio_vocabsize: int = field(init=False)
     total_audio_vocabsize: int = field(init=False)
+    total_vocabsize: int = field(init=False)
 
     eot: int = field(init=False)   # end of text token
     pad_t: int = field(init=False) # padding text token
@@ -30,6 +30,7 @@ class VocabConfig:
         self.padded_text_vocabsize = self.text_vocabsize + self.text_specialtokens
         self.padded_audio_vocabsize = self.audio_vocabsize + self.audio_specialtokens
         self.total_audio_vocabsize = self.padded_audio_vocabsize * self.code_layer
+        self.total_vocabsize = self.padded_text_vocabsize + self.total_audio_vocabsize
 
         self.eot = self.text_vocabsize
         self.pad_t = self.text_vocabsize + 1
@@ -92,6 +93,9 @@ class ModelConfig:
     tts_adapter: bool = False
     tts_adapter_config: TTSAdapterConfig = field(default_factory=TTSAdapterConfig)
     encoder_path_hf: Optional[str] = None
+    code_type: str = "SNAC" 
+    group_decode: bool = False
+    group_decode_adapter_type: str = "linear"
 
 
 @dataclass
@@ -190,6 +194,9 @@ class DataConfig:
     upsample_text_tokens: bool = False
     upsampling_factor: int = 1
     upsample_method: str = "repeat"
+    code_type: str = "SNAC" 
+    num_latency_tokens: int = 1
+    do_layershift: bool = True
 
 @dataclass
 class DecodeConfig:
@@ -203,7 +210,8 @@ class DecodeConfig:
     num_return_sequences: int = 1
     num_samples: int = 1
     max_time: float = 0.0
-    repetition_penalty: float = 1.0
+    text_repetition_penalty: float = 1.0
+    audio_repetition_penalty: float = 1.0
     length_penalty: float = 1.0
     early_stopping: bool = False
     no_repeat_ngram_size: int = 0
@@ -215,6 +223,8 @@ class DecodeConfig:
     streaming: bool = False
     stream_stride: int = 4
     upsampling_factor: int = 1
+    input_text: bool = False
+    do_layershift: bool = True
 
 @dataclass
 class FSDPConfig:

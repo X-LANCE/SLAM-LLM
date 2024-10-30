@@ -5,7 +5,7 @@ import logging
 from typing import Optional
 from dataclasses import dataclass, field
 from omegaconf import DictConfig, ListConfig, OmegaConf
-from s2s_config import ModelConfig, TrainConfig, DataConfig, LogConfig, FSDPConfig
+from s2s_config import ModelConfig, TrainConfig, DataConfig, LogConfig, FSDPConfig, VocabConfig
 
 @dataclass
 class RunConfig:
