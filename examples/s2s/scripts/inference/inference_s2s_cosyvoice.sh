@@ -32,7 +32,7 @@ codec_decoder_type=CosyVoice
 num_latency_tokens=10     # number of latency tokens (same as the number in training)
 do_layershift=false      # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
 
-ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v3-gpu4-btz3-lr5e-4-fp16-epochs10-whisper_small-latency10/s2s_epoch_3_step_13144
+ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v3-gpu4-btz3-lr5e-4-fp16-epochs10-whisper_small-latency10/gpu4-btz3-lr5e-4-fp16-epochs10-whisper_small-single-latency10
 split=test
 
 # jsonl dataset
@@ -47,7 +47,7 @@ dataset_sample_seed=777
 
 # decode config
 text_repetition_penalty=1.0
-audio_repetition_penalty=1.2        # default 1.0, set to 1.2 for reduce silence
+audio_repetition_penalty=1.0        # default 1.0, set to 1.2 for reduce silence
 max_new_tokens=3000                 # 500 for SNAC, 3000 for CosyVoice-single
 do_sample=false
 top_p=0.9

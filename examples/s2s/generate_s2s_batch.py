@@ -209,7 +209,7 @@ def main(kwargs: DictConfig):
 				audio_length = audio_hat.shape[1] / speech_sample_rate
 				RTF = (end_time - start_time) / audio_length
 				sf.write(f"{tone_audio_dir}/{key}.wav", audio_hat.squeeze().cpu().numpy(), speech_sample_rate)
-				logger.info(f"Generated Audio: {tone_dir}/{key}.wav, RTF = {RTF:.5f}")
+				logger.info(f"Generated Audio: {tone_dir}/{key}.wav, audio length: {audio_length:.2f}s, generation time: {end_time - start_time:.2f}s, RTF: {RTF:.2f}")
 
 	logger.info("============== Inference Finished ==============")
 
