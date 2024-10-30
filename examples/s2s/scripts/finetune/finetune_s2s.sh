@@ -100,6 +100,7 @@ hydra.run.dir=$output_dir \
 ++log_config.wandb_entity_name=wxc12 \
 ++log_config.wandb_project_name=SLAM-Omni \
 ++log_config.wandb_exp_name=$wandb_exp_name \
+++log_config.wandb_dir=$output_dir \
 ++log_config.log_file=$output_dir/exp.log \
 ++log_config.log_interval=100 \
 "
