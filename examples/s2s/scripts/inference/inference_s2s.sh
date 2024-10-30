@@ -35,7 +35,8 @@ load_from_cache_file=true
 dataset_sample_seed=777
 
 # decode config
-repetition_penalty=1.0
+text_repetition_penalty=1.0
+audio_repetition_penalty=1.0        # default 1.0, set to 1.2 for reduce silence
 max_new_tokens=500
 do_sample=false
 top_p=0.9
@@ -92,7 +93,8 @@ python $code_dir/inference_s2s.py \
         ++train_config.val_batch_size=1 \
         ++train_config.num_workers_dataloader=2 \
         ++train_config.task_type=$task_type \
-        ++decode_config.repetition_penalty=$repetition_penalty \
+        ++decode_config.text_repetition_penalty=$text_repetition_penalty \
+        ++decode_config.audio_repetition_penalty=$audio_repetition_penalty \
         ++decode_config.max_new_tokens=$max_new_tokens \
         ++decode_config.task_type=$task_type \
         ++decode_config.do_sample=$do_sample \
