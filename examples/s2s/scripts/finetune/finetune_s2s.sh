@@ -1,4 +1,5 @@
 #!/bin/bash
+# export CUDA_VISIBLE_DEVICES=0
 # export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 export CUDA_VISIBLE_DEVICES=0,1,2,3
 export TOKENIZERS_PARALLELISM=false
@@ -7,18 +8,24 @@ export LD_LIBRARY_PATH=/home/v-wenxichen/anaconda3/envs/slam/lib:$LD_LIBRARY_PAT
 export WANDB_API_KEY=406faa59cf62a3646fa3479a7e133c4cf5a77100       # please replace with your own wandb key thxxxx, unless you want to share your experiment results with me :)
 
 code_dir=examples/s2s
+num_gpus_per_node=$(( $(echo ${CUDA_VISIBLE_DEVICES} | tr -cd ',' | wc -c) + 1 ))
+num_nodes=1
+num_gpus=$(( num_gpus_per_node * num_nodes ))
 
-whisper_size=tiny  # tiny base small medium large-v3
+whisper_size=small  # tiny base small medium large-v3
 speech_encoder_path="/valleblob/v-wenxichen/models/whisper/${whisper_size}.pt"   # different whisper size
-llm_path="/valleblob/v-wenxichen/models/models--Qwen--Qwen2-0.5B/snapshots/ff3a49fac17555b8dfc4db6709f480cc8f16a9fe"  # Qwen/Qwen2-0.5B
+llm_path="/valleblob/v-wenxichen/models/models--Qwen--Qwen2-0.5B/snapshots/ff3a49fac17555b8dfc4db6709f480cc8f16a9fe"  # Qwen/Qwen2-0.5B, you can choose other Qwen models (Qwen2 or Qwen2.5)
 
-encoder_dim=384 # 384 512 768 1024 1280
-mel_size=80 # 80 128 ( only whisper-large supports 128 )
+encoder_dim=768 # 384 512 768 1024 1280
+mel_size=80     # 80 128 ( only whisper-large-v3 supports 128 )
+llm_dim=896     # 896 1536 3584 8192  -> 0.5B 1.5B 3B 7B
 
+# dataset settings
 train_data_path="/valleblob/v-wenxichen/data/s2s/VoiceAssistant-400K"
 val_data_path="/valleblob/v-wenxichen/data/s2s/VoiceAssistant-400K"
 load_from_cache_file=false  # set to true if you have already generated the cache file, otherwise set to false
 
+# training settings
 batch_size_training=4
 use_fp16=false
 num_epochs=10
@@ -27,7 +34,8 @@ train_audio_embed_only=false
 train_embed_only=false
 tts_adapter=false
 task_type=s2s
-
+validation_interval=10000
+split_size=0.01
 
 exp_name="s2s_train_v1_gpu4_btz${batch_size_training}_lr${lr}_nofp16_epochs${num_epochs}_whisper-${whisper_size}"
 if [ "$use_fp16" = true ]; then
@@ -53,7 +61,7 @@ hydra_args="
 hydra.run.dir=$output_dir \
 ++model_config.llm_name=qwen2-0.5b \
 ++model_config.llm_path=$llm_path \
-++model_config.llm_dim=896 \
+++model_config.llm_dim=$llm_dim \
 ++model_config.encoder_name=whisper \
 ++model_config.encoder_projector_ds_rate=5 \
 ++model_config.encoder_path=$speech_encoder_path \
@@ -67,7 +75,7 @@ hydra.run.dir=$output_dir \
 ++dataset_config.mel_size=$mel_size \
 ++dataset_config.seed=42 \
 ++dataset_config.manifest_format=datasets \
-++dataset_config.split_size=0.01 \
+++dataset_config.split_size=$split_size \
 ++dataset_config.load_from_cache_file=$load_from_cache_file \
 ++dataset_config.task_type=$task_type \
 ++train_config.model_name=s2s \
@@ -78,7 +86,7 @@ hydra.run.dir=$output_dir \
 ++train_config.warmup_steps=3000 \
 ++train_config.total_steps=300000 \
 ++train_config.lr=$lr \
-++train_config.validation_interval=10000 \
+++train_config.validation_interval=$validation_interval \
 ++train_config.batch_size_training=$batch_size_training \
 ++train_config.val_batch_size=$batch_size_training \
 ++train_config.num_workers_dataloader=0 \
@@ -113,8 +121,8 @@ if [[ $CUDA_VISIBLE_DEVICES != *","* ]]; then
     fi
 else
     torchrun \
-        --nnodes 1 \
-        --nproc_per_node 4 \
+        --nnodes $num_nodes \
+        --nproc_per_node $num_gpus_per_node \
         --master_port=29503 \
         $code_dir/finetune_s2s.py \
         --config-path "conf" \
@@ -123,10 +131,12 @@ else
         ++train_config.enable_fsdp=false \
         $hydra_args
 fi
-# --rdzv-backend=c10d \
-# rdzv setting maybe useful for multi-node training
 
-# bash 。/examples/s2s/scripts/finetune/finetune_s2s.sh
+# for multi-machine training, you should add the following line to the torchrun command
+# --node_rank=$node_rank \
+# --master_addr=$master_addr \
+
+# bash ./examples/s2s/scripts/finetune/finetune_s2s.sh
 
 # 1GPU + 12w steps + btz4 = 1epoch
 # 1GPU + 24w steps + btz2 = 1epoch 
@@ -134,4 +144,4 @@ fi
 # 40GB max batch size = 2
 # 80GB max batch size = 4
 
-# code_path -> /tmp/amlt-code-download
+# code_path -> cd /tmp/amlt-code-download

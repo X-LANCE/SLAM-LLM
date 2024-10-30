@@ -14,11 +14,11 @@ num_gpus=$(( num_gpus_per_node * num_nodes ))
 
 whisper_size=small  # tiny base small medium large-v3
 speech_encoder_path="/valleblob/v-wenxichen/models/whisper/${whisper_size}.pt"   # different whisper size
-llm_path="/valleblob/v-wenxichen/models/models--Qwen--Qwen2-0.5B/snapshots/ff3a49fac17555b8dfc4db6709f480cc8f16a9fe"  # Qwen/Qwen2-0.5B
+llm_path="/valleblob/v-wenxichen/models/models--Qwen--Qwen2-0.5B/snapshots/ff3a49fac17555b8dfc4db6709f480cc8f16a9fe"  # Qwen/Qwen2-0.5B, you can choose other Qwen models (Qwen2 or Qwen2.5)
 
 encoder_dim=768 # 384 512 768 1024 1280
-mel_size=80     # 80 128 ( only whisper-large supports 128 )
-llm_dim=896     # 896 1536 3584 8192  -> 0.5B 1.5B 3.5B 7B
+mel_size=80     # 80 128 ( only whisper-large-v3 supports 128 )
+llm_dim=896     # 896 1536 3584 8192  -> 0.5B 1.5B 3B 7B
 
 # vocabulary settings
 code_layer=1            # 1 single semantic code layer   2 3 4 5 6 7 8 group semantic code layers 
@@ -40,7 +40,7 @@ upsampling_factor=1
 upsample_method=repeat  # repeat or blank
 
 # training settings
-batch_size_training=2
+batch_size_training=3
 use_fp16=true
 num_epochs=10
 lr=5e-4
@@ -51,9 +51,9 @@ task_type=s2s
 validation_interval=10000
 split_size=0.01
 
-exp_name="s2s_train_v3_gpu${num_gpus}_btz${batch_size_training}_lr${lr}_nofp16_epochs${num_epochs}_whisper-${whisper_size}"
+exp_name="s2s_train_v3-gpu${num_gpus}-btz${batch_size_training}-lr${lr}-nofp16-epochs${num_epochs}-whisper_${whisper_size}-latency${num_latency_tokens}"
 if [ "$use_fp16" = true ]; then
-    exp_name="s2s_train_v3_gpu${num_gpus}_btz${batch_size_training}_lr${lr}_fp16_epochs${num_epochs}_whisper-${whisper_size}"
+    exp_name="s2s_train_v3-gpu${num_gpus}-btz${batch_size_training}-lr${lr}-fp16-epochs${num_epochs}-whisper_${whisper_size}-latency${num_latency_tokens}"
 fi
 # exp_name="s2s_train_v0_gpu24_btz${batch_size_training}_fp16"
 # exp_name="debug"
@@ -158,7 +158,10 @@ else
         $hydra_args
 fi
 
-# ++train_config.use_fp16=true \
+# for multi-machine training, you should add the following line to the torchrun command
+# --node_rank=$node_rank \
+# --master_addr=$master_addr \
+
 # bash ./examples/s2s/scripts/finetune/finetune_s2s_cosyvoice.sh
 
 # 1GPU + 12w steps + btz4 = 1epoch
@@ -167,4 +170,4 @@ fi
 # 40GB max batch size = 2
 # 80GB max batch size = 4
 
-# code_path -> /tmp/amlt-code-download
+# code_path -> cd /tmp/amlt-code-download

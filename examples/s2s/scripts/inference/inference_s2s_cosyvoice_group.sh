@@ -12,7 +12,7 @@ code_dir=examples/s2s
 whisper_size=small  # tiny base small medium large-v3
 speech_encoder_path="/valleblob/v-wenxichen/models/whisper/${whisper_size}.pt"   # different whisper size
 llm_path="Qwen/Qwen2-0.5B"
-codec_decoder_path="/valleblob/v-wenxichen/models/CosyVoice/CosyVoice-300M-SFT"
+codec_decoder_path="/valleblob/v-wenxichen/models/CosyVoice/CosyVoice-300M-SFT" # replace this with your own CosyVoice model path
 
 encoder_dim=768  # 384 512 768 896 1024 1280 
 mel_size=80      # 80 128 (128 for whisper-large only)
@@ -29,10 +29,10 @@ total_vocabsize=156160  # 152000 + 4160 Sry: Here is not elegant to set the tota
 # code settings
 code_type=CosyVoice     # CosyVoice or SNAC
 codec_decoder_type=CosyVoice
-num_latency_tokens=1    # number of latency tokens
+num_latency_tokens=10    # number of latency tokens (same as the number in training)
 do_layershift=false      # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
 
-ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v3_gpu4_btz3_lr5e-4_fp16_epochs10_whisper-small_group2/s2s_epoch_1_step_20000
+ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v3-gpu4-btz6-lr5e-4-fp16-epochs10-whisper_small-group2-latency10/s2s_epoch_3_step_11572
 split=test
 
 # jsonl dataset
@@ -43,7 +43,7 @@ split=test
 manifest_format=datasets
 val_data_path="/valleblob/v-wenxichen/data/s2s/VoiceAssistant-400K-v1/test"
 load_from_cache_file=false
-dataset_sample_seed=1234
+dataset_sample_seed=777
 
 # model settings
 tts_adapter=false
@@ -51,8 +51,9 @@ group_decode=true
 group_decode_adapter_type=linear
 
 # decode config
-repetition_penalty=1.0
-max_new_tokens=3000
+text_repetition_penalty=1.0
+audio_repetition_penalty=1.0        # default 1.0, set to 1.2 for reduce silence
+max_new_tokens=3000                 # 500 for SNAC, 3000 for CosyVoice-single
 do_sample=false
 top_p=0.9
 top_k=50
@@ -61,13 +62,13 @@ decode_text_only=false
 upsampling_factor=1
 
 output_text_only=false
-speech_sample_rate=22050
+speech_sample_rate=22050    # 22050 for CosyVoice, 24000 for SNAC
 inference_online=false
-audio_prompt_path=/home/v-wenxichen/SLAM-LLM/examples/s2s/prompt/promt_6.wav
+audio_prompt_path=/home/v-wenxichen/SLAM-LLM/examples/s2s/prompt/prompt_6.wav      # replace this with your own audio prompt path or our provided audio prompt path
 
-decode_log=$ckpt_path/s2s_decode_${split}_rp${repetition_penalty}_seed${dataset_sample_seed}_greedy
+decode_log=$ckpt_path/s2s_decode_${split}_trp${text_repetition_penalty}_arp${audio_repetition_penalty}_seed${dataset_sample_seed}_greedy
 if [ "$do_sample" = true ] ; then
-    decode_log=$ckpt_path/s2s_decode_${split}_rp${repetition_penalty}_seed${dataset_sample_seed}_sampling_topk${top_k}_topp${top_p}_temp${temperature}
+    decode_log=$ckpt_path/s2s_decode_${split}_trp${text_repetition_penalty}_arp${audio_repetition_penalty}_seed${dataset_sample_seed}_sampling_topk${top_k}_topp${top_p}_temp${temperature}
 fi
 
 if [ "$decode_text_only" = true ] ; then
@@ -122,7 +123,8 @@ python $code_dir/inference_s2s.py \
         ++train_config.val_batch_size=1 \
         ++train_config.num_workers_dataloader=2 \
         ++train_config.task_type=$task_type \
-        ++decode_config.repetition_penalty=$repetition_penalty \
+        ++decode_config.text_repetition_penalty=$text_repetition_penalty \
+        ++decode_config.audio_repetition_penalty=$audio_repetition_penalty \
         ++decode_config.max_new_tokens=$max_new_tokens \
         ++decode_config.task_type=$task_type \
         ++decode_config.do_sample=$do_sample \
@@ -139,4 +141,4 @@ python $code_dir/inference_s2s.py \
         ++speech_sample_rate=$speech_sample_rate \
         ++audio_prompt_path=$audio_prompt_path
 
-# bash ./examples/s2s/scripts/inference_s2s_cosyvoice_group.sh
+# bash ./examples/s2s/scripts/inference/inference_s2s_cosyvoice_group.sh

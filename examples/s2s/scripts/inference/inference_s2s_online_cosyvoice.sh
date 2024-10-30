@@ -12,10 +12,11 @@ code_dir=examples/s2s
 whisper_size=small  # tiny base small medium large-v3
 speech_encoder_path="/valleblob/v-wenxichen/models/whisper/${whisper_size}.pt"   # different whisper size
 llm_path="Qwen/Qwen2-0.5B"
-codec_decoder_path="/valleblob/v-wenxichen/models/CosyVoice/CosyVoice-300M-SFT"
+codec_decoder_path="/valleblob/v-wenxichen/models/CosyVoice/CosyVoice-300M-SFT" # replace this with your own CosyVoice model path
 
 encoder_dim=768  # 384 512 768 896 1024 1280 
 mel_size=80      # 80 128 (128 for whisper-large only)
+llm_dim=896     # 896 1536 3584 8192  -> 0.5B 1.5B 3.5B 7B
 
 tts_adapter=false
 task_type=s2s
@@ -27,15 +28,15 @@ total_vocabsize=156160  # 152000 + 4160 Sry: Here is not elegant to set the tota
 # code settings
 code_type=CosyVoice     # CosyVoice or SNAC
 codec_decoder_type=CosyVoice
-num_latency_tokens=1    # number of latency tokens
+num_latency_tokens=1    # number of latency tokens (same as the number in training)
 do_layershift=false      # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
 
 ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v3_gpu4_btz2_lr5e-4_fp16_epochs10_whisper-small/s2s_epoch_3_step_4714
 
 # decode config
 text_repetition_penalty=1.0
-audio_repetition_penalty=1.0
-max_new_tokens=3000             # 500 for SNAC, 3000 for CosyVoice-single
+audio_repetition_penalty=1.0        # default 1.0, set to 1.2 for reduce silence
+max_new_tokens=3000                 # 500 for SNAC, 3000 for CosyVoice-single
 do_sample=false
 top_p=0.9
 top_k=50
@@ -49,9 +50,9 @@ inference_online=true
 online_output_dir=/home/v-wenxichen/exp/cosyvoice/cosyvoice-single/base
 audio_prompt_path=/home/v-wenxichen/data/emotion/SAVEE-zh/ALL/DC_sa05.wav
 
-decode_log=$ckpt_path/s2s_decode_${split}_trp${text_repetition_penalty}_arp${text_repetition_penalty}_seed${dataset_sample_seed}_greedy
+decode_log=$ckpt_path/s2s_decode_${split}_trp${text_repetition_penalty}_arp${audio_repetition_penalty}_seed${dataset_sample_seed}_greedy
 if [ "$do_sample" = true ] ; then
-    decode_log=$ckpt_path/s2s_decode_${split}_trp${text_repetition_penalty}_arp${text_repetition_penalty}_seed${dataset_sample_seed}_sampling_topk${top_k}_topp${top_p}_temp${temperature}
+    decode_log=$ckpt_path/s2s_decode_${split}_trp${text_repetition_penalty}_arp${audio_repetition_penalty}_seed${dataset_sample_seed}_sampling_topk${top_k}_topp${top_p}_temp${temperature}
 fi
 
 if [ "$decode_text_only" = true ] ; then
@@ -65,7 +66,7 @@ python $code_dir/inference_s2s.py \
         hydra.run.dir=$ckpt_path \
         ++model_config.llm_name=qwen2-0.5b \
         ++model_config.llm_path=$llm_path \
-        ++model_config.llm_dim=896 \
+        ++model_config.llm_dim=$llm_dim \
         ++model_config.encoder_name=whisper \
         ++model_config.encoder_projector_ds_rate=5 \
         ++model_config.encoder_path=$speech_encoder_path \
@@ -115,4 +116,4 @@ python $code_dir/inference_s2s.py \
         ++speech_sample_rate=$speech_sample_rate \
         ++audio_prompt_path=$audio_prompt_path
 
-# bash ./examples/s2s/scripts/inference_s2s_online_cosyvoice.sh
+# bash ./examples/s2s/scripts/inference/inference_s2s_online_cosyvoice.sh
