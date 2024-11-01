@@ -48,7 +48,7 @@ lr=5e-4
 train_audio_embed_only=false
 train_embed_only=false
 task_type=s2s
-validation_interval=10000
+validation_interval=3000
 split_size=0.01
 
 # model settings

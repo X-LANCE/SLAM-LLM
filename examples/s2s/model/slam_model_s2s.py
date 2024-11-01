@@ -370,11 +370,9 @@ class slam_model_s2s(slam_model):
                 xa_logits = [logits[..., text_vocab_size + audio_vocab_size * i : text_vocab_size + audio_vocab_size * (i + 1)] for i in range(self.code_layer)]
 
             # Apply repetition penalty to the logits
-            if text_repetition_penalty != 1.0:
-                xt_logits = self.repetition_penalty(xt_logits, generated_ids[self.code_layer], text_repetition_penalty)
-            if audio_repetition_penalty != 1.0:
-                for i in range(self.code_layer):
-                    xa_logits[i] = self.repetition_penalty(xa_logits[i], generated_ids[i], audio_repetition_penalty)
+            xt_logits = self.repetition_penalty(xt_logits, generated_ids[self.code_layer], text_repetition_penalty)
+            for i in range(self.code_layer):
+                xa_logits[i] = self.repetition_penalty(xa_logits[i], generated_ids[i], audio_repetition_penalty)
 
             if not text_end:
                 next_token_text = self.sample_next_token(xt_logits[:, -1, :], **kwargs)
@@ -389,7 +387,6 @@ class slam_model_s2s(slam_model):
                     next_token_audio = torch.full((input_ids.size(0),), pad_a, device=input_ids.device)
                 next_tokens_audio.append(next_token_audio)
 
-            # if next_tokens_audio[-1] == eoa or decode_text_only:
             if eoa in next_tokens_audio or decode_text_only:
                 audio_end = True
             if next_token_text == eot:
@@ -400,10 +397,6 @@ class slam_model_s2s(slam_model):
             for i in range(self.code_layer):
                 current_audio_tokens[i] = next_tokens_audio[i]
 
-            # if input_pos.size(-1) > 1:
-            #     input_pos = torch.tensor(input_pos.size(-1), device=input_ids.device).unsqueeze(0)
-            # else:
-            #     input_pos = input_pos.add_(1)
             attention_mask = torch.cat([attention_mask, torch.ones((input_ids.size(0), 1), device=input_ids.device)], dim=1)
 
             # Append generated tokens to the list
@@ -518,11 +511,9 @@ class slam_model_s2s(slam_model):
             xa_logits = [logits[..., text_vocab_size + audio_vocab_size * i : text_vocab_size + audio_vocab_size * (i + 1)] for i in range(self.code_layer)]
 
             # Apply repetition penalty to the logits
-            if text_repetition_penalty != 1.0:
-                xt_logits = self.repetition_penalty(xt_logits, generated_ids[self.code_layer], text_repetition_penalty)
-            if audio_repetition_penalty != 1.0:
-                for i in range(self.code_layer):
-                    xa_logits[i] = self.repetition_penalty(xa_logits[i], generated_ids[i], audio_repetition_penalty)
+            xt_logits = self.repetition_penalty(xt_logits, generated_ids[self.code_layer], text_repetition_penalty)
+            for i in range(self.code_layer):
+                xa_logits[i] = self.repetition_penalty(xa_logits[i], generated_ids[i], audio_repetition_penalty)
 
             if not text_end:
                 next_token_text = self.sample_next_token(xt_logits[:, -1, :], **kwargs)
@@ -547,10 +538,6 @@ class slam_model_s2s(slam_model):
             for i in range(self.code_layer):
                 current_audio_tokens[i] = next_tokens_audio[i]
 
-            # if input_pos.size(-1) > 1:
-            #     input_pos = torch.tensor(input_pos.size(-1), device=input_ids.device).unsqueeze(0)
-            # else:
-            #     input_pos = input_pos.add_(1)
             attention_mask = torch.cat([attention_mask, torch.ones((input_ids.size(0), 1), device=input_ids.device)], dim=1)
 
             if audio_end and text_end:
@@ -605,7 +592,7 @@ class slam_model_s2s(slam_model):
         """
         do_sample = kwargs.get("do_sample", False)
         temperature = kwargs.get("temperature", 1.0)
-        top_k = kwargs.get("top_k", 50)
+        top_k = kwargs.get("top_k", 0)
         top_p = kwargs.get("top_p", 1.0)
         num_samples = kwargs.get("num_samples", 1)
 
@@ -644,10 +631,13 @@ class slam_model_s2s(slam_model):
         """
         Apply repetition penalty to the logits.
         """
-        for token_id in set(generated_ids):
-            if logits[0, -1, token_id] < 0:
-                logits[0, -1, token_id] *= repetition_penalty
-            else:
-                logits[0, -1, token_id] /= repetition_penalty
+        if repetition_penalty == 1.0:
+            return logits
+        
+        unique_tokens = set(generated_ids)
+        for token_id in unique_tokens:
+            index = (logits[..., token_id] < 0).float() * repetition_penalty + \
+                    (logits[..., token_id] >= 0).float() / repetition_penalty
+            logits[..., token_id] *= index
 
         return logits

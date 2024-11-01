@@ -291,8 +291,8 @@ def main(kwargs: DictConfig):
 				output_wav_path = f"generated_{text_input.replace(' ', '_')}.wav"
 
 			audio_generator = generate_from_text_stream(
-                text_input, model, codec_decoder, dataset_config, decode_config, logger, device
-            )
+				text_input, model, codec_decoder, dataset_config, decode_config, logger, device
+			)
 
 			save_streamed_audio(audio_generator, output_wav_path, model, logger)
 			logger.info(f"Generated Audio saved at: {output_wav_path}")
