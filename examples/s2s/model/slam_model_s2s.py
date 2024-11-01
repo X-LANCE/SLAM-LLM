@@ -592,7 +592,7 @@ class slam_model_s2s(slam_model):
         """
         do_sample = kwargs.get("do_sample", False)
         temperature = kwargs.get("temperature", 1.0)
-        top_k = kwargs.get("top_k", 50)
+        top_k = kwargs.get("top_k", 0)
         top_p = kwargs.get("top_p", 1.0)
         num_samples = kwargs.get("num_samples", 1)
 
