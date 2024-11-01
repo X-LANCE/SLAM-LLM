@@ -13,7 +13,7 @@ llm_path="/valleblob/v-wenxichen/models/models--Qwen--Qwen2-0.5B/snapshots/ff3a4
 
 train_data_path="gpt-omni/VoiceAssistant-400K"
 val_data_path="gpt-omni/VoiceAssistant-400K"
-load_from_cache_file=true  # set to true if you have already generated the cache file, otherwise set to false
+load_from_cache_file=false  # set to true if you have already generated the cache file, otherwise set to false
 
 batch_size_training=4
 use_fp16=false
@@ -25,8 +25,8 @@ tts_adapter=false
 task_type=s2s
 # exp_name="s2s_train_v1_gpu4_btz${batch_size_training}_lr${lr}_nofp16_epochs${num_epochs}"
 # exp_name="s2s_train_v0_gpu24_btz${batch_size_training}_fp16"
-# exp_name="debug"
-exp_name="single_test"
+exp_name="debug"
+# exp_name="single_test"
 
 
 home_dir=/valleblob/v-wenxichen/exp/s2s
@@ -117,4 +117,4 @@ else
 fi
 
 # ++train_config.use_fp16=true \
-# bash /home/v-wenxichen/SLAM-LLM/examples/s2s/scripts/finetune_s2s_debug.sh
+# bash ./examples/s2s/scripts/finetune_s2s_debug.sh
