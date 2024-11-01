@@ -48,7 +48,7 @@ train_audio_embed_only=false
 train_embed_only=false
 tts_adapter=false
 task_type=s2s
-validation_interval=10000
+validation_interval=3000
 split_size=0.01
 
 exp_name="s2s_train_v3-gpu${num_gpus}-btz${batch_size_training}-lr${lr}-nofp16-epochs${num_epochs}-whisper_${whisper_size}-latency${num_latency_tokens}"
