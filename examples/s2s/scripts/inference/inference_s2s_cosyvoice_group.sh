@@ -22,7 +22,7 @@ task_type=s2s
 split_size=0.002
 
 # vocabulary settings
-code_layer=2            # 1 single semantic code layer   2 3 4 5 6 7 8 group semantic code layers 
+code_layer=5            # 1 single semantic code layer   2 3 4 5 6 7 8 group semantic code layers 
 total_audio_vocabsize=4160
 total_vocabsize=156160  # 152000 + 4160 Sry: Here is not elegant to set the total_vocabsize manually, I may fix it later :)
 
@@ -32,7 +32,7 @@ codec_decoder_type=CosyVoice
 num_latency_tokens=5    # number of latency tokens (same as the number in training)
 do_layershift=false      # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
 
-ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v3-gpu16_40g-btz2-lr5e-4-fp16-epochs10-whisper_small-latency5-group2/s2s_epoch_3_step_11178
+ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v3-gpu16-btz4-lr5e-4-fp16-epochs10-whisper_small-latency5-group5/gpu16-btz4-lr5e-4-fp16-epochs10-whisper_small-latency5-group5-s2s_epoch_3_step_6590
 split=test
 
 # jsonl dataset
@@ -52,7 +52,7 @@ group_decode_adapter_type=linear
 
 # decode config
 text_repetition_penalty=1.2
-audio_repetition_penalty=1.0        # default 1.0, set to 1.2 for reduce silence
+audio_repetition_penalty=1.2        # default 1.0, set to 1.2 for reduce silence
 max_new_tokens=3000                 # 500 for SNAC, 3000 for CosyVoice-single
 do_sample=false
 top_p=1.0
@@ -118,6 +118,8 @@ python $code_dir/inference_s2s.py \
         ++train_config.model_name=s2s \
         ++train_config.freeze_encoder=true \
         ++train_config.freeze_llm=true \
+        ++train_config.freeze_encoder_projector=true \
+        ++train_config.freeze_group_decode_adapter=true \
         ++train_config.batching_strategy=custom \
         ++train_config.num_epochs=1 \
         ++train_config.val_batch_size=1 \
