@@ -109,6 +109,7 @@ python $code_dir/inference_s2s.py \
         ++train_config.model_name=s2s \
         ++train_config.freeze_encoder=true \
         ++train_config.freeze_llm=true \
+        ++train_config.freeze_encoder_projector=true \
         ++train_config.batching_strategy=custom \
         ++train_config.num_epochs=1 \
         ++train_config.val_batch_size=1 \
