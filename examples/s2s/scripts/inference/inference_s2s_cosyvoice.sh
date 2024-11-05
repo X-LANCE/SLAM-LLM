@@ -23,16 +23,17 @@ task_type=s2s
 split_size=0.002
 
 # vocabulary settings
-code_layer=1             # 1 single semantic code layer   2 3 4 5 6 7 8 group semantic code layers 
-total_vocabsize=156160   # 152000 + 4160 Sry: Here is not elegant to set the total_vocabsize manually, I may fix it later :)
+code_layer=1            # 1 single semantic code layer   2 3 4 5 6 7 8 group semantic code layers 
+total_audio_vocabsize=4160
+total_vocabsize=156160  # 152000 + 4160 Sry: Here is not elegant to set the total_vocabsize manually, I may fix it later :)
 
 # code settings
-code_type=CosyVoice      # CosyVoice or SNAC
+code_type=CosyVoice     # CosyVoice or SNAC
 codec_decoder_type=CosyVoice
-num_latency_tokens=10     # number of latency tokens (same as the number in training)
+num_latency_tokens=5    # number of latency tokens (same as the number in training)
 do_layershift=false      # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
 
-ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v3-gpu4-btz3-lr5e-4-fp16-epochs10-whisper_small-latency10/gpu4-btz3-lr5e-4-fp16-epochs10-whisper_small-single-latency10
+ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v3-gpu4-btz3-lr5e-4-fp16-epochs10-whisper_small-single-latency5/gpu4-btz3-lr5e-4-fp16-epochs10-whisper_small-single-latency5-s2s_epoch_3_step_8144
 split=test
 
 # jsonl dataset
@@ -46,12 +47,12 @@ load_from_cache_file=false
 dataset_sample_seed=777
 
 # decode config
-text_repetition_penalty=1.0
-audio_repetition_penalty=1.0        # default 1.0, set to 1.2 for reduce silence
+text_repetition_penalty=1.2
+audio_repetition_penalty=1.2        # default 1.0, set to 1.2 for reduce silence
 max_new_tokens=3000                 # 500 for SNAC, 3000 for CosyVoice-single
 do_sample=false
-top_p=0.9
-top_k=50
+top_p=1.0
+top_k=0
 temperature=1.0
 decode_text_only=false
 upsampling_factor=1
@@ -87,6 +88,7 @@ python $code_dir/inference_s2s.py \
         ++model_config.codec_decode=true \
         ++model_config.tts_adapter=$tts_adapter \
         ++model_config.vocab_config.code_layer=$code_layer \
+        ++model_config.vocab_config.total_audio_vocabsize=$total_audio_vocabsize \
         ++model_config.vocab_config.total_vocabsize=$total_vocabsize \
         ++model_config.code_type=$code_type \
         ++model_config.codec_decoder_type=$codec_decoder_type \
@@ -102,6 +104,7 @@ python $code_dir/inference_s2s.py \
         ++dataset_config.task_type=$task_type \
         ++dataset_config.seed=$dataset_sample_seed \
         ++dataset_config.vocab_config.code_layer=$code_layer \
+        ++dataset_config.vocab_config.total_audio_vocabsize=$total_audio_vocabsize \
         ++dataset_config.vocab_config.total_vocabsize=$total_vocabsize \
         ++dataset_config.code_type=$code_type \
         ++dataset_config.num_latency_tokens=$num_latency_tokens \
