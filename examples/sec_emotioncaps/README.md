@@ -40,16 +40,3 @@ If you do have sufficient relevant data, you can train the model yourself.
 ```
 bash finetune_emotion2vec_qformer_vicuna_7b.sh
 ```
-
-##  Citation
-
-You can refer to the paper for more results. 
-
-```
-@article{ma2024embarrassingly,
-  title={An Embarrassingly Simple Approach for LLM with Strong ASR Capacity},
-  author={Ma, Ziyang and Yang, Guanrou and Yang, Yifan and Gao, Zhifu and Wang, Jiaming and Du, Zhihao and Yu, Fan and Chen, Qian and Zheng, Siqi and Zhang, Shiliang and others},
-  journal={arXiv preprint arXiv:2402.08846},
-  year={2024}
-}
-```
