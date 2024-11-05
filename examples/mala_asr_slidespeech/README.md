@@ -22,6 +22,26 @@ Encoder | Projector | LLM | dev | test
 ## Data preparation
 Refer to official [SLIDESPEECH CORPUS](https://slidespeech.github.io/)
 
+The dataset requires four files: "my_wav.scp", "utt2num_samples", "text", "hot_related/ocr_1gram_top50_mmr070_hotwords_list".
+
+"my_wav.scp" is a file of audio path lists. We transform wav file to ark file, so this file looks like:
+
+```
+ID1 xxx/slidespeech/dev_oracle_v1/data/format.1/data_wav.ark:22
+ID2 xxx/slidespeech/dev_oracle_v1/data/format.1/data_wav.ark:90445
+```
+
+SLIDESPEECH provides "text" and a file named "keywords". The file "keywords" refers to "hot_related/ocr_1gram_top50_mmr070_hotwords_list", which contains hotwords lists.
+
+"utt2num_samples" contains the length of the wavs, which looks like:
+
+```
+ID1 103680
+ID2 181600
+```
+
+Please ensure that the order of all files is strictly consistent.
+
 ## Decode with checkpoints
 ```
 bash decode_MaLa-ASR_withkeywords_L95.sh
