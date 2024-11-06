@@ -10,28 +10,52 @@ code_dir=examples/s2s
 speech_encoder_path="/valleblob/v-wenxichen/models/whisper/small.pt"   # whisper small
 # speech_encoder_path="medium" # whisper medium
 # llm_path="/valleblob/v-wenxichen/models/models--Qwen--Qwen2-0.5B/snapshots/ff3a49fac17555b8dfc4db6709f480cc8f16a9fe"  # Qwen/Qwen2-0.5B
-llm_path="Qwen/Qwen2.5-7B"  # Qwen/Qwen2.5-0.5B Qwen/Qwen2.5-1.5B Qwen/Qwen2.5-3B Qwen/Qwen2.5-7B
+llm_path="Qwen/Qwen2-1.5B"  # base: Qwen/Qwen2.5-0.5B Qwen/Qwen2.5-1.5B Qwen/Qwen2.5-3B Qwen/Qwen2.5-7B Qwen/Qwen2-0.5B Qwen/Qwen2-1.5B Qwen/Qwen2-7B
+                            # Instruct: Qwen/Qwen2.5-0.5B-Instruct Qwen/Qwen2.5-1.5B-Instruct Qwen/Qwen2.5-3B-Instruct Qwen/Qwen2.5-7B-Instruct
 
 
-llm_dim=3584     # 896 1536 2048 3584  -> 0.5B 1.5B 3B 7B
+encoder_dim=768 # 384 512 768 1024 1280
+mel_size=80     # 80 128 ( only whisper-large-v3 supports 128 )
+llm_dim=1536     # 896 1536 3584 8192  -> 0.5B 1.5B 3B 7B
 
-train_data_path="gpt-omni/VoiceAssistant-400K"
-val_data_path="gpt-omni/VoiceAssistant-400K"
-load_from_cache_file=true  # set to true if you have already generated the cache file, otherwise set to false
+# vocabulary settings
+code_layer=2            # 1 single semantic code layer   2 3 4 5 6 7 8 group semantic code layers 
+total_audio_vocabsize=4160
+total_vocabsize=156160  # 152000 + 4160 Sry: Here is not elegant to set the total_vocabsize manually, I may fix it later :)
+
+# code settings
+code_type=CosyVoice     # CosyVoice or SNAC
+num_latency_tokens=1    # number of latency tokens (in front of the generated audio tokens)
+do_layershift=false     # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
+
+train_data_path="/valleblob/v-wenxichen/data/s2s/VoiceAssistant-400K-v1/test"   # gpt-omni/VoiceAssistant-400K
+val_data_path="/valleblob/v-wenxichen/data/s2s/VoiceAssistant-400K-v1/test"     # gpt-omni/VoiceAssistant-400K
+load_from_cache_file=false  # set to true if you have already generated the cache file, otherwise set to false
 
 upsample_text_tokens=false
 upsampling_factor=1
 upsample_method=repeat  # repeat or blank
 
-batch_size_training=2
+# training settings
+batch_size_training=3
 use_fp16=true
 num_epochs=10
 lr=5e-4
 train_audio_embed_only=false
 train_embed_only=false
-tts_adapter=false
 task_type=s2s
-# exp_name="s2s_train_v1_gpu4_btz${batch_size_training}_lr${lr}_nofp16_epochs${num_epochs}"
+validation_interval=3000
+split_size=0.01
+
+# model settings
+tts_adapter=false
+group_decode=true
+group_decode_adapter_type=linear
+
+exp_name="s2s_train_v3-gpu${num_gpus}-btz${batch_size_training}-lr${lr}-nofp16-epochs${num_epochs}-whisper_${whisper_size}-latency${num_latency_tokens}-group${code_layer}"
+if [ "$use_fp16" = true ]; then
+    exp_name="s2s_train_v3-gpu${num_gpus}-btz${batch_size_training}-lr${lr}-fp16-epochs${num_epochs}-whisper_${whisper_size}-latency${num_latency_tokens}-group${code_layer}"
+fi
 # exp_name="s2s_train_v0_gpu24_btz${batch_size_training}_fp16"
 exp_name="debug"
 # exp_name="single_test_whisper-medium"
@@ -57,22 +81,34 @@ hydra.run.dir=$output_dir \
 ++model_config.encoder_name=whisper \
 ++model_config.encoder_projector_ds_rate=5 \
 ++model_config.encoder_path=$speech_encoder_path \
-++model_config.encoder_dim=768 \
+++model_config.encoder_dim=$encoder_dim \
 ++model_config.encoder_projector=linear \
 ++model_config.tts_adapter=$tts_adapter \
+++model_config.vocab_config.code_layer=$code_layer \
+++model_config.vocab_config.total_audio_vocabsize=$total_audio_vocabsize \
+++model_config.vocab_config.total_vocabsize=$total_vocabsize \
+++model_config.code_type=$code_type \
+++model_config.group_decode=$group_decode \
+++model_config.group_decode_adapter_type=$group_decode_adapter_type \
 ++dataset_config.dataset=speech_dataset_s2s \
 ++dataset_config.train_data_path=$train_data_path \
 ++dataset_config.val_data_path=$val_data_path \
 ++dataset_config.input_type=mel \
-++dataset_config.mel_size=80 \
+++dataset_config.mel_size=$mel_size \
 ++dataset_config.seed=42 \
 ++dataset_config.manifest_format=datasets \
-++dataset_config.split_size=0.01 \
+++dataset_config.split_size=$split_size \
 ++dataset_config.load_from_cache_file=$load_from_cache_file \
 ++dataset_config.task_type=$task_type \
 ++dataset_config.upsample_text_tokens=$upsample_text_tokens \
 ++dataset_config.upsampling_factor=$upsampling_factor \
 ++dataset_config.upsample_method=$upsample_method \
+++dataset_config.vocab_config.code_layer=$code_layer \
+++dataset_config.vocab_config.total_audio_vocabsize=$total_audio_vocabsize \
+++dataset_config.vocab_config.total_vocabsize=$total_vocabsize \
+++dataset_config.code_type=$code_type \
+++dataset_config.num_latency_tokens=$num_latency_tokens \
+++dataset_config.do_layershift=$do_layershift \
 ++train_config.model_name=s2s \
 ++train_config.num_epochs=$num_epochs \
 ++train_config.freeze_encoder=true \
@@ -81,7 +117,7 @@ hydra.run.dir=$output_dir \
 ++train_config.warmup_steps=3000 \
 ++train_config.total_steps=300000 \
 ++train_config.lr=$lr \
-++train_config.validation_interval=10000 \
+++train_config.validation_interval=$validation_interval \
 ++train_config.batch_size_training=$batch_size_training \
 ++train_config.val_batch_size=$batch_size_training \
 ++train_config.num_workers_dataloader=0 \
@@ -95,6 +131,7 @@ hydra.run.dir=$output_dir \
 ++log_config.wandb_entity_name=wxc12 \
 ++log_config.wandb_project_name=SLAM-Omni \
 ++log_config.wandb_exp_name=$wandb_exp_name \
+++log_config.wandb_dir=$output_dir \
 ++log_config.log_file=$output_dir/exp.log \
 ++log_config.log_interval=10 \
 "
@@ -127,5 +164,16 @@ else
         $hydra_args
 fi
 
-# ++train_config.use_fp16=true \
-# bash /home/v-wenxichen/SLAM-LLM/examples/s2s/scripts/finetune_s2s_debug.sh
+# for multi-machine training, you should add the following line to the torchrun command
+# --node_rank=$node_rank \
+# --master_addr=$master_addr \
+
+# bash ./examples/s2s/scripts/finetune/finetune_s2s_debug.sh
+
+# 1GPU + 12w steps + btz4 = 1epoch
+# 1GPU + 24w steps + btz2 = 1epoch 
+
+# 40GB max batch size = 2
+# 80GB max batch size = 4
+
+# code_path -> cd /tmp/amlt-code-download
