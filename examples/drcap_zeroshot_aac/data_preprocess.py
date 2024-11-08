@@ -1,4 +1,3 @@
-
 import ruamel.yaml as yaml
 import torch
 from slam_llm.models.CLAP.ase_model import ASE
