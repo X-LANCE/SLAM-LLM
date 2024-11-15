@@ -18,8 +18,8 @@ encoder_dim=768  # 384 512 768 896 1024 1280
 mel_size=80      # 80 128 (128 for whisper-large only)
 llm_dim=896     # 896 1536 3584 8192  -> 0.5B 1.5B 3.5B 7B
 
+tts_adapter=false
 task_type=s2s
-split_size=0.002
 
 # vocabulary settings
 code_layer=3            # 1 single semantic code layer   2 3 4 5 6 7 8 group semantic code layers 
@@ -32,17 +32,7 @@ codec_decoder_type=CosyVoice
 num_latency_tokens=5    # number of latency tokens (same as the number in training)
 do_layershift=false      # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
 
-ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v3-gpu16-btz3-lr5e-4-fp16-epochs10-whisper_small-latency5-group3/gpu16-btz3-lr5e-4-fp16-epochs10-whisper_small-latency5-group3-s2s_epoch_4_step_1179
-# jsonl dataset
-# manifest_format=jsonl
-# val_data_path=/home/v-wenxichen/SLAM-LLM/examples/s2s/demo/data/${split}.jsonl
-
-# huggingface dataset
-manifest_format=datasets
-val_data_path="/valleblob/v-wenxichen/data/s2s/VoiceAssistant-400K-v1/test"
-load_from_cache_file=false
-dataset_sample_seed=777
-
+ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v4-Qwen2-0.5b-gpu4-btz3-lr5e-4-nofp16-epochs10-whisper_small-latency5-group3-UltraChat_from_pre_train/s2s_epoch_2_step_23152
 # model settings
 tts_adapter=false
 group_decode=true
@@ -61,8 +51,10 @@ upsampling_factor=1
 
 output_text_only=false
 speech_sample_rate=22050    # 22050 for CosyVoice, 24000 for SNAC
-inference_online=false
-audio_prompt_path=/home/v-wenxichen/SLAM-LLM/examples/s2s/prompt/prompt_6.wav      # replace this with your own audio prompt path or our provided audio prompt path
+inference_online=true
+multi_round=true
+online_output_dir=/home/v-wenxichen/exp/cosyvoice/multi-round_test/science_tech
+audio_prompt_path=./examples/s2s/prompt/prompt_6.wav      # replace this with your own audio prompt path or our provided audio prompt path
 
 decode_log=$ckpt_path/s2s_decode_${split}_trp${text_repetition_penalty}_arp${audio_repetition_penalty}_seed${dataset_sample_seed}_greedy
 if [ "$do_sample" = true ] ; then
@@ -97,16 +89,10 @@ python $code_dir/inference_s2s.py \
         ++model_config.group_decode=$group_decode \
         ++model_config.group_decode_adapter_type=$group_decode_adapter_type \
         ++dataset_config.dataset=speech_dataset_s2s \
-        ++dataset_config.val_data_path=$val_data_path \
-        ++dataset_config.train_data_path=$val_data_path \
         ++dataset_config.input_type=mel \
         ++dataset_config.mel_size=$mel_size \
         ++dataset_config.inference_mode=true \
-        ++dataset_config.manifest_format=$manifest_format \
-        ++dataset_config.split_size=$split_size \
-        ++dataset_config.load_from_cache_file=$load_from_cache_file \
         ++dataset_config.task_type=$task_type \
-        ++dataset_config.seed=$dataset_sample_seed \
         ++dataset_config.vocab_config.code_layer=$code_layer \
         ++dataset_config.vocab_config.total_audio_vocabsize=$total_audio_vocabsize \
         ++dataset_config.vocab_config.total_vocabsize=$total_vocabsize \
@@ -133,12 +119,14 @@ python $code_dir/inference_s2s.py \
         ++decode_config.temperature=$temperature \
         ++decode_config.decode_text_only=$decode_text_only \
         ++decode_config.upsampling_factor=$upsampling_factor \
+        ++log_config.online_output_dir=$online_output_dir \
         ++decode_config.do_layershift=$do_layershift \
         ++decode_log=$decode_log \
         ++ckpt_path=$ckpt_path/model.pt \
         ++output_text_only=$output_text_only \
         ++inference_online=$inference_online \
         ++speech_sample_rate=$speech_sample_rate \
-        ++audio_prompt_path=$audio_prompt_path
+        ++audio_prompt_path=$audio_prompt_path \
+        ++multi_round=$multi_round
 
-# bash ./examples/s2s/scripts/inference/inference_s2s_cosyvoice_group.sh
+# bash ./examples/s2s/scripts/inference/inference_s2s_online_cosyvoice_multi-round.sh

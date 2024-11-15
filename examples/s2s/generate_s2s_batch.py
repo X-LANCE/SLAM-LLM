@@ -169,6 +169,8 @@ def main(kwargs: DictConfig):
 			model_outputs = model.generate(**batch, **decode_config)
 			text_outputs = model_outputs[code_layer]
 			audio_outputs = model_outputs[:code_layer]
+			end_time_llm = time.time()
+			logger.info(f"LLM Inference Time: {end_time_llm - start_time:.2f}s")
 			# output_text = model.tokenizer.batch_decode(text_outputs, add_special_tokens=False, skip_special_tokens=True)
 			output_text = model.tokenizer.decode(text_outputs, add_special_tokens=False, skip_special_tokens=True)
 			for key, source_text, target_text, generated_text in zip(batch["keys"], batch["source_texts"], batch["target_texts"], [output_text]):
@@ -210,6 +212,8 @@ def main(kwargs: DictConfig):
 				RTF = (end_time - start_time) / audio_length
 				sf.write(f"{tone_audio_dir}/{key}.wav", audio_hat.squeeze().cpu().numpy(), speech_sample_rate)
 				logger.info(f"Generated Audio: {tone_dir}/{key}.wav, audio length: {audio_length:.2f}s, generation time: {end_time - start_time:.2f}s, RTF: {RTF:.2f}")
+				RTF_llm = (end_time_llm - start_time) / audio_length
+				logger.info(f"LLM RTF: {RTF_llm:.2f}")
 
 	logger.info("============== Inference Finished ==============")
 

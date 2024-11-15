@@ -26,7 +26,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         self.IGNORE_INDEX = -100  # The default setting in CrossEntropyLoss
         self.prompt = dataset_config.get("prompt", None)
         self.mel_size = dataset_config.get("mel_size", 80) # 80 for whisper large v1 and v2, 128 for large v3
-        self.prompt_template = "USER: {}\n ASSISTANT: "
+        self.prompt_template = "<SYSTEM>: {}\n "
         self.answer_template = "{}"
         self.fix_length_audio = dataset_config.get("fix_length_audio", -1)
         self.inference_mode = dataset_config.get("inference_mode", False)
@@ -264,6 +264,13 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
 
         prompt = self.prompt
         prompt = self.prompt_template.format(prompt)
+
+        # add history conversation in front of the prompt
+        if source_text is not None and "<USER>:" in source_text:
+            history_chat = source_text.rsplit("<USER>:", 1)[0].strip()
+            if history_chat:
+                prompt = prompt + history_chat + "\n "
+
         prompt_ids = self.tokenizer.encode(prompt)
         prompt_ids = [self._input_t] + prompt_ids + [self._eot]
         prompt_length = len(prompt_ids)

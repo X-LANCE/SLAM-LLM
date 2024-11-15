@@ -6,9 +6,12 @@ import soundfile as sf
 from slam_llm.utils.model_utils import get_custom_model_factory
 from utils.snac_utils import reconscruct_snac, reconstruct_tensors, layershift, get_snac_answer_token, simple_shift
 from utils.codec_utils import audio_decode_cosyvoice
+from utils.encoder_utils import transcribe_audio
 import hydra
 from omegaconf import DictConfig, ListConfig, OmegaConf
 import whisper
+import threading
+from queue import Queue
 
 
 @hydra.main(config_name=None, version_base=None)
@@ -68,11 +71,11 @@ def get_padded_input(text_input_idx, text_index_length, code_layer, _pad_a, laye
 	return padded_input
 
 
-def generate_from_wav(wav_path, model, codec_decoder, dataset_config, decode_config, logger, device, model_config, tone_dir, audio_prompt_path=None, output_text_only=False, layer_shift=layershift):
+def generate_from_wav(wav_path, model, codec_decoder, dataset_config, decode_config, logger, device, model_config, tone_dir, audio_prompt_path=None, output_text_only=False, history="", layer_shift=layershift):
 	mel_size = dataset_config.mel_size
 	prompt = dataset_config.prompt
-	# prompt_template = "<SYSTEM>: {}\n {}\n "
-	prompt_template = "USER: {}\n ASSISTANT: "
+	prompt_template = "<SYSTEM>: {}\n {}\n "
+	# prompt_template = "USER: {}\n ASSISTANT: "	# note: old version
 	vocab_config = dataset_config.vocab_config
 	special_token_a = vocab_config.answer_a
 	special_token_t = vocab_config.answer_t
@@ -85,8 +88,8 @@ def generate_from_wav(wav_path, model, codec_decoder, dataset_config, decode_con
 
 	audio_mel, audio_length = extract_audio_feature(wav_path, mel_size)
 
-	# prompt = prompt_template.format(prompt, history)
-	prompt = prompt_template.format(prompt)
+	prompt = prompt_template.format(prompt, history)
+	# prompt = prompt_template.format(prompt)		# note: old version
 	prompt_ids = model.tokenizer.encode(prompt)
 	prompt_ids = [_input_t] + prompt_ids + [_eot]
 	prompt_length = len(prompt_ids)
@@ -126,11 +129,11 @@ def generate_from_wav(wav_path, model, codec_decoder, dataset_config, decode_con
 	output_text = model.tokenizer.decode(text_outputs, add_special_tokens=False, skip_special_tokens=True)
 	
 	if decode_config.decode_text_only or output_text_only:
-		return None, output_text
+		return None, output_text, " ASSISTANT: " + output_text
 
 	if audio_outputs[0].shape[0] == decode_config.max_new_tokens:
 		logger.warning(f"Audio token is too long, skip. You can try to increase the max_new_tokens in the decode_config.")
-		return None, output_text
+		return None, output_text, history + " ASSISTANT: " + output_text
 	
 	audio_tokens = [audio_outputs[layer] for layer in range(code_layer)]
 
@@ -144,13 +147,13 @@ def generate_from_wav(wav_path, model, codec_decoder, dataset_config, decode_con
 	else:
 		raise NotImplementedError
 
-	return audio_hat, output_text
+	return audio_hat, output_text, " ASSISTANT: " + output_text
 
 
-def generate_from_text(text_input, model, codec_decoder, dataset_config, decode_config, logger, device, model_config, tone_dir, audio_prompt_path=None, output_text_only=False, layer_shift=layershift):
+def generate_from_text(text_input, model, codec_decoder, dataset_config, decode_config, logger, device, model_config, tone_dir, audio_prompt_path=None, output_text_only=False, history="", layer_shift=layershift):
 	prompt = dataset_config.prompt
-	# prompt_template = "<SYSTEM>: {}\n {}\n "
-	prompt_template = "USER: {}\n ASSISTANT: "
+	prompt_template = "<SYSTEM>: {}\n {}\n "
+	# prompt_template = "USER: {}\n ASSISTANT: "	# note: old version
 	vocab_config = dataset_config.vocab_config
 	special_token_a = vocab_config.answer_a
 	special_token_t = vocab_config.answer_t
@@ -161,8 +164,8 @@ def generate_from_text(text_input, model, codec_decoder, dataset_config, decode_
 	code_type = model_config.code_type
 	num_latency_tokens = dataset_config.num_latency_tokens
 
-	# prompt = prompt_template.format(prompt, history)
-	prompt = prompt_template.format(prompt)
+	prompt = prompt_template.format(prompt, history)
+	# prompt = prompt_template.format(prompt)		# note: old version
 	prompt_ids = model.tokenizer.encode(prompt)
 	prompt_ids = [_input_t] + prompt_ids + [_eot]
 	prompt_length = len(prompt_ids)
@@ -204,11 +207,11 @@ def generate_from_text(text_input, model, codec_decoder, dataset_config, decode_
 	output_text = model.tokenizer.decode(text_outputs, add_special_tokens=False, skip_special_tokens=True)
 	
 	if decode_config.decode_text_only or output_text_only:
-		return None, output_text
+		return None, output_text, history + "USER: " + text_input.strip() + " ASSISTANT: " + output_text.strip() + " "	
 
 	if audio_outputs[0].shape[0] == decode_config.max_new_tokens:
 		logger.warning(f"Audio token is too long, skip. You can try to increase the max_new_tokens in the decode_config.")
-		return None, output_text
+		return None, output_text, history + "USER: " + text_input.strip() + " ASSISTANT: " + output_text.strip() + " "
 	
 	audio_tokens = [audio_outputs[layer] for layer in range(code_layer)]
 
@@ -222,7 +225,7 @@ def generate_from_text(text_input, model, codec_decoder, dataset_config, decode_
 	else:
 		raise NotImplementedError
 	
-	return audio_hat, output_text
+	return audio_hat, output_text, history + "USER: " + text_input + " ASSISTANT: " + output_text.strip() + " "
 
 
 def main(kwargs: DictConfig):
@@ -329,35 +332,86 @@ def main(kwargs: DictConfig):
 	logger.info("Decode Code Layer: {}".format(code_layer))
 	logger.info("Tone for Audio Generation: {}".format(tone_dir))
 
+	transcribe_queue = Queue()
+	generate_queue = Queue()
+
+	def transcribe_thread(wav_path):
+		transcribed_text = transcribe_audio(wav_path)
+		transcribe_queue.put(transcribed_text)
+
+	def generate_thread(wav_path, history):
+		output_wav, output_text, new_history = generate_from_wav(
+			wav_path, model, codec_decoder, dataset_config, 
+			decode_config, logger, device, model_config, 
+			tone_dir, audio_prompt_path, output_text_only, history, layer_shift
+		)
+		generate_queue.put((output_wav, output_text, new_history))
+
+	history = ""
+	conversation_count = 1
+	conversation_dir = os.path.join(tone_audio_dir, f"conversation_{conversation_count}")
+	os.makedirs(conversation_dir, exist_ok=True)
+	logger.info("============== Ready for {task_type} Online Inference ==============".format(task_type=task_type))
 	if decode_config.input_text:
-		logger.info("============== Ready for t2s Online Inference ==============")
 		while True:
-			text_input = input("Please provide the text input (or type 'q' to quit): ")
+			text_input = input("Please provide the text input (or type 'q' to quit, 'c' to clear history, 'h' to see the history): ")
 			if text_input.lower() == 'q':
 				break
+			elif text_input.lower() == 'c':
+				history = ""
+				conversation_count += 1
+				conversation_dir = os.path.join(tone_audio_dir, f"conversation_{conversation_count}")
+				os.makedirs(conversation_dir, exist_ok=True)
+				logger.info("History cleared. Starting a new round of conversation.")
+				continue
+			elif text_input.lower() == 'h':
+				logger.info(f"History: {history}")
+				continue
 
-			audio_hat, output_text = generate_from_text(text_input, model, codec_decoder, dataset_config, decode_config, logger, device, model_config, tone_dir, audio_prompt_path, output_text_only, layer_shift)
+			audio_hat, output_text, history = generate_from_text(text_input, model, codec_decoder, dataset_config, decode_config, logger, device, model_config, tone_dir, audio_prompt_path, output_text_only, history, layer_shift)
 			logger.info(f"Generated Text: {output_text}")
 
 			if tone_audio_dir is not None:
-				os.makedirs(tone_audio_dir, exist_ok=True)
-				output_wav_path = os.path.join(tone_audio_dir, f"generated_{text_input.replace(' ', '_')[:20]}.wav")
+				output_wav_path = os.path.join(conversation_dir, f"generated_{text_input.replace(' ', '_')[:20]}.wav")
 			else:
 				output_wav_path = f"generated_{text_input.replace(' ', '_')}.wav"
 			sf.write(output_wav_path, audio_hat.squeeze().cpu().numpy(), speech_sample_rate)
 			logger.info(f"Generated Audio saved at: {output_wav_path}")
 	else:
-		logger.info("============== Ready for {task_type} Online Inference ==============".format(task_type=task_type))
 		while True:
-			wav_path = input("Please provide the path to a WAV file (or type 'q' to quit): ")
+			wav_path = input("Please provide the path to a WAV file (or type 'q' to quit, 'c' to clear history, 'h' to see the history): ")
 			if wav_path.lower() == 'q':
 				break
+			elif wav_path.lower() == 'c':
+				history = ""
+				conversation_count += 1
+				conversation_dir = os.path.join(tone_audio_dir, f"conversation_{conversation_count}")
+				os.makedirs(conversation_dir, exist_ok=True)
+				logger.info("History cleared. Starting a new round of conversation.")
+				continue
+			elif wav_path.lower() == 'h':
+				logger.info(f"History: {history}")
+				continue
 
 			if not os.path.exists(wav_path):
 				logger.warning(f"File {wav_path} does not exist. Please try again.")
 				continue
 
-			output_wav, output_text = generate_from_wav(wav_path, model, codec_decoder, dataset_config, decode_config, logger, device, model_config, tone_dir, audio_prompt_path, output_text_only, layer_shift)
+			t1 = threading.Thread(target=transcribe_thread, args=(wav_path,))
+			t2 = threading.Thread(target=generate_thread, args=(wav_path, history))
+			
+			t1.start()
+			t2.start()
+
+			transcribed_text = transcribe_queue.get()
+			output_wav, output_text, history_assistant = generate_queue.get()
+
+			t1.join()
+			t2.join()
+
+			logger.info(f"Adding the transcribed text to the history: {transcribed_text}")
+			history_user = "USER: " + transcribed_text.strip() + " "
+			history = history + history_user + history_assistant.strip() + " "
 			logger.info(f"Generated Text: {output_text}")
 
 			if output_wav is None:
@@ -365,8 +419,7 @@ def main(kwargs: DictConfig):
 				continue
 			
 			if tone_audio_dir is not None:
-				os.makedirs(tone_audio_dir, exist_ok=True)
-				output_wav_path = os.path.join(tone_audio_dir, f"generated_{os.path.basename(wav_path)}")
+				output_wav_path = os.path.join(conversation_dir, f"generated_{os.path.basename(wav_path)}")
 			else:
 				output_wav_path = f"generated_{os.path.basename(wav_path)}"
 

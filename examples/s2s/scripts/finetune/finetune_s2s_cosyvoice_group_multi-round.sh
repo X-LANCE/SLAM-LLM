@@ -1,18 +1,21 @@
 #!/bin/bash
-export CUDA_VISIBLE_DEVICES=0
+# export CUDA_VISIBLE_DEVICES=0
+# export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
+export CUDA_VISIBLE_DEVICES=0,1,2,3
 export TOKENIZERS_PARALLELISM=false
 export OMP_NUM_THREADS=1
 export LD_LIBRARY_PATH=/home/v-wenxichen/anaconda3/envs/slam/lib:$LD_LIBRARY_PATH
 export WANDB_API_KEY=406faa59cf62a3646fa3479a7e133c4cf5a77100       # please replace with your own wandb key thxxxx, unless you want to share your experiment results with me :)
 
 code_dir=examples/s2s
+num_gpus_per_node=$(( $(echo ${CUDA_VISIBLE_DEVICES} | tr -cd ',' | wc -c) + 1 ))
+num_nodes=1
+num_gpus=$(( num_gpus_per_node * num_nodes ))
 
-speech_encoder_path="/valleblob/v-wenxichen/models/whisper/small.pt"   # whisper small
-# speech_encoder_path="medium" # whisper medium
-# llm_path="/valleblob/v-wenxichen/models/models--Qwen--Qwen2-0.5B/snapshots/ff3a49fac17555b8dfc4db6709f480cc8f16a9fe"  # Qwen/Qwen2-0.5B
-llm_path="Qwen/Qwen2-0.5B"  # base: Qwen/Qwen2.5-0.5B Qwen/Qwen2.5-1.5B Qwen/Qwen2.5-3B Qwen/Qwen2.5-7B Qwen/Qwen2-0.5B Qwen/Qwen2-1.5B Qwen/Qwen2-7B
-                            # Instruct: Qwen/Qwen2.5-0.5B-Instruct Qwen/Qwen2.5-1.5B-Instruct Qwen/Qwen2.5-3B-Instruct Qwen/Qwen2.5-7B-Instruct
-
+whisper_size=small  # tiny base small medium large-v3
+speech_encoder_path="/valleblob/v-wenxichen/models/whisper/${whisper_size}.pt"   # different whisper size
+llm_path="/valleblob/v-wenxichen/models/models--Qwen--Qwen2-0.5B/snapshots/ff3a49fac17555b8dfc4db6709f480cc8f16a9fe"  # Qwen/Qwen2-0.5B, you can choose other Qwen models (Qwen2 or Qwen2.5)
+llm_name=Qwen2-0.5b
 
 encoder_dim=768 # 384 512 768 1024 1280
 mel_size=80     # 80 128 ( only whisper-large-v3 supports 128 )
@@ -28,10 +31,12 @@ code_type=CosyVoice     # CosyVoice or SNAC
 num_latency_tokens=5    # number of latency tokens (in front of the generated audio tokens)
 do_layershift=false     # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
 
-train_data_path="/valleblob/v-wenxichen/data/s2s/ultrachat/parquet_test"   # gpt-omni/VoiceAssistant-400K
-val_data_path="/valleblob/v-wenxichen/data/s2s/ultrachat/parquet_test"     # gpt-omni/VoiceAssistant-400K
+# dataset settings
+train_data_path="/valleblob/v-wenxichen/data/s2s/UltraChat-300K-v1"
+val_data_path="/valleblob/v-wenxichen/data/s2s/UltraChat-300K-v1"
 load_from_cache_file=false  # set to true if you have already generated the cache file, otherwise set to false
 
+# upsample settings
 upsample_text_tokens=false
 upsampling_factor=1
 upsample_method=repeat  # repeat or blank
@@ -39,7 +44,7 @@ upsample_method=repeat  # repeat or blank
 # training settings
 batch_size_training=3
 use_fp16=true
-use_peft=true
+use_peft=false
 num_epochs=10
 lr=5e-4
 train_audio_embed_only=false
@@ -53,19 +58,19 @@ tts_adapter=false
 group_decode=true
 group_decode_adapter_type=linear
 
-exp_name="s2s_train_v4-gpu${num_gpus}-btz${batch_size_training}-lr${lr}-nofp16-epochs${num_epochs}-whisper_${whisper_size}-latency${num_latency_tokens}-group${code_layer}"
+exp_name="s2s_train_v4-${llm_name}-gpu${num_gpus}-btz${batch_size_training}-lr${lr}-nofp16-epochs${num_epochs}-whisper_${whisper_size}-latency${num_latency_tokens}-group${code_layer}-UltraChat_from_pre_train"
 if [ "$use_fp16" = true ]; then
-    exp_name="s2s_train_v4-gpu${num_gpus}-btz${batch_size_training}-lr${lr}-fp16-epochs${num_epochs}-whisper_${whisper_size}-latency${num_latency_tokens}-group${code_layer}"
+    exp_name="s2s_train_v4-${llm_name}-gpu${num_gpus}-btz${batch_size_training}-lr${lr}-fp16-epochs${num_epochs}-whisper_${whisper_size}-latency${num_latency_tokens}-group${code_layer}-UltraChat_from_pre_train"
 fi
 # exp_name="s2s_train_v0_gpu24_btz${batch_size_training}_fp16"
-exp_name="debug"
+# exp_name="debug"
 # exp_name="single_test_whisper-medium"
 
 
 home_dir=/valleblob/v-wenxichen/exp/s2s
 # output_dir=$home_dir/$(TZ='Asia/Shanghai' date +"%Y_%m_%d")/$(TZ='Asia/Shanghai' date +"%H_%M_%S")
 output_dir=$home_dir/$exp_name
-ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v3-gpu16-btz3-lr5e-4-fp16-epochs10-whisper_small-latency5-group3/gpu16-btz3-lr5e-4-fp16-epochs10-whisper_small-latency5-group3-s2s_epoch_4_step_1179  # this line is for resuming training
+# ckpt_path=/valleblob/v-wenxichen/exp/s2s/2024_09_26/s2s_train_v0_gpu4_btz4/s2s_epoch_2_step_20982  # this line is for resuming training
 
 if [ "$exp_name" = "debug" ]; then
     use_wandb=false
@@ -76,7 +81,7 @@ wandb_exp_name=$exp_name
 
 hydra_args="
 hydra.run.dir=$output_dir \
-++model_config.llm_name=qwen2.5-1.5b \
+++model_config.llm_name=$llm_name \
 ++model_config.llm_path=$llm_path \
 ++model_config.llm_dim=$llm_dim \
 ++model_config.encoder_name=whisper \
@@ -115,8 +120,8 @@ hydra.run.dir=$output_dir \
 ++train_config.freeze_encoder=true \
 ++train_config.freeze_llm=false \
 ++train_config.batching_strategy=custom \
-++train_config.warmup_steps=3000 \
-++train_config.total_steps=300000 \
+++train_config.warmup_steps=1500 \
+++train_config.total_steps=150000 \
 ++train_config.lr=$lr \
 ++train_config.validation_interval=$validation_interval \
 ++train_config.batch_size_training=$batch_size_training \
@@ -135,8 +140,7 @@ hydra.run.dir=$output_dir \
 ++log_config.wandb_exp_name=$wandb_exp_name \
 ++log_config.wandb_dir=$output_dir \
 ++log_config.log_file=$output_dir/exp.log \
-++log_config.log_interval=10 \
-++ckpt_path=$ckpt_path/model.pt \
+++log_config.log_interval=100 \
 "
 # ++ckpt_path=$ckpt_path/model.pt \
 # ↑ this line is for resuming training
@@ -156,8 +160,8 @@ if [[ $CUDA_VISIBLE_DEVICES != *","* ]]; then
     fi
 else
     torchrun \
-        --nnodes 1 \
-        --nproc_per_node 4 \
+        --nnodes $num_nodes \
+        --nproc_per_node $num_gpus_per_node \
         --master_port=29503 \
         $code_dir/finetune_s2s.py \
         --config-path "conf" \
@@ -171,7 +175,7 @@ fi
 # --node_rank=$node_rank \
 # --master_addr=$master_addr \
 
-# bash ./examples/s2s/scripts/finetune/finetune_s2s_debug.sh
+# bash ./examples/s2s/scripts/finetune/finetune_s2s_cosyvoice_group_multi-round.sh
 
 # 1GPU + 12w steps + btz4 = 1epoch
 # 1GPU + 24w steps + btz2 = 1epoch 

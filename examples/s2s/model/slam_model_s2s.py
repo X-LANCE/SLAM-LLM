@@ -21,6 +21,8 @@ from utils.trick_utils import partial_freeze_weights, train_embedding_layer_only
 from utils.snac_utils import get_snac, generate_audio_data, simple_shift
 from utils.snac_utils import layershift as layer_shift
 from utils.projector_utils import setup_group_decode_adapter
+from slam_llm.utils.config_utils import generate_peft_config
+from peft import get_peft_model
 
 logger = logging.getLogger(__name__)
 
@@ -94,6 +96,19 @@ def model_factory(train_config, model_config, **kwargs):
 
     if train_config.train_embed_only:
         train_embedding_layer_only(model)
+
+    # fixme: here has a bug -> during inference, we need load the ckpt again since the ckpt above is for FFT stage
+    if train_config.use_peft:
+        logger.info("setup peft for llm")
+        peft_config = generate_peft_config(train_config)
+        model.llm = get_peft_model(model.llm, peft_config)
+        if int(os.environ.get("RANK", "0")) == 0:
+            model.llm.print_trainable_parameters()
+
+    if kwargs.get("peft_ckpt", None):
+        logger.info("loading peft-stage ckpt from: {}\n".format(kwargs.get("peft_ckpt")))
+        ckpt_dict = torch.load(kwargs.get("peft_ckpt"), map_location="cpu")
+        model.load_state_dict(ckpt_dict, strict=False)
 
     print_model_size(
         model,
