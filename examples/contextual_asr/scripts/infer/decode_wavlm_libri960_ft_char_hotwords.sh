@@ -17,8 +17,8 @@ output_dir=/nfs/yangguanrou.ygr/experiments_librispeech/vicuna-7b-v1.5-WavLM-Lar
 ckpt_path=$output_dir/asr_epoch_3_step_25780
 
 first=1
-for N in 100; do
-        for ref_split in test_clean ; do #test_other
+for N in 100 500 1000 2000; do
+        for ref_split in test_clean test_other; do
                 split=librispeech_${ref_split}
                 val_data_path=/nfs/maziyang.mzy/data/librispeech/${split}.jsonl
                 decode_log=$ckpt_path/decode_${split}_beam4_filter_N${N}_first${first}_debug
