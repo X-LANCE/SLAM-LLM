@@ -28,6 +28,7 @@ developers to train custom multimodal large language model (MLLM), focusing on <
 6. [Citation](#citation)
 
 # News
+- [Update Nov. 17, 2024] Recipes for [LLM-Based Contextual ASR](examples/contextual_asr/README.md) have been supported. 
 - [Update Nov. 5, 2024] Recipes for [speech emotion captioning (SEC)](examples/sec_emotioncaps/README.md) with [emotion2vec](https://github.com/ddlBoJack/emotion2vec) as the encoder has been supported.
 - [Update Oct. 12, 2024] Recipes for [SLAM-AAC](examples/slam_aac/README.md) with [EAT](https://github.com/cwx-worst-one/EAT) as the encoder have been supported. 
 - [Update Sep. 28, 2024] Recipes for [CoT-ST](examples/st_covost2/README.md) have been supported. 
@@ -84,6 +85,7 @@ We provide reference implementations of various LLM-based speech, audio, and mus
     
     - Contextual Automatic Speech Recognition (CASR)
         - [ Mala-ASR](examples/mala_asr_slidespeech/README.md)
+        - [LLM-Based Contextual ASR](examples/contextual_asr/README.md)
     
     - [Visual Speech Recognition (VSR)](examples/vsr_LRS3/README.md) 
     - Speech-to-Text Translation (S2TT)
@@ -139,6 +141,15 @@ Mala-ASR:
   title={MaLa-ASR: Multimedia-Assisted LLM-Based ASR},
   author={Yang, Guanrou and Ma, Ziyang and Yu, Fan and Gao, Zhifu and Zhang, Shiliang and Chen, Xie},
   journal={Proc. INTERSPEECH},
+  year={2024}
+}
+```
+LLM-Based Contextual ASR:
+```
+@article{yang2024ctc,
+  title={CTC-Assisted LLM-Based Contextual ASR},
+  author={Yang, Guanrou and Ma, Ziyang and Gao, Zhifu and Zhang, Shiliang and Chen, Xie},
+  journal={Proc. SLT},
   year={2024}
 }
 ```
