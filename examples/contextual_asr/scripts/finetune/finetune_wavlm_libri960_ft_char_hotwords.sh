@@ -5,7 +5,7 @@ export TOKENIZERS_PARALLELISM=false
 # export CUDA_LAUNCH_BLOCKING=1
 export OMP_NUM_THREADS=1
 
-cd /root/SLAM-LLM
+cd /nfs/yangguanrou.ygr/codes/SLAM-LLM
 code_dir=examples/contextual_asr
 
 speech_encoder_path=/nfs/yangguanrou.ygr/ckpts/wavlm_large_ft_libri960_char/wavlm_large_ft_libri960_char.pt
