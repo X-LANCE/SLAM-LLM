@@ -11,3 +11,4 @@ log/
 PATH/
 configs/
 *.txt
+examples/contextual_asr_0/
