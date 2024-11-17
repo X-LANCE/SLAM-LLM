@@ -28,10 +28,15 @@ words, with the remainder classified as rare words. The biasing list generated f
 
 
 ## Decoding with checkpoints
-LLM-based Contextual ASR Inference script, with different biaisng sizes and test sets.
+LLM-based ASR Inference script.
+```
+bash decode_wavlm_libri960_ft_char.sh
+```
+LLM-based Contextual ASR Inference script, with different biaisng list sizes.
 ```
 bash decode_wavlm_libri960_ft_char_hotwords.sh
 ```
+
 
 ## Training the model
 LLM-based ASR Training script: using CTC fine-tuned Wavlm as encoder and “Transcribe speech to text.” as prompt.
@@ -54,5 +59,3 @@ You can refer to the paper for more results.
   year={2024}
 }
 ```
-
-

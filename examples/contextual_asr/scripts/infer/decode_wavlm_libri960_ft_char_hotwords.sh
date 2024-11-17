@@ -5,7 +5,7 @@ export TOKENIZERS_PARALLELISM=false
 export CUDA_LAUNCH_BLOCKING=1
 export HYDRA_FULL_ERROR=1
 
-run_dir=/root/SLAM-LLM
+run_dir=/nfs/yangguanrou.ygr/codes/SLAM-LLM
 cd $run_dir
 code_dir=examples/contextual_asr
 
