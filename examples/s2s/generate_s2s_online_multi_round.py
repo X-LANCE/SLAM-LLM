@@ -71,7 +71,7 @@ def get_padded_input(text_input_idx, text_index_length, code_layer, _pad_a, laye
 	return padded_input
 
 
-def generate_from_wav(wav_path, model, codec_decoder, dataset_config, decode_config, logger, device, model_config, tone_dir, audio_prompt_path=None, output_text_only=False, history="", layer_shift=layershift):
+def generate_from_wav(wav_path, model, dataset_config, decode_config, logger, device, model_config, tone_dir, audio_prompt_path=None, output_text_only=False, history="", layer_shift=layershift):
 	mel_size = dataset_config.mel_size
 	prompt = dataset_config.prompt
 	prompt_template = "<SYSTEM>: {}\n {}\n "
@@ -113,6 +113,11 @@ def generate_from_wav(wav_path, model, codec_decoder, dataset_config, decode_con
 	padding_left = prompt_length + 1 # +1 for <bos>
 	modality_mask[0, padding_left:padding_left+audio_length] = True
 
+	model.encoder.eval()
+	audio_embedding = None
+	if model_config.encoder_name == "whisper":
+		audio_embedding = model.encoder.extract_variable_length_features(audio_mel.permute(0, 2, 1))
+
 	batch = {
 		"input_ids": input_ids,
 		"attention_mask": attention_mask,
@@ -121,22 +126,29 @@ def generate_from_wav(wav_path, model, codec_decoder, dataset_config, decode_con
 		"audio_length": audio_length,
 		"modality_mask": modality_mask,
 		"task_types": task_type,
+		"audio_embedding": audio_embedding,
 	}
 
 	model_outputs = model.generate(**batch, **decode_config)
 	text_outputs = model_outputs[code_layer]
 	audio_outputs = model_outputs[:code_layer]	
 	output_text = model.tokenizer.decode(text_outputs, add_special_tokens=False, skip_special_tokens=True)
+
+	whisper_model = model.whisper_model
+	options = whisper.DecodingOptions()
+	result = whisper.decode(whisper_model, audio_embedding.squeeze(0), options)
+	transcribed_text = result.text
 	
 	if decode_config.decode_text_only or output_text_only:
-		return None, output_text, " ASSISTANT: " + output_text
+		return None, output_text, " ASSISTANT: " + output_text, transcribed_text
 
 	if audio_outputs[0].shape[0] == decode_config.max_new_tokens:
 		logger.warning(f"Audio token is too long, skip. You can try to increase the max_new_tokens in the decode_config.")
-		return None, output_text, history + " ASSISTANT: " + output_text
+		return None, output_text, history + " ASSISTANT: " + output_text, transcribed_text
 	
 	audio_tokens = [audio_outputs[layer] for layer in range(code_layer)]
 
+	codec_decoder = model.codec_decoder
 	if code_type == "SNAC":
 		audiolist = reconscruct_snac(audio_tokens)
 		audio = reconstruct_tensors(audiolist)
@@ -147,10 +159,10 @@ def generate_from_wav(wav_path, model, codec_decoder, dataset_config, decode_con
 	else:
 		raise NotImplementedError
 
-	return audio_hat, output_text, " ASSISTANT: " + output_text
+	return audio_hat, output_text, " ASSISTANT: " + output_text, transcribed_text
 
 
-def generate_from_text(text_input, model, codec_decoder, dataset_config, decode_config, logger, device, model_config, tone_dir, audio_prompt_path=None, output_text_only=False, history="", layer_shift=layershift):
+def generate_from_text(text_input, model, dataset_config, decode_config, logger, device, model_config, tone_dir, audio_prompt_path=None, output_text_only=False, history="", layer_shift=layershift):
 	prompt = dataset_config.prompt
 	prompt_template = "<SYSTEM>: {}\n {}\n "
 	# prompt_template = "USER: {}\n ASSISTANT: "	# note: old version
@@ -215,6 +227,7 @@ def generate_from_text(text_input, model, codec_decoder, dataset_config, decode_
 	
 	audio_tokens = [audio_outputs[layer] for layer in range(code_layer)]
 
+	codec_decoder = model.codec_decoder
 	if code_type == "SNAC":
 		audiolist = reconscruct_snac(audio_tokens)
 		audio = reconstruct_tensors(audiolist)
@@ -279,7 +292,6 @@ def main(kwargs: DictConfig):
 	
 	model_factory = get_custom_model_factory(model_config, logger)
 	model, tokenizer = model_factory(train_config, model_config, **kwargs)
-	codec_decoder = model.codec_decoder
 	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 	model.to(device)
 	model.eval()
@@ -332,21 +344,6 @@ def main(kwargs: DictConfig):
 	logger.info("Decode Code Layer: {}".format(code_layer))
 	logger.info("Tone for Audio Generation: {}".format(tone_dir))
 
-	transcribe_queue = Queue()
-	generate_queue = Queue()
-
-	def transcribe_thread(wav_path):
-		transcribed_text = transcribe_audio(wav_path)
-		transcribe_queue.put(transcribed_text)
-
-	def generate_thread(wav_path, history):
-		output_wav, output_text, new_history = generate_from_wav(
-			wav_path, model, codec_decoder, dataset_config, 
-			decode_config, logger, device, model_config, 
-			tone_dir, audio_prompt_path, output_text_only, history, layer_shift
-		)
-		generate_queue.put((output_wav, output_text, new_history))
-
 	history = ""
 	conversation_count = 1
 	conversation_dir = os.path.join(tone_audio_dir, f"conversation_{conversation_count}")
@@ -368,7 +365,7 @@ def main(kwargs: DictConfig):
 				logger.info(f"History: {history}")
 				continue
 
-			audio_hat, output_text, history = generate_from_text(text_input, model, codec_decoder, dataset_config, decode_config, logger, device, model_config, tone_dir, audio_prompt_path, output_text_only, history, layer_shift)
+			audio_hat, output_text, history = generate_from_text(text_input, model, dataset_config, decode_config, logger, device, model_config, tone_dir, audio_prompt_path, output_text_only, history, layer_shift)
 			logger.info(f"Generated Text: {output_text}")
 
 			if tone_audio_dir is not None:
@@ -396,18 +393,11 @@ def main(kwargs: DictConfig):
 			if not os.path.exists(wav_path):
 				logger.warning(f"File {wav_path} does not exist. Please try again.")
 				continue
-
-			t1 = threading.Thread(target=transcribe_thread, args=(wav_path,))
-			t2 = threading.Thread(target=generate_thread, args=(wav_path, history))
 			
-			t1.start()
-			t2.start()
-
-			transcribed_text = transcribe_queue.get()
-			output_wav, output_text, history_assistant = generate_queue.get()
-
-			t1.join()
-			t2.join()
+			output_wav, output_text, history_assistant, transcribed_text = generate_from_wav(
+				wav_path, model, dataset_config, decode_config, logger, device, model_config, 
+				tone_dir, audio_prompt_path, output_text_only, history, layer_shift
+			)
 
 			logger.info(f"Adding the transcribed text to the history: {transcribed_text}")
 			history_user = "USER: " + transcribed_text.strip() + " "

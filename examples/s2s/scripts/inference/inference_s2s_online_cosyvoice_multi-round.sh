@@ -32,11 +32,13 @@ codec_decoder_type=CosyVoice
 num_latency_tokens=5    # number of latency tokens (same as the number in training)
 do_layershift=false      # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
 
-ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v4-Qwen2-0.5b-gpu4-btz3-lr5e-4-nofp16-epochs10-whisper_small-latency5-group3-UltraChat_from_pre_train/s2s_epoch_2_step_23152
+ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v4-Qwen2-0.5b-gpu4-btz3-lr5e-4-nofp16-epochs10-whisper_small-latency5-group3-UltraChat_from_pre_train/Qwen2-0.5b-gpu4-btz3-lr5e-4-nofp16-epochs10-whisper_small-latency5-group3-UltraChat_from_pre_train-s2s_epoch_2_step_23152
+
 # model settings
 tts_adapter=false
 group_decode=true
 group_decode_adapter_type=linear
+whisper_decode=true
 
 # decode config
 text_repetition_penalty=1.2
@@ -88,6 +90,7 @@ python $code_dir/inference_s2s.py \
         ++model_config.codec_decoder_type=$codec_decoder_type \
         ++model_config.group_decode=$group_decode \
         ++model_config.group_decode_adapter_type=$group_decode_adapter_type \
+        ++model_config.whisper_decode=$whisper_decode \
         ++dataset_config.dataset=speech_dataset_s2s \
         ++dataset_config.input_type=mel \
         ++dataset_config.mel_size=$mel_size \

@@ -31,8 +31,13 @@ def model_factory(train_config, model_config, **kwargs):
     # return necessary components for training
     tokenizer = setup_tokenizer(train_config, model_config, **kwargs)
 
+    whisper_model = None
     if train_config.task_type == "s2s" or train_config.task_type == "asr":
-        encoder = setup_encoder(train_config, model_config, **kwargs)
+        if not model_config.whisper_decode:
+            encoder = setup_encoder(train_config, model_config, **kwargs)
+        else:
+            whisper_model = setup_encoder(train_config, model_config, **kwargs)
+            encoder = whisper_model.encoder
     elif train_config.task_type == "tts":
         encoder = None
     else:
@@ -78,6 +83,7 @@ def model_factory(train_config, model_config, **kwargs):
         tts_adapter,
         codec_decoder,
         group_decode_adapter,
+        whisper_model,
         train_config,
         model_config,
         **kwargs,
@@ -132,6 +138,7 @@ class slam_model_s2s(slam_model):
         tts_adapter,
         codec_decoder,
         group_decode_adapter,
+        whisper_model,
         train_config,
         model_config,
         **kwargs,
@@ -155,6 +162,7 @@ class slam_model_s2s(slam_model):
                 logger.info("Resize llm embedding layer's vocab size to {}\n".format(self.model_config.vocab_config.total_vocabsize))
 
         self.codec_decoder = codec_decoder
+        self.whisper_model = whisper_model
         self.tts_adapter = tts_adapter
         self.code_layer = self.model_config.vocab_config.code_layer
         self.group_decode_adapter = group_decode_adapter
@@ -174,6 +182,7 @@ class slam_model_s2s(slam_model):
                 **kwargs,
                 ):
         audio_mel = kwargs.get("audio_mel", None)
+        audio_embedding = kwargs.get("audio_embedding", None)
         audio_mel_post_mask = kwargs.get("audio_mel_post_mask", None) # 2x downsample for whisper
 
         audio = kwargs.get("audio", None)
@@ -183,22 +192,25 @@ class slam_model_s2s(slam_model):
 
         encoder_outs = None
         if audio_mel is not None or audio is not None:
-            if self.train_config.freeze_encoder: # freeze encoder
-                self.encoder.eval()
+            if audio_embedding is None:
+                if self.train_config.freeze_encoder: # freeze encoder
+                    self.encoder.eval()
 
-            if self.model_config.encoder_name == "whisper":
-                encoder_outs = self.encoder.extract_variable_length_features(audio_mel.permute(0, 2, 1)) # bs*seq*dim
-            if self.model_config.encoder_name == "wavlm":
-                encoder_outs = self.encoder.extract_features(audio, 1 - audio_mask) #(FIX:MZY): 1-audio_mask is needed for wavlm as the padding mask
-            if self.model_config.encoder_name == "hubert":
-                results = self.encoder(source = audio, padding_mask = 1-audio_mask)
-                if self.model_config.encoder_type == "pretrain":
-                    encoder_outs, audio_mel_post_mask = results["x"], results["padding_mask"]
-                if self.model_config.encoder_type == "finetune":
-                    encoder_outs, audio_mel_post_mask = results["encoder_out"], results["padding_mask"]
-                    encoder_outs = encoder_outs.transpose(0, 1)
-            if self.encoder is None:
-                encoder_outs = audio_mel if audio_mel is not None else audio
+                if self.model_config.encoder_name == "whisper":
+                    encoder_outs = self.encoder.extract_variable_length_features(audio_mel.permute(0, 2, 1)) # bs*seq*dim
+                if self.model_config.encoder_name == "wavlm":
+                    encoder_outs = self.encoder.extract_features(audio, 1 - audio_mask) #(FIX:MZY): 1-audio_mask is needed for wavlm as the padding mask
+                if self.model_config.encoder_name == "hubert":
+                    results = self.encoder(source = audio, padding_mask = 1-audio_mask)
+                    if self.model_config.encoder_type == "pretrain":
+                        encoder_outs, audio_mel_post_mask = results["x"], results["padding_mask"]
+                    if self.model_config.encoder_type == "finetune":
+                        encoder_outs, audio_mel_post_mask = results["encoder_out"], results["padding_mask"]
+                        encoder_outs = encoder_outs.transpose(0, 1)
+                if self.encoder is None:
+                    encoder_outs = audio_mel if audio_mel is not None else audio
+            else:
+                encoder_outs = audio_embedding
 
             if self.model_config.encoder_projector == "q-former":
                 encoder_outs = self.encoder_projector(encoder_outs, audio_mel_post_mask)
