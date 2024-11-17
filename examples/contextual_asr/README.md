@@ -8,7 +8,7 @@
 
 We use WavLM-Large model pre-trained on 94, 000 hours of data, and fine-tuned on 960h hours of Librispeech data with CTC loss, as our speech encoder. We use the public Vicuna 7B as our large language model decoder, and a simple-structured linear projector, consisting of a 1-D convolution layer and two linear layers as our adapter. Refer to our [paper](https://arxiv.org/pdf/2411.06437) for more details.
 
-![](docs/model.pdf)
+![](docs/model.png)
 
 ## Checkpoints
 We only train the linear projector in this recipe.
@@ -17,7 +17,7 @@ Encoder | Projector | LLM
 [CTC Fine-tuned WavLM-Large](https://drive.google.com/file/d/12ZmSSbDvx73W0eK1wpUgajapCLhqh5DI/view?usp=drive_link)(~315.45M) | [Linear](https://drive.google.com/file/d/1Zlbsnz1YUWtYtt-yNyoPK5OhR30kwLfS/view?usp=drive_link)(~15.74M) | [vicuna-7b-v1.5](https://huggingface.co/lmsys/vicuna-7b-v1.5)(~6.7B)  
 
 ## Performance
-![](docs/performanc.png)
+![](docs/performance.png)
 
 
 ## Data preparation
@@ -28,15 +28,26 @@ words, with the remainder classified as rare words. The biasing list generated f
 
 
 ## Decoding with checkpoints
+LLM-based ASR Inference script.
 ```
-bash decode_wavlm_libri960_ft_char_hotwords_filter_N100_F3.sh
+bash decode_wavlm_libri960_ft_char.sh
+```
+LLM-based Contextual ASR Inference script, with different biaisng list sizes.
+```
+bash decode_wavlm_libri960_ft_char_hotwords.sh
 ```
 
+
 ## Training the model
+LLM-based ASR Training script: using CTC fine-tuned Wavlm as encoder and “Transcribe speech to text.” as prompt.
 ```
-bash finetune_wavlm_libri960_ft_char_hotwords.sh
 bash finetune_wavlm_libri960_ft_char.sh
 ```
+LLM-based Contextual ASR Training script: using CTC fine-tuned Wavlm as encoder and "Transcribe speech to text. Some hotwords might help. The hotwords are {}.” as prompt.
+```
+bash finetune_wavlm_libri960_ft_char_hotwords.sh
+```
+
 
 ##  Citation
 You can refer to the paper for more results. 
@@ -48,5 +59,3 @@ You can refer to the paper for more results.
   year={2024}
 }
 ```
-
-

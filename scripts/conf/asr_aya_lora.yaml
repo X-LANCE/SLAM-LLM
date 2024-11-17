@@ -1,0 +1,116 @@
+
+model_config:
+  llm_name: "aya-101"
+  llm_path: "PATH/to/LLAMA/7B"
+  llm_dim: 4096
+  encoder_name: null
+  encoder_ds_rate: 2
+  encoder_path: null
+  encoder_dim: 1280
+  encoder_projector: "linear"
+  encoder_projector_ds_rate: 5
+
+  DMODEL: 512
+  FRONTEND_DMODEL: 1024   #这个是专门指moco的
+  TX_ATTENTION_HEADS: 8
+  TX_NUM_LAYERS: 6
+  PE_MAX_LENGTH: 500
+  AUDIO_FEATURE_SIZE: 1024
+  VIDEO_FEATURE_SIZE: 2048
+  TX_FEEDFORWARD_DIM: 2048
+  TX_DROPOUT: 0.1
+  CHAR_NUM_CLASSES: 40
+
+  WORD_NUM_CLASSES: 500
+  FRAME_LENGTH: 29
+  MOCO_FRONTEND_FILE: "/nfs/yangguanrou.ygr/AVSR/pretrain_model/moco_frontend.pt" #"/home/oss/yangguanrou.ygr/AVSR/pretrain_model/moco_frontend.pt"
+  WAV2VEC_FILE: "/nfs/yangguanrou.ygr/AVSR/pretrain_model/wav2vec_vox_new.pt" #"/home/oss/yangguanrou.ygr/AVSR/pretrain_model/wav2vec_vox_new.pt"
+  MAIN_REQ_INPUT_LENGTH: int = 80
+  modal: "AV"
+  TRAIN_LRS3_MODEL_FILE: "/nfs/yangguanrou.ygr/AVSR/train-step_0108-wer_0.058.ckpt"  # "/home/oss/yangguanrou.ygr/AVSR/train-step_0108-wer_0.058.ckpt"  #单一模态是这个
+  TRAINED_AO_FILE: "/nfs/yangguanrou.ygr/AVSR/check/train-step_0604-wer_0.054.ckpt"  #"/home/oss/yangguanrou.ygr/AVSR/check/train-step_0604-wer_0.054.ckpt"
+  TRAINED_VO_FILE: "/nfs/yangguanrou.ygr/AVSR/check/train-step_1191-wer_0.674.ckpt"  #"/home/oss/yangguanrou.ygr/AVSR/check/train-step_1191-wer_0.674.ckpt"
+
+
+train_config:
+  model_name: "PATH/to/LLAMA/7B"
+  enable_ddp: false
+  enable_fsdp: false
+  low_cpu_fsdp: false
+  run_validation: true
+  batch_size_training: 4
+  batching_strategy: "packing" #alternative: padding
+  context_length: 4096
+  gradient_accumulation_steps: 1
+  num_epochs: 100
+  num_workers_dataloader: 1
+  warmup_steps: 1000
+  total_steps: 100000
+  validation_interval: 1000
+  lr: 1e-4
+  weight_decay: 0.0
+  gamma: 0.85
+  seed: 42
+  use_fp16: false
+  mixed_precision: true
+  val_batch_size: 1
+
+  use_peft: false
+  peft_config:
+    peft_method: "lora" # None , llama_adapter, prefix
+    r: 8
+    lora_alpha: 32
+    target_modules: [ "q_proj", "v_proj" ]
+    bias: "none"
+    task_type: "CAUSAL_LM"
+    lora_dropout: 0.05
+    inference_mode: false
+  output_dir: "PATH/to/save/PEFT/model"
+  freeze_layers: false
+  num_freeze_layers: 1
+  quantization: false
+  one_gpu: false
+  save_model: true
+  dist_checkpoint_root_folder: "PATH/to/save/FSDP/model" # will be used if using FSDP
+  dist_checkpoint_folder: "fine-tuned" # will be used if using FSDP
+  save_optimizer: false # will be used if using FSDP
+  use_fast_kernels: false # Enable using SDPA from PyTroch Accelerated Transformers, make use Flash Attention and Xformer memory-efficient kernels
+  run_test_during_validation: false
+  run_test_during_validation_file: "test.wav"
+  run_test_during_validation_prompt: "<|ASR|>"
+  freeze_llm: false
+  freeze_encoder: false
+
+dataset_config:
+  dataset: "speech_dataset"
+  file: "src/slam_llm/datasets/speech_dataset.py:get_speech_dataset"
+  train_data_path: null
+  val_data_path: null
+  train_split: "train"
+  test_split: "validation"
+  data_path: null
+  max_words: null
+  max_mel: null
+  fix_length_audio: -1
+  inference_mode: false
+
+fsdp_config:
+    mixed_precision: true
+    use_fp16: false
+    # sharding_strategy: "FULL_SHARD" #ShardingStrategy = ShardingStrategy.FULL_SHARD
+    sharding_strategy: "NO_SHARD" #ShardingStrategy.NO_SHARD #MZY: set NO_SHARD when use DDP
+    checkpoint_type: "SHARDED_STATE_DICT"  # alternatively can use SHARDED_STATE_DICT save one file per rank, and can resize the world-size.
+    fsdp_activation_checkpointing: true
+    fsdp_cpu_offload: false
+    pure_bf16: false
+    optimizer: "AdamW"
+
+log_config:
+    use_wandb: false
+    wandb_dir: "/root/test_wandb"
+    wandb_entity_name : "project_name"
+    wandb_project_name : "project_name"
+    wandb_exp_name : "exp_name"
+    log_file: "/root/test.log"
+    log_interval: 5
+
