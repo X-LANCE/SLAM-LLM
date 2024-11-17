@@ -5,7 +5,7 @@ export TOKENIZERS_PARALLELISM=false
 # export CUDA_LAUNCH_BLOCKING=1
 export OMP_NUM_THREADS=1
 
-cd /root/SLAM-LLM
+cd /nfs/yangguanrou.ygr/codes/SLAM-LLM
 code_dir=examples/contextual_asr
 
 speech_encoder_path=/nfs/yangguanrou.ygr/ckpts/wavlm_large_ft_libri960_char/wavlm_large_ft_libri960_char.pt
@@ -13,7 +13,7 @@ llm_path=/nfs/maziyang.mzy/models/vicuna-7b-v1.5
 train_data_path=/nfs/maziyang.mzy/data/librispeech/librispeech_train_960h.jsonl
 val_data_path=/nfs/maziyang.mzy/data/librispeech/librispeech_dev_other.jsonl
 
-output_dir=/nfs/yangguanrou.ygr/experiments_librispeech/vicuna-7b-v1.5-WavLM-Large-libri960-ft-char-$(date +"%Y%m%d")
+output_dir=/nfs/yangguanrou.ygr/experiments_librispeech/vicuna-7b-v1.5-WavLM-Large-libri960-ft-char-$(date +"%Y%m%d")-debug
 
 hydra_args="
 hydra.run.dir=$output_dir \

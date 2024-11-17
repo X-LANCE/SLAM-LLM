@@ -12,3 +12,4 @@ PATH/
 configs/
 *.txt
 examples/contextual_asr_0/
+/root/SLAM-LLM/examples/contextual_asr/scripts/infer/decode_wavlm_libri960_ft_char_hotwords_filter_N100_F3_debug.sh
