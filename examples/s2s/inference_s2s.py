@@ -27,12 +27,12 @@ class RunConfig:
         metadata={"help": "The prefix for the decode output"},
     )
     ckpt_path: str = field(
-        default="output/model.pt", metadata={"help": "The path to projector checkpoint"}
+        default="output/model.pt", metadata={"help": "The path to model backbone checkpoint"}
     )
-    peft_ckpt: Optional[str] = field(
+    peft_ckpt_path: Optional[str] = field(
         default=None,
         metadata={
-            "help": "The path to peft checkpoint, should be a directory including adapter_config.json"
+            "help": "The path to peft checkpoint",
         },
     )
     output_text_only: bool = field(

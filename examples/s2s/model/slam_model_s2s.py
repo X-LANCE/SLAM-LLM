@@ -111,10 +111,10 @@ def model_factory(train_config, model_config, **kwargs):
         if int(os.environ.get("RANK", "0")) == 0:
             model.llm.print_trainable_parameters()
 
-    if kwargs.get("peft_ckpt", None):
-        logger.info("loading peft-stage ckpt from: {}\n".format(kwargs.get("peft_ckpt")))
-        ckpt_dict = torch.load(kwargs.get("peft_ckpt"), map_location="cpu")
-        model.load_state_dict(ckpt_dict, strict=False)
+        if kwargs.get("peft_ckpt_path", None):
+            logger.info("loading peft-stage ckpt from: {}\n".format(kwargs.get("peft_ckpt_path")))
+            ckpt_dict = torch.load(kwargs.get("peft_ckpt_path"), map_location="cpu")
+            model.load_state_dict(ckpt_dict, strict=False)
 
     print_model_size(
         model,
@@ -381,7 +381,12 @@ class slam_model_s2s(slam_model):
             if current_input_text is not None:
                 audio_tokens = torch.cat([layershift(current_audio_tokens[i], i).unsqueeze(1) for i in range(self.code_layer)], dim=1)
                 combined_input_ids = torch.cat([audio_tokens, current_input_text.unsqueeze(1)], dim=1)
-                inputs_embeds = self.llm.model.embed_tokens(combined_input_ids)
+                if hasattr(self.llm.model, "embed_tokens"):
+                    inputs_embeds = self.llm.model.embed_tokens(combined_input_ids)
+                elif hasattr(self.llm.model.model, "embed_tokens"):
+                    inputs_embeds = self.llm.model.model.embed_tokens(combined_input_ids)
+                else:
+                    inputs_embeds = self.llm.model.model.model.embed_tokens(combined_input_ids)
                 inputs_embeds = torch.mean(inputs_embeds, dim=1).unsqueeze(1)
             
             outputs = self.llm(
@@ -526,7 +531,12 @@ class slam_model_s2s(slam_model):
             if current_input_text is not None:
                 audio_tokens = torch.cat([layershift(current_audio_tokens[i], i).unsqueeze(1) for i in range(self.code_layer)], dim=1)
                 combined_input_ids = torch.cat([audio_tokens, current_input_text.unsqueeze(1)], dim=1)
-                inputs_embeds = self.llm.model.embed_tokens(combined_input_ids)
+                if hasattr(self.llm.model, "embed_tokens"):
+                    inputs_embeds = self.llm.model.embed_tokens(combined_input_ids)
+                elif hasattr(self.llm.model.model, "embed_tokens"):
+                    inputs_embeds = self.llm.model.model.embed_tokens(combined_input_ids)
+                else:
+                    inputs_embeds = self.llm.model.model.model.embed_tokens(combined_input_ids)
                 inputs_embeds = torch.mean(inputs_embeds, dim=1).unsqueeze(1)
             
             outputs = self.llm(
