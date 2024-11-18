@@ -48,7 +48,7 @@ def get_group_answer_token(audio_tokens, num_latency_tokens, padding_token, end_
     result_tensor = torch.stack(result)
     return result_tensor, audio_length
 
-def audio_decode_cosyvoice(audio_tokens, model_config, codec_decoder, tone_dir, audio_prompt_path=None, code_layer=1, num_latency_tokens=1, speed=1.0):
+def audio_decode_cosyvoice(audio_tokens, model_config, codec_decoder, tone_dir, audio_prompt_path=None, code_layer=1, num_latency_tokens=1, speed=1.0, replace_token=4095):
     """
     Generate audio from tokens with optional tone and prompt embedding.
 
@@ -84,10 +84,9 @@ def audio_decode_cosyvoice(audio_tokens, model_config, codec_decoder, tone_dir, 
     end_index = torch.nonzero(audio_tokens[0] == eoa)[0]
     audio_tokens = audio_tokens[..., :end_index]
 
-    # Handle padding tokens if present, # FIXME: this is a temporary fix for the padding issue, where the padding token may be included in the audio tokens
+    # Handle padding tokens if present # FIXME: this is a temporary fix for the padding issue, where the padding token may be included in the audio tokens
     if pad_a in audio_tokens:
-        end_index = torch.nonzero(audio_tokens[0] == pad_a)[0]
-        audio_tokens = audio_tokens[..., :end_index]
+        audio_tokens = audio_tokens.masked_fill(audio_tokens == pad_a, replace_token)
 
     # Generate a unique ID for this audio generation
     this_uuid = str(uuid.uuid1())

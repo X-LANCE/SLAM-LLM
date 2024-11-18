@@ -355,6 +355,9 @@ def main(kwargs: DictConfig):
 			if text_input.lower() == 'q':
 				break
 			elif text_input.lower() == 'c':
+				if history == "":
+					logger.info("History is already empty.")
+					continue
 				history = ""
 				conversation_count += 1
 				conversation_dir = os.path.join(tone_audio_dir, f"conversation_{conversation_count}")
@@ -380,6 +383,9 @@ def main(kwargs: DictConfig):
 			if wav_path.lower() == 'q':
 				break
 			elif wav_path.lower() == 'c':
+				if history == "":
+					logger.info("History is already empty.")
+					continue
 				history = ""
 				conversation_count += 1
 				conversation_dir = os.path.join(tone_audio_dir, f"conversation_{conversation_count}")
