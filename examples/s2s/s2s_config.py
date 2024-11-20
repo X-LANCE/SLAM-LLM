@@ -96,6 +96,7 @@ class ModelConfig:
     code_type: str = "SNAC" 
     group_decode: bool = False
     group_decode_adapter_type: str = "linear"
+    whisper_decode: bool = False
 
 
 @dataclass

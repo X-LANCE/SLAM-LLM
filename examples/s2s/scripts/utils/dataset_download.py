@@ -1,7 +1,7 @@
 from datasets import load_dataset, DatasetDict
 from datasets import load_from_disk
 
-ds = load_dataset("gpt-omni/VoiceAssistant-400K")
+# ds = load_dataset("gpt-omni/VoiceAssistant-400K")
 # save_path = "/valleblob/v-wenxichen/data/s2s"
 # ds.save_to_disk(save_path)
 # print(f"数据集已保存到 {save_path}")
@@ -24,3 +24,12 @@ ds = load_dataset("gpt-omni/VoiceAssistant-400K")
 # print(ds['train'][0])
 # for key in ds[0].keys():
 #     print(key, ds[0][key])
+
+
+parquet_dir = "/valleblob/v-wenxichen/data/s2s/ultrachat/parquet"
+ds = load_dataset(parquet_dir)
+print(ds)
+print(ds['train'][0])
+
+save_dir = "/valleblob/v-wenxichen/data/s2s/ultrachat-v1"
+ds.save_to_disk(save_dir)

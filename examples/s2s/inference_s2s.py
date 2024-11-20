@@ -1,6 +1,7 @@
 from generate_s2s_batch import main as inference
 from generate_s2s_batch_stream import main as inference_stream
-from generate_s2s_online import main as inference_online
+from generate_s2s_online import main as inference_online # single-round inference
+from generate_s2s_online_multi_round import main as inference_online_multi_round # multi-round inference
 from generate_s2s_online_stream import main as inference_online_stream
 
 import hydra
@@ -26,12 +27,12 @@ class RunConfig:
         metadata={"help": "The prefix for the decode output"},
     )
     ckpt_path: str = field(
-        default="output/model.pt", metadata={"help": "The path to projector checkpoint"}
+        default="output/model.pt", metadata={"help": "The path to model backbone checkpoint"}
     )
-    peft_ckpt: Optional[str] = field(
+    peft_ckpt_path: Optional[str] = field(
         default=None,
         metadata={
-            "help": "The path to peft checkpoint, should be a directory including adapter_config.json"
+            "help": "The path to peft checkpoint",
         },
     )
     output_text_only: bool = field(
@@ -48,6 +49,9 @@ class RunConfig:
     )
     audio_prompt_path: Optional[str] = field(
         default=None, metadata={"help": "The path to audio prompt"}
+    )
+    multi_round: bool = field(
+        default=False, metadata={"help": "Multi-round inference"}
     )
 
 
@@ -68,6 +72,8 @@ def main_hydra(cfg: DictConfig):
     if cfg.inference_online:
         if cfg.inference_streaming:
             inference_online_stream(cfg)
+        elif cfg.multi_round:
+            inference_online_multi_round(cfg)
         else:
             inference_online(cfg)
     else:
