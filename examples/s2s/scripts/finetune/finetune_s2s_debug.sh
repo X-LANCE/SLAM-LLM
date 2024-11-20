@@ -28,9 +28,9 @@ code_type=CosyVoice     # CosyVoice or SNAC
 num_latency_tokens=5    # number of latency tokens (in front of the generated audio tokens)
 do_layershift=false     # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
 
-train_data_path="/valleblob/v-wenxichen/data/s2s/ultrachat/parquet_test"   # gpt-omni/VoiceAssistant-400K
-val_data_path="/valleblob/v-wenxichen/data/s2s/ultrachat/parquet_test"     # gpt-omni/VoiceAssistant-400K
-load_from_cache_file=false  # set to true if you have already generated the cache file, otherwise set to false
+train_data_path="/valleblob/v-wenxichen/data/s2s/belle_3.5M/parquet_debug"   # gpt-omni/VoiceAssistant-400K
+val_data_path="/valleblob/v-wenxichen/data/s2s/belle_3.5M/parquet_debug"     # gpt-omni/VoiceAssistant-400K
+load_from_cache_file=true  # set to true if you have already generated the cache file, otherwise set to false
 
 upsample_text_tokens=false
 upsampling_factor=1
@@ -39,7 +39,7 @@ upsample_method=repeat  # repeat or blank
 # training settings
 batch_size_training=3
 use_fp16=true
-use_peft=true
+use_peft=false
 num_epochs=10
 lr=5e-4
 train_audio_embed_only=false
@@ -65,7 +65,7 @@ exp_name="debug"
 home_dir=/valleblob/v-wenxichen/exp/s2s
 # output_dir=$home_dir/$(TZ='Asia/Shanghai' date +"%Y_%m_%d")/$(TZ='Asia/Shanghai' date +"%H_%M_%S")
 output_dir=$home_dir/$exp_name
-ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v3-gpu16-btz3-lr5e-4-fp16-epochs10-whisper_small-latency5-group3/gpu16-btz3-lr5e-4-fp16-epochs10-whisper_small-latency5-group3-s2s_epoch_4_step_1179  # this line is for resuming training
+# ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v3-gpu16-btz3-lr5e-4-fp16-epochs10-whisper_small-latency5-group3/gpu16-btz3-lr5e-4-fp16-epochs10-whisper_small-latency5-group3-s2s_epoch_4_step_1179  # this line is for resuming training
 
 if [ "$exp_name" = "debug" ]; then
     use_wandb=false
@@ -136,7 +136,6 @@ hydra.run.dir=$output_dir \
 ++log_config.wandb_dir=$output_dir \
 ++log_config.log_file=$output_dir/exp.log \
 ++log_config.log_interval=10 \
-++ckpt_path=$ckpt_path/model.pt \
 "
 # ++ckpt_path=$ckpt_path/model.pt \
 # ↑ this line is for resuming training
