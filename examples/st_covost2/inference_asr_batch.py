@@ -15,6 +15,11 @@ import itertools
 import json
 import time
 from slam_llm.models.slam_model import slam_model
+
+
+
+
+
 # config
 # from llama_recipes.configs import fsdp_config as FSDP_CONFIG
 # from llama_recipes.configs import train_config as TRAIN_CONFIG
@@ -33,7 +38,9 @@ from slam_llm.utils.dataset_utils import get_preprocessed_dataset
 import os
 import logging
 from tqdm import tqdm
-from slam_llm.models.slam_model import model_factory
+from model.slam_model_st import model_factory
+from model.slm_model import CustomSLM
+from transformers import  AutoTokenizer,AutoConfig,AutoModel
 
 import hydra
 from omegaconf import DictConfig, ListConfig, OmegaConf
@@ -105,14 +112,18 @@ def Inference(kwargs: DictConfig):
 		clear_gpu_cache(local_rank)
 		setup_environ_flags(rank)
 
+	config = AutoConfig.from_pretrained("Qwen/Qwen2-7B")  # 加载 Qwen2-7B 的配置
+	tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen2-7B")
+	model = CustomSLM(config,ckpt_path="cotst/model.pt")
+      
+			
 
-	model, tokenizer = model_factory(train_config, model_config, **kwargs)
 	device = torch.device("cuda" if torch.cuda.is_available() else "cpu") # FIX(MZY): put the whole model to device.
 	model.to(torch.bfloat16)
 	dataset_config["bf16"]=True
 	model.to(device)
 	model.eval()
-	tokenizer.padding_side = 'left'
+	tokenizer.padding_side = 'right'
 
 
 
@@ -131,7 +142,7 @@ def Inference(kwargs: DictConfig):
 			shuffle=False,
             batch_size=train_config.val_batch_size,
 			drop_last=False,
-			prefetch_factor=100,
+			prefetch_factor=1000,
 			collate_fn=dataset_test.collator
         )
 	
@@ -150,8 +161,8 @@ def Inference(kwargs: DictConfig):
 		output_text = model.tokenizer.batch_decode(model_outputs, add_special_tokens=False, skip_special_tokens=True)
 
 		for key, text, target in zip(batch["keys"], output_text, batch["targets"]):	
-			print(key,text)
-			print(key,target)
+			print("Prediction:  ",key,text)
+			print("Ground Truth:",key,target)
 
 			rets.append(text)
 			gts.append(target)
