@@ -2,11 +2,11 @@ import os
 import json
 
 # 定义输入文件夹路径
-folder_path = "/home/yxdu/hit/SLAM-LLM/examples/st_covost2"
+folder_path = ""
 
 # 定义关键词替换规则
-old_keyword = "/userhome"  # 需要替换的关键词
-new_keyword = "/home/yxdu/hit"  # 替换成的关键词
+old_keyword = ""  # 需要替换的关键词
+new_keyword = "/code_dir"  # 替换成的关键词
 
 # 遍历文件夹及其子文件夹
 for root, _, files in os.walk(folder_path):
