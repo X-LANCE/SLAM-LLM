@@ -24,8 +24,10 @@ class ModelConfig:
     encoder_type: str = field(default="finetune", metadata={
         "help": "whether model is only pretrained or finetuned, used for models such as hubert"
     })
-    ckpt_path: Optional[str] = None
     query_len: Optional[str] = None
+    qformer_layers: int = 8
+
+
 
 
 @dataclass
@@ -93,7 +95,7 @@ class DataConfig:
     train_data_path: Optional[str] = None
     val_data_path: Optional[str] = None
     train_split: str = "train"
-    test_split:str = "validation"
+    test_split:str = "test"
     prompt: Optional[str] = None
     data_path: Optional[str] = None
     max_words: Optional[int] = None
@@ -127,7 +129,7 @@ class FSDPConfig:
 class LogConfig:
     use_wandb: bool = False
     wandb_dir: str = "test_wandb"
-    wandb_entity_name: str = "SLAM"
+    wandb_entity_name: str = "sdinger"
     wandb_project_name: str = "project_name"
     wandb_exp_name: str = "exp_name"
     log_file: str = "./test.log"

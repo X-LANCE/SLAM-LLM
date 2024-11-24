@@ -38,6 +38,11 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         self.input_type = dataset_config.get("input_type", None)
         assert self.input_type in ["raw", "mel"], "input_type must be one of [raw, mel]" 
 
+
+
+        
+        # eng_Lant
+        languages = ["eng_Latn","deu_Latn","fra_Latn","spa_Latn","por_Latn","ita_Latn","nld_Latn","rus_Cyrl","ces_Latn","pol_Latn","arb_Arab","pes_Arab","heb_Hebr","tur_Latn","jpn_Jpan","kor_Hang","vie_Latn","tha_Thai","ind_Latn","zsm_Latn","lao_Laoo","mya_Mymr","ceb_Latn","khm_Khmr","tgl_Latn","hin_Deva","ben_Beng","urd_Arab"] 
         self.data_list = []
         self.count = 0
         if split == "train":
@@ -45,19 +50,26 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
                 for line in fin:
                     data_dict = json.loads(line.strip())
                     data_source = data_dict["source"]
-                    if data_source==self.source or self.source=="all":
+                    if self.source==data_source:
+                        self.data_list.append(data_dict)
+                    elif self.source == "all":
                         self.data_list.append(data_dict)
         else:
             with open(dataset_config.val_data_path, encoding='utf-8') as fin:
                 for line in fin:
                     data_dict = json.loads(line.strip())
                     data_source = data_dict["source"]
-                    if data_source==self.source or self.source=="all":
+                    if self.source==data_source:
+                        self.data_list.append(data_dict)
+                    elif self.source == "all":
                         self.data_list.append(data_dict)
 
+                        
+                    # self.data_list = self.data_list[:10000]
+
         # 截取前 1000 条数据
-        # self.data_list = self.data_list[:1000]
         self.printed = False  # 标志位，控制print只执行一次
+        print(split,len(self.data_list))
 
     
     def __len__(self):
@@ -211,6 +223,8 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
             targets = [s['target'] for s in samples]
             audio_paths = [s['audio_path'] for s in samples]
             prompts = [s['prompt'] for s in samples]
+
+
 
 
             return {
