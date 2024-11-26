@@ -257,7 +257,8 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
             audio_mel, audio_length = self.extract_audio_feature(source_audio)
         
         if task_type == "s2s" or task_type == "tts":
-            target_audio, target_audio_length = self.extract_audio_feature(target_audio)
+            if target_audio is not None:
+                target_audio, target_audio_length = self.extract_audio_feature(target_audio)
 
         if self.fix_length_audio > 0:
             audio_length = self.fix_length_audio
@@ -265,7 +266,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         prompt = self.prompt
         prompt = self.prompt_template.format(prompt)
 
-        # add history conversation in front of the prompt
+        # add history conversation after prompt (<prompt> = <prompt> + <history>)
         if source_text is not None and "<USER>:" in source_text:
             history_chat = source_text.rsplit("<USER>:", 1)[0].strip()
             if history_chat:

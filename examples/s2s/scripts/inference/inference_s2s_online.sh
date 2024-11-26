@@ -33,7 +33,12 @@ codec_decoder_type=CosyVoice
 num_latency_tokens=5    # number of latency tokens (same as the number in training)
 do_layershift=false      # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
 
-ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v3-gpu16-btz3-lr5e-4-fp16-epochs10-whisper_small-latency5-group3/gpu16-btz3-lr5e-4-fp16-epochs10-whisper_small-latency5-group3-s2s_epoch_4_step_1179
+# load the backbone model
+ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v4-Qwen2-0.5b-gpu4-btz3-lr5e-4-nofp16-epochs10-whisper_small-latency5-group3-UltraChat_from_pre_train/Qwen2-0.5b-gpu4-btz3-lr5e-4-nofp16-epochs10-whisper_small-latency5-group3-UltraChat_from_pre_train-s2s_epoch_2_step_23152
+
+# load the peft module if needed
+# peft_ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v4-Qwen2-0.5b-gpu4-btz4-lr1e-4-fp16-epochs10-whisper_small-latency5-group3-UltraChat-from_pretrain-LoRA/s2s_epoch_5_step_3456
+
 # model settings
 tts_adapter=false
 group_decode=true
@@ -49,12 +54,13 @@ top_k=0
 temperature=1.0
 decode_text_only=false
 upsampling_factor=1
+input_text=false
 
 output_text_only=false
 speech_sample_rate=22050    # 22050 for CosyVoice, 24000 for SNAC
 inference_online=true
 online_output_dir=/home/v-wenxichen/exp/cosyvoice/cosyvoice-single/base
-audio_prompt_path=./examples/s2s/prompt/prompt_6.wav      # replace this with your own audio prompt path or our provided audio prompt path
+audio_prompt_path=./examples/s2s/prompt/en/prompt_6.wav      # replace this with your own audio prompt path or our provided audio prompt path
 
 decode_log=$ckpt_path/s2s_decode_${split}_trp${text_repetition_penalty}_arp${audio_repetition_penalty}_seed${dataset_sample_seed}_greedy
 if [ "$do_sample" = true ] ; then
