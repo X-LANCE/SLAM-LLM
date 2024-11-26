@@ -116,4 +116,4 @@ python $code_dir/inference_s2s.py \
         ++speech_sample_rate=$speech_sample_rate \
         ++audio_prompt_path=$audio_prompt_path
 
-# bash ./examples/s2s/scripts/inference/inference_s2s_online_cosyvoice.sh
+# bash ./examples/s2s/scripts/inference/inference_s2s_online_cosyvoice_single.sh
