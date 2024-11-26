@@ -22,9 +22,10 @@ mel_size=80     # 80 128 ( only whisper-large-v3 supports 128 )
 llm_dim=896     # 896 1536 3584 8192  -> 0.5B 1.5B 3B 7B
 
 # vocabulary settings
-code_layer=3            # 1 single semantic code layer   2 3 4 5 6 7 8 group semantic code layers 
-total_audio_vocabsize=4160
-total_vocabsize=156160  # 152000 + 4160 Sry: Here is not elegant to set the total_vocabsize manually, I may fix it later :)
+code_layer=3                        # 1 single semantic code layer   2 3 4 5 6 7 8 group semantic code layers 
+total_audio_vocabsize=4160          # the vocab size of the codec token
+llm_vocabsize=152000                # the vocab size of the LLM model (Qwen2 here)
+total_vocabsize=$((total_audio_vocabsize + llm_vocabsize))
 
 # code settings
 code_type=CosyVoice     # CosyVoice or SNAC
