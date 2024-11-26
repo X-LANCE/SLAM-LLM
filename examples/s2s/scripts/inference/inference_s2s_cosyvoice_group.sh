@@ -135,6 +135,7 @@ python $code_dir/inference_s2s.py \
         ++decode_config.upsampling_factor=$upsampling_factor \
         ++decode_config.do_layershift=$do_layershift \
         ++decode_log=$decode_log \
+        ++decode_config.num_latency_tokens=$num_latency_tokens \
         ++ckpt_path=$ckpt_path/model.pt \
         ++output_text_only=$output_text_only \
         ++inference_online=$inference_online \

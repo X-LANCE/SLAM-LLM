@@ -346,6 +346,7 @@ def main(kwargs: DictConfig):
 
 	history = ""
 	conversation_count = 1
+	chat_count = 1
 	conversation_dir = os.path.join(tone_audio_dir, f"conversation_{conversation_count}")
 	os.makedirs(conversation_dir, exist_ok=True)
 	logger.info("============== Ready for {task_type} Online Inference ==============".format(task_type=task_type))
@@ -360,6 +361,7 @@ def main(kwargs: DictConfig):
 					continue
 				history = ""
 				conversation_count += 1
+				chat_count = 1
 				conversation_dir = os.path.join(tone_audio_dir, f"conversation_{conversation_count}")
 				os.makedirs(conversation_dir, exist_ok=True)
 				logger.info("History cleared. Starting a new round of conversation.")
@@ -372,11 +374,10 @@ def main(kwargs: DictConfig):
 			logger.info(f"Generated Text: {output_text}")
 
 			if tone_audio_dir is not None:
-				output_wav_path = os.path.join(conversation_dir, f"generated_{text_input.replace(' ', '_')[:20]}.wav")
-			else:
-				output_wav_path = f"generated_{text_input.replace(' ', '_')}.wav"
-			sf.write(output_wav_path, audio_hat.squeeze().cpu().numpy(), speech_sample_rate)
-			logger.info(f"Generated Audio saved at: {output_wav_path}")
+				output_wav_path = os.path.join(conversation_dir, f"chat_{chat_count}.wav")
+				chat_count += 1
+				sf.write(output_wav_path, audio_hat.squeeze().cpu().numpy(), speech_sample_rate)
+				logger.info(f"Generated Audio saved at: {output_wav_path}")
 	else:
 		while True:
 			wav_path = input("Please provide the path to a WAV file (or type 'q' to quit, 'c' to clear history, 'h' to see the history): ")
@@ -388,6 +389,7 @@ def main(kwargs: DictConfig):
 					continue
 				history = ""
 				conversation_count += 1
+				chat_count = 1
 				conversation_dir = os.path.join(tone_audio_dir, f"conversation_{conversation_count}")
 				os.makedirs(conversation_dir, exist_ok=True)
 				logger.info("History cleared. Starting a new round of conversation.")
@@ -413,17 +415,12 @@ def main(kwargs: DictConfig):
 			if output_wav is None:
 				logger.warning(f"Generated Audio is None. Please try again.")
 				continue
-			
+
 			if tone_audio_dir is not None:
-				output_wav_path = os.path.join(conversation_dir, f"generated_{os.path.basename(wav_path)}")
-			else:
-				output_wav_path = f"generated_{os.path.basename(wav_path)}"
-
-			if not output_wav_path.lower().endswith('.wav'):
-				output_wav_path = os.path.splitext(output_wav_path)[0] + '.wav'
-
-			sf.write(output_wav_path, output_wav.squeeze().cpu().numpy(), speech_sample_rate)		
-			logger.info(f"Generated Audio saved at: {output_wav_path}")
+				output_wav_path = os.path.join(conversation_dir, f"chat_{chat_count}.wav")
+				chat_count += 1
+				sf.write(output_wav_path, output_wav.squeeze().cpu().numpy(), speech_sample_rate)		
+				logger.info(f"Generated Audio saved at: {output_wav_path}")
 		
 	logger.info("============== Online Inference Finished ==============")
 
