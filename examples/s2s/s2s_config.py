@@ -198,7 +198,7 @@ class DataConfig:
     upsampling_factor: int = 1
     upsample_method: str = "repeat"
     code_type: str = "SNAC" 
-    num_latency_tokens: int = 1
+    num_latency_tokens: int = 5
     do_layershift: bool = True
 
 @dataclass
@@ -228,6 +228,7 @@ class DecodeConfig:
     upsampling_factor: int = 1
     input_text: bool = False
     do_layershift: bool = True
+    num_latency_tokens: int = 5
 
 @dataclass
 class FSDPConfig:

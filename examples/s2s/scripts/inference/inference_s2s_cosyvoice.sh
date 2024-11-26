@@ -18,14 +18,14 @@ encoder_dim=768  # 384 512 768 896 1024 1280
 mel_size=80      # 80 128 (128 for whisper-large only)
 llm_dim=896     # 896 1536 3584 8192  -> 0.5B 1.5B 3.5B 7B
 
-tts_adapter=false
 task_type=s2s
 split_size=0.002
 
 # vocabulary settings
-code_layer=1            # 1 single semantic code layer   2 3 4 5 6 7 8 group semantic code layers 
-total_audio_vocabsize=4160
-total_vocabsize=156160  # 152000 + 4160 Sry: Here is not elegant to set the total_vocabsize manually, I may fix it later :)
+code_layer=3            # 1 single semantic code layer   2 3 4 5 6 7 8 group semantic code layers 
+total_audio_vocabsize=4160          # the vocab size of the codec token
+llm_vocabsize=152000                # the vocab size of the LLM model (Qwen2 here)
+total_vocabsize=$((total_audio_vocabsize + llm_vocabsize))
 
 # code settings
 code_type=CosyVoice     # CosyVoice or SNAC
@@ -33,9 +33,7 @@ codec_decoder_type=CosyVoice
 num_latency_tokens=5    # number of latency tokens (same as the number in training)
 do_layershift=false      # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
 
-ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v3-gpu4-btz3-lr5e-4-fp16-epochs10-whisper_small-single-latency5/gpu4-btz3-lr5e-4-fp16-epochs10-whisper_small-single-latency5-s2s_epoch_3_step_8144
-split=test
-
+ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v3-gpu16-btz3-lr5e-4-fp16-epochs10-whisper_small-latency5-group3/gpu16-btz3-lr5e-4-fp16-epochs10-whisper_small-latency5-group3-s2s_epoch_4_step_1179
 # jsonl dataset
 # manifest_format=jsonl
 # val_data_path=/home/v-wenxichen/SLAM-LLM/examples/s2s/demo/data/${split}.jsonl
@@ -45,6 +43,11 @@ manifest_format=datasets
 val_data_path="/valleblob/v-wenxichen/data/s2s/VoiceAssistant-400K-v1/test"
 load_from_cache_file=false
 dataset_sample_seed=777
+
+# model settings
+tts_adapter=false
+group_decode=true
+group_decode_adapter_type=linear
 
 # decode config
 text_repetition_penalty=1.2
@@ -92,6 +95,8 @@ python $code_dir/inference_s2s.py \
         ++model_config.vocab_config.total_vocabsize=$total_vocabsize \
         ++model_config.code_type=$code_type \
         ++model_config.codec_decoder_type=$codec_decoder_type \
+        ++model_config.group_decode=$group_decode \
+        ++model_config.group_decode_adapter_type=$group_decode_adapter_type \
         ++dataset_config.dataset=speech_dataset_s2s \
         ++dataset_config.val_data_path=$val_data_path \
         ++dataset_config.train_data_path=$val_data_path \
@@ -113,6 +118,7 @@ python $code_dir/inference_s2s.py \
         ++train_config.freeze_encoder=true \
         ++train_config.freeze_llm=true \
         ++train_config.freeze_encoder_projector=true \
+        ++train_config.freeze_group_decode_adapter=true \
         ++train_config.batching_strategy=custom \
         ++train_config.num_epochs=1 \
         ++train_config.val_batch_size=1 \
@@ -130,10 +136,11 @@ python $code_dir/inference_s2s.py \
         ++decode_config.upsampling_factor=$upsampling_factor \
         ++decode_config.do_layershift=$do_layershift \
         ++decode_log=$decode_log \
+        ++decode_config.num_latency_tokens=$num_latency_tokens \
         ++ckpt_path=$ckpt_path/model.pt \
         ++output_text_only=$output_text_only \
         ++inference_online=$inference_online \
         ++speech_sample_rate=$speech_sample_rate \
         ++audio_prompt_path=$audio_prompt_path
 
-# bash ./examples/s2s/scripts/inference/inference_s2s_cosyvoice.sh
+# bash ./examples/s2s/scripts/inference/inference_s2s_cosyvoice_group.sh

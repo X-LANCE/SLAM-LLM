@@ -23,7 +23,9 @@ task_type=s2s
 
 # vocabulary settings
 code_layer=1            # 1 single semantic code layer   2 3 4 5 6 7 8 group semantic code layers 
-total_vocabsize=156160  # 152000 + 4160 Sry: Here is not elegant to set the total_vocabsize manually, I may fix it later :)
+total_audio_vocabsize=4160          # the vocab size of the codec token
+llm_vocabsize=152000                # the vocab size of the LLM model (Qwen2 here)
+total_vocabsize=$((total_audio_vocabsize + llm_vocabsize))
 
 # code settings
 code_type=CosyVoice     # CosyVoice or SNAC
@@ -109,6 +111,7 @@ python $code_dir/inference_s2s.py \
         ++decode_config.upsampling_factor=$upsampling_factor \
         ++log_config.online_output_dir=$online_output_dir \
         ++decode_config.do_layershift=$do_layershift \
+        ++decode_config.num_latency_tokens=$num_latency_tokens \
         ++decode_log=$decode_log \
         ++ckpt_path=$ckpt_path/model.pt \
         ++output_text_only=$output_text_only \
@@ -116,4 +119,4 @@ python $code_dir/inference_s2s.py \
         ++speech_sample_rate=$speech_sample_rate \
         ++audio_prompt_path=$audio_prompt_path
 
-# bash ./examples/s2s/scripts/inference/inference_s2s_online_cosyvoice.sh
+# bash ./examples/s2s/scripts/inference/inference_s2s_online_cosyvoice_single.sh

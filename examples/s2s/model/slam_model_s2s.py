@@ -358,6 +358,7 @@ class slam_model_s2s(slam_model):
         text_vocab_size = self.model_config.vocab_config.padded_text_vocabsize
         audio_vocab_size = self.model_config.vocab_config.padded_audio_vocabsize
 
+        num_latency_tokens = kwargs.get("num_latency_tokens", 0)
         text_repetition_penalty = kwargs.get("text_repetition_penalty", 1.0)
         audio_repetition_penalty = kwargs.get("audio_repetition_penalty", 1.0)
         decode_text_only = kwargs.get("decode_text_only", False)
@@ -419,7 +420,7 @@ class slam_model_s2s(slam_model):
 
             next_tokens_audio = []
             for i in range(self.code_layer):
-                if not audio_end and not decode_text_only:
+                if not audio_end and not decode_text_only and num_latency_tokens <= step:
                     next_token_audio = self.sample_next_token(xa_logits[i][-1, :], **kwargs)
                 else:
                     next_token_audio = torch.full((input_ids.size(0),), pad_a, device=input_ids.device)
