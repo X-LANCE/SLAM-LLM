@@ -111,6 +111,7 @@ python $code_dir/inference_s2s.py \
         ++decode_config.upsampling_factor=$upsampling_factor \
         ++log_config.online_output_dir=$online_output_dir \
         ++decode_config.do_layershift=$do_layershift \
+        ++decode_config.num_latency_tokens=$num_latency_tokens \
         ++decode_log=$decode_log \
         ++ckpt_path=$ckpt_path/model.pt \
         ++output_text_only=$output_text_only \

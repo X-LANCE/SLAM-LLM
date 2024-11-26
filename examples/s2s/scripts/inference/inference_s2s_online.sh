@@ -126,6 +126,7 @@ python $code_dir/inference_s2s.py \
         ++decode_config.temperature=$temperature \
         ++decode_config.decode_text_only=$decode_text_only \
         ++decode_config.upsampling_factor=$upsampling_factor \
+        ++decode_config.num_latency_tokens=$num_latency_tokens \
         ++log_config.online_output_dir=$online_output_dir \
         ++decode_config.do_layershift=$do_layershift \
         ++decode_log=$decode_log \
