@@ -18,7 +18,6 @@ encoder_dim=1280  # 384 512 768 896 1024 1280
 mel_size=128      # 80 128 (128 for whisper-large only)
 llm_dim=896     # 896 1536 3584 8192  -> 0.5B 1.5B 3.5B 7B
 
-tts_adapter=false
 task_type=s2s
 
 # vocabulary settings
@@ -40,7 +39,6 @@ ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v4-Qwen2-0.5b-gpu4-btz3-lr5e-
 # peft_ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v4-Qwen2-0.5b-gpu4-btz4-lr1e-4-fp16-epochs10-whisper_small-latency5-group3-UltraChat-from_pretrain-LoRA/s2s_epoch_5_step_3456
 
 # model settings
-tts_adapter=false
 group_decode=true
 group_decode_adapter_type=linear
 whisper_decode=true
@@ -55,7 +53,6 @@ top_p=1.0
 top_k=0
 temperature=1.0
 decode_text_only=false
-upsampling_factor=1
 input_text=false
 
 output_text_only=false
@@ -90,7 +87,6 @@ python $code_dir/inference_s2s.py \
         ++model_config.encoder_projector=linear \
         ++model_config.codec_decoder_path=$codec_decoder_path \
         ++model_config.codec_decode=true \
-        ++model_config.tts_adapter=$tts_adapter \
         ++model_config.vocab_config.code_layer=$code_layer \
         ++model_config.vocab_config.total_audio_vocabsize=$total_audio_vocabsize \
         ++model_config.vocab_config.total_vocabsize=$total_vocabsize \
@@ -130,7 +126,6 @@ python $code_dir/inference_s2s.py \
         ++decode_config.top_k=$top_k \
         ++decode_config.temperature=$temperature \
         ++decode_config.decode_text_only=$decode_text_only \
-        ++decode_config.upsampling_factor=$upsampling_factor \
         ++decode_config.num_latency_tokens=$num_latency_tokens \
         ++log_config.online_output_dir=$online_output_dir \
         ++decode_config.do_layershift=$do_layershift \

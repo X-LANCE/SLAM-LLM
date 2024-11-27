@@ -4,6 +4,7 @@ __pycache__
 .vscode
 debug.py
 debug.ipynb
+debug.sh
 .idea/*
 transformers
 wandb/

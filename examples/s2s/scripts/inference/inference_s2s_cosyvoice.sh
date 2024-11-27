@@ -45,7 +45,6 @@ load_from_cache_file=false
 dataset_sample_seed=777
 
 # model settings
-tts_adapter=false
 group_decode=true
 group_decode_adapter_type=linear
 
@@ -58,7 +57,6 @@ top_p=1.0
 top_k=0
 temperature=1.0
 decode_text_only=false
-upsampling_factor=1
 
 output_text_only=false
 speech_sample_rate=22050    # 22050 for CosyVoice, 24000 for SNAC
@@ -89,7 +87,6 @@ python $code_dir/inference_s2s.py \
         ++model_config.encoder_projector=linear \
         ++model_config.codec_decoder_path=$codec_decoder_path \
         ++model_config.codec_decode=true \
-        ++model_config.tts_adapter=$tts_adapter \
         ++model_config.vocab_config.code_layer=$code_layer \
         ++model_config.vocab_config.total_audio_vocabsize=$total_audio_vocabsize \
         ++model_config.vocab_config.total_vocabsize=$total_vocabsize \
@@ -133,7 +130,6 @@ python $code_dir/inference_s2s.py \
         ++decode_config.top_k=$top_k \
         ++decode_config.temperature=$temperature \
         ++decode_config.decode_text_only=$decode_text_only \
-        ++decode_config.upsampling_factor=$upsampling_factor \
         ++decode_config.do_layershift=$do_layershift \
         ++decode_log=$decode_log \
         ++decode_config.num_latency_tokens=$num_latency_tokens \

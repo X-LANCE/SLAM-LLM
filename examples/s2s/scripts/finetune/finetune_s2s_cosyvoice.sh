@@ -15,6 +15,7 @@ num_gpus=$(( num_gpus_per_node * num_nodes ))
 whisper_size=small  # tiny base small medium large-v3
 speech_encoder_path="/valleblob/v-wenxichen/models/whisper/${whisper_size}.pt"   # different whisper size
 llm_path="/valleblob/v-wenxichen/models/models--Qwen--Qwen2-0.5B/snapshots/ff3a49fac17555b8dfc4db6709f480cc8f16a9fe"  # Qwen/Qwen2-0.5B, you can choose other Qwen models (Qwen2 or Qwen2.5)
+llm_name=Qwen2-0.5b
 
 encoder_dim=768 # 384 512 768 1024 1280
 mel_size=80     # 80 128 ( only whisper-large-v3 supports 128 )
@@ -36,19 +37,12 @@ train_data_path="/valleblob/v-wenxichen/data/s2s/VoiceAssistant-400K-CosyVoice"
 val_data_path="/valleblob/v-wenxichen/data/s2s/VoiceAssistant-400K-CosyVoice"
 load_from_cache_file=false  # set to true if you have already generated the cache file, otherwise set to false
 
-# upsample settings
-upsample_text_tokens=false
-upsampling_factor=1
-upsample_method=repeat  # repeat or blank
-
 # training settings
 batch_size_training=3
 use_fp16=true
+use_peft=false
 num_epochs=10
 lr=5e-4
-train_audio_embed_only=false
-train_embed_only=false
-tts_adapter=false
 task_type=s2s
 validation_interval=3000
 split_size=0.01
@@ -57,10 +51,9 @@ exp_name="s2s_train_v3-gpu${num_gpus}-btz${batch_size_training}-lr${lr}-nofp16-e
 if [ "$use_fp16" = true ]; then
     exp_name="s2s_train_v3-gpu${num_gpus}-btz${batch_size_training}-lr${lr}-fp16-epochs${num_epochs}-whisper_${whisper_size}-latency${num_latency_tokens}"
 fi
-# exp_name="s2s_train_v0_gpu24_btz${batch_size_training}_fp16"
 # exp_name="debug"
-# exp_name="single_test_whisper-medium"
-
+wandb_entity_name=wxc12
+wandb_project_name=SLAM-Omni
 
 home_dir=/valleblob/v-wenxichen/exp/s2s
 # output_dir=$home_dir/$(TZ='Asia/Shanghai' date +"%Y_%m_%d")/$(TZ='Asia/Shanghai' date +"%H_%M_%S")
@@ -76,7 +69,7 @@ wandb_exp_name=$exp_name
 
 hydra_args="
 hydra.run.dir=$output_dir \
-++model_config.llm_name=qwen2-0.5b \
+++model_config.llm_name=$llm_name \
 ++model_config.llm_path=$llm_path \
 ++model_config.llm_dim=$llm_dim \
 ++model_config.encoder_name=whisper \
@@ -84,8 +77,8 @@ hydra.run.dir=$output_dir \
 ++model_config.encoder_path=$speech_encoder_path \
 ++model_config.encoder_dim=$encoder_dim \
 ++model_config.encoder_projector=linear \
-++model_config.tts_adapter=$tts_adapter \
 ++model_config.vocab_config.code_layer=$code_layer \
+++model_config.vocab_config.total_audio_vocabsize=$total_audio_vocabsize \
 ++model_config.vocab_config.total_vocabsize=$total_vocabsize \
 ++model_config.code_type=$code_type \
 ++dataset_config.dataset=speech_dataset_s2s \
@@ -98,9 +91,6 @@ hydra.run.dir=$output_dir \
 ++dataset_config.split_size=$split_size \
 ++dataset_config.load_from_cache_file=$load_from_cache_file \
 ++dataset_config.task_type=$task_type \
-++dataset_config.upsample_text_tokens=$upsample_text_tokens \
-++dataset_config.upsampling_factor=$upsampling_factor \
-++dataset_config.upsample_method=$upsample_method \
 ++dataset_config.vocab_config.code_layer=$code_layer \
 ++dataset_config.vocab_config.total_vocabsize=$total_vocabsize \
 ++dataset_config.code_type=$code_type \
@@ -120,13 +110,12 @@ hydra.run.dir=$output_dir \
 ++train_config.num_workers_dataloader=0 \
 ++train_config.output_dir=$output_dir \
 ++train_config.use_fp16=$use_fp16 \
-++train_config.train_audio_embed_only=$train_audio_embed_only \
-++train_config.train_embed_only=$train_embed_only \
 ++train_config.task_type=$task_type \
+++train_config.use_peft=$use_peft \
 ++metric=acc \
 ++log_config.use_wandb=$use_wandb \
-++log_config.wandb_entity_name=wxc12 \
-++log_config.wandb_project_name=SLAM-Omni \
+++log_config.wandb_entity_name=$wandb_entity_name \
+++log_config.wandb_project_name=$wandb_project_name \
 ++log_config.wandb_exp_name=$wandb_exp_name \
 ++log_config.wandb_dir=$output_dir \
 ++log_config.log_file=$output_dir/exp.log \

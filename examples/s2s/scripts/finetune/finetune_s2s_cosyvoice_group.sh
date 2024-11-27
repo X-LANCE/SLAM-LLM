@@ -37,36 +37,28 @@ train_data_path="/valleblob/v-wenxichen/data/s2s/UltraChat-300K-v1"
 val_data_path="/valleblob/v-wenxichen/data/s2s/UltraChat-300K-v1"
 load_from_cache_file=false  # set to true if you have already generated the cache file, otherwise set to false
 
-# upsample settings
-upsample_text_tokens=false
-upsampling_factor=1
-upsample_method=repeat  # repeat or blank
-
 # training settings
 batch_size_training=3
 use_fp16=true
 use_peft=false
 num_epochs=10
 lr=5e-4
-train_audio_embed_only=false
-train_embed_only=false
 task_type=s2s
 validation_interval=3000
 split_size=0.01
 
 # model settings
-tts_adapter=false
 group_decode=true
 group_decode_adapter_type=linear
 
+# log settings
 exp_name="s2s_train_v4-${llm_name}-gpu${num_gpus}-btz${batch_size_training}-lr${lr}-nofp16-epochs${num_epochs}-whisper_${whisper_size}-latency${num_latency_tokens}-group${code_layer}-UltraChat_from_pre_train"
 if [ "$use_fp16" = true ]; then
     exp_name="s2s_train_v4-${llm_name}-gpu${num_gpus}-btz${batch_size_training}-lr${lr}-fp16-epochs${num_epochs}-whisper_${whisper_size}-latency${num_latency_tokens}-group${code_layer}-UltraChat_from_pre_train"
 fi
-# exp_name="s2s_train_v0_gpu24_btz${batch_size_training}_fp16"
 # exp_name="debug"
-# exp_name="single_test_whisper-medium"
-
+wandb_entity_name=wxc12
+wandb_project_name=SLAM-Omni
 
 home_dir=/valleblob/v-wenxichen/exp/s2s
 # output_dir=$home_dir/$(TZ='Asia/Shanghai' date +"%Y_%m_%d")/$(TZ='Asia/Shanghai' date +"%H_%M_%S")
@@ -90,7 +82,6 @@ hydra.run.dir=$output_dir \
 ++model_config.encoder_path=$speech_encoder_path \
 ++model_config.encoder_dim=$encoder_dim \
 ++model_config.encoder_projector=linear \
-++model_config.tts_adapter=$tts_adapter \
 ++model_config.vocab_config.code_layer=$code_layer \
 ++model_config.vocab_config.total_audio_vocabsize=$total_audio_vocabsize \
 ++model_config.vocab_config.total_vocabsize=$total_vocabsize \
@@ -107,9 +98,6 @@ hydra.run.dir=$output_dir \
 ++dataset_config.split_size=$split_size \
 ++dataset_config.load_from_cache_file=$load_from_cache_file \
 ++dataset_config.task_type=$task_type \
-++dataset_config.upsample_text_tokens=$upsample_text_tokens \
-++dataset_config.upsampling_factor=$upsampling_factor \
-++dataset_config.upsample_method=$upsample_method \
 ++dataset_config.vocab_config.code_layer=$code_layer \
 ++dataset_config.vocab_config.total_audio_vocabsize=$total_audio_vocabsize \
 ++dataset_config.vocab_config.total_vocabsize=$total_vocabsize \
@@ -130,14 +118,12 @@ hydra.run.dir=$output_dir \
 ++train_config.num_workers_dataloader=0 \
 ++train_config.output_dir=$output_dir \
 ++train_config.use_fp16=$use_fp16 \
-++train_config.train_audio_embed_only=$train_audio_embed_only \
-++train_config.train_embed_only=$train_embed_only \
 ++train_config.task_type=$task_type \
 ++train_config.use_peft=$use_peft \
 ++metric=acc \
 ++log_config.use_wandb=$use_wandb \
-++log_config.wandb_entity_name=wxc12 \
-++log_config.wandb_project_name=SLAM-Omni \
+++log_config.wandb_entity_name=$wandb_entity_name \
+++log_config.wandb_project_name=$wandb_project_name \
 ++log_config.wandb_exp_name=$wandb_exp_name \
 ++log_config.wandb_dir=$output_dir \
 ++log_config.log_file=$output_dir/exp.log \

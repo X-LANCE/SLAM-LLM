@@ -18,7 +18,6 @@ encoder_dim=768  # 384 512 768 896 1024 1280
 mel_size=80      # 80 128 (128 for whisper-large only)
 llm_dim=896     # 896 1536 3584 8192  -> 0.5B 1.5B 3.5B 7B
 
-tts_adapter=false
 task_type=s2s
 
 # vocabulary settings
@@ -44,7 +43,6 @@ top_p=0.9
 top_k=50
 temperature=1.0
 decode_text_only=false
-upsampling_factor=1
 
 output_text_only=false
 speech_sample_rate=22050    # 22050 for CosyVoice, 24000 for SNAC
@@ -76,7 +74,6 @@ python $code_dir/inference_s2s.py \
         ++model_config.encoder_projector=linear \
         ++model_config.codec_decoder_path=$codec_decoder_path \
         ++model_config.codec_decode=true \
-        ++model_config.tts_adapter=$tts_adapter \
         ++model_config.vocab_config.code_layer=$code_layer \
         ++model_config.vocab_config.total_vocabsize=$total_vocabsize \
         ++model_config.code_type=$code_type \
@@ -108,7 +105,6 @@ python $code_dir/inference_s2s.py \
         ++decode_config.top_k=$top_k \
         ++decode_config.temperature=$temperature \
         ++decode_config.decode_text_only=$decode_text_only \
-        ++decode_config.upsampling_factor=$upsampling_factor \
         ++log_config.online_output_dir=$online_output_dir \
         ++decode_config.do_layershift=$do_layershift \
         ++decode_config.num_latency_tokens=$num_latency_tokens \
