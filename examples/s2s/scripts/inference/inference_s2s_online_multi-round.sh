@@ -33,7 +33,7 @@ num_latency_tokens=5    # number of latency tokens (same as the number in traini
 do_layershift=false      # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
 
 # load the backbone model
-ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v4-Qwen2-0.5b-gpu4-btz3-lr5e-4-nofp16-epochs10-whisper_large-v3-latency5-group3-english-mix/s2s_epoch_3_step_10922
+ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v4-Qwen2-0.5b-gpu4-btz3-lr5e-4-nofp16-epochs10-whisper_large-v3-latency5-group3-english-mix/Qwen2-0.5b-gpu4-btz3-lr5e-4-nofp16-epochs10-whisper_large-v3-latency5-group3-english-mix-s2s_epoch_3_step_10922
 
 # load the peft module if needed
 # peft_ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v4-Qwen2-0.5b-gpu4-btz4-lr1e-4-fp16-epochs10-whisper_small-latency5-group3-UltraChat-from_pretrain-LoRA/s2s_epoch_5_step_3456

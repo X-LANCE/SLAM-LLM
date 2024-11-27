@@ -108,4 +108,4 @@ python $code_dir/inference_s2s.py \
         ++output_text_only=$output_text_only \
         ++inference_online=$inference_online
 
-# bash /home/v-wenxichen/SLAM-LLM/examples/s2s/scripts/inference_s2s.sh
+# bash /home/v-wenxichen/SLAM-LLM/examples/s2s/scripts/SNAC/inference_s2s_snac.sh
