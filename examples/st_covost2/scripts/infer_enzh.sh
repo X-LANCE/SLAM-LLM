@@ -1,7 +1,7 @@
 export MASTER_ADDR=localhost
 export MASTER_PORT=12345
 export WANDB_MODE=offline
-
+export CUDA_VISIBLE_DEVICES=2,3
 if command -v nvidia-smi &> /dev/null; then
     gpu_count=$(nvidia-smi --query-gpu=name --format=csv,noheader | wc -l)
 if [ -n "$CUDA_VISIBLE_DEVICES" ]; then
@@ -32,6 +32,9 @@ if [ ! -f "$ckpt_path" ]; then
     echo "Download ckpt..."
     git clone https://huggingface.co/yxdu/cotst
 fi
+
+
+ckpt_path=/home/yxdu/hit/SLAM-LLM/examples/st_covost2/output/step_2000/model.pt
 echo $ckpt_path
 
 

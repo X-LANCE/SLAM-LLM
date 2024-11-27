@@ -27,12 +27,47 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         super().__init__()
         self.mel_size = dataset_config.get("mel_size", 80) # 80 for whisper large v1 and v2, 128 for large v3
 
-        if split=="val":
-            split="validation"
-        ds = load_dataset("yxdu/covost2_en_x",split=split)
-        ds = ds.cast_column("audio", Audio(sampling_rate=16000))
-        print(ds)
-    
+        rank = dist.get_rank()  
+
+
+        data_name = "yxdu/covost2_en_x"
+        local_dataset_path= data_name.split("/")[-1]+"_"+split+"_cache"
+
+        if os.path.exists(local_dataset_path):
+            ds = load_from_disk(local_dataset_path)
+            print(ds)
+        else:
+            if rank==0:
+                ds = load_dataset(data_name, split=split)
+                ds = ds.cast_column("audio", Audio(sampling_rate=16000))
+                print(ds)
+
+
+            
+                def prepare_dataset(example):            
+                    audio_raw = whisper.pad_or_trim(example["audio"]["array"])
+
+                    audio_raw = torch.tensor(audio_raw, dtype=torch.float32)  
+                    audio_mel = whisper.log_mel_spectrogram(audio_raw, n_mels=self.mel_size).permute(1, 0)
+                    
+                    example["audio_mel"] = audio_mel
+                    
+                    
+                    return example
+                
+                ds = ds.map(prepare_dataset, remove_columns="audio")
+
+                ds.save_to_disk(local_dataset_path)
+            
+            dist.barrier()
+            if rank != 0:
+                if os.path.exists(local_dataset_path):
+                    ds = load_from_disk(local_dataset_path)
+                else:
+                    raise FileNotFoundError("No Dataset。")
+
+        
+
 
         self.ds = ds
         self.tokenizer = tokenizer
@@ -76,12 +111,8 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
             print(target)
             self.printed = True  
 
-        audio_raw = whisper.pad_or_trim(data_dict["audio"]["array"])
-        audio_raw = torch.tensor(audio_raw, dtype=torch.float32)  
-        audio_mel = whisper.log_mel_spectrogram(audio_raw, n_mels=self.mel_size).permute(1, 0)
-        
         if self.bf16:
-            audio_mel = audio_mel.to(torch.bfloat16)
+            audio_mel = torch.tensor(data_dict["audio_mel"], dtype=torch.bfloat16)
         
         
         if self.fix_length_audio > 0:

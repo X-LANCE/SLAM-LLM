@@ -1,7 +1,7 @@
 # export TOKENIZERS_PARALLELISM=false
 export WANDB_MODE=offline
 # export HYDRA_FULL_ERROR=1
-
+export CUDA_VISIBLE_DEVICES=0,1
 if command -v nvidia-smi &> /dev/null; then
     gpu_count=$(nvidia-smi --query-gpu=name --format=csv,noheader | wc -l)
 if [ -n "$CUDA_VISIBLE_DEVICES" ]; then
@@ -15,7 +15,7 @@ current_dir=$(dirname "$current_script")
 code_dir=$(realpath "$current_dir/../../../../")
 cd ${code_dir}/SLAM-LLM
 
-source=all
+source=zh
 
 checkpoint_dir=${code_dir}/speech/data/qwen/spt-all-7B-4
 output_dir=${code_dir}/speech/data/qwen/cotst-all
@@ -40,7 +40,7 @@ final_path="${checkpoint_dir}/asr_epoch_${max_epoch}_step_${max_step}"
 
 
 ckpt_name=$final_path/model.pt
-
+ckpt_name=/home/yxdu/hit/SLAM-LLM/cotst/model.pt
 # 使用find命令搜索所有.pt文件，并获取最后修改日期最晚的文件
 
 
@@ -62,7 +62,8 @@ hydra.run.dir=$output_dir \
 ++model_config.encoder_dim=1280 \
 ++model_config.encoder_projector=q-former \
 ++model_config.query_len=80 \
-++dataset_config.dataset=st_dataset \
+++dataset_config.dataset=hf_dataset \
+++dataset_config.file=examples/st_covost2/dataset/hf_dataset.py:get_speech_dataset \
 ++dataset_config.train_data_path=$train_data_path \
 ++dataset_config.val_data_path=$val_data_path \
 ++dataset_config.input_type=mel \
@@ -74,7 +75,7 @@ hydra.run.dir=$output_dir \
 ++train_config.freeze_encoder=true \
 ++train_config.freeze_llm=true \
 ++train_config.batching_strategy=custom \
-++train_config.gradient_accumulation_steps=1 \
+++train_config.gradient_accumulation_steps=8 \
 ++train_config.warmup_steps=1000 \
 ++train_config.total_steps=1000000 \
 ++train_config.lr=1e-5 \
@@ -101,7 +102,7 @@ torchrun \
     ++fsdp_config.pure_bf16=true \
     ++log_config.use_wandb=true \
     ++log_config.wandb_project_name=cot \
-    ++train_config.validation_interval=100 \
+    ++train_config.validation_interval=10000 \
     ++log_config.wandb_exp_name=all \
     ++train_config.use_peft=false \
     $hydra_args

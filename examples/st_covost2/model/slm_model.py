@@ -66,12 +66,10 @@ class CustomSLM(PreTrainedModel):
         audio_mel = kwargs.get("audio_mel", None)
         audio_mel_post_mask = kwargs.get("audio_mel_post_mask", None) # 2x downsample for whisper
 
-
         encoder_outs = self.encoder(audio_mel.permute(0, 2, 1)).last_hidden_state # bs*seq*dim
         encoder_outs = self.encoder_projector(encoder_outs, audio_mel_post_mask)
 
         input_ids = input_ids[:, 80:]
-
         inputs_embeds = self.llm.model.embed_tokens(input_ids)
         inputs_embeds = torch.cat((encoder_outs, inputs_embeds), dim=1)
 
@@ -80,14 +78,16 @@ class CustomSLM(PreTrainedModel):
 
 
         model_outputs = self.llm(inputs_embeds=inputs_embeds, attention_mask=attention_mask, labels=labels,)
-        acc = -1
-        if self.metric:
-            with torch.no_grad():
-                preds = torch.argmax(input=model_outputs.logits, dim=-1)
-                acc = compute_accuracy(preds.detach()[:, :-1], labels.detach()[:, 1:], ignore_label=-100)
+        
+        
+        with torch.no_grad():
+            preds = torch.argmax(input=model_outputs.logits, dim=-1)
+            acc = compute_accuracy(preds.detach()[:, :-1], labels.detach()[:, 1:], ignore_label=-100)
+            print(acc)
 
-                
-        return model_outputs, acc
+        return model_outputs
+
+        # return model_outputs, acc
 
     @torch.no_grad()
     def generate(self,
