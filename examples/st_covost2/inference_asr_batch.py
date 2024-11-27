@@ -76,11 +76,12 @@ class InferenceSampler(torch.utils.data.sampler.Sampler):
 def Inference(kwargs: DictConfig):
 
 	# Update the configuration for the training and sharding process
-	train_config, fsdp_config, model_config, log_config, dataset_config = kwargs.train_config, \
+	train_config, fsdp_config, model_config, log_config, dataset_config,ckpt_path = kwargs.train_config, \
 	                                                                      kwargs.fsdp_config, \
 	                                                                      kwargs.model_config, \
 	                                                                      kwargs.log_config, \
-	                                                                      kwargs.dataset_config
+	                                                                      kwargs.dataset_config, \
+                                                                          kwargs.ckpt_path 
 
 	OmegaConf.set_struct(kwargs,False)
 	del kwargs["train_config"]
@@ -114,8 +115,8 @@ def Inference(kwargs: DictConfig):
 
 	config = AutoConfig.from_pretrained("Qwen/Qwen2-7B")  # 加载 Qwen2-7B 的配置
 	tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen2-7B")
-	model = CustomSLM(config,ckpt_path="cotst/model.pt")
-      
+	model = CustomSLM(config,ckpt_path=ckpt_path)     
+	# model = AutoModel.from_pretrained("/home/yxdu/hit/SLAM-LLM/examples/st_covost2/output/step_10/test") 
 			
 
 	device = torch.device("cuda" if torch.cuda.is_available() else "cpu") # FIX(MZY): put the whole model to device.
@@ -143,6 +144,7 @@ def Inference(kwargs: DictConfig):
             batch_size=train_config.val_batch_size,
 			drop_last=False,
 			prefetch_factor=1000,
+            persistent_workers=True,
 			collate_fn=dataset_test.collator
         )
 	
