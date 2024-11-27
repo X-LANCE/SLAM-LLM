@@ -33,8 +33,6 @@ if [ ! -f "$ckpt_path" ]; then
     git clone https://huggingface.co/yxdu/cotst
 fi
 
-
-ckpt_path=/home/yxdu/hit/SLAM-LLM/examples/st_covost2/output/step_2000/model.pt
 echo $ckpt_path
 
 

@@ -24,11 +24,6 @@ encoder_path_hf=${code_dir}/speech/models/whisper-large-v3
 llm_path=${code_dir}/speech/models/Qwen2-7B
 
 
-#change your train data
-train_data_path=${code_dir}/SLAM-LLM/examples/st_covost2/test_st.jsonl
-val_data_path=${code_dir}/SLAM-LLM/examples/st_covost2/test_st.jsonl
-
-
 
 
 max_epoch=$(ls -d ${checkpoint_dir}/asr_epoch_*_step_* | sed -n 's/.*asr_epoch_\([0-9]*\)_step_\([0-9]*\).*/\1/p' | sort -n | tail -1)
