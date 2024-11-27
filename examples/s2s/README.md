@@ -17,7 +17,7 @@ docker run -it --gpus all --name slam-omni worstchan/slam-omni:v0 /bin/bash
 
 ## Data Preparation
 
-Our project supports two data formats: **Parquet** and **JSONL**. The open-source speech-to-speech dataset we provided is stored in **Parquet** format on the Hugging Face Hub.  You can find examples of how to use these datasets in [this notebook](../s2s/demo/data/demo.ipynb).
+Our project supports two data formats: **Parquet** and **JSONL**. The open-source speech-to-speech dataset we provided is stored in **Parquet** format on the Hugging Face Hub.  You can find examples of how to use these datasets in [this notebook](./demo/demo_data/demo.ipynb).
 
 ### Parquet
 You can directly download the [VoiceAssistant-400K](https://huggingface.co/datasets/gpt-omni/VoiceAssistant-400K) dataset from the Hugging Face Hub using the following commands:
@@ -54,7 +54,7 @@ bash ./examples/s2s/scripts/finetune/snac/finetune_s2s_snac.sh
 ```
 
 ## Inference
-We provide online and batch inference scripts. For more tips and details, please refer to [./examples/s2s/scripts/inference/README.md](./examples/s2s/scripts/inference/README.md).
+We provide online and batch inference scripts. For more tips and details, please refer to [./examples/s2s/scripts/inference/README.md](./scripts/inference/README.md).
 
 
 ### Online Inference
