@@ -9,43 +9,43 @@ export CUDA_LAUNCH_BLOCKING=1
 
 code_dir=examples/s2s
 
-whisper_size=small  # tiny base small medium large-v3
-speech_encoder_path="/valleblob/v-wenxichen/models/whisper/${whisper_size}.pt"   # different whisper size
+whisper_size=small                  # tiny base small medium large-v3
+speech_encoder_path="/valleblob/v-wenxichen/models/whisper/${whisper_size}.pt"   # replace this with your own whisper model path (different whisper size)
 llm_path="Qwen/Qwen2-0.5B"
 codec_decoder_path="/valleblob/v-wenxichen/models/CosyVoice/CosyVoice-300M-SFT" # replace this with your own CosyVoice model path
 
-encoder_dim=768  # 384 512 768 896 1024 1280 
-mel_size=80      # 80 128 (128 for whisper-large only)
-llm_dim=896     # 896 1536 3584 8192  -> 0.5B 1.5B 3.5B 7B
+encoder_dim=768                     # 384 512 768 896 1024 1280 
+mel_size=80                         # 80 128 (128 for whisper-large only, 80 for others)
+llm_dim=896                         # 896 1536 3584 8192  -> 0.5B 1.5B 3.5B 7B
 
 task_type=s2s
 
 # vocabulary settings
-code_layer=1            # 1 single semantic code layer   2 3 4 5 6 7 8 group semantic code layers 
+code_layer=1                        # 1 single semantic code layer   2 3 4 5 6 7 8 group semantic code layers 
 total_audio_vocabsize=4160          # the vocab size of the codec token
 llm_vocabsize=152000                # the vocab size of the LLM model (Qwen2 here)
 total_vocabsize=$((total_audio_vocabsize + llm_vocabsize))
 
 # code settings
-code_type=CosyVoice     # CosyVoice or SNAC
+code_type=CosyVoice                 # CosyVoice or SNAC
 codec_decoder_type=CosyVoice
-num_latency_tokens=1    # number of latency tokens (same as the number in training)
-do_layershift=false      # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
+num_latency_tokens=1                # number of latency tokens (same as the number in training)
+do_layershift=false                 # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
 
 ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v3_gpu4_btz2_lr5e-4_fp16_epochs10_whisper-small/s2s_epoch_3_step_4714
 
 # decode config
-text_repetition_penalty=1.0
-audio_repetition_penalty=1.0        # default 1.0, set to 1.2 for reduce silence
+text_repetition_penalty=1.2
+audio_repetition_penalty=1.2        # default 1.0, set to 1.2 for reduce silence
 max_new_tokens=3000                 # 500 for SNAC, 3000 for CosyVoice-single
 do_sample=false
-top_p=0.9
-top_k=50
+top_p=1.0
+top_k=0
 temperature=1.0
 decode_text_only=false
 
 output_text_only=false
-speech_sample_rate=22050    # 22050 for CosyVoice, 24000 for SNAC
+speech_sample_rate=22050            # 22050 for CosyVoice, 24000 for SNAC
 inference_online=true
 online_output_dir=/home/v-wenxichen/exp/cosyvoice/cosyvoice-single/base
 # audio_prompt_path=./examples/s2s/audio_prompt/zh/prompt_6.wav      # replace this with your own audio prompt path or our provided audio prompt path

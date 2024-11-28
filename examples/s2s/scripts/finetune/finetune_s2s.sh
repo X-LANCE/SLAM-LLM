@@ -12,30 +12,30 @@ num_gpus_per_node=$(( $(echo ${CUDA_VISIBLE_DEVICES} | tr -cd ',' | wc -c) + 1 )
 num_nodes=1
 num_gpus=$(( num_gpus_per_node * num_nodes ))
 
-whisper_size=small  # tiny base small medium large-v3
+whisper_size=small                  # tiny base small medium large-v3
 speech_encoder_path="/valleblob/v-wenxichen/models/whisper/${whisper_size}.pt"   # different whisper size
 llm_path="/valleblob/v-wenxichen/models/models--Qwen--Qwen2-0.5B/snapshots/ff3a49fac17555b8dfc4db6709f480cc8f16a9fe"  # Qwen/Qwen2-0.5B, you can choose other Qwen models (Qwen2 or Qwen2.5)
 llm_name=Qwen2-0.5b
 
-encoder_dim=768 # 384 512 768 1024 1280
-mel_size=80     # 80 128 ( only whisper-large-v3 supports 128 )
-llm_dim=896     # 896 1536 3584 8192  -> 0.5B 1.5B 3B 7B
+encoder_dim=768                     # 384 512 768 1024 1280
+mel_size=80                         # 80 128 ( only whisper-large-v3 supports 128 )
+llm_dim=896                         # 896 1536 3584 8192  -> 0.5B 1.5B 3B 7B
 
 # vocabulary settings
-code_layer=1            # 1 single semantic code layer   2 3 4 5 6 7 8 group semantic code layers 
+code_layer=1                        # 1 single semantic code layer   2 3 4 5 6 7 8 group semantic code layers 
 total_audio_vocabsize=4160          # the vocab size of the codec token
 llm_vocabsize=152000                # the vocab size of the LLM model (Qwen2 here)
 total_vocabsize=$((total_audio_vocabsize + llm_vocabsize))
 
 # code settings
-code_type=CosyVoice     # CosyVoice or SNAC
-num_latency_tokens=1    # number of latency tokens (in front of the generated audio tokens)
-do_layershift=false      # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
+code_type=CosyVoice                 # CosyVoice or SNAC
+num_latency_tokens=1                # number of latency tokens (in front of the generated audio tokens)
+do_layershift=false                 # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
 
 # dataset settings
 train_data_path="/valleblob/v-wenxichen/data/s2s/VoiceAssistant-400K-CosyVoice"
 val_data_path="/valleblob/v-wenxichen/data/s2s/VoiceAssistant-400K-CosyVoice"
-load_from_cache_file=false  # set to true if you have already generated the cache file, otherwise set to false
+load_from_cache_file=false          # set to true if you have already generated the cache file, otherwise set to false
 
 # training settings
 batch_size_training=3
