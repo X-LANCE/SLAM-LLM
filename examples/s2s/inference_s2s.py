@@ -1,8 +1,8 @@
-from generate_s2s_batch import main as inference
-from generate_s2s_batch_stream import main as inference_stream
-from generate_s2s_online import main as inference_online # single-round inference
-from generate_s2s_online_multi_round import main as inference_online_multi_round # multi-round inference
-from generate_s2s_online_stream import main as inference_online_stream
+from generate.generate_s2s_batch import main as inference
+from generate.generate_s2s_batch_stream import main as inference_stream
+from generate.generate_s2s_online import main as inference_online # single-round inference
+from generate.generate_s2s_online_multi_round import main as inference_online_multi_round # multi-round inference
+from generate.generate_s2s_online_stream import main as inference_online_stream
 
 import hydra
 import logging

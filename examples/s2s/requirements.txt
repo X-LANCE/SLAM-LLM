@@ -1,0 +1,2 @@
+soundfile
+openai-whisper==20231117
