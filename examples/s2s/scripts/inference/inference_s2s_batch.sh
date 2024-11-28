@@ -61,7 +61,8 @@ decode_text_only=false
 output_text_only=false
 speech_sample_rate=22050    # 22050 for CosyVoice, 24000 for SNAC
 inference_online=false
-audio_prompt_path=/home/v-wenxichen/SLAM-LLM/examples/s2s/prompt/prompt_6.wav      # replace this with your own audio prompt path or our provided audio prompt path
+# audio_prompt_path=./examples/s2s/audio_prompt/zh/prompt_6.wav      # replace this with your own audio prompt path or our provided audio prompt path
+audio_prompt_path=./examples/s2s/audio_prompt/en/prompt_6.wav      # replace this with your own audio prompt path or our provided audio prompt path
 
 decode_log=$ckpt_path/s2s_decode_${split}_trp${text_repetition_penalty}_arp${audio_repetition_penalty}_seed${dataset_sample_seed}_greedy
 if [ "$do_sample" = true ] ; then
@@ -139,4 +140,4 @@ python $code_dir/inference_s2s.py \
         ++speech_sample_rate=$speech_sample_rate \
         ++audio_prompt_path=$audio_prompt_path
 
-# bash ./examples/s2s/scripts/inference/inference_s2s_cosyvoice_group.sh
+# bash ./examples/s2s/scripts/inference/inference_s2s_batch.sh

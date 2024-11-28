@@ -34,8 +34,8 @@ We also support data in JSONL format, which offers a more concise structure. Bel
 
 ## Training
 
-### Pre-training (Not Recommended) / TTS
-To pre-train the model with **TTS** task (not recommended for S2S models) or to train a TTS model within the SLAM-Omni framework, you can run the following command:
+### S2S Pre-training (Not Recommended) / TTS
+To pre-train the S2S model with **TTS** task (not recommended) or to directly train a TTS model within the SLAM-Omni framework, you can run the following command:
 ```bash
 bash ./examples/s2s/scripts/pretrain/pretrain_tts.sh
 ```
@@ -49,8 +49,8 @@ bash ./examples/s2s/scripts/finetune/finetune_s2s_group.sh
 # finetune without grouping
 bash ./examples/s2s/scripts/finetune/finetune_s2s.sh
 
-#  Mini-Omni framework
-bash ./examples/s2s/scripts/finetune/snac/finetune_s2s_snac.sh
+# Mini-Omni framework
+bash ./examples/s2s/scripts/finetune/mini-omni/finetune_s2s.sh
 ```
 
 ## Inference
@@ -58,7 +58,7 @@ We provide online and batch inference scripts. For more tips and details, please
 
 
 ### Online Inference
-We provide multiple options for online inference in the S2S task. Simply input a wav file, and the script will generate both text and speech outputs with the pre-trained model.
+We provide multiple options for online inference in the S2S task. Simply input a wav file, and the script will generate both text and speech outputs with the trained model.
 
 ```bash
 # Multi-turn (Recommended)
@@ -68,42 +68,41 @@ bash ./examples/s2s/scripts/inference/inference_s2s_online_multi-round.sh
 bash ./examples/s2s/scripts/inference/inference_s2s_online.sh
 
 # Mini-Omni framework (Single-turn + non-streaming/streaming)
-bash ./examples/s2s/scripts/inference/inference_s2s_online.sh
-bash ./examples/s2s/scripts/inference/inference_s2s_online_stream.sh
+bash ./examples/s2s/scripts/inference/mini-omni/inference_s2s_online.sh
+bash ./examples/s2s/scripts/inference/mini-omni/inference_s2s_online_stream.sh
 ```
 
 
 ### Batch Inference
 
-To perform batch inference on the S2S task using pre-trained models, run the following commands.
+To perform batch inference on the S2S task using trained models, ensure the data format matches the one used during training (either **Parquet** or **JSONL**). Then, run the following commands:
 
 ```bash
 # SLAM-Omni framework
-bash ./examples/s2s/scripts/inference/inference_s2s_cosyvoice.sh
+bash ./examples/s2s/scripts/inference/inference_s2s_batch.sh
 
 # Mini-Omni framework
-bash ./examples/s2s/scripts/inference/SNAC/inference_s2s_snac.sh
+bash ./examples/s2s/scripts/inference/mini-omni/inference_s2s_snac.sh
 ```
 
 
-You can also use the TTS pre-trained model to perform TTS inference tasks using the following command:
+You can also use a TTS pre-trained model to perform TTS inference tasks with the following command:
 ```bash
 bash ./examples/s2s/scripts/inference_tts.sh
 ```
 
 
-
-
-## Evaluation
+<!-- ## Evaluation
 TBD
 
 ## Gradio Demo
-TBD
+TBD -->
+
 
 ## Acknowledgement
-- We borrow some code from [Mini-Omni](https://github.com/gpt-omni/mini-omni) for the modeling based on the SNAC codec.
+- We borrow some code from [Mini-Omni](https://github.com/gpt-omni/mini-omni) for the modeling based on the SNAC token.
 - We borrow some code from [CosyVoice](https://github.com/FunAudioLLM/CosyVoice) for the codec vocoder.
 
 ## TODO
-- [ ] Add more datasets
 - [ ] Add evaluation scripts
+- [ ] Add Gradio demo
