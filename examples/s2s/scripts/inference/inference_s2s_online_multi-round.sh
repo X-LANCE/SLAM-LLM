@@ -9,13 +9,13 @@ export CUDA_LAUNCH_BLOCKING=1
 
 code_dir=examples/s2s
 
-whisper_size=large-v3                  # tiny base small medium large-v3
+whisper_size=small                  # tiny base small medium large-v3
 speech_encoder_path="/valleblob/v-wenxichen/models/whisper/${whisper_size}.pt"   # replace this with your own whisper model path (different whisper size)
 llm_path="Qwen/Qwen2-0.5B"
 codec_decoder_path="/valleblob/v-wenxichen/models/CosyVoice/CosyVoice-300M-SFT" # replace this with your own CosyVoice model path
 
-encoder_dim=1280                     # 384 512 768 896 1024 1280 
-mel_size=128                         # 80 128 (128 for whisper-large only, 80 for others)
+encoder_dim=768                     # 384 512 768 896 1024 1280 
+mel_size=80                         # 80 128 (128 for whisper-large only, 80 for others)
 llm_dim=896                         # 896 1536 3584 8192  -> 0.5B 1.5B 3.5B 7B
 
 task_type=s2s
@@ -33,7 +33,7 @@ num_latency_tokens=5                # number of latency tokens (same as the numb
 do_layershift=false                 # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
 
 # load the backbone model
-ckpt_path=/valleblob/v-wenxichen/exp/s2s/zh-single/s2s_train_v4-Qwen2-0.5b-gpu32-btz1-lr5e-4-nofp16-epochs10-whisper_large-v3-latency5-group3-belle_3.5M-512-v1-from_scratch/s2s_epoch_2_step_7675
+ckpt_path=/valleblob/v-wenxichen/exp/s2s/multilingual/s2s_train_v4-Qwen2-0.5b-gpu16-btz1-lr5e-4-nofp16-epochs10-whisper_small-latency5-group3-multi_round-Multilingual-history1000/s2s_epoch_1_step_120000
 
 # load the peft module if needed
 # peft_ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v4-Qwen2-0.5b-gpu4-btz4-lr1e-4-fp16-epochs10-whisper_small-latency5-group3-UltraChat-from_pretrain-LoRA/s2s_epoch_5_step_3456
