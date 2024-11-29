@@ -2,3 +2,49 @@ dataset_config:
     # we put prompt here, because the hydra override in shell script only support a small subset of chars
     # prompt: "Transcribe speech to text. Output the transcription directly without redundant content. Ensure that the output is not duplicated. "
     prompt: "Generate a natural and expressive spoken version of the given text. "
+    emotion_prompt: {
+        "neu":
+            ["Generate a natural and expressive spoken version of the given text with a calm and neutral tone.",
+            "Please read the given text in a balanced and neutral manner, avoiding any emotional inclination.",
+            "Ensure the text is spoken with a neutral and steady voice, free from emotional coloring.",
+            "Use a neutral and even tone to deliver the provided text naturally.",
+            "Maintain a neutral and composed tone while reading this text.",
+            "Generate a spoken version of the text with a clear and impartial tone.",
+            "Please ensure the text is expressed in a neutral and professional tone.",
+            "Deliver the content in a neutral and unbiased manner, maintaining clarity.",
+            "Read the text naturally with a tone that reflects neutrality and calmness.",
+            "Speak the provided text in a neutral tone, keeping it natural and clear."],
+        "sad":
+            ["Please read the given text with a sad and melancholic tone, conveying deep emotion.",
+            "Generate a spoken version of the text with a sorrowful and reflective voice.",
+            "Use a soft and mournful tone to express the emotional weight of the text.",
+            "Deliver the content with a voice that captures a somber and grieving mood.",
+            "Speak the text in a tone that conveys sadness and a sense of loss.",
+            "Please express the text with a subdued and sorrowful demeanor.",
+            "Use a voice filled with sadness to deliver the intended emotional depth.",
+            "Generate a version of the text spoken in a tone that is heartfelt and sorrowful.",
+            "Please read this text in a low and melancholic voice to evoke a sense of sadness.",
+            "Ensure the text is delivered with a solemn and mournful tone, emphasizing the emotion."],
+        "ang":
+            ["Please read the given text with an intense and angry tone, reflecting strong emotion.",
+            "Generate a spoken version of the text with a sharp and forceful voice, expressing anger.",
+            "Use a tone filled with frustration and intensity to deliver the provided text.",
+            "Deliver the content with a voice that captures a fiery and agitated mood.",
+            "Speak the text in a tone that conveys anger and indignation.",
+            "Please express the text with a strong and forceful voice, emphasizing the emotion.",
+            "Use a voice filled with passion and frustration to deliver the intended message.",
+            "Generate a version of the text spoken in a tone that is heated and intense.",
+            "Please read this text in a commanding and angry voice to express the emotional tension.",
+            "Ensure the text is delivered with a bold and aggressive tone, emphasizing the anger."],
+        "hap":
+            ["Please read the given text with a cheerful and happy tone, conveying positive energy.",
+            "Generate a spoken version of the text with a bright and joyous voice.",
+            "Use a tone filled with happiness and enthusiasm to deliver the provided text.",
+            "Deliver the content with a voice that captures a lighthearted and delighted mood.",
+            "Speak the text in a tone that conveys happiness and a sense of joy.",
+            "Please express the text with a cheerful and upbeat demeanor, emphasizing the positivity.",
+            "Use a voice filled with excitement and joy to deliver the intended emotion.",
+            "Generate a version of the text spoken in a tone that is vibrant and cheerful.",
+            "Please read this text in a lively and happy voice to evoke a sense of excitement.",
+            "Ensure the text is delivered with an energetic and joyful tone, emphasizing the happiness."]
+    }

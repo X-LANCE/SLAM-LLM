@@ -219,20 +219,20 @@ class slam_model_s2s(slam_model):
             if self.model_config.encoder_projector == "cov1d-linear": 
                 encoder_outs = self.encoder_projector(encoder_outs)
 
-        if input_ids is not None:
+        if input_ids is not None: #torch.Size([4, 8, 439]) 前7个全身padding ; torch.Size([4, 2, 220])
             input_ids[input_ids == -1] = 0  # [btz, code_layer + 1, seq_length]
 
             if isinstance(self.llm, T5ForConditionalGeneration):
                 inputs_embeds = self.llm.shared(input_ids)
             else:
                 if hasattr(self.llm.model, "embed_tokens"):
-                    inputs_embeds = self.llm.model.embed_tokens(input_ids)  # [btz, code_layer + 1, seq_length, emb_dim]
+                    inputs_embeds = self.llm.model.embed_tokens(input_ids)  # [btz, code_layer + 1, seq_length, emb_dim] #torch.Size([4, 8, 439, 896]);torch.Size([4, 2, 220, 896])
                 elif hasattr(self.llm.model.model, "embed_tokens"):
                     inputs_embeds = self.llm.model.model.embed_tokens(input_ids)
                 else:
                     inputs_embeds = self.llm.model.model.model.embed_tokens(input_ids)
 
-        if modality_mask is not None and encoder_outs is not None:
+        if modality_mask is not None and encoder_outs is not None: #x
             modality_mask = modality_mask.unsqueeze(1).repeat(1, self.code_layer, 1)  # [btz, code_layer, seq_length]
             modality_mask_start_indices = (modality_mask == True).float().argmax(dim=2)
             modality_lengths = torch.clamp(modality_mask.sum(dim=2), max=encoder_outs.shape[1]).tolist()
@@ -246,21 +246,21 @@ class slam_model_s2s(slam_model):
             
             inputs_embeds[:, :self.code_layer, :, :] = encoder_outs_pad[:, :self.code_layer, :, :] + inputs_embeds[:, :self.code_layer, :, :] * (~modality_mask[:, :, :, None])
         
-        inputs_embeds = torch.mean(inputs_embeds, dim=1)  # [btz, seq_length, emb_dim], average over the code layers
+        inputs_embeds = torch.mean(inputs_embeds, dim=1)  # [btz, seq_length, emb_dim], average over the code layers #torch.Size([4, 439, 896]) ; torch.Size([4, 220, 896])
 
         if kwargs.get("inference_mode", False):
             return inputs_embeds, attention_mask
 
-        text_labels = labels[:,self.code_layer] if labels is not None else None
-        audio_labels = labels[:, :self.code_layer] if labels is not None else None
+        text_labels = labels[:,self.code_layer] if labels is not None else None #torch.Size([4, 448])
+        audio_labels = labels[:, :self.code_layer] if labels is not None else None #torch.Size([4, 7, 448])
         model_outputs = self.llm(inputs_embeds=inputs_embeds, attention_mask=attention_mask, labels=text_labels)    # here we use the text token layer as the target label
 
         # parrallel generation
         # TODO: add tts adapter forward
-        x_ori = model_outputs.logits
+        x_ori = model_outputs.logits #torch.Size([4, 448, 181120])
         text_vocab_size = self.model_config.vocab_config.padded_text_vocabsize
         audio_vocab_size = self.model_config.vocab_config.padded_audio_vocabsize
-        xt = x_ori[..., :text_vocab_size]
+        xt = x_ori[..., :text_vocab_size] #torch.Size([4, 448, 152000]);torch.Size([4, 220, 152000])
         xa = []
 
         if self.group_decode_adapter is not None:
@@ -270,10 +270,10 @@ class slam_model_s2s(slam_model):
                 xa.append(x_audio[..., i * audio_vocab_size : (i + 1) * audio_vocab_size])
         else:
             for i in range(self.code_layer):
-                xa.append(x_ori[..., text_vocab_size + audio_vocab_size * i : text_vocab_size + audio_vocab_size * (i + 1)])
+                xa.append(x_ori[..., text_vocab_size + audio_vocab_size * i : text_vocab_size + audio_vocab_size * (i + 1)]) #xa[0].shape:torch.Size([4, 220, 4160])
 
         loss_recorder = []
-        total_loss, loss_recorder = self.compute_parallel_loss(xt, text_labels, xa, audio_labels)
+        total_loss, loss_recorder = self.compute_parallel_loss(xt, text_labels, xa, audio_labels) #torch.Size([4, 220, 152000]), [torch.Size([4, 220])], torch.Size([4, 220, 4160]), torch.Size([4, 1, 220])
         model_outputs.loss = total_loss
 
         text_acc = -1
@@ -287,7 +287,7 @@ class slam_model_s2s(slam_model):
                 audio_acc = [compute_accuracy(preds_audio[i].detach()[:, :-1], audio_labels[:, i, 1:], ignore_label=-100) for i in range(self.code_layer)]
 
         # metrics = {"text_acc": text_acc, "audio_acc": audio_acc, "layer_loss": loss_recorder}
-        return model_outputs, text_acc, audio_acc, loss_recorder
+        return model_outputs, text_acc, audio_acc, loss_recorder #model_outputs 各层取平均，loss_recorder记录每一层的loss值
 
 
 
@@ -316,7 +316,7 @@ class slam_model_s2s(slam_model):
                 total_audio_loss += single_audio_loss
 
         total_loss = (text_loss + total_audio_loss) / (self.code_layer+1)
-        return total_loss, layer_loss
+        return total_loss, layer_loss #10.63 [13.54,7.71] 
 
 
     @torch.no_grad()
@@ -347,7 +347,7 @@ class slam_model_s2s(slam_model):
             output_hidden_states=output_hidden_states,
             return_dict=return_dict,
             **kwargs,
-        )
+        ) #torch.Size([1, 32, 896]) ?作用是
 
         max_new_tokens = kwargs.get("max_new_tokens", 360)
         generated_ids = [torch.zeros((max_new_tokens,), dtype=torch.long, device=input_ids.device) for _ in range(self.code_layer + 1)]
@@ -446,11 +446,11 @@ class slam_model_s2s(slam_model):
         text_tokens = generated_ids[self.code_layer]
         generated_ids[self.code_layer] = text_tokens[: (text_tokens == eot).nonzero(as_tuple=True)[0][0]] if eot in text_tokens else text_tokens
 
-        if eoa in generated_ids[self.code_layer - 1] and do_layershift:
+        if eoa in generated_ids[self.code_layer - 1] and do_layershift: #
             end_ids = (generated_ids[self.code_layer - 1] == eoa).nonzero(as_tuple=True)[0][0]
             for i in range(self.code_layer):
                 audio_tokens = generated_ids[i]
-                generated_ids[i] = audio_tokens[:end_ids]
+                generated_ids[i] = audio_tokens[:end_ids] #没有4096
 
         if upsampling_factor > 1:
             generated_ids[self.code_layer] = generated_ids[self.code_layer][::upsampling_factor]

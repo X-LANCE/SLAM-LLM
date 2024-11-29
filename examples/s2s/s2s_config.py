@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Optional, List
+from typing import Optional, List, Dict
 
 @dataclass
 class VocabConfig:
@@ -173,6 +173,7 @@ class DataConfig:
     train_split: str = "train"
     test_split:str = "validation"
     prompt: Optional[str] = None
+    emotion_prompt: Dict = field(default_factory=dict)
     data_path: Optional[str] = None
     max_words: Optional[int] = None
     max_mel: Optional[float] = None

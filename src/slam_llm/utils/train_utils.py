@@ -78,20 +78,24 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
     train_prep = []
     train_loss = []
     train_acc = []
+    train_audio_acc = []
     val_prep = []
     val_loss =[]
     val_acc = []
+    val_audio_acc = []
     epoch_times = []
     checkpoint_times = []
     results = {}
     best_val_loss = float("inf")
     best_val_acc = 0.0
+    best_val_audio_acc =0.0
     for epoch in range(train_config.num_epochs):
         epoch_start_time = time.perf_counter()
         with MemoryTrace() as memtrace:  # track the memory usage
             model.train()
             total_loss = 0.0
             total_acc = 0.0
+            total_audio_acc = 0.0
             total_length = len(train_dataloader)//gradient_accumulation_steps
             pbar = tqdm(colour="blue", desc=f"Training Epoch: {epoch+1}", total=total_length, dynamic_ncols=True)
             for step, batch in enumerate(train_dataloader):
@@ -108,7 +112,7 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                                 batch[key][k2] = batch[key][k2].to('cuda:0') if isinstance(batch[key][k2], torch.Tensor) else batch[key][k2]
                 with autocast():
                     outputs, *rest = model(**batch)
-                acc = rest[0] if rest else -1
+                acc = rest[0] if rest else -1 #text_acc
                 audio_acc = rest[1] if rest else -1   # seven layers of audio acc
                 layer_loss = rest[2] if rest else -1  # eight layers of loss (seven audio and one text)
                 loss = outputs.loss
@@ -116,7 +120,7 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                 loss = loss / gradient_accumulation_steps
                 layer_loss = [l / gradient_accumulation_steps for l in layer_loss]
                 acc = acc / gradient_accumulation_steps
-                audio_acc = [a / gradient_accumulation_steps for a in audio_acc]
+                audio_acc = [acc / gradient_accumulation_steps for acc in audio_acc]
 
                 if log_config.use_wandb and step % log_config.log_interval == 0:
                     if train_config.enable_fsdp or train_config.enable_ddp:
@@ -128,7 +132,7 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                                 wandb.log({f"train_inner/train_inner_audio_loss_layer{layer}":l}, step=(epoch * total_length + step))
                             wandb.log({f"train_inner/train_inner_text_loss":layer_loss[-1]}, step=(epoch * total_length + step))
                     else:
-                        wandb.log({"train_inner/train_inner_loss":loss, "train_inner/train_inner_accuracy":acc}, step=(epoch * total_length + step))
+                        wandb.log({"train_inner/train_inner_loss":loss, "train_inner/train_inner_text_accuracy":acc}, step=(epoch * total_length + step))
                         for layer, acc in enumerate(audio_acc):
                             wandb.log({f"train_inner/train_inner_audio_accuracy_layer{layer}":acc}, step=(epoch * total_length + step))
                         for layer, l in enumerate(layer_loss[:-1]):
@@ -136,7 +140,8 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                         wandb.log({f"train_inner/train_inner_text_loss":layer_loss[-1]}, step=(epoch * total_length + step))
                     
                 total_loss += loss.detach().float()
-                total_acc += acc
+                total_acc += acc #text_acc
+                total_audio_acc += audio_acc[0]
                 if train_config.use_fp16:
                     # if fp16 is enabled, use gradient scaler to handle gradient update
                     scaler.scale(loss).backward()
@@ -179,15 +184,18 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                         optimizer.zero_grad()
                         pbar.update(1)
 
-                pbar.set_description(f"Training Epoch: {epoch+1}/{train_config.num_epochs}, step {step}/{len(train_dataloader)} completed (loss: {loss.detach().float()}, acc: {acc})")
+                pbar.set_description(f"Training Epoch: {epoch+1}/{train_config.num_epochs}, step {step}/{len(train_dataloader)} completed (loss: {loss.detach().float():.4f}, audio_acc: {audio_acc[0]:.4f}, text_acc: {acc:.4f})")
                 
                 if (epoch * total_length + step + 1) % train_config.validation_interval == 0 and train_config.run_validation:
                     eval_ppl, eval_epoch_loss, *rest = evaluation(model, train_config, eval_dataloader, local_rank, tokenizer)
                     eval_epoch_acc = rest[0] if rest else -1
+                    eval_epoch_audio_acc = rest[1] if rest else -1
                     checkpoint_start_time = time.perf_counter()
-                    if train_config.save_model and (eval_epoch_loss < best_val_loss):
+                    # if train_config.save_model and (eval_epoch_loss < best_val_loss): #改这一行
+                    # if train_config.save_model and (eval_epoch_loss < best_val_loss or eval_epoch_audio_acc > best_val_audio_acc or eval_epoch_acc > best_val_acc):
+                    if train_config.save_model:
                         checkpoint_name = f"{train_config.model_name}_epoch_{str(epoch+1)}_step_{step+1}"
-                        if train_config.enable_fsdp or train_config.enable_ddp:
+                        if train_config.enable_fsdp or train_config.enable_ddp: #x
                             dist.barrier()
                         if train_config.use_peft:
                             if train_config.enable_fsdp or train_config.enable_ddp:
@@ -247,7 +255,7 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                                         model, optimizer, rank, train_config, checkpoint_name=checkpoint_name
                                     )
 
-                        else:
+                        else: #
                             if train_config.enable_fsdp:
                                 if getattr(StateDictType, fsdp_config.checkpoint_type) == StateDictType.FULL_STATE_DICT:
                                     save_model_checkpoint(
@@ -277,7 +285,7 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                                         )
                                 dist.barrier()
                                     
-                            else:
+                            else: #
                                 save_model_checkpoint_peft(
                                         model, optimizer, rank, train_config, checkpoint_name=checkpoint_name
                                     )
@@ -304,15 +312,25 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                             else:
                                 logger.info(f"best eval acc on epoch {epoch+1} is {best_val_acc}")
                         val_acc.append(rest[0]) 
+
+                        if eval_epoch_audio_acc > best_val_audio_acc:
+                            best_val_audio_acc = eval_epoch_audio_acc
+                            if train_config.enable_fsdp or train_config.enable_ddp:
+                                if rank==0:
+                                    logger.info(f"best eval audio acc on epoch {epoch+1} is {best_val_audio_acc}")
+                            else:
+                                logger.info(f"best eval audio acc on epoch {epoch+1} is {best_val_audio_acc}")
+                        val_audio_acc.append(rest[1]) 
                     else: 
                         val_acc.append(-1)
+                        val_audio_acc.append(-1)
                     
                     if log_config.use_wandb:
                         if train_config.enable_fsdp or train_config.enable_ddp:
                             if rank==0:
-                                wandb.log({"valid/val_epoch_loss":eval_epoch_loss, "valid/val_perplexity":eval_ppl, "valid/best_val_loss":best_val_loss, "valid/val_accuracy":val_acc[-1], "valid/val_best_accuracy":best_val_acc})
+                                wandb.log({"valid/val_epoch_loss":eval_epoch_loss, "valid/val_perplexity":eval_ppl, "valid/best_val_loss":best_val_loss, "valid/val_accuracy":val_acc[-1], "valid/val_audio_accuracy":val_audio_acc[-1], "valid/val_best_audio_accuracy":best_val_audio_acc, "valid/val_best_accuracy":best_val_acc })
                         else:
-                            wandb.log({"valid/val_epoch_loss":eval_epoch_loss, "valid/val_perplexity":eval_ppl, "valid/best_val_loss":best_val_loss, "valid/val_accuracy":val_acc[-1], "valid/val_best_accuracy":best_val_acc})
+                            wandb.log({"valid/val_epoch_loss":eval_epoch_loss, "valid/val_perplexity":eval_ppl, "valid/best_val_loss":best_val_loss, "valid/val_accuracy":val_acc[-1], "valid/val_audio_accuracy":val_audio_acc[-1], "valid/val_best_audio_accuracy":best_val_audio_acc, "valid/val_best_accuracy":best_val_acc })
 
                 if train_config.run_test_during_validation:
                     if train_config.enable_fsdp or train_config.enable_ddp:
@@ -337,23 +355,27 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
         if torch.cuda.device_count() > 1 and (train_config.enable_fsdp or train_config.enable_ddp):
             dist.all_reduce(total_loss, op=dist.ReduceOp.SUM)
             dist.all_reduce(total_acc, op=dist.ReduceOp.SUM)
+            dist.all_reduce(total_audio_acc, op=dist.ReduceOp.SUM)
         train_epoch_loss = total_loss / len(train_dataloader)
         train_epoch_acc = total_acc / len(train_dataloader)
+        train_epoch_audio_acc = total_audio_acc / len(train_dataloader)
         if train_config.enable_fsdp or train_config.enable_ddp:
             train_epoch_loss = train_epoch_loss/world_size
             train_epoch_acc = train_epoch_acc/world_size
+            train_epoch_audio_acc = train_epoch_audio_acc/world_size
         train_perplexity = torch.exp(train_epoch_loss)
 
         train_prep.append(train_perplexity)
         train_loss.append(train_epoch_loss)
         train_acc.append(train_epoch_acc)
+        train_audio_acc.append(train_epoch_audio_acc)
 
         if log_config.use_wandb:
             if train_config.enable_fsdp or train_config.enable_ddp:
                 if rank==0:
-                    wandb.log({"train/train_perplexity":train_perplexity, "train/train_epoch_loss":train_epoch_loss, "train/train_epoch_acc":train_epoch_acc})
+                    wandb.log({"train/train_perplexity":train_perplexity, "train/train_epoch_loss":train_epoch_loss, "train/train_epoch_acc":train_epoch_acc, "train/train_epoch_audio_acc":train_epoch_audio_acc})
             else:
-                wandb.log({"train/train_perplexity":train_perplexity, "train/train_epoch_loss":train_epoch_loss, "train/train_epoch_acc":train_epoch_acc})
+                wandb.log({"train/train_perplexity":train_perplexity, "train/train_epoch_loss":train_epoch_loss, "train/train_epoch_acc":train_epoch_acc, "train/train_epoch_audio_acc":train_epoch_audio_acc})
 
         if train_config.enable_fsdp or train_config.enable_ddp:
             if rank==0:
@@ -387,6 +409,7 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
         avg_eval_prep = sum(val_prep)/len(val_prep)
         avg_eval_loss = sum(val_loss)/len(val_loss)
         avg_eval_acc = sum(val_acc)/len(val_acc)
+        avg_eval_audio_acc = sum(val_audio_acc)/len(val_audio_acc)
 
     results['avg_train_prep'] = avg_train_prep
     results['avg_train_loss'] = avg_train_loss
@@ -395,6 +418,7 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
         results['avg_eval_prep'] = avg_eval_prep
         results['avg_eval_loss'] = avg_eval_loss
         results['avg_eval_acc'] = avg_eval_acc
+        results['avg_eval_audio_acc'] = avg_eval_audio_acc
     results["avg_epoch_time"] = avg_epoch_time
     results["avg_checkpoint_time"] = avg_checkpoint_time
 
@@ -422,6 +446,7 @@ def evaluation(model,train_config, eval_dataloader, local_rank, tokenizer):
     eval_preds = []
     eval_loss = 0.0  # Initialize evaluation loss
     eval_acc = 0.0
+    eval_audio_acc = 0.0
     autocast = torch.cuda.amp.autocast if train_config.use_fp16 else nullcontext # (Fix:MZY): fix expected scalar type mismatch in norm 
 
     with MemoryTrace() as memtrace:
@@ -438,11 +463,14 @@ def evaluation(model,train_config, eval_dataloader, local_rank, tokenizer):
                 # Forward pass and compute loss
                 with autocast(): # (Fix:MZY): fix expected scalar type mismatch in norm 
                     outputs, *rest = model(**batch)
-                acc = rest[0] if rest else -1
+                acc = rest[0] if rest else -1 #text_acc
+                audio_acc = rest[1][0] if rest else -1   # seven layers of audio acc
+                # layer_loss = rest[2] if rest else -1  # eight layers of loss (seven audio and one text)
                 loss = outputs.loss
 
                 eval_loss += loss.detach().float()
                 eval_acc += acc
+                eval_audio_acc += audio_acc
             # Decode predictions and add to evaluation predictions list
             try:
                 preds = torch.argmax(outputs.logits, -1)
@@ -452,29 +480,32 @@ def evaluation(model,train_config, eval_dataloader, local_rank, tokenizer):
             except Exception:
                 pass  # vallex does not need to show it's result (we can't view any thing from abstract acoustic token)
             pbar.update(1)
-            pbar.set_description(f"step: {step+1}/{total_length}, eval_loss: {eval_loss/(step+1):.4f}, eval_acc: {eval_acc/(step+1):.4f}")
+            pbar.set_description(f"step: {step+1}/{total_length}, eval_loss: {eval_loss/(step+1):.4f}, eval_audio_acc: {eval_audio_acc/(step+1):.4f}, eval_acc: {eval_acc/(step+1):.4f}")
 
     # If there's more than one CUDA device, reduce evaluation loss across all devices
     if torch.cuda.device_count() > 1 and train_config.enable_fsdp or train_config.enable_ddp:
         dist.all_reduce(eval_loss, op=dist.ReduceOp.SUM)
         dist.all_reduce(eval_acc, op=dist.ReduceOp.SUM)
+        dist.all_reduce(eval_audio_acc, op=dist.ReduceOp.SUM)
 
     # Compute average loss and perplexity
     eval_epoch_loss = eval_loss / len(eval_dataloader)
     eval_epoch_acc = eval_acc / len(eval_dataloader)
+    eval_epoch_audio_acc = eval_audio_acc / len(eval_dataloader)
     if train_config.enable_fsdp or train_config.enable_ddp:
         eval_epoch_loss = eval_epoch_loss/world_size
         eval_epoch_acc = eval_epoch_acc/world_size
+        eval_epoch_audio_acc = eval_epoch_audio_acc/world_size
     eval_ppl = torch.exp(eval_epoch_loss)
 
     # Print evaluation metrics
     if train_config.enable_fsdp or train_config.enable_ddp:
         if local_rank==0:
-            logger.info(f" {eval_ppl=} {eval_epoch_loss=} {eval_epoch_acc=}")
+            logger.info(f" {eval_ppl=} {eval_epoch_loss=} {eval_epoch_acc=} {eval_epoch_audio_acc=}")
     else:
-        logger.info(f" {eval_ppl=} {eval_epoch_loss=} {eval_epoch_acc=}")
+        logger.info(f" {eval_ppl=} {eval_epoch_loss=} {eval_epoch_acc=} {eval_epoch_audio_acc=}")
 
-    return eval_ppl, eval_epoch_loss, eval_epoch_acc
+    return eval_ppl, eval_epoch_loss, eval_epoch_acc, eval_epoch_audio_acc
 
 def freeze_transformer_layers(model, num_layer):
    for i, layer in enumerate(model.model.layers):

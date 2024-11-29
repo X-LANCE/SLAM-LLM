@@ -25,7 +25,7 @@ def setup_codec(train_config, model_config, **kwargs):
 
 def get_single_layer_answer_token(audio_tokens, num_latency_tokens, padding_token, end_of_audio):
     audio_length = len(audio_tokens) + num_latency_tokens + 1  # 1 is due to end of audio token
-    result = [padding_token] * num_latency_tokens + list(audio_tokens) + [end_of_audio]
+    result = [padding_token] * num_latency_tokens + list(audio_tokens) + [end_of_audio] #明白 第一行
     result_tensor = torch.tensor(result).unsqueeze(0)
     return result_tensor, audio_length
 
@@ -80,7 +80,7 @@ def audio_decode_cosyvoice(audio_tokens, model_config, codec_decoder, tone_dir, 
     eoa = model_config.vocab_config.eoa
     pad_a = model_config.vocab_config.pad_a
 
-    # Truncate audio tokens at the EOA token 
+    # Truncate audio tokens at the EOA token  前面已经处理过了
     end_index = torch.nonzero(audio_tokens[0] == eoa)[0]
     audio_tokens = audio_tokens[..., :end_index]
 

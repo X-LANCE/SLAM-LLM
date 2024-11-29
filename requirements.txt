@@ -86,7 +86,7 @@ pandas==2.2.2
 passpy==1.0.2
 pathspec==0.12.1
 proto-plus==1.24.0
-protobuf==5.28.1
+protobuf==4.25.5
 py7zr==0.22.0
 pyarrow==17.0.0
 pyasn1==0.6.1
@@ -158,7 +158,7 @@ HyperPyYAML==1.2.2
 inflect==7.3.1
 lightning==2.2.4
 matplotlib==3.7.5
-modelscope==1.15.0
+modelscope==1.18.1
 networkx==3.1
 omegaconf==2.3.0
 onnx==1.16.0

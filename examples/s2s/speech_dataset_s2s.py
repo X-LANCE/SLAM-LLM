@@ -9,6 +9,7 @@ from slam_llm.utils.compute_utils import calculate_output_length_1d
 from utils.snac_utils import layershift, get_snac_answer_token, simple_shift
 from utils.codec_utils import get_single_layer_answer_token, get_group_answer_token
 import librosa
+import random
 
 
 class SpeechDatasetJsonl(torch.utils.data.Dataset):
@@ -25,6 +26,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         # self.data_list = contents
         self.IGNORE_INDEX = -100  # The default setting in CrossEntropyLoss
         self.prompt = dataset_config.get("prompt", None)
+        self.emotion_prompt = dataset_config.get("emotion_prompt", None)
         self.mel_size = dataset_config.get("mel_size", 80) # 80 for whisper large v1 and v2, 128 for large v3
         self.prompt_template = "<SYSTEM>: {}\n "
         self.answer_template = "{}"
@@ -130,9 +132,10 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
             if not isinstance(audio_raw, np.ndarray):
                 audio_raw = np.array(audio_raw)
             audio_raw = librosa.resample(audio_raw, orig_sr=audio_raw_sr, target_sr=16000).astype(np.float32)
-        elif self.manifest_format == "datasets" and (isinstance(audio_path, str) or isinstance(audio_path, list)):
+        # elif self.manifest_format == "datasets" and (isinstance(audio_path, str) or isinstance(audio_path, list)):
+        elif (isinstance(audio_path, str) or isinstance(audio_path, list)):
             if self.code_type == "SNAC":
-                audio_res, audio_length = get_snac_answer_token(audio_path)
+                audio_res, audio_length = get_snac_answer_token(audio_path) #torch.Size([7, 167]),167
             elif self.code_type == "CosyVoice":
                 audio_tokens = audio_path
                 if self.code_layer == 1:
@@ -246,7 +249,8 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
                 key = source_audio['path']
         elif self.manifest_format == "jsonl":
             source_audio = data_dict.get("source_wav", None)
-            target_audio = data_dict.get("target_wav", None)
+            # target_audio = data_dict.get("target_wav", None)
+            target_audio = data_dict.get("answer_cosyvoice_speech_token", None)
             source_text = data_dict.get("source_text", None)
             target_text = data_dict.get("target_text", None)
             key = data_dict.get("key", None)
@@ -256,23 +260,26 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         if task_type == "s2s" or task_type == "asr":
             audio_mel, audio_length = self.extract_audio_feature(source_audio)
         
-        if task_type == "s2s" or task_type == "tts":
-            target_audio, target_audio_length = self.extract_audio_feature(target_audio)
+        if task_type == "s2s" or task_type == "tts":  #
+            target_audio, target_audio_length = self.extract_audio_feature(target_audio) #torch.Size([7, 167]),167 ; torch.Size([1, 40]),40
 
         if self.fix_length_audio > 0:
             audio_length = self.fix_length_audio
 
         prompt = self.prompt
+        if "emo" in data_dict:
+            emo=data_dict.get("emo" , None)
+            prompt = random.choice(self.emotion_prompt[emo])
         prompt = self.prompt_template.format(prompt)
 
         # add history conversation in front of the prompt
-        if source_text is not None and "<USER>:" in source_text:
+        if source_text is not None and "<USER>:" in source_text: #x
             history_chat = source_text.rsplit("<USER>:", 1)[0].strip()
             if history_chat:
                 prompt = prompt + history_chat + "\n "
 
         prompt_ids = self.tokenizer.encode(prompt)
-        prompt_ids = [self._input_t] + prompt_ids + [self._eot]
+        prompt_ids = [self._input_t] + prompt_ids + [self._eot] #?
         prompt_length = len(prompt_ids)
         prompt_ids = self.get_padded_input(prompt_ids, prompt_length)
 
@@ -312,12 +319,13 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
                 "target_text": target_text,
                 "prompt_length": prompt_length,
                 "task_type": task_type,
+                # "emo":emo,
             }
 
         answer_text = self.answer_template.format(target_text)
         answer_text_ids = self.tokenizer.encode(answer_text)  # [answer]
         
-        if self.upsample_text_tokens:
+        if self.upsample_text_tokens: #x
             answer_text_ids = self.upsample_tokens(answer_text_ids, 
                                                 upsampling_factor=self.upsampling_factor, 
                                                 method=self.upsample_method)
@@ -335,8 +343,8 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         
         if target_audio is not None:    
             for i in range(self.code_layer):
-                labels_ids[i] = torch.cat((target_audio[i].unsqueeze(0), answer_ids[i][:,target_audio_length:]), dim=1)
-                answer_ids[i] = torch.cat((self.layershift(target_audio[i], i).unsqueeze(0), labels_ids[i][:,target_audio_length:]), dim=1)
+                labels_ids[i] = torch.cat((target_audio[i].unsqueeze(0), answer_ids[i][:,target_audio_length:]), dim=1) #如果audio长，第二项是[]，就是把target audio token放进去
+                answer_ids[i] = torch.cat((self.layershift(target_audio[i], i).unsqueeze(0), labels_ids[i][:,target_audio_length:]), dim=1) #只是前面部分加上了layershift，后半部分跟上面一样
 
         for i in range(self.code_layer + 1):
             example_ids[i] = torch.cat((ori_example_ids[i], answer_ids[i]), dim=1)  # [prompt,audio,answer,eos]
@@ -371,6 +379,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
             "target_text": target_text,
             "prompt_length": prompt_length,
             "task_type": task_type,
+            # "emo":emo,
         }
 
     def pad(self, sequence, max_length, padding_idx=0):
