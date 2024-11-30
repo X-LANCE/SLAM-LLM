@@ -27,6 +27,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         self.IGNORE_INDEX = -100  # The default setting in CrossEntropyLoss
         self.prompt = dataset_config.get("prompt", None)
         self.emotion_prompt = dataset_config.get("emotion_prompt", None)
+        self.emo_dict={"hap":"happy","neu":"neutral","sad":"sad","ang":"angry"}
         self.mel_size = dataset_config.get("mel_size", 80) # 80 for whisper large v1 and v2, 128 for large v3
         self.prompt_template = "<SYSTEM>: {}\n "
         self.answer_template = "{}"
@@ -269,7 +270,10 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         prompt = self.prompt
         if "emo" in data_dict:
             emo=data_dict.get("emo" , None)
-            prompt = random.choice(self.emotion_prompt[emo])
+            emo = self.emo_dict[emo]
+            prompt = "Generate a natural and expressive spoken version of the given text with a {} tone. ".format(emo)
+            # 'Generate a natural and expressive spoken version of the given text with a neutral tone. '
+            # prompt = random.choice(self.emotion_prompt[emo])
         prompt = self.prompt_template.format(prompt)
 
         # add history conversation in front of the prompt
