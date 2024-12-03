@@ -4,7 +4,7 @@ import logging
 import os
 import soundfile as sf
 from slam_llm.utils.model_utils import get_custom_model_factory
-from utils.snac_utils import reconscruct_snac, reconstruct_tensors, layershift, get_snac_answer_token
+from utils.snac_utils import layershift
 import hydra
 from omegaconf import DictConfig, ListConfig, OmegaConf
 import whisper
@@ -258,6 +258,8 @@ def main(kwargs: DictConfig):
 	logger.info("output_dir: {}".format(output_dir))
 
 	task_type = decode_config.task_type
+	code_layer = model_config.vocab_config.code_layer
+	code_type = model_config.code_type
 	logger.info("decode_config: {}".format(decode_config))
 
 	if decode_config.do_sample:
@@ -275,6 +277,9 @@ def main(kwargs: DictConfig):
 		logger.info("Decode Text Only")
 	else:
 		logger.info("Decode Text & Audio")
+
+	logger.info("Decode Code Type: {}".format(code_type))
+	logger.info("Decode Code Layer: {}".format(code_layer))
 
 
 	if decode_config.input_text:

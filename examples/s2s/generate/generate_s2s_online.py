@@ -4,7 +4,7 @@ import logging
 import os
 import soundfile as sf
 from slam_llm.utils.model_utils import get_custom_model_factory
-from utils.snac_utils import reconscruct_snac, reconstruct_tensors, layershift, get_snac_answer_token, simple_shift
+from utils.snac_utils import reconscruct_snac, reconstruct_tensors, layershift, simple_shift
 from utils.codec_utils import audio_decode_cosyvoice
 import hydra
 from omegaconf import DictConfig, ListConfig, OmegaConf
@@ -330,7 +330,7 @@ def main(kwargs: DictConfig):
 		logger.info("Decode Text Only")
 	else:
 		logger.info("Decode Text & Audio")
-	logger.info("Decode Codec Type: {}".format(code_type))
+	logger.info("Decode Code Type: {}".format(code_type))
 	logger.info("Decode Code Layer: {}".format(code_layer))
 	logger.info("Tone for Audio Generation: {}".format(tone_dir))
 

@@ -2,7 +2,6 @@ import torch
 import os
 import logging
 import torch.nn.functional as F
-import torch.nn as nn
 from slam_llm.models.slam_model import (
     slam_model,
     setup_tokenizer,

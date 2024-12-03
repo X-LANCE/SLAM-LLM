@@ -5,7 +5,6 @@ import logging
 
 from slam_llm.utils.model_utils import get_custom_model_factory
 from slam_llm.utils.dataset_utils import get_preprocessed_dataset
-from utils.snac_utils import reconscruct_snac, reconstruct_tensors
 import numpy as np
 import os
 import logging
@@ -93,7 +92,6 @@ def main(kwargs: DictConfig):
 	
 	model_factory = get_custom_model_factory(model_config, logger)
 	model, tokenizer = model_factory(train_config, model_config, **kwargs)
-	codec_decoder = model.codec_decoder
 	device = torch.device("cuda" if torch.cuda.is_available() else "cpu") # FIX(MZY): put the whole model to device.
 	model.to(device)
 	model.eval()
@@ -119,16 +117,8 @@ def main(kwargs: DictConfig):
         )
 
 	task_type = decode_config.task_type
-	logger.info("decode_config: {}".format(decode_config))	
-	if decode_config.do_sample:
-		logger.info("Decode Strategy: Sampling")
-	else:
-		logger.info("Decode Strategy: Greedy")
-	if decode_config.decode_text_only:
-		logger.info("Decode Text Only")
-	else:
-		logger.info("Decode Text & Audio")
-	logger.info("============== Start {task_type} Inference (Streaming Version) ==============".format(task_type=task_type))
+	code_layer = model_config.vocab_config.code_layer
+	code_type = model_config.code_type
 
 	decode_log_dir = kwargs.get('decode_log')
 	output_text_only = kwargs.get('output_text_only', False)
@@ -144,6 +134,20 @@ def main(kwargs: DictConfig):
 
 	if not os.path.exists(generate_audio_dir) and not (output_text_only or decode_config.decode_text_only):
 		os.makedirs(generate_audio_dir)
+	logger.info("decode_config: {}".format(decode_config))	
+	if decode_config.do_sample:
+		logger.info("Decode Strategy: Sampling")
+	else:
+		logger.info("Decode Strategy: Greedy")
+	if decode_config.decode_text_only:
+		logger.info("Decode Text Only")
+	else:
+		logger.info("Decode Text & Audio")
+	logger.info("Decode Code Type: {}".format(code_type))
+	logger.info("Decode Code Layer: {}".format(code_layer))
+
+	logger.info("============== Start {task_type} Inference (Streaming Version) ==============".format(task_type=task_type))
+
 
 	with open(pred_path, "w") as pred, open(gt_path, "w") as gt, open(question_path, "w") as q:
 		for step, batch in enumerate(test_dataloader):
