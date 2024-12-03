@@ -9,13 +9,14 @@ export CUDA_LAUNCH_BLOCKING=1
 
 code_dir=examples/s2s
 
-whisper_size=large-v3                  # tiny base small medium large-v3
+whisper_size=small                  # tiny base small medium large-v3
 speech_encoder_path="/valleblob/v-wenxichen/models/whisper/${whisper_size}.pt"   # replace this with your own whisper model path (different whisper size)
 llm_path="Qwen/Qwen2-0.5B"
+# codec_decoder_path="hubertsiuzdak/snac_24khz" # replace this with your own SNAC model path
 codec_decoder_path="/valleblob/v-wenxichen/models/CosyVoice/CosyVoice-300M-SFT" # replace this with your own CosyVoice model path
 
-encoder_dim=1280                     # 384 512 768 896 1024 1280 
-mel_size=128                         # 80 128 (128 for whisper-large only, 80 for others)
+encoder_dim=768                     # 384 512 768 896 1024 1280 
+mel_size=80                         # 80 128 (128 for whisper-large only, 80 for others)
 llm_dim=896                         # 896 1536 3584 8192  -> 0.5B 1.5B 3.5B 7B
 
 task_type=s2s
@@ -33,7 +34,7 @@ num_latency_tokens=5                # number of latency tokens (same as the numb
 do_layershift=false                 # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
 
 # load the backbone model
-ckpt_path=/valleblob/v-wenxichen/exp/s2s/en-mix/s2s_train_v4-Qwen2-0.5b-gpu32-btz1-lr5e-4-nofp16-epochs10-whisper_large-v3-latency5-group3-english-mix/s2s_epoch_3_step_9344
+ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v4-Qwen2-0.5b-gpu4-btz3-lr5e-4-nofp16-epochs10-whisper_small-latency5-group3-UltraChat_from_pre_train/Qwen2-0.5b-gpu4-btz3-lr5e-4-nofp16-epochs10-whisper_small-latency5-group3-UltraChat_from_pre_train-s2s_epoch_2_step_23152
 
 # load the peft module if needed
 # peft_ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v4-Qwen2-0.5b-gpu4-btz4-lr1e-4-fp16-epochs10-whisper_small-latency5-group3-UltraChat-from_pretrain-LoRA/s2s_epoch_5_step_3456
@@ -41,8 +42,6 @@ ckpt_path=/valleblob/v-wenxichen/exp/s2s/en-mix/s2s_train_v4-Qwen2-0.5b-gpu32-bt
 # model settings
 group_decode=true
 group_decode_adapter_type=linear
-whisper_decode=true
-use_peft=false
 
 # decode config
 text_repetition_penalty=1.2
@@ -55,13 +54,13 @@ temperature=1.0
 decode_text_only=false
 input_text=false
 
+inference_streaming=true
 output_text_only=false
 speech_sample_rate=22050            # 22050 for CosyVoice, 24000 for SNAC
 inference_online=true
-multi_round=true
-online_output_dir=/home/v-wenxichen/exp/cosyvoice/multi-round-en-mix/test
-audio_prompt_path=./examples/s2s/audio_prompt/zh/prompt_6.wav      # replace this with your own audio prompt path or our provided audio prompt path
-# audio_prompt_path=./examples/s2s/audio_prompt/en/prompt_6.wav        # replace this with your own audio prompt path or our provided audio prompt path
+online_output_dir=/home/v-wenxichen/exp/cosyvoice/cosyvoice-single/base
+# audio_prompt_path=./examples/s2s/audio_prompt/zh/prompt_6.wav      # replace this with your own audio prompt path or our provided audio prompt path
+audio_prompt_path=./examples/s2s/audio_prompt/en/prompt_6.wav      # replace this with your own audio prompt path or our provided audio prompt path
 
 decode_log=$ckpt_path/s2s_decode_${split}_trp${text_repetition_penalty}_arp${audio_repetition_penalty}_seed${dataset_sample_seed}_greedy
 if [ "$do_sample" = true ] ; then
@@ -73,7 +72,7 @@ if [ "$decode_text_only" = true ] ; then
 fi
 
 # -m debugpy --listen 5678 --wait-for-client
-python $code_dir/inference_s2s.py \
+python  -m debugpy --listen 5678 --wait-for-client $code_dir/inference_s2s.py \
         --config-path "conf" \
         --config-name "prompt.yaml" \
         hydra.run.dir=$ckpt_path \
@@ -94,7 +93,6 @@ python $code_dir/inference_s2s.py \
         ++model_config.codec_decoder_type=$codec_decoder_type \
         ++model_config.group_decode=$group_decode \
         ++model_config.group_decode_adapter_type=$group_decode_adapter_type \
-        ++model_config.whisper_decode=$whisper_decode \
         ++dataset_config.dataset=speech_dataset_s2s \
         ++dataset_config.input_type=mel \
         ++dataset_config.mel_size=$mel_size \
@@ -116,7 +114,6 @@ python $code_dir/inference_s2s.py \
         ++train_config.val_batch_size=1 \
         ++train_config.num_workers_dataloader=2 \
         ++train_config.task_type=$task_type \
-        ++train_config.use_peft=$use_peft \
         ++decode_config.text_repetition_penalty=$text_repetition_penalty \
         ++decode_config.audio_repetition_penalty=$audio_repetition_penalty \
         ++decode_config.max_new_tokens=$max_new_tokens \
@@ -135,8 +132,6 @@ python $code_dir/inference_s2s.py \
         ++inference_online=$inference_online \
         ++speech_sample_rate=$speech_sample_rate \
         ++audio_prompt_path=$audio_prompt_path \
-        ++multi_round=$multi_round \
-        ++decode_config.input_text=$input_text \
-        # ++peft_ckpt_path=$peft_ckpt_path/model.pt \
+        ++inference_streaming=$inference_streaming
 
-# bash ./examples/s2s/scripts/inference/inference_s2s_online_multi-round.sh
+# bash ./examples/s2s/scripts/inference/inference_s2s_online_stream.sh

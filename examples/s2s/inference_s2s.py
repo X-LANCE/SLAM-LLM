@@ -1,8 +1,8 @@
+from generate.generate_s2s_batch_stream_mini_omni import main as inference_stream_mini_omni
+from generate.generate_s2s_online_stream_mini_omni import main as inference_online_stream_mini_omni
 from generate.generate_s2s_batch import main as inference
-from generate.generate_s2s_batch_stream import main as inference_stream
 from generate.generate_s2s_online import main as inference_online # single-round inference
 from generate.generate_s2s_online_multi_round import main as inference_online_multi_round # multi-round inference
-from generate.generate_s2s_online_stream import main as inference_online_stream
 
 import hydra
 import logging
@@ -53,6 +53,9 @@ class RunConfig:
     multi_round: bool = field(
         default=False, metadata={"help": "Multi-round inference"}
     )
+    mini_omni_modeling: bool = field(
+        default=False, metadata={"help": "Mini Omni modeling"}
+    )        
 
 
 @hydra.main(config_name=None, version_base=None)
@@ -69,16 +72,24 @@ def main_hydra(cfg: DictConfig):
 
         pdb.set_trace()
 
-    if cfg.inference_online:
-        if cfg.inference_streaming:
-            inference_online_stream(cfg)
-        elif cfg.multi_round:
-            inference_online_multi_round(cfg)
+    if cfg.mini_omni_modeling:
+        if cfg.inference_online:
+            if cfg.inference_streaming:
+                inference_online_stream_mini_omni(cfg)
+            else:
+                inference_online(cfg)
         else:
-            inference_online(cfg)
+            if cfg.inference_streaming:
+                inference_stream_mini_omni(cfg)
+            else:
+                inference(cfg)
+
     else:
-        if cfg.inference_streaming:
-            inference_stream(cfg)
+        if cfg.inference_online:
+            if cfg.multi_round:
+                inference_online_multi_round(cfg)
+            else:
+                inference_online(cfg)
         else:
             inference(cfg)
 

@@ -334,7 +334,6 @@ class slam_model_s2s(slam_model):
                 **kwargs,
                 ):
         kwargs["inference_mode"] = True
-
         inputs_embeds, attention_mask = self.forward(
             input_ids=input_ids,
             attention_mask=attention_mask,
@@ -358,6 +357,7 @@ class slam_model_s2s(slam_model):
         text_vocab_size = self.model_config.vocab_config.padded_text_vocabsize
         audio_vocab_size = self.model_config.vocab_config.padded_audio_vocabsize
 
+        inference_streaming = kwargs.get("inference_streaming", False)
         num_latency_tokens = kwargs.get("num_latency_tokens", 0)
         text_repetition_penalty = kwargs.get("text_repetition_penalty", 1.0)
         audio_repetition_penalty = kwargs.get("audio_repetition_penalty", 1.0)
@@ -437,6 +437,13 @@ class slam_model_s2s(slam_model):
                 current_audio_tokens[i] = next_tokens_audio[i]
 
             attention_mask = torch.cat([attention_mask, torch.ones((input_ids.size(0), 1), device=input_ids.device)], dim=1)
+
+            if inference_streaming:
+                yield {
+                    "audio_tokens": [next_tokens_audio[i].item() for i in range(self.code_layer)],
+                    "text_token": next_token_text.item(),
+                }
+                
 
             # Append generated tokens to the tensor
             for i in range(self.code_layer):
