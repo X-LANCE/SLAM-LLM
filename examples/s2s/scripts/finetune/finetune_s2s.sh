@@ -44,6 +44,10 @@ use_peft=false
 num_epochs=10
 lr=5e-4
 task_type=s2s
+warmup_steps=3000
+total_steps=300000
+
+# validation settings
 validation_interval=3000
 split_size=0.01
 
@@ -101,8 +105,8 @@ hydra.run.dir=$output_dir \
 ++train_config.freeze_encoder=true \
 ++train_config.freeze_llm=false \
 ++train_config.batching_strategy=custom \
-++train_config.warmup_steps=3000 \
-++train_config.total_steps=300000 \
+++train_config.warmup_steps=$warmup_steps \
+++train_config.total_steps=$total_steps \
 ++train_config.lr=$lr \
 ++train_config.validation_interval=$validation_interval \
 ++train_config.batch_size_training=$batch_size_training \

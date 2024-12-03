@@ -266,7 +266,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         prompt = self.prompt_template.format(prompt)
 
         # add history conversation after prompt (<prompt> = <prompt> + <history>)
-        if source_text is not None and "<USER>:" in source_text:
+        if source_text is not None and "<USER>:" in source_text and task_type == "s2s":
             history_chat = source_text.rsplit("<USER>:", 1)[0].strip()
             if history_chat:
                 prompt = prompt + history_chat + "\n "
