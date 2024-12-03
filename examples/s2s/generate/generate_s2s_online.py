@@ -118,11 +118,11 @@ def generate_from_wav(wav_path, model, codec_decoder, dataset_config, decode_con
 		"audio_length": audio_length,
 		"modality_mask": modality_mask,
 		"task_types": task_type,
-		"inference_streaming": inference_streaming,
+		"mini_omni_modeling": False,
 	}
 
 	if inference_streaming:
-		return model.generate(**batch, **decode_config)
+		return model.stream_generate(**batch, **decode_config)
 
 	model_outputs = model.generate(**batch, **decode_config)
 	text_outputs = model_outputs[code_layer]

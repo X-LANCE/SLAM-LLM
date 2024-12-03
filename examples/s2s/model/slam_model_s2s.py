@@ -357,7 +357,6 @@ class slam_model_s2s(slam_model):
         text_vocab_size = self.model_config.vocab_config.padded_text_vocabsize
         audio_vocab_size = self.model_config.vocab_config.padded_audio_vocabsize
 
-        inference_streaming = kwargs.get("inference_streaming", False)
         num_latency_tokens = kwargs.get("num_latency_tokens", 0)
         text_repetition_penalty = kwargs.get("text_repetition_penalty", 1.0)
         audio_repetition_penalty = kwargs.get("audio_repetition_penalty", 1.0)
@@ -438,13 +437,6 @@ class slam_model_s2s(slam_model):
 
             attention_mask = torch.cat([attention_mask, torch.ones((input_ids.size(0), 1), device=input_ids.device)], dim=1)
 
-            if inference_streaming:
-                yield {
-                    "audio_tokens": [next_tokens_audio[i].item() for i in range(self.code_layer)],
-                    "text_token": next_token_text.item(),
-                }
-                
-
             # Append generated tokens to the tensor
             for i in range(self.code_layer):
                 generated_ids[i][step] = next_tokens_audio[i]  # Audio layers
@@ -510,6 +502,7 @@ class slam_model_s2s(slam_model):
         text_vocab_size = self.model_config.vocab_config.padded_text_vocabsize
         audio_vocab_size = self.model_config.vocab_config.padded_audio_vocabsize
 
+        mini_omni_modeling = kwargs.get("mini_omni_modeling", False)
         text_repetition_penalty = kwargs.get("text_repetition_penalty", 1.0)
         audio_repetition_penalty = kwargs.get("audio_repetition_penalty", 1.0)
         decode_text_only = kwargs.get("decode_text_only", False)
@@ -604,7 +597,7 @@ class slam_model_s2s(slam_model):
             if index == self.code_layer:
                 begin_generate = True
 
-            if begin_generate and not decode_text_only:
+            if begin_generate and not decode_text_only and mini_omni_modeling:
                 current_index += 1
                 if current_index == stream_stride:
                     current_index = 0
@@ -621,6 +614,12 @@ class slam_model_s2s(slam_model):
                         "audio_stream": audio_stream,
                         "text_stream": text_stream,
                     }
+            
+            if not mini_omni_modeling and not decode_text_only:
+                yield {
+                    "audio_tokens": [next_tokens_audio[i].item() for i in range(self.code_layer)],
+                    "text_token": next_token_text.item(),
+                }
 
             if decode_text_only:
                 yield {
