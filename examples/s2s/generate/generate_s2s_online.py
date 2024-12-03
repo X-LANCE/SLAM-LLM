@@ -71,8 +71,7 @@ def get_padded_input(text_input_idx, text_index_length, code_layer, _pad_a, laye
 def generate_from_wav(wav_path, model, codec_decoder, dataset_config, decode_config, logger, device, model_config, tone_dir, audio_prompt_path=None, output_text_only=False, layer_shift=layershift, inference_streaming=False):
 	mel_size = dataset_config.mel_size
 	prompt = dataset_config.prompt
-	# prompt_template = "<SYSTEM>: {}\n {}\n "
-	prompt_template = "USER: {}\n ASSISTANT: "
+	prompt_template = "<SYSTEM>: {}\n "
 	vocab_config = dataset_config.vocab_config
 	special_token_a = vocab_config.answer_a
 	special_token_t = vocab_config.answer_t
@@ -85,7 +84,6 @@ def generate_from_wav(wav_path, model, codec_decoder, dataset_config, decode_con
 
 	audio_mel, audio_length = extract_audio_feature(wav_path, mel_size)
 
-	# prompt = prompt_template.format(prompt, history)
 	prompt = prompt_template.format(prompt)
 	prompt_ids = model.tokenizer.encode(prompt)
 	prompt_ids = [_input_t] + prompt_ids + [_eot]
@@ -153,8 +151,7 @@ def generate_from_wav(wav_path, model, codec_decoder, dataset_config, decode_con
 
 def generate_from_text(text_input, model, codec_decoder, dataset_config, decode_config, logger, device, model_config, tone_dir, audio_prompt_path=None, output_text_only=False, layer_shift=layershift, inference_streaming=False):
 	prompt = dataset_config.prompt
-	# prompt_template = "<SYSTEM>: {}\n {}\n "
-	prompt_template = "USER: {}\n ASSISTANT: "
+	prompt_template = "<SYSTEM>: {}\n "
 	vocab_config = dataset_config.vocab_config
 	special_token_a = vocab_config.answer_a
 	special_token_t = vocab_config.answer_t
@@ -165,7 +162,6 @@ def generate_from_text(text_input, model, codec_decoder, dataset_config, decode_
 	code_type = model_config.code_type
 	num_latency_tokens = dataset_config.num_latency_tokens
 
-	# prompt = prompt_template.format(prompt, history)
 	prompt = prompt_template.format(prompt)
 	prompt_ids = model.tokenizer.encode(prompt)
 	prompt_ids = [_input_t] + prompt_ids + [_eot]
@@ -200,7 +196,11 @@ def generate_from_text(text_input, model, codec_decoder, dataset_config, decode_
 		"audio_length": None,
 		"modality_mask": modality_mask,
 		"task_types": task_type,
+		"mini_omni_modeling": False,
 	}
+
+	if inference_streaming:
+		return model.stream_generate(**batch, **decode_config)
 
 	model_outputs = model.generate(**batch, **decode_config)
 	text_outputs = model_outputs[code_layer]
@@ -336,7 +336,7 @@ def main(kwargs: DictConfig):
 
 	if not inference_streaming:
 		if decode_config.input_text:
-			logger.info("============== Ready for t2s Online Inference ==============")
+			logger.info("============== Ready for t2s Online Inference (Non-Streaming) ==============")
 			while True:
 				text_input = input("Please provide the text input (or type 'q' to quit): ")
 				if text_input.lower() == 'q':
@@ -353,7 +353,7 @@ def main(kwargs: DictConfig):
 				sf.write(output_wav_path, audio_hat.squeeze().cpu().numpy(), speech_sample_rate)
 				logger.info(f"Generated Audio saved at: {output_wav_path}")
 		else:
-			logger.info("============== Ready for {task_type} Online Inference ==============".format(task_type=task_type))
+			logger.info("============== Ready for {task_type} Online Inference (Non-Streaming) ==============".format(task_type=task_type))
 			while True:
 				wav_path = input("Please provide the path to a WAV file (or type 'q' to quit): ")
 				if wav_path.lower() == 'q':

@@ -1,6 +1,6 @@
-from generate.generate_s2s_batch_stream_mini_omni import main as inference_stream_mini_omni
+from generate.generate_s2s_batch_stream_mini_omni import main as batch_inference_stream_mini_omni
 from generate.generate_s2s_online_stream_mini_omni import main as inference_online_stream_mini_omni
-from generate.generate_s2s_batch import main as inference
+from generate.generate_s2s_batch import main as batch_inference
 from generate.generate_s2s_online import main as inference_online # single-round inference
 from generate.generate_s2s_online_multi_round import main as inference_online_multi_round # multi-round inference
 
@@ -80,9 +80,9 @@ def main_hydra(cfg: DictConfig):
                 inference_online(cfg)
         else:
             if cfg.inference_streaming:
-                inference_stream_mini_omni(cfg)
+                batch_inference_stream_mini_omni(cfg)
             else:
-                inference(cfg)
+                batch_inference(cfg)
 
     else:
         if cfg.inference_online:
@@ -91,7 +91,7 @@ def main_hydra(cfg: DictConfig):
             else:
                 inference_online(cfg)
         else:
-            inference(cfg)
+            batch_inference(cfg)
 
 if __name__ == "__main__":
     main_hydra()
