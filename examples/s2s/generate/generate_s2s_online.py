@@ -353,7 +353,7 @@ def main(kwargs: DictConfig):
 				sf.write(output_wav_path, audio_hat.squeeze().cpu().numpy(), speech_sample_rate)
 				logger.info(f"Generated Audio saved at: {output_wav_path}")
 		else:
-			logger.info("============== Ready for {task_type} Online Inference (Non-Streaming) ==============".format(task_type=task_type))
+			logger.info("============== Ready for s2s Online Inference (Non-Streaming) ==============")
 			while True:
 				wav_path = input("Please provide the path to a WAV file (or type 'q' to quit): ")
 				if wav_path.lower() == 'q':
@@ -400,7 +400,7 @@ def main(kwargs: DictConfig):
 				sf.write(output_wav_path, audio_hat.squeeze().cpu().numpy(), speech_sample_rate)
 				logger.info(f"Generated Audio saved at: {output_wav_path}")
 		else:
-			logger.info("============== Ready for {task_type} Online Inference (Streaming) ==============".format(task_type=task_type))
+			logger.info("============== Ready for s2s Online Inference (Streaming) ==============")
 			while True:
 				wav_path = input("Please provide the path to a WAV file (or type 'q' to quit): ")
 				if wav_path.lower() == 'q':

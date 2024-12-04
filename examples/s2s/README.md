@@ -72,6 +72,10 @@ bash ./examples/s2s/scripts/inference/mini-omni/inference_s2s_online.sh
 bash ./examples/s2s/scripts/inference/mini-omni/inference_s2s_online_stream.sh
 ```
 
+You can also use a TTS pre-trained model to perform TTS inference tasks with the following command:
+```bash
+bash ./examples/s2s/scripts/inference/inference_tts_online.sh
+```
 
 ### Batch Inference
 
@@ -83,12 +87,6 @@ bash ./examples/s2s/scripts/inference/inference_s2s_batch.sh
 
 # Mini-Omni framework
 bash ./examples/s2s/scripts/inference/mini-omni/inference_s2s_snac.sh
-```
-
-
-You can also use a TTS pre-trained model to perform TTS inference tasks with the following command:
-```bash
-bash ./examples/s2s/scripts/inference_tts.sh
 ```
 
 
