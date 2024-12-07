@@ -282,8 +282,11 @@ class slam_model_s2s(slam_model):
                 preds = torch.argmax(xt, -1)
                 text_acc = compute_accuracy(preds.detach()[:, :-1], text_labels.detach()[:, 1:], ignore_label=-100)
 
-                preds_audio = [torch.argmax(xa[i], -1) for i in range(self.code_layer)]
-                audio_acc = [compute_accuracy(preds_audio[i].detach()[:, :-1], audio_labels[:, i, 1:], ignore_label=-100) for i in range(self.code_layer)]
+                if self.train_config.task_type != "asr":
+                    preds_audio = [torch.argmax(xa[i], -1) for i in range(self.code_layer)]
+                    audio_acc = [compute_accuracy(preds_audio[i].detach()[:, :-1], audio_labels[:, i, 1:], ignore_label=-100) for i in range(self.code_layer)]
+                else:
+                    audio_acc = [-1 for _ in range(self.code_layer)]
 
         # metrics = {"text_acc": text_acc, "audio_acc": audio_acc, "layer_loss": loss_recorder}
         return model_outputs, text_acc, audio_acc, loss_recorder
@@ -299,7 +302,6 @@ class slam_model_s2s(slam_model):
         layer_loss = [0 for _ in range(self.code_layer+1) ]
         
         if text_labels is not None:
-            # text_loss = F.cross_entropy(xt.reshape(-1, text_vocab_size), text_labels.reshape(-1), ignore_index=-100)
             text_loss = F.cross_entropy(xt[:, :-1, :].reshape(-1, text_vocab_size), text_labels[:, 1:].reshape(-1), ignore_index=-100)
             layer_loss[self.code_layer] = text_loss
         else:
@@ -308,8 +310,7 @@ class slam_model_s2s(slam_model):
         total_audio_loss = 0
         single_audio_loss = 0
         for i in range(self.code_layer):
-            if audio_labels[:,i] is not None:
-                # audio_loss += F.cross_entropy(xa[i].reshape(-1, audio_vocab_size), audio_labels[:,i].reshape(-1), ignore_index=-100)
+            if audio_labels[:,i] is not None and self.train_config.task_type != "asr":
                 single_audio_loss = F.cross_entropy(xa[i][:, :-1, :].reshape(-1, audio_vocab_size), audio_labels[:, i, 1:].reshape(-1), ignore_index=-100)
                 layer_loss[i] = single_audio_loss
                 total_audio_loss += single_audio_loss

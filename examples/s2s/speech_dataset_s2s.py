@@ -255,9 +255,8 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         if task_type == "s2s" or task_type == "asr":
             audio_mel, audio_length = self.extract_audio_feature(source_audio)
         
-        if task_type == "s2s" or task_type == "tts":
-            if target_audio is not None:
-                target_audio, target_audio_length = self.extract_audio_feature(target_audio)
+        if target_audio is not None:
+            target_audio, target_audio_length = self.extract_audio_feature(target_audio)
 
         if self.fix_length_audio > 0:
             audio_length = self.fix_length_audio
@@ -293,7 +292,12 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
 
         input_length = audio_length
         if task_type == "tts":
-            input_length = target_text_length   # NOTE: when task_type is tts, input_length is target_text_length
+            input_length = target_text_length
+
+        if task_type == "asr":
+            if "<USER>:" in source_text:
+                source_text = source_text.split("<USER>:")[-1].strip()
+            target_text = source_text
 
         if self.inference_mode:
             example_mask = example_ids[0][0].ge(-1)  # [True,True]
