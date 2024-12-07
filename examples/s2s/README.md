@@ -1,7 +1,5 @@
 # SLAM-Omni
 
-[中文版本](README_zh-cn.md)
-
 ## Environment Setup
 Set up the environment using the following command after setting up the environment for SLAM-LLM:
 ```bash
@@ -34,11 +32,7 @@ We also support data in JSONL format, which offers a more concise structure. Bel
 
 ## Training
 
-### S2S Pre-training (Not Recommended) / TTS
-To pre-train the S2S model with **TTS** task (not recommended) or to directly train a TTS model within the SLAM-Omni framework, you can run the following command:
-```bash
-bash ./examples/s2s/scripts/pretrain/pretrain_tts.sh
-```
+You can pre-train the S2S model using TTS or ASR tasks with our provided scripts, but we recommend going directly to fine-tuning. You may also directly train a TTS or ASR model under the SLAM-Omni framework. For more details, please refer to the [pre-training README](./scripts/pretrain).
 
 ### Fine-tuning
 We provide three fine-tuning options, covering both **SLAM-Omni** modeling and **Mini-Omni** modeling. You can use the commands below to fine-tune the model:
