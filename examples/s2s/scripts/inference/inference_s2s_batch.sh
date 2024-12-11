@@ -16,7 +16,7 @@ codec_decoder_path="/valleblob/v-wenxichen/models/CosyVoice/CosyVoice-300M-SFT" 
 
 encoder_dim=768                     # 384 512 768 896 1024 1280 
 mel_size=80                         # 80 128 (128 for whisper-large only, 80 for others)
-llm_dim=896                         # 896 1536 3584 8192  -> 0.5B 1.5B 3.5B 7B
+llm_dim=896                         # 896 1536 2048 3584  -> 0.5B 1.5B 3B 7B
 
 task_type=s2s
 split_size=0.002

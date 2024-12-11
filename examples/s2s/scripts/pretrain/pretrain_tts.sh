@@ -59,7 +59,7 @@ exp_name="tts_train-${llm_name}-gpu${num_gpus}-btz${batch_size_training}-lr${lr}
 if [ "$use_fp16" = true ]; then
     exp_name="tts_train-${llm_name}-gpu${num_gpus}-btz${batch_size_training}-lr${lr}-fp16-epochs${num_epochs}-latency${num_latency_tokens}-group${code_layer}-maxsteps${total_steps}"
 fi
-exp_name="debug"
+# exp_name="debug"
 wandb_entity_name=wxc12
 wandb_project_name=SLAM-Omni
 

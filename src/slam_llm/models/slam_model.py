@@ -204,15 +204,15 @@ def setup_llm(train_config, model_config, **kwargs):
             param.requires_grad = False
         model.eval()
         
-    # if kwargs.get("peft_ckpt", None): # (FIX:MZY):reload will get wrong results when decoding
-    #     logger.info("loading peft_ckpt from: {}".format(kwargs.get("peft_ckpt")))
-    #     model = PeftModel.from_pretrained(model=model, model_id=kwargs.get("peft_ckpt"), is_trainable=True)
-    #     model.print_trainable_parameters()
-    # elif train_config.use_peft:
-    #     logger.info("setup peft...")
-    #     peft_config = generate_peft_config(train_config)
-    #     model = get_peft_model(model, peft_config)
-    #     model.print_trainable_parameters()
+    if kwargs.get("peft_ckpt", None): # (FIX:MZY):reload will get wrong results when decoding
+        logger.info("loading peft_ckpt from: {}".format(kwargs.get("peft_ckpt")))
+        model = PeftModel.from_pretrained(model=model, model_id=kwargs.get("peft_ckpt"), is_trainable=True)
+        model.print_trainable_parameters()
+    elif train_config.use_peft:
+        logger.info("setup peft...")
+        peft_config = generate_peft_config(train_config)
+        model = get_peft_model(model, peft_config)
+        model.print_trainable_parameters()
 
     print_module_size(model, model_config.llm_name, int(os.environ["RANK"]) if train_config.enable_fsdp or train_config.enable_ddp else 0)
     return model

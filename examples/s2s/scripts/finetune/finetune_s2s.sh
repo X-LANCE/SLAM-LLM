@@ -19,7 +19,7 @@ llm_name=Qwen2-0.5b
 
 encoder_dim=768                     # 384 512 768 1024 1280
 mel_size=80                         # 80 128 ( only whisper-large-v3 supports 128 )
-llm_dim=896                         # 896 1536 3584 8192  -> 0.5B 1.5B 3B 7B
+llm_dim=896                         # 896 1536 2048 3584  -> 0.5B 1.5B 3B 7B
 
 # vocabulary settings
 code_layer=1                        # 1 single semantic code layer   2 3 4 5 6 7 8 group semantic code layers 

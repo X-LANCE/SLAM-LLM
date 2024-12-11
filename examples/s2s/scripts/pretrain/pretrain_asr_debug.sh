@@ -33,8 +33,8 @@ num_latency_tokens=5                # number of latency tokens (in front of the 
 do_layershift=false                 # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
 
 # dataset settings
-train_data_path="/valleblob/v-wenxichen/data/debug/1"
-val_data_path="/valleblob/v-wenxichen/data/debug/1"
+train_data_path="/valleblob/v-wenxichen/data/s2s/parquet_data_test/en"
+val_data_path="/valleblob/v-wenxichen/data/s2s/parquet_data_test/en"
 load_from_cache_file=true          # set to true if you have already generated the cache file, otherwise set to false
 
 # training settings

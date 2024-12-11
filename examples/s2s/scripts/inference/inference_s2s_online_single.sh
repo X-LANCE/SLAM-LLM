@@ -16,7 +16,7 @@ codec_decoder_path="/valleblob/v-wenxichen/models/CosyVoice/CosyVoice-300M-SFT" 
 
 encoder_dim=768                     # 384 512 768 896 1024 1280 
 mel_size=80                         # 80 128 (128 for whisper-large only, 80 for others)
-llm_dim=896                         # 896 1536 3584 8192  -> 0.5B 1.5B 3.5B 7B
+llm_dim=896                         # 896 1536 2048 3584  -> 0.5B 1.5B 3B 7B
 
 task_type=s2s
 
@@ -29,10 +29,10 @@ total_vocabsize=$((total_audio_vocabsize + llm_vocabsize))
 # code settings
 code_type=CosyVoice                 # CosyVoice or SNAC
 codec_decoder_type=CosyVoice
-num_latency_tokens=1                # number of latency tokens (same as the number in training)
+num_latency_tokens=5                # number of latency tokens (same as the number in training)
 do_layershift=false                 # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
 
-ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v3_gpu4_btz2_lr5e-4_fp16_epochs10_whisper-small/s2s_epoch_3_step_4714
+ckpt_path=/valleblob/v-wenxichen/exp/s2s/paper-ablation/s2s_train_v4-Qwen2-0.5b-gpu4-btz2-lr1e-4-fp16-epochs10-whisper_small-latency5-group1-Final-Ablation-VoiceAssistant-400K-v2-Total_update_100K/Qwen2-0.5b-gpu4-btz2-lr1e-4-fp16-epochs10-whisper_small-latency5-group1-Final-Ablation-VoiceAssistant-400K-v2-Total_update_100K-s2s_epoch_2_step_41695
 
 # decode config
 text_repetition_penalty=1.2
@@ -116,4 +116,4 @@ python $code_dir/inference_s2s.py \
         ++speech_sample_rate=$speech_sample_rate \
         ++audio_prompt_path=$audio_prompt_path
 
-# bash ./examples/s2s/scripts/inference/inference_s2s_online_cosyvoice_single.sh
+# bash ./examples/s2s/scripts/inference/inference_s2s_online_single.sh

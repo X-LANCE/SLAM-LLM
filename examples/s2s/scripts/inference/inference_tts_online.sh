@@ -13,7 +13,7 @@ llm_path="Qwen/Qwen2-0.5B"
 # codec_decoder_path="hubertsiuzdak/snac_24khz" # replace this with your own SNAC model path
 codec_decoder_path="/valleblob/v-wenxichen/models/CosyVoice/CosyVoice-300M-SFT" # replace this with your own CosyVoice model path
 
-llm_dim=896                         # 896 1536 3584 8192  -> 0.5B 1.5B 3.5B 7B
+llm_dim=896                         # 896 1536 2048 3584  -> 0.5B 1.5B 3B 7B
 
 task_type=tts
 

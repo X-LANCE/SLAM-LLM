@@ -102,18 +102,6 @@ def model_factory(train_config, model_config, **kwargs):
     if train_config.train_embed_only:
         train_embedding_layer_only(model)
 
-    # fixme: here has a bug -> during inference, we need load the ckpt again since the ckpt above is for FFT stage
-    if train_config.use_peft:
-        logger.info("setup peft for llm")
-        peft_config = generate_peft_config(train_config)
-        model.llm = get_peft_model(model.llm, peft_config)
-        if int(os.environ.get("RANK", "0")) == 0:
-            model.llm.print_trainable_parameters()
-
-        if kwargs.get("peft_ckpt_path", None):
-            logger.info("loading peft-stage ckpt from: {}\n".format(kwargs.get("peft_ckpt_path")))
-            ckpt_dict = torch.load(kwargs.get("peft_ckpt_path"), map_location="cpu")
-            model.load_state_dict(ckpt_dict, strict=False)
 
     print_model_size(
         model,
