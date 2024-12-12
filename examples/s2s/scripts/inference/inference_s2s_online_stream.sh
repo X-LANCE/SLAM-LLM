@@ -11,12 +11,12 @@ code_dir=examples/s2s
 
 whisper_size=small                  # tiny base small medium large-v3
 speech_encoder_path="/valleblob/v-wenxichen/models/whisper/${whisper_size}.pt"   # replace this with your own whisper model path (different whisper size)
-llm_path="Qwen/Qwen2-0.5B"          # Qwen2-0.5B Qwen2-1.5B Qwen2.5-3B Qwen2.5-7B
+llm_path="Qwen/Qwen2-0.5B"
 # codec_decoder_path="hubertsiuzdak/snac_24khz" # replace this with your own SNAC model path
 codec_decoder_path="/valleblob/v-wenxichen/models/CosyVoice/CosyVoice-300M-SFT" # replace this with your own CosyVoice model path
 
-encoder_dim=768                      # 384 512 768 896 1024 1280 
-mel_size=80                          # 80 128 (128 for whisper-large only, 80 for others)
+encoder_dim=768                     # 384 512 768 896 1024 1280 
+mel_size=80                         # 80 128 (128 for whisper-large only, 80 for others)
 llm_dim=896                         # 896 1536 2048 3584  -> 0.5B 1.5B 3B 7B
 
 task_type=s2s
@@ -30,14 +30,14 @@ total_vocabsize=$((total_audio_vocabsize + llm_vocabsize))
 # code settings
 code_type=CosyVoice                 # CosyVoice or SNAC
 codec_decoder_type=CosyVoice
-num_latency_tokens=0                # number of latency tokens (same as the number in training)
+num_latency_tokens=5                # number of latency tokens (same as the number in training)
 do_layershift=false                 # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
 
 # load the backbone model
-ckpt_path=/valleblob/v-wenxichen/exp/s2s/paper-ablation/s2s_train_v4-Qwen2-0.5b-gpu4-btz3-lr1e-4-fp16-epochs10-whisper_small-latency0-group3-Final-Ablation-VoiceAssistant-400K-v2-Total_update_100K/Qwen2-0.5b-gpu4-btz3-lr1e-4-fp16-epochs10-whisper_small-latency0-group3-Final-Ablation-VoiceAssistant-400K-v2-Total_update_100K-s2s_epoch_3_step_19594
+ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v4-Qwen2-0.5b-gpu4-btz3-lr5e-4-nofp16-epochs10-whisper_small-latency5-group3-UltraChat_from_pre_train/Qwen2-0.5b-gpu4-btz3-lr5e-4-nofp16-epochs10-whisper_small-latency5-group3-UltraChat_from_pre_train-s2s_epoch_2_step_23152
 
-# use peft module
-use_peft=false
+# load the peft module if needed
+# peft_ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v4-Qwen2-0.5b-gpu4-btz4-lr1e-4-fp16-epochs10-whisper_small-latency5-group3-UltraChat-from_pretrain-LoRA/s2s_epoch_5_step_3456
 
 # model settings
 group_decode=true
@@ -54,6 +54,7 @@ temperature=1.0
 decode_text_only=false
 input_text=false
 
+inference_streaming=true
 output_text_only=false
 speech_sample_rate=22050            # 22050 for CosyVoice, 24000 for SNAC
 inference_online=true
@@ -71,7 +72,7 @@ if [ "$decode_text_only" = true ] ; then
 fi
 
 # -m debugpy --listen 5678 --wait-for-client
-python $code_dir/inference_s2s.py \
+python  -m debugpy --listen 5678 --wait-for-client $code_dir/inference_s2s.py \
         --config-path "conf" \
         --config-name "prompt.yaml" \
         hydra.run.dir=$ckpt_path \
@@ -113,7 +114,6 @@ python $code_dir/inference_s2s.py \
         ++train_config.val_batch_size=1 \
         ++train_config.num_workers_dataloader=2 \
         ++train_config.task_type=$task_type \
-        ++train_config.use_peft=$use_peft \
         ++decode_config.text_repetition_penalty=$text_repetition_penalty \
         ++decode_config.audio_repetition_penalty=$audio_repetition_penalty \
         ++decode_config.max_new_tokens=$max_new_tokens \
@@ -132,6 +132,6 @@ python $code_dir/inference_s2s.py \
         ++inference_online=$inference_online \
         ++speech_sample_rate=$speech_sample_rate \
         ++audio_prompt_path=$audio_prompt_path \
-        ++peft_ckpt_path=$peft_ckpt_path/model.pt
+        ++inference_streaming=$inference_streaming
 
-# bash ./examples/s2s/scripts/inference/inference_s2s_online.sh
+# bash ./examples/s2s/scripts/inference/inference_s2s_online_stream.sh

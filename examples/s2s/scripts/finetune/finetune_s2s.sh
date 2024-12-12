@@ -19,7 +19,7 @@ llm_name=Qwen2-0.5b
 
 encoder_dim=768                     # 384 512 768 1024 1280
 mel_size=80                         # 80 128 ( only whisper-large-v3 supports 128 )
-llm_dim=896                         # 896 1536 3584 8192  -> 0.5B 1.5B 3B 7B
+llm_dim=896                         # 896 1536 2048 3584  -> 0.5B 1.5B 3B 7B
 
 # vocabulary settings
 code_layer=1                        # 1 single semantic code layer   2 3 4 5 6 7 8 group semantic code layers 
@@ -44,6 +44,10 @@ use_peft=false
 num_epochs=10
 lr=5e-4
 task_type=s2s
+warmup_steps=3000
+total_steps=300000
+
+# validation settings
 validation_interval=3000
 split_size=0.01
 
@@ -101,8 +105,8 @@ hydra.run.dir=$output_dir \
 ++train_config.freeze_encoder=true \
 ++train_config.freeze_llm=false \
 ++train_config.batching_strategy=custom \
-++train_config.warmup_steps=3000 \
-++train_config.total_steps=300000 \
+++train_config.warmup_steps=$warmup_steps \
+++train_config.total_steps=$total_steps \
 ++train_config.lr=$lr \
 ++train_config.validation_interval=$validation_interval \
 ++train_config.batch_size_training=$batch_size_training \

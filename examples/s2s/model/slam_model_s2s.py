@@ -2,7 +2,6 @@ import torch
 import os
 import logging
 import torch.nn.functional as F
-import torch.nn as nn
 from slam_llm.models.slam_model import (
     slam_model,
     setup_tokenizer,
@@ -17,7 +16,7 @@ from transformers import T5ForConditionalGeneration
 from tqdm import tqdm
 from utils.tts_adapter_utils import setup_tts_adapter
 from utils.codec_utils import setup_codec
-from utils.trick_utils import partial_freeze_weights, train_embedding_layer_only
+from utils.trick_utils import partial_freeze_weights, train_embedding_layer_only, train_embedding_layer
 from utils.snac_utils import get_snac, generate_audio_data, simple_shift
 from utils.snac_utils import layershift as layer_shift
 from utils.projector_utils import setup_group_decode_adapter
@@ -103,18 +102,8 @@ def model_factory(train_config, model_config, **kwargs):
     if train_config.train_embed_only:
         train_embedding_layer_only(model)
 
-    # fixme: here has a bug -> during inference, we need load the ckpt again since the ckpt above is for FFT stage
-    if train_config.use_peft:
-        logger.info("setup peft for llm")
-        peft_config = generate_peft_config(train_config)
-        model.llm = get_peft_model(model.llm, peft_config)
-        if int(os.environ.get("RANK", "0")) == 0:
-            model.llm.print_trainable_parameters()
-
-        if kwargs.get("peft_ckpt_path", None):
-            logger.info("loading peft-stage ckpt from: {}\n".format(kwargs.get("peft_ckpt_path")))
-            ckpt_dict = torch.load(kwargs.get("peft_ckpt_path"), map_location="cpu")
-            model.load_state_dict(ckpt_dict, strict=False)
+    if train_config.train_embed:
+        train_embedding_layer(model)
 
     print_model_size(
         model,
@@ -283,8 +272,11 @@ class slam_model_s2s(slam_model):
                 preds = torch.argmax(xt, -1)
                 text_acc = compute_accuracy(preds.detach()[:, :-1], text_labels.detach()[:, 1:], ignore_label=-100)
 
-                preds_audio = [torch.argmax(xa[i], -1) for i in range(self.code_layer)]
-                audio_acc = [compute_accuracy(preds_audio[i].detach()[:, :-1], audio_labels[:, i, 1:], ignore_label=-100) for i in range(self.code_layer)]
+                if self.train_config.task_type != "asr":
+                    preds_audio = [torch.argmax(xa[i], -1) for i in range(self.code_layer)]
+                    audio_acc = [compute_accuracy(preds_audio[i].detach()[:, :-1], audio_labels[:, i, 1:], ignore_label=-100) for i in range(self.code_layer)]
+                else:
+                    audio_acc = [-1 for _ in range(self.code_layer)]
 
         # metrics = {"text_acc": text_acc, "audio_acc": audio_acc, "layer_loss": loss_recorder}
         return model_outputs, text_acc, audio_acc, loss_recorder
@@ -300,7 +292,6 @@ class slam_model_s2s(slam_model):
         layer_loss = [0 for _ in range(self.code_layer+1) ]
         
         if text_labels is not None:
-            # text_loss = F.cross_entropy(xt.reshape(-1, text_vocab_size), text_labels.reshape(-1), ignore_index=-100)
             text_loss = F.cross_entropy(xt[:, :-1, :].reshape(-1, text_vocab_size), text_labels[:, 1:].reshape(-1), ignore_index=-100)
             layer_loss[self.code_layer] = text_loss
         else:
@@ -309,8 +300,7 @@ class slam_model_s2s(slam_model):
         total_audio_loss = 0
         single_audio_loss = 0
         for i in range(self.code_layer):
-            if audio_labels[:,i] is not None:
-                # audio_loss += F.cross_entropy(xa[i].reshape(-1, audio_vocab_size), audio_labels[:,i].reshape(-1), ignore_index=-100)
+            if audio_labels[:,i] is not None and self.train_config.task_type != "asr":
                 single_audio_loss = F.cross_entropy(xa[i][:, :-1, :].reshape(-1, audio_vocab_size), audio_labels[:, i, 1:].reshape(-1), ignore_index=-100)
                 layer_loss[i] = single_audio_loss
                 total_audio_loss += single_audio_loss
@@ -334,7 +324,6 @@ class slam_model_s2s(slam_model):
                 **kwargs,
                 ):
         kwargs["inference_mode"] = True
-
         inputs_embeds, attention_mask = self.forward(
             input_ids=input_ids,
             attention_mask=attention_mask,
@@ -503,6 +492,7 @@ class slam_model_s2s(slam_model):
         text_vocab_size = self.model_config.vocab_config.padded_text_vocabsize
         audio_vocab_size = self.model_config.vocab_config.padded_audio_vocabsize
 
+        mini_omni_modeling = kwargs.get("mini_omni_modeling", False)
         text_repetition_penalty = kwargs.get("text_repetition_penalty", 1.0)
         audio_repetition_penalty = kwargs.get("audio_repetition_penalty", 1.0)
         decode_text_only = kwargs.get("decode_text_only", False)
@@ -597,7 +587,7 @@ class slam_model_s2s(slam_model):
             if index == self.code_layer:
                 begin_generate = True
 
-            if begin_generate and not decode_text_only:
+            if begin_generate and not decode_text_only and mini_omni_modeling:
                 current_index += 1
                 if current_index == stream_stride:
                     current_index = 0
@@ -614,6 +604,12 @@ class slam_model_s2s(slam_model):
                         "audio_stream": audio_stream,
                         "text_stream": text_stream,
                     }
+            
+            if not mini_omni_modeling and not decode_text_only:
+                yield {
+                    "audio_tokens": [next_tokens_audio[i].item() for i in range(self.code_layer)],
+                    "text_token": next_token_text.item(),
+                }
 
             if decode_text_only:
                 yield {

@@ -4,7 +4,7 @@ import logging
 import os
 import soundfile as sf
 from slam_llm.utils.model_utils import get_custom_model_factory
-from utils.snac_utils import reconscruct_snac, reconstruct_tensors, layershift, get_snac_answer_token, simple_shift
+from utils.snac_utils import reconscruct_snac, reconstruct_tensors, layershift, simple_shift
 from utils.codec_utils import audio_decode_cosyvoice
 import hydra
 from omegaconf import DictConfig, ListConfig, OmegaConf
@@ -68,11 +68,10 @@ def get_padded_input(text_input_idx, text_index_length, code_layer, _pad_a, laye
 	return padded_input
 
 
-def generate_from_wav(wav_path, model, codec_decoder, dataset_config, decode_config, logger, device, model_config, tone_dir, audio_prompt_path=None, output_text_only=False, layer_shift=layershift):
+def generate_from_wav(wav_path, model, codec_decoder, dataset_config, decode_config, logger, device, model_config, tone_dir, audio_prompt_path=None, output_text_only=False, layer_shift=layershift, inference_streaming=False):
 	mel_size = dataset_config.mel_size
 	prompt = dataset_config.prompt
-	# prompt_template = "<SYSTEM>: {}\n {}\n "
-	prompt_template = "USER: {}\n ASSISTANT: "
+	prompt_template = "<SYSTEM>: {}\n "
 	vocab_config = dataset_config.vocab_config
 	special_token_a = vocab_config.answer_a
 	special_token_t = vocab_config.answer_t
@@ -85,7 +84,6 @@ def generate_from_wav(wav_path, model, codec_decoder, dataset_config, decode_con
 
 	audio_mel, audio_length = extract_audio_feature(wav_path, mel_size)
 
-	# prompt = prompt_template.format(prompt, history)
 	prompt = prompt_template.format(prompt)
 	prompt_ids = model.tokenizer.encode(prompt)
 	prompt_ids = [_input_t] + prompt_ids + [_eot]
@@ -118,7 +116,11 @@ def generate_from_wav(wav_path, model, codec_decoder, dataset_config, decode_con
 		"audio_length": audio_length,
 		"modality_mask": modality_mask,
 		"task_types": task_type,
+		"mini_omni_modeling": False,
 	}
+
+	if inference_streaming:
+		return model.stream_generate(**batch, **decode_config)
 
 	model_outputs = model.generate(**batch, **decode_config)
 	text_outputs = model_outputs[code_layer]
@@ -147,10 +149,9 @@ def generate_from_wav(wav_path, model, codec_decoder, dataset_config, decode_con
 	return audio_hat, output_text
 
 
-def generate_from_text(text_input, model, codec_decoder, dataset_config, decode_config, logger, device, model_config, tone_dir, audio_prompt_path=None, output_text_only=False, layer_shift=layershift):
+def generate_from_text(text_input, model, codec_decoder, dataset_config, decode_config, logger, device, model_config, tone_dir, audio_prompt_path=None, output_text_only=False, layer_shift=layershift, inference_streaming=False):
 	prompt = dataset_config.prompt
-	# prompt_template = "<SYSTEM>: {}\n {}\n "
-	prompt_template = "USER: {}\n ASSISTANT: "
+	prompt_template = "<SYSTEM>: {}\n "
 	vocab_config = dataset_config.vocab_config
 	special_token_a = vocab_config.answer_a
 	special_token_t = vocab_config.answer_t
@@ -161,7 +162,6 @@ def generate_from_text(text_input, model, codec_decoder, dataset_config, decode_
 	code_type = model_config.code_type
 	num_latency_tokens = dataset_config.num_latency_tokens
 
-	# prompt = prompt_template.format(prompt, history)
 	prompt = prompt_template.format(prompt)
 	prompt_ids = model.tokenizer.encode(prompt)
 	prompt_ids = [_input_t] + prompt_ids + [_eot]
@@ -196,7 +196,11 @@ def generate_from_text(text_input, model, codec_decoder, dataset_config, decode_
 		"audio_length": None,
 		"modality_mask": modality_mask,
 		"task_types": task_type,
+		"mini_omni_modeling": False,
 	}
+
+	if inference_streaming:
+		return model.stream_generate(**batch, **decode_config)
 
 	model_outputs = model.generate(**batch, **decode_config)
 	text_outputs = model_outputs[code_layer]
@@ -289,6 +293,7 @@ def main(kwargs: DictConfig):
 	output_text_only = kwargs.get('output_text_only', False)
 	speech_sample_rate = kwargs.get('speech_sample_rate', 24000)
 	audio_prompt_path = kwargs.get('audio_prompt_path', None)
+	inference_streaming = kwargs.get('inference_streaming', False)
 
 	output_dir = log_config.online_output_dir
 	logger.info("output_dir: {}".format(output_dir))
@@ -325,56 +330,115 @@ def main(kwargs: DictConfig):
 		logger.info("Decode Text Only")
 	else:
 		logger.info("Decode Text & Audio")
-	logger.info("Decode Codec Type: {}".format(code_type))
+	logger.info("Decode Code Type: {}".format(code_type))
 	logger.info("Decode Code Layer: {}".format(code_layer))
 	logger.info("Tone for Audio Generation: {}".format(tone_dir))
 
-	if decode_config.input_text:
-		logger.info("============== Ready for t2s Online Inference ==============")
-		while True:
-			text_input = input("Please provide the text input (or type 'q' to quit): ")
-			if text_input.lower() == 'q':
-				break
+	if not inference_streaming:
+		if decode_config.input_text:
+			logger.info("============== Ready for t2s Online Inference (Non-Streaming) ==============")
+			while True:
+				text_input = input("Please provide the text input (or type 'q' to quit): ")
+				if text_input.lower() == 'q':
+					break
 
-			audio_hat, output_text = generate_from_text(text_input, model, codec_decoder, dataset_config, decode_config, logger, device, model_config, tone_dir, audio_prompt_path, output_text_only, layer_shift)
-			logger.info(f"Generated Text: {output_text}")
+				audio_hat, output_text = generate_from_text(text_input, model, codec_decoder, dataset_config, decode_config, logger, device, model_config, tone_dir, audio_prompt_path, output_text_only, layer_shift, inference_streaming)
+				logger.info(f"Generated Text: {output_text}")
 
-			if tone_audio_dir is not None:
-				os.makedirs(tone_audio_dir, exist_ok=True)
-				output_wav_path = os.path.join(tone_audio_dir, f"generated_{text_input.replace(' ', '_')[:20]}.wav")
-			else:
-				output_wav_path = f"generated_{text_input.replace(' ', '_')}.wav"
-			sf.write(output_wav_path, audio_hat.squeeze().cpu().numpy(), speech_sample_rate)
-			logger.info(f"Generated Audio saved at: {output_wav_path}")
+				if tone_audio_dir is not None:
+					os.makedirs(tone_audio_dir, exist_ok=True)
+					output_wav_path = os.path.join(tone_audio_dir, f"generated_{text_input.replace(' ', '_')[:20]}.wav")
+				else:
+					output_wav_path = f"generated_{text_input.replace(' ', '_')}.wav"
+				sf.write(output_wav_path, audio_hat.squeeze().cpu().numpy(), speech_sample_rate)
+				logger.info(f"Generated Audio saved at: {output_wav_path}")
+		else:
+			logger.info("============== Ready for s2s Online Inference (Non-Streaming) ==============")
+			while True:
+				wav_path = input("Please provide the path to a WAV file (or type 'q' to quit): ")
+				if wav_path.lower() == 'q':
+					break
+
+				if not os.path.exists(wav_path):
+					logger.warning(f"File {wav_path} does not exist. Please try again.")
+					continue
+
+				output_wav, output_text = generate_from_wav(wav_path, model, codec_decoder, dataset_config, decode_config, logger, device, model_config, tone_dir, audio_prompt_path, output_text_only, layer_shift, inference_streaming)
+				logger.info(f"Generated Text: {output_text}")
+
+				if output_wav is None:
+					logger.warning(f"Generated Audio is None. Please try again.")
+					continue
+				
+				if tone_audio_dir is not None:
+					os.makedirs(tone_audio_dir, exist_ok=True)
+					output_wav_path = os.path.join(tone_audio_dir, f"generated_{os.path.basename(wav_path)}")
+				else:
+					output_wav_path = f"generated_{os.path.basename(wav_path)}"
+
+				if not output_wav_path.lower().endswith('.wav'):
+					output_wav_path = os.path.splitext(output_wav_path)[0] + '.wav'
+
+				sf.write(output_wav_path, output_wav.squeeze().cpu().numpy(), speech_sample_rate)		
+				logger.info(f"Generated Audio saved at: {output_wav_path}")
 	else:
-		logger.info("============== Ready for {task_type} Online Inference ==============".format(task_type=task_type))
-		while True:
-			wav_path = input("Please provide the path to a WAV file (or type 'q' to quit): ")
-			if wav_path.lower() == 'q':
-				break
+		if decode_config.input_text:
+			logger.info("============== Ready for t2s Online Inference (Streaming) ==============")
+			while True:
+				text_input = input("Please provide the text input (or type 'q' to quit): ")
+				if text_input.lower() == 'q':
+					break
 
-			if not os.path.exists(wav_path):
-				logger.warning(f"File {wav_path} does not exist. Please try again.")
-				continue
+				audio_hat, output_text = generate_from_text(text_input, model, codec_decoder, dataset_config, decode_config, logger, device, model_config, tone_dir, audio_prompt_path, output_text_only, layer_shift, inference_streaming)
+				logger.info(f"Generated Text: {output_text}")
 
-			output_wav, output_text = generate_from_wav(wav_path, model, codec_decoder, dataset_config, decode_config, logger, device, model_config, tone_dir, audio_prompt_path, output_text_only, layer_shift)
-			logger.info(f"Generated Text: {output_text}")
+				if tone_audio_dir is not None:
+					os.makedirs(tone_audio_dir, exist_ok=True)
+					output_wav_path = os.path.join(tone_audio_dir, f"generated_{text_input.replace(' ', '_')[:20]}.wav")
+				else:
+					output_wav_path = f"generated_{text_input.replace(' ', '_')}.wav"
+				sf.write(output_wav_path, audio_hat.squeeze().cpu().numpy(), speech_sample_rate)
+				logger.info(f"Generated Audio saved at: {output_wav_path}")
+		else:
+			logger.info("============== Ready for s2s Online Inference (Streaming) ==============")
+			while True:
+				wav_path = input("Please provide the path to a WAV file (or type 'q' to quit): ")
+				if wav_path.lower() == 'q':
+					break
 
-			if output_wav is None:
-				logger.warning(f"Generated Audio is None. Please try again.")
-				continue
-			
-			if tone_audio_dir is not None:
-				os.makedirs(tone_audio_dir, exist_ok=True)
-				output_wav_path = os.path.join(tone_audio_dir, f"generated_{os.path.basename(wav_path)}")
-			else:
-				output_wav_path = f"generated_{os.path.basename(wav_path)}"
+				if not os.path.exists(wav_path):
+					logger.warning(f"File {wav_path} does not exist. Please try again.")
+					continue
 
-			if not output_wav_path.lower().endswith('.wav'):
-				output_wav_path = os.path.splitext(output_wav_path)[0] + '.wav'
+				# output_wav, output_text = generate_from_wav(wav_path, model, codec_decoder, dataset_config, decode_config, logger, device, model_config, tone_dir, audio_prompt_path, output_text_only, layer_shift, inference_streaming)
 
-			sf.write(output_wav_path, output_wav.squeeze().cpu().numpy(), speech_sample_rate)		
-			logger.info(f"Generated Audio saved at: {output_wav_path}")
+				output_generator = generate_from_wav(wav_path, model, codec_decoder, dataset_config, decode_config, logger, device, model_config, tone_dir, audio_prompt_path, output_text_only, layer_shift, inference_streaming)
+					
+				audio_tokens_list = []
+				text_tokens_list = []
+
+				for result in output_generator:
+					audio_tokens_list.extend(result["audio_tokens"])
+					text_tokens_list.append(result["text_token"])
+
+				output_text = model.tokenizer.decode(text_tokens_list, add_special_tokens=False, skip_special_tokens=True)
+				logger.info(f"Generated Text: {output_text}")
+
+				if output_wav is None:
+					logger.warning(f"Generated Audio is None. Please try again.")
+					continue
+				
+				if tone_audio_dir is not None:
+					os.makedirs(tone_audio_dir, exist_ok=True)
+					output_wav_path = os.path.join(tone_audio_dir, f"generated_{os.path.basename(wav_path)}")
+				else:
+					output_wav_path = f"generated_{os.path.basename(wav_path)}"
+
+				if not output_wav_path.lower().endswith('.wav'):
+					output_wav_path = os.path.splitext(output_wav_path)[0] + '.wav'
+
+				sf.write(output_wav_path, output_wav.squeeze().cpu().numpy(), speech_sample_rate)		
+				logger.info(f"Generated Audio saved at: {output_wav_path}")
 		
 	logger.info("============== Online Inference Finished ==============")
 

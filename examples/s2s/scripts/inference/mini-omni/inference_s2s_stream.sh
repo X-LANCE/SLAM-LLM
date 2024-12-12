@@ -44,6 +44,7 @@ decode_text_only=false
 
 output_text_only=false
 
+mini_omni_modeling=true
 inference_online=false
 streaming=true
 stream_stride=3
@@ -106,6 +107,7 @@ python $code_dir/inference_s2s.py \
         ++ckpt_path=$ckpt_path/model.pt \
         ++output_text_only=$output_text_only \
         ++inference_online=$inference_online \
-        ++inference_streaming=$streaming
+        ++inference_streaming=$streaming \
+        ++mini_omni_modeling=$mini_omni_modeling
 
 # bash /home/v-wenxichen/SLAM-LLM/examples/s2s/scripts/inference_s2s_stream.sh

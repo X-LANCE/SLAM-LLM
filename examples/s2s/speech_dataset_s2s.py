@@ -5,7 +5,6 @@ import numpy as np
 
 import torch
 import whisper
-from slam_llm.utils.compute_utils import calculate_output_length_1d
 from utils.snac_utils import layershift, get_snac_answer_token, simple_shift
 from utils.codec_utils import get_single_layer_answer_token, get_group_answer_token
 import librosa
@@ -256,9 +255,8 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         if task_type == "s2s" or task_type == "asr":
             audio_mel, audio_length = self.extract_audio_feature(source_audio)
         
-        if task_type == "s2s" or task_type == "tts":
-            if target_audio is not None:
-                target_audio, target_audio_length = self.extract_audio_feature(target_audio)
+        if target_audio is not None:
+            target_audio, target_audio_length = self.extract_audio_feature(target_audio)
 
         if self.fix_length_audio > 0:
             audio_length = self.fix_length_audio
@@ -267,7 +265,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         prompt = self.prompt_template.format(prompt)
 
         # add history conversation after prompt (<prompt> = <prompt> + <history>)
-        if source_text is not None and "<USER>:" in source_text:
+        if source_text is not None and "<USER>:" in source_text and task_type == "s2s":
             history_chat = source_text.rsplit("<USER>:", 1)[0].strip()
             if history_chat:
                 prompt = prompt + history_chat + "\n "
@@ -294,7 +292,12 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
 
         input_length = audio_length
         if task_type == "tts":
-            input_length = target_text_length   # NOTE: when task_type is tts, input_length is target_text_length
+            input_length = target_text_length
+
+        if task_type == "asr":
+            if "<USER>:" in source_text:
+                source_text = source_text.split("<USER>:")[-1].strip()
+            target_text = source_text
 
         if self.inference_mode:
             example_mask = example_ids[0][0].ge(-1)  # [True,True]

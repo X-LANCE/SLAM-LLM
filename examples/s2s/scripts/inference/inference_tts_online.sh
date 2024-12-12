@@ -9,20 +9,16 @@ export CUDA_LAUNCH_BLOCKING=1
 
 code_dir=examples/s2s
 
-whisper_size=small                  # tiny base small medium large-v3
-speech_encoder_path="/valleblob/v-wenxichen/models/whisper/${whisper_size}.pt"   # replace this with your own whisper model path (different whisper size)
-llm_path="Qwen/Qwen2-0.5B"          # Qwen2-0.5B Qwen2-1.5B Qwen2.5-3B Qwen2.5-7B
+llm_path="Qwen/Qwen2-0.5B"
 # codec_decoder_path="hubertsiuzdak/snac_24khz" # replace this with your own SNAC model path
 codec_decoder_path="/valleblob/v-wenxichen/models/CosyVoice/CosyVoice-300M-SFT" # replace this with your own CosyVoice model path
 
-encoder_dim=768                      # 384 512 768 896 1024 1280 
-mel_size=80                          # 80 128 (128 for whisper-large only, 80 for others)
 llm_dim=896                         # 896 1536 2048 3584  -> 0.5B 1.5B 3B 7B
 
-task_type=s2s
+task_type=tts
 
 # vocabulary settings
-code_layer=3                        # 1 single semantic code layer   2 3 4 5 6 7 8 group semantic code layers 
+code_layer=3                        # 1 single semantic code layer   2 3 4 5 6 7 8 group semantic code layers
 total_audio_vocabsize=4160          # the vocab size of the codec token
 llm_vocabsize=152000                # the vocab size of the LLM model (Qwen2 here)
 total_vocabsize=$((total_audio_vocabsize + llm_vocabsize))
@@ -30,18 +26,16 @@ total_vocabsize=$((total_audio_vocabsize + llm_vocabsize))
 # code settings
 code_type=CosyVoice                 # CosyVoice or SNAC
 codec_decoder_type=CosyVoice
-num_latency_tokens=0                # number of latency tokens (same as the number in training)
+num_latency_tokens=5                # number of latency tokens (same as the number in training)
 do_layershift=false                 # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
 
 # load the backbone model
-ckpt_path=/valleblob/v-wenxichen/exp/s2s/paper-ablation/s2s_train_v4-Qwen2-0.5b-gpu4-btz3-lr1e-4-fp16-epochs10-whisper_small-latency0-group3-Final-Ablation-VoiceAssistant-400K-v2-Total_update_100K/Qwen2-0.5b-gpu4-btz3-lr1e-4-fp16-epochs10-whisper_small-latency0-group3-Final-Ablation-VoiceAssistant-400K-v2-Total_update_100K-s2s_epoch_3_step_19594
-
-# use peft module
-use_peft=false
+ckpt_path=/valleblob/v-wenxichen/exp/tts/debug/s2s_epoch_4_step_8697
 
 # model settings
 group_decode=true
 group_decode_adapter_type=linear
+tts_adapter=false
 
 # decode config
 text_repetition_penalty=1.2
@@ -52,18 +46,18 @@ top_p=1.0
 top_k=0
 temperature=1.0
 decode_text_only=false
-input_text=false
+input_text=true
 
 output_text_only=false
 speech_sample_rate=22050            # 22050 for CosyVoice, 24000 for SNAC
 inference_online=true
-online_output_dir=/home/v-wenxichen/exp/cosyvoice/cosyvoice-single/base
+online_output_dir=/home/v-wenxichen/exp/cosyvoice/tts-test
 # audio_prompt_path=./examples/s2s/audio_prompt/zh/prompt_6.wav      # replace this with your own audio prompt path or our provided audio prompt path
 audio_prompt_path=./examples/s2s/audio_prompt/en/prompt_6.wav      # replace this with your own audio prompt path or our provided audio prompt path
 
-decode_log=$ckpt_path/s2s_decode_${split}_trp${text_repetition_penalty}_arp${audio_repetition_penalty}_seed${dataset_sample_seed}_greedy
+decode_log=$ckpt_path/tts_decode_${split}_trp${text_repetition_penalty}_arp${audio_repetition_penalty}_seed${dataset_sample_seed}_greedy
 if [ "$do_sample" = true ] ; then
-    decode_log=$ckpt_path/s2s_decode_${split}_trp${text_repetition_penalty}_arp${audio_repetition_penalty}_seed${dataset_sample_seed}_sampling_topk${top_k}_topp${top_p}_temp${temperature}
+    decode_log=$ckpt_path/tts_decode_${split}_trp${text_repetition_penalty}_arp${audio_repetition_penalty}_seed${dataset_sample_seed}_sampling_topk${top_k}_topp${top_p}_temp${temperature}
 fi
 
 if [ "$decode_text_only" = true ] ; then
@@ -73,16 +67,11 @@ fi
 # -m debugpy --listen 5678 --wait-for-client
 python $code_dir/inference_s2s.py \
         --config-path "conf" \
-        --config-name "prompt.yaml" \
+        --config-name "prompt_tts.yaml" \
         hydra.run.dir=$ckpt_path \
         ++model_config.llm_name=qwen2-0.5b \
         ++model_config.llm_path=$llm_path \
         ++model_config.llm_dim=$llm_dim \
-        ++model_config.encoder_name=whisper \
-        ++model_config.encoder_projector_ds_rate=5 \
-        ++model_config.encoder_path=$speech_encoder_path \
-        ++model_config.encoder_dim=$encoder_dim \
-        ++model_config.encoder_projector=linear \
         ++model_config.codec_decoder_path=$codec_decoder_path \
         ++model_config.codec_decode=true \
         ++model_config.vocab_config.code_layer=$code_layer \
@@ -93,8 +82,6 @@ python $code_dir/inference_s2s.py \
         ++model_config.group_decode=$group_decode \
         ++model_config.group_decode_adapter_type=$group_decode_adapter_type \
         ++dataset_config.dataset=speech_dataset_s2s \
-        ++dataset_config.input_type=mel \
-        ++dataset_config.mel_size=$mel_size \
         ++dataset_config.inference_mode=true \
         ++dataset_config.task_type=$task_type \
         ++dataset_config.vocab_config.code_layer=$code_layer \
@@ -106,14 +93,12 @@ python $code_dir/inference_s2s.py \
         ++train_config.model_name=s2s \
         ++train_config.freeze_encoder=true \
         ++train_config.freeze_llm=true \
-        ++train_config.freeze_encoder_projector=true \
         ++train_config.freeze_group_decode_adapter=true \
         ++train_config.batching_strategy=custom \
         ++train_config.num_epochs=1 \
         ++train_config.val_batch_size=1 \
         ++train_config.num_workers_dataloader=2 \
         ++train_config.task_type=$task_type \
-        ++train_config.use_peft=$use_peft \
         ++decode_config.text_repetition_penalty=$text_repetition_penalty \
         ++decode_config.audio_repetition_penalty=$audio_repetition_penalty \
         ++decode_config.max_new_tokens=$max_new_tokens \
@@ -132,6 +117,6 @@ python $code_dir/inference_s2s.py \
         ++inference_online=$inference_online \
         ++speech_sample_rate=$speech_sample_rate \
         ++audio_prompt_path=$audio_prompt_path \
-        ++peft_ckpt_path=$peft_ckpt_path/model.pt
+        ++decode_config.input_text=$input_text \
 
-# bash ./examples/s2s/scripts/inference/inference_s2s_online.sh
+# bash ./examples/s2s/scripts/inference/inference_tts_online.sh

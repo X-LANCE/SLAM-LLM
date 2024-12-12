@@ -4,9 +4,8 @@ import logging
 import os
 import soundfile as sf
 from slam_llm.utils.model_utils import get_custom_model_factory
-from utils.snac_utils import reconscruct_snac, reconstruct_tensors, layershift, get_snac_answer_token, simple_shift
+from utils.snac_utils import reconscruct_snac, reconstruct_tensors, layershift, simple_shift
 from utils.codec_utils import audio_decode_cosyvoice
-from utils.encoder_utils import transcribe_audio
 import hydra
 from omegaconf import DictConfig, ListConfig, OmegaConf
 import whisper
@@ -74,7 +73,7 @@ def get_padded_input(text_input_idx, text_index_length, code_layer, _pad_a, laye
 def generate_from_wav(wav_path, model, dataset_config, decode_config, logger, device, model_config, tone_dir, audio_prompt_path=None, output_text_only=False, history="", layer_shift=layershift):
 	mel_size = dataset_config.mel_size
 	prompt = dataset_config.prompt
-	prompt_template = "<SYSTEM>: {}\n {}\n "
+	prompt_template = "<SYSTEM>: {}\n {}"
 	# prompt_template = "USER: {}\n ASSISTANT: "	# note: old version
 	vocab_config = dataset_config.vocab_config
 	special_token_a = vocab_config.answer_a
@@ -164,7 +163,7 @@ def generate_from_wav(wav_path, model, dataset_config, decode_config, logger, de
 
 def generate_from_text(text_input, model, dataset_config, decode_config, logger, device, model_config, tone_dir, audio_prompt_path=None, output_text_only=False, history="", layer_shift=layershift):
 	prompt = dataset_config.prompt
-	prompt_template = "<SYSTEM>: {}\n {}\n "
+	prompt_template = "<SYSTEM>: {}\n {} "
 	# prompt_template = "USER: {}\n ASSISTANT: "	# note: old version
 	vocab_config = dataset_config.vocab_config
 	special_token_a = vocab_config.answer_a
@@ -340,7 +339,8 @@ def main(kwargs: DictConfig):
 		logger.info("Decode Text Only")
 	else:
 		logger.info("Decode Text & Audio")
-	logger.info("Decode Codec Type: {}".format(code_type))
+		
+	logger.info("Decode Code Type: {}".format(code_type))
 	logger.info("Decode Code Layer: {}".format(code_layer))
 	logger.info("Tone for Audio Generation: {}".format(tone_dir))
 

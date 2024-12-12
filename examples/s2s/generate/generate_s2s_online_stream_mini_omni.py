@@ -4,7 +4,7 @@ import logging
 import os
 import soundfile as sf
 from slam_llm.utils.model_utils import get_custom_model_factory
-from utils.snac_utils import reconscruct_snac, reconstruct_tensors, layershift, get_snac_answer_token
+from utils.snac_utils import layershift
 import hydra
 from omegaconf import DictConfig, ListConfig, OmegaConf
 import whisper
@@ -72,7 +72,7 @@ def get_padded_input(text_input_idx, text_index_length, code_layer, _pad_a):
 def generate_from_wav_stream(wav_path, model, codec_decoder, dataset_config, decode_config, logger, device):
 	mel_size = dataset_config.mel_size
 	prompt = dataset_config.prompt
-	prompt_template = "USER: {}\n ASSISTANT: "
+	prompt_template = "<SYSTEM>: {}\n "
 	vocab_config = dataset_config.vocab_config
 	special_token_a = vocab_config.answer_a
 	special_token_t = vocab_config.answer_t
@@ -124,7 +124,7 @@ def generate_from_wav_stream(wav_path, model, codec_decoder, dataset_config, dec
 
 def generate_from_text_stream(text_input, model, codec_decoder, dataset_config, decode_config, logger, device):
 	prompt = dataset_config.prompt
-	prompt_template = "USER: {}\n ASSISTANT: "
+	prompt_template = "<SYSTEM>: {}\n "
 	vocab_config = dataset_config.vocab_config
 	special_token_a = vocab_config.answer_a
 	special_token_t = vocab_config.answer_t
@@ -258,6 +258,8 @@ def main(kwargs: DictConfig):
 	logger.info("output_dir: {}".format(output_dir))
 
 	task_type = decode_config.task_type
+	code_layer = model_config.vocab_config.code_layer
+	code_type = model_config.code_type
 	logger.info("decode_config: {}".format(decode_config))
 
 	if decode_config.do_sample:
@@ -275,6 +277,9 @@ def main(kwargs: DictConfig):
 		logger.info("Decode Text Only")
 	else:
 		logger.info("Decode Text & Audio")
+
+	logger.info("Decode Code Type: {}".format(code_type))
+	logger.info("Decode Code Layer: {}".format(code_layer))
 
 
 	if decode_config.input_text:

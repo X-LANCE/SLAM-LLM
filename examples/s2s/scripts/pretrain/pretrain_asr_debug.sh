@@ -1,17 +1,24 @@
 #!/bin/bash
 export CUDA_VISIBLE_DEVICES=0
+# export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
+# export CUDA_VISIBLE_DEVICES=0,1,2,3
 export TOKENIZERS_PARALLELISM=false
 export OMP_NUM_THREADS=1
 export LD_LIBRARY_PATH=/home/v-wenxichen/anaconda3/envs/slam/lib:$LD_LIBRARY_PATH
+export WANDB_API_KEY=406faa59cf62a3646fa3479a7e133c4cf5a77100       # please replace with your own wandb key thxxxx, unless you want to share your experiment results with me :)
 
 code_dir=examples/s2s
 num_gpus_per_node=$(( $(echo ${CUDA_VISIBLE_DEVICES} | tr -cd ',' | wc -c) + 1 ))
 num_nodes=1
 num_gpus=$(( num_gpus_per_node * num_nodes ))
 
-
-llm_path="/valleblob/v-wenxichen/models/models--Qwen--Qwen2-0.5B/snapshots/ff3a49fac17555b8dfc4db6709f480cc8f16a9fe"  # Qwen/Qwen2-0.5B
+whisper_size=small                  # tiny base small medium large-v3
+speech_encoder_path="/valleblob/v-wenxichen/models/whisper/${whisper_size}.pt"   # different whisper size
+llm_path="/valleblob/v-wenxichen/models/models--Qwen--Qwen2-0.5B/snapshots/ff3a49fac17555b8dfc4db6709f480cc8f16a9fe"  # Qwen/Qwen2-0.5B, you can choose other Qwen models (Qwen2 or Qwen2.5)
 llm_name=Qwen2-0.5b
+
+encoder_dim=768                     # 384 512 768 1024 1280
+mel_size=80                         # 80 128 ( only whisper-large-v3 supports 128 )
 llm_dim=896                         # 896 1536 3584 8192  -> 0.5B 1.5B 3B 7B
 
 # vocabulary settings
@@ -26,37 +33,41 @@ num_latency_tokens=5                # number of latency tokens (in front of the 
 do_layershift=false                 # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
 
 # dataset settings
-train_data_path="/valleblob/v-wenxichen/data/debug/1"
-val_data_path="/valleblob/v-wenxichen/data/debug/1"
+train_data_path="/valleblob/v-wenxichen/data/s2s/parquet_data_test/en"
+val_data_path="/valleblob/v-wenxichen/data/s2s/parquet_data_test/en"
 load_from_cache_file=true          # set to true if you have already generated the cache file, otherwise set to false
 
 # training settings
-batch_size_training=4
+batch_size_training=6
 use_fp16=true
 use_peft=false
 num_epochs=10
-lr=5e-4
-warmup_steps=3000
-total_steps=300000
+lr=1e-4
+task_type=asr
+warmup_steps=1000
+total_steps=100000
 
 # validation settings
 validation_interval=3000
 split_size=0.01
 
 # model settings
-tts_adapter=false
-task_type=tts
-
-# model settings
-group_decode=true
+group_decode=false
 group_decode_adapter_type=linear
 
+# log settings
+exp_name="asr-${llm_name}-gpu${num_gpus}-btz${batch_size_training}-lr${lr}-nofp16-epochs${num_epochs}-whisper_${whisper_size}-latency${num_latency_tokens}-group${code_layer}"
+if [ "$use_fp16" = true ]; then
+    exp_name="asr-${llm_name}-gpu${num_gpus}-btz${batch_size_training}-lr${lr}-fp16-epochs${num_epochs}-whisper_${whisper_size}-latency${num_latency_tokens}-group${code_layer}"
+fi
 exp_name="debug"
+wandb_entity_name=wxc12
+wandb_project_name=SLAM-Omni
 
-home_dir=/valleblob/v-wenxichen/exp/tts
+home_dir=/valleblob/v-wenxichen/exp/asr
 # output_dir=$home_dir/$(TZ='Asia/Shanghai' date +"%Y_%m_%d")/$(TZ='Asia/Shanghai' date +"%H_%M_%S")
 output_dir=$home_dir/$exp_name
-# ckpt_path=/valleblob/v-wenxichen/exp/s2s/2024_09_26/s2s_train_v0_gpu4_btz4/s2s_epoch_2_step_20982  # this line is for resuming training
+# ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v3-gpu16-btz3-lr5e-4-fp16-epochs10-whisper_small-latency5-group3/gpu16-btz3-lr5e-4-fp16-epochs10-whisper_small-latency5-group3-s2s_epoch_4_step_1179  # this line is for resuming training
 
 if [ "$exp_name" = "debug" ]; then
     use_wandb=false
@@ -70,7 +81,11 @@ hydra.run.dir=$output_dir \
 ++model_config.llm_name=$llm_name \
 ++model_config.llm_path=$llm_path \
 ++model_config.llm_dim=$llm_dim \
-++model_config.tts_adapter=$tts_adapter \
+++model_config.encoder_name=whisper \
+++model_config.encoder_projector_ds_rate=5 \
+++model_config.encoder_path=$speech_encoder_path \
+++model_config.encoder_dim=$encoder_dim \
+++model_config.encoder_projector=linear \
 ++model_config.vocab_config.code_layer=$code_layer \
 ++model_config.vocab_config.total_audio_vocabsize=$total_audio_vocabsize \
 ++model_config.vocab_config.total_vocabsize=$total_vocabsize \
@@ -81,6 +96,7 @@ hydra.run.dir=$output_dir \
 ++dataset_config.train_data_path=$train_data_path \
 ++dataset_config.val_data_path=$val_data_path \
 ++dataset_config.input_type=mel \
+++dataset_config.mel_size=$mel_size \
 ++dataset_config.seed=42 \
 ++dataset_config.manifest_format=datasets \
 ++dataset_config.split_size=$split_size \
@@ -110,8 +126,12 @@ hydra.run.dir=$output_dir \
 ++train_config.use_peft=$use_peft \
 ++metric=acc \
 ++log_config.use_wandb=$use_wandb \
+++log_config.wandb_entity_name=$wandb_entity_name \
+++log_config.wandb_project_name=$wandb_project_name \
+++log_config.wandb_exp_name=$wandb_exp_name \
+++log_config.wandb_dir=$output_dir \
 ++log_config.log_file=$output_dir/exp.log \
-++log_config.log_interval=10 \
+++log_config.log_interval=100 \
 "
 # ++ckpt_path=$ckpt_path/model.pt \
 # ↑ this line is for resuming training
@@ -121,12 +141,12 @@ if [[ $CUDA_VISIBLE_DEVICES != *","* ]]; then
     if [ "$exp_name" = "debug" ]; then
         python -m debugpy --listen 5678 --wait-for-client $code_dir/finetune_s2s.py \
             --config-path "conf" \
-            --config-name "prompt_tts.yaml" \
+            --config-name "prompt_asr.yaml" \
             $hydra_args
     else
         python $code_dir/finetune_s2s.py \
             --config-path "conf" \
-            --config-name "prompt_tts.yaml" \
+            --config-name "prompt_asr.yaml" \
             $hydra_args
     fi
 else
@@ -136,10 +156,22 @@ else
         --master_port=29503 \
         $code_dir/finetune_s2s.py \
         --config-path "conf" \
-        --config-name "prompt_tts.yaml" \
+        --config-name "prompt_asr.yaml" \
         ++train_config.enable_ddp=true \
-        ++train_config.enable_fsdp=false \7
+        ++train_config.enable_fsdp=false \
         $hydra_args
 fi
 
-# bash ./examples/s2s/scripts/pretrain/pretrain_tts_debug.sh
+# for multi-machine training, you should add the following line to the torchrun command
+# --node_rank=$node_rank \
+# --master_addr=$master_addr \
+
+# bash ./examples/s2s/scripts/pretrain/pretrain_asr_debug.sh
+
+# 1GPU + 12w steps + btz4 = 1epoch
+# 1GPU + 24w steps + btz2 = 1epoch 
+
+# 40GB max batch size = 2
+# 80GB max batch size = 4
+
+# code_path -> cd /tmp/amlt-code-download

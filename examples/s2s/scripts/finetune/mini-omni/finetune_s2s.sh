@@ -17,7 +17,7 @@ llm_path="/valleblob/v-wenxichen/models/models--Qwen--Qwen2-0.5B/snapshots/ff3a4
 
 encoder_dim=768 # 384 512 768 1024 1280
 mel_size=80     # 80 128 ( only whisper-large-v3 supports 128 )
-llm_dim=896     # 896 1536 3584 8192  -> 0.5B 1.5B 3B 7B
+llm_dim=896     # 896 1536 2048 3584  -> 0.5B 1.5B 3B 7B
 
 # dataset settings
 train_data_path="/valleblob/v-wenxichen/data/s2s/VoiceAssistant-400K"

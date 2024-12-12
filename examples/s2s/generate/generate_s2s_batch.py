@@ -10,7 +10,6 @@ from utils.codec_utils import audio_decode_cosyvoice
 import os
 import logging
 import soundfile as sf
-import torchaudio
 
 import hydra
 from omegaconf import DictConfig, ListConfig, OmegaConf
@@ -155,7 +154,7 @@ def main(kwargs: DictConfig):
 		logger.info("Decode Text Only")
 	else:
 		logger.info("Decode Text & Audio")
-	logger.info("Decode Codec Type: {}".format(code_type))
+	logger.info("Decode Code Type: {}".format(code_type))
 	logger.info("Decode Code Layer: {}".format(code_layer))
 	logger.info("Tone for Audio Generation: {}".format(tone_dir))
 

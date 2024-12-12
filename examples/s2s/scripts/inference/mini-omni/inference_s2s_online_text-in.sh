@@ -34,6 +34,7 @@ input_text=true
 
 output_text_only=false
 
+mini_omni_modeling=true
 inference_online=true
 online_output_dir=/home/v-wenxichen/exp/online_test1
 
@@ -89,6 +90,7 @@ python $code_dir/inference_s2s.py \
         ++decode_log=$decode_log \
         ++ckpt_path=$ckpt_path/model.pt \
         ++output_text_only=$output_text_only \
-        ++inference_online=$inference_online
+        ++inference_online=$inference_online \
+        ++mini_omni_modeling=$mini_omni_modeling
 
 # bash /home/v-wenxichen/SLAM-LLM/examples/s2s/scripts/inference_s2s_online_text-in.sh

@@ -158,6 +158,7 @@ class TrainConfig:
     freeze_encoder:bool = False
     train_embed_only:bool = False
     train_audio_embed_only:bool = False
+    train_embed:bool = False
     task_type:str = "s2s"
     freeze_encoder_projector:bool = False
     freeze_group_decode_adapter:bool = False
