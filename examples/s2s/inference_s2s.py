@@ -3,6 +3,8 @@ from generate.generate_s2s_online_stream_mini_omni import main as inference_onli
 from generate.generate_s2s_batch import main as batch_inference
 from generate.generate_s2s_online import main as inference_online # single-round inference
 from generate.generate_s2s_online_multi_round import main as inference_online_multi_round # multi-round inference
+from generate.generate_s2s_batch_multi_round import main as batch_inference_multi_round
+
 
 import hydra
 import logging
@@ -56,6 +58,9 @@ class RunConfig:
     mini_omni_modeling: bool = field(
         default=False, metadata={"help": "Mini Omni modeling"}
     )        
+    batch_input_jsonl: Optional[str] = field(
+        default=None, metadata={"help": "The path to batch input jsonl"}
+    )
 
 
 @hydra.main(config_name=None, version_base=None)
@@ -91,7 +96,10 @@ def main_hydra(cfg: DictConfig):
             else:
                 inference_online(cfg)
         else:
-            batch_inference(cfg)
+            if cfg.multi_round:
+                batch_inference_multi_round(cfg)
+            else:
+                batch_inference(cfg)
 
 if __name__ == "__main__":
     main_hydra()

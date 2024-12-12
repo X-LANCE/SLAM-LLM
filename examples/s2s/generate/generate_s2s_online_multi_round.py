@@ -73,7 +73,7 @@ def get_padded_input(text_input_idx, text_index_length, code_layer, _pad_a, laye
 def generate_from_wav(wav_path, model, dataset_config, decode_config, logger, device, model_config, tone_dir, audio_prompt_path=None, output_text_only=False, history="", layer_shift=layershift):
 	mel_size = dataset_config.mel_size
 	prompt = dataset_config.prompt
-	prompt_template = "<SYSTEM>: {}\n {}\n "
+	prompt_template = "<SYSTEM>: {}\n {}"
 	# prompt_template = "USER: {}\n ASSISTANT: "	# note: old version
 	vocab_config = dataset_config.vocab_config
 	special_token_a = vocab_config.answer_a
@@ -163,7 +163,7 @@ def generate_from_wav(wav_path, model, dataset_config, decode_config, logger, de
 
 def generate_from_text(text_input, model, dataset_config, decode_config, logger, device, model_config, tone_dir, audio_prompt_path=None, output_text_only=False, history="", layer_shift=layershift):
 	prompt = dataset_config.prompt
-	prompt_template = "<SYSTEM>: {}\n {}\n "
+	prompt_template = "<SYSTEM>: {}\n {} "
 	# prompt_template = "USER: {}\n ASSISTANT: "	# note: old version
 	vocab_config = dataset_config.vocab_config
 	special_token_a = vocab_config.answer_a
