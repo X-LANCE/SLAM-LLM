@@ -16,7 +16,7 @@ from transformers import T5ForConditionalGeneration
 from tqdm import tqdm
 from utils.tts_adapter_utils import setup_tts_adapter
 from utils.codec_utils import setup_codec
-from utils.trick_utils import partial_freeze_weights, train_embedding_layer_only
+from utils.trick_utils import partial_freeze_weights, train_embedding_layer_only, train_embedding_layer
 from utils.snac_utils import get_snac, generate_audio_data, simple_shift
 from utils.snac_utils import layershift as layer_shift
 from utils.projector_utils import setup_group_decode_adapter
@@ -102,6 +102,8 @@ def model_factory(train_config, model_config, **kwargs):
     if train_config.train_embed_only:
         train_embedding_layer_only(model)
 
+    if train_config.train_embed:
+        train_embedding_layer(model)
 
     print_model_size(
         model,

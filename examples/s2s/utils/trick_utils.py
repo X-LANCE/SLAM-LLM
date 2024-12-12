@@ -43,3 +43,10 @@ def train_embedding_layer_only(model):
         
     for param in model.llm.lm_head.parameters():
         param.requires_grad = True
+
+def train_embedding_layer(model):
+    if int(os.environ.get("RANK", "0")) == 0:
+        logger.info("Training embedding layer")
+
+    for param in model.llm.lm_head.parameters():
+        param.requires_grad = True

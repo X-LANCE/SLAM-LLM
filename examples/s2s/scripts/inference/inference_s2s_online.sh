@@ -11,13 +11,13 @@ code_dir=examples/s2s
 
 whisper_size=small                  # tiny base small medium large-v3
 speech_encoder_path="/valleblob/v-wenxichen/models/whisper/${whisper_size}.pt"   # replace this with your own whisper model path (different whisper size)
-llm_path="Qwen/Qwen2.5-7B"
+llm_path="Qwen/Qwen2-0.5B"          # Qwen2-0.5B Qwen2-1.5B Qwen2.5-3B Qwen2.5-7B
 # codec_decoder_path="hubertsiuzdak/snac_24khz" # replace this with your own SNAC model path
 codec_decoder_path="/valleblob/v-wenxichen/models/CosyVoice/CosyVoice-300M-SFT" # replace this with your own CosyVoice model path
 
 encoder_dim=768                      # 384 512 768 896 1024 1280 
 mel_size=80                          # 80 128 (128 for whisper-large only, 80 for others)
-llm_dim=3584                         # 896 1536 2048 3584  -> 0.5B 1.5B 3B 7B
+llm_dim=896                         # 896 1536 2048 3584  -> 0.5B 1.5B 3B 7B
 
 task_type=s2s
 
@@ -34,21 +34,14 @@ num_latency_tokens=0                # number of latency tokens (same as the numb
 do_layershift=false                 # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
 
 # load the backbone model
-ckpt_path=/home/v-wenxichen/exp/peft_debug/debug/s2s_epoch_1_step_10
+ckpt_path=/valleblob/v-wenxichen/exp/s2s/paper-ablation/s2s_train_v4-Qwen2-0.5b-gpu4-btz3-lr1e-4-fp16-epochs10-whisper_small-latency0-group3-Final-Ablation-VoiceAssistant-400K-v2-Total_update_100K/Qwen2-0.5b-gpu4-btz3-lr1e-4-fp16-epochs10-whisper_small-latency0-group3-Final-Ablation-VoiceAssistant-400K-v2-Total_update_100K-s2s_epoch_3_step_19594
 
-# load the peft module if needed
-peft_ckpt_path=/home/v-wenxichen/exp/peft_debug/debug/s2s_epoch_1_step_10
+# use peft module
+use_peft=false
 
 # model settings
 group_decode=true
 group_decode_adapter_type=linear
-
-# setup the peft module
-if [ -n "$peft_ckpt_path" ]; then
-    use_peft=true
-else
-    use_peft=false
-fi
 
 # decode config
 text_repetition_penalty=1.2
@@ -78,7 +71,7 @@ if [ "$decode_text_only" = true ] ; then
 fi
 
 # -m debugpy --listen 5678 --wait-for-client
-python -m debugpy --listen 5678 --wait-for-client $code_dir/inference_s2s.py \
+python $code_dir/inference_s2s.py \
         --config-path "conf" \
         --config-name "prompt.yaml" \
         hydra.run.dir=$ckpt_path \
