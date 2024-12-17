@@ -32,7 +32,7 @@ codec_decoder_type=CosyVoice
 num_latency_tokens=5                # number of latency tokens (same as the number in training)
 do_layershift=false                 # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
 
-ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v4-Qwen2-0.5b-gpu4-btz3-lr5e-4-nofp16-epochs10-whisper_small-latency5-group3-english-mix/s2s_epoch_2_step_53461
+ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v4-Qwen2-0.5b-gpu4-btz3-lr5e-4-nofp16-epochs10-whisper_small-latency5-group3-UltraChat_from_pre_train/Qwen2-0.5b-gpu4-btz3-lr5e-4-nofp16-epochs10-whisper_small-latency5-group3-UltraChat_from_pre_train-s2s_epoch_2_step_23152
 
 
 # model settings
@@ -57,8 +57,8 @@ speech_sample_rate=22050            # 22050 for CosyVoice, 24000 for SNAC
 inference_online=false
 
 multi_round=true
-batch_input_jsonl=/home/v-wenxichen/data/s2s/mt_bench/mt_test/debug.jsonl
-online_output_dir=/home/v-wenxichen/exp/batch
+batch_input_jsonl=/home/v-wenxichen/data/s2s/mt_bench/mt_test/test.jsonl
+online_output_dir=/home/v-wenxichen/exp/multi-round/results
 audio_prompt_path=./examples/s2s/audio_prompt/en/prompt_6.wav     # replace this with your own audio prompt path or our provided audio prompt path
 # audio_prompt_path=./examples/s2s/audio_prompt/en/prompt_6.wav        # replace this with your own audio prompt path or our provided audio prompt path
 
@@ -72,7 +72,7 @@ if [ "$decode_text_only" = true ] ; then
 fi
 
 # -m debugpy --listen 5678 --wait-for-client
-python -m debugpy --listen 5678 --wait-for-client $code_dir/inference_s2s.py \
+python $code_dir/inference_s2s.py \
         --config-path "conf" \
         --config-name "prompt.yaml" \
         hydra.run.dir=$ckpt_path \

@@ -64,7 +64,7 @@ exp_name="debug"
 home_dir=/home/v-wenxichen/exp/peft_debug
 # output_dir=$home_dir/$(TZ='Asia/Shanghai' date +"%Y_%m_%d")/$(TZ='Asia/Shanghai' date +"%H_%M_%S")
 output_dir=$home_dir/$exp_name
-# ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v3-gpu16-btz3-lr5e-4-fp16-epochs10-whisper_small-latency5-group3/gpu16-btz3-lr5e-4-fp16-epochs10-whisper_small-latency5-group3-s2s_epoch_4_step_1179  # this line is for resuming training
+ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v3-gpu16-btz3-lr5e-4-fp16-epochs10-whisper_small-latency5-group3/gpu16-btz3-lr5e-4-fp16-epochs10-whisper_small-latency5-group3-s2s_epoch_4_step_1179  # this line is for resuming training
 
 if [ "$exp_name" = "debug" ]; then
     use_wandb=false
@@ -129,6 +129,7 @@ hydra.run.dir=$output_dir \
 ++log_config.wandb_dir=$output_dir \
 ++log_config.log_file=$output_dir/exp.log \
 ++log_config.log_interval=10 \
+++ckpt_path=$ckpt_path/model.pt \
 "
 # ++ckpt_path=$ckpt_path/model.pt \
 # ↑ this line is for resuming training

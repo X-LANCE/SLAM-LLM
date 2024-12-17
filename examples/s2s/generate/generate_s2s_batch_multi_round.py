@@ -31,9 +31,7 @@ def main(kwargs: DictConfig):
 	# Set log
 	if not os.path.exists(os.path.dirname(log_config.log_file)):
 		os.makedirs(os.path.dirname(log_config.log_file), exist_ok=True)
-		  
-	if not os.path.exists(os.path.dirname(log_config.log_file)):
-		os.makedirs(os.path.dirname(log_config.log_file), exist_ok=True)
+
 	logging.basicConfig(
 		level=logging.INFO, 
 		format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
@@ -62,7 +60,7 @@ def main(kwargs: DictConfig):
 	torch.cuda.manual_seed(train_config.seed)
 	torch.manual_seed(train_config.seed)
 	random.seed(train_config.seed)
-	
+
 	model_factory = get_custom_model_factory(model_config, logger)
 	model, tokenizer = model_factory(train_config, model_config, **kwargs)
 	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -88,14 +86,10 @@ def main(kwargs: DictConfig):
 		tone_dir = os.path.basename(audio_prompt_path).split('.')[0]
 	tone_audio_dir = os.path.join(output_dir, tone_dir)
 
-	if not os.path.exists(tone_audio_dir) and not (output_text_only or decode_config.decode_text_only):
+	if not os.path.exists(tone_audio_dir) and not (decode_config.decode_text_only or output_text_only):
 		os.makedirs(tone_audio_dir)
 
-	layer_shift = None
-	if do_layershift:
-		layer_shift = layershift
-	else:
-		layer_shift = simple_shift
+	layer_shift = layershift if do_layershift else simple_shift
 
 	task_type = decode_config.task_type
 	logger.info("decode_config: {}".format(decode_config))
@@ -119,55 +113,66 @@ def main(kwargs: DictConfig):
 	logger.info("Decode Code Layer: {}".format(code_layer))
 	logger.info("Tone for Audio Generation: {}".format(tone_dir))
 
-	with open(jsonl_path, 'r', encoding='utf-8') as f:
+	output_jsonl_path = os.path.join(output_dir, "output_with_text.jsonl")
+
+	with open(jsonl_path, 'r', encoding='utf-8') as f, open(output_jsonl_path, 'w', encoding='utf-8') as out_f:
 		lines = f.readlines()
 
-	for line in tqdm(lines, desc="Batch Inference"):
-		data = json.loads(line.strip())
-		conv_id = data["id"]
-		num_round = data["num_round"]
-		dialogue = data["dialogue"]
+		for line in tqdm(lines, desc="Batch Inference"):
+			data = json.loads(line.strip())
+			conv_id = data["id"]
+			num_round = data["num_round"]
+			dialogue = data["dialogue"]
 
-		conversation_dir = os.path.join(tone_audio_dir, f"{conv_id}")
-		os.makedirs(conversation_dir, exist_ok=True)
+			conversation_dir = os.path.join(tone_audio_dir, f"{conv_id}")
+			os.makedirs(conversation_dir, exist_ok=True)
 
-		history = ""
-		for round_item in dialogue:
-			source_wav = round_item.get("source_wav", None)
-			source_text = round_item.get("source_text", "")
-			
-			if source_wav and os.path.exists(source_wav) and not decode_config.input_text:
-				output_wav, output_text, history_assistant, transcribed_text = generate_from_wav(
-					source_wav, model, dataset_config, decode_config, logger, device, model_config, 
-					tone_dir, audio_prompt_path, output_text_only, history, layer_shift
-				)
+			history = ""
+			for round_item in dialogue:
+				source_wav = round_item.get("source_wav", None)
+				source_text = round_item.get("source_text", "")
 
-				history_user = "USER: " + transcribed_text.strip() + " "
-				history = history + history_user + history_assistant.strip() + " "
+				if source_wav and os.path.exists(source_wav) and not decode_config.input_text:
+					output_wav, output_text, history_assistant, transcribed_text = generate_from_wav(
+						source_wav, model, dataset_config, decode_config, logger, device, model_config, 
+						tone_dir, audio_prompt_path, output_text_only, history, layer_shift
+					)
 
-				logger.info(f"[ID {conv_id}, Round {round_item['round']}] Transcribed Text: {transcribed_text}")
+					history_user = "USER: " + transcribed_text.strip() + " "
+					history = history + history_user + history_assistant.strip() + " "
 
-				# 保存生成的音频
-				if output_wav is not None and not (decode_config.decode_text_only or output_text_only):
-					round_idx = round_item["round"]
-					output_wav_path = os.path.join(conversation_dir, f"chat_{round_idx}.wav")
-					sf.write(output_wav_path, output_wav.squeeze().cpu().numpy(), speech_sample_rate)
-					logger.info(f"[ID {conv_id}, Round {round_idx}] Generated Audio saved at: {output_wav_path}")
-				
-				logger.info(f"[ID {conv_id}, Round {round_item['round']}] Generated Text: {output_text}")
+					logger.info(f"[ID {conv_id}, Round {round_item['round']}] Transcribed Text: {transcribed_text}")
+					
+					if output_wav is not None and not (decode_config.decode_text_only or output_text_only):
+						round_idx = round_item["round"]
+						output_wav_path = os.path.join(conversation_dir, f"chat_{round_idx}.wav")
+						sf.write(output_wav_path, output_wav.squeeze().cpu().numpy(), speech_sample_rate)
+						logger.info(f"[ID {conv_id}, Round {round_idx}] Generated Audio saved at: {output_wav_path}")
 
-			else:
-				audio_hat, output_text, history = generate_from_text(
-					source_text, model, dataset_config, decode_config, logger, device, model_config,
-					tone_dir, audio_prompt_path, output_text_only, history, layer_shift
-				)
-				
-				if audio_hat is not None and not (decode_config.decode_text_only or output_text_only):
-					round_idx = round_item["round"]
-					output_wav_path = os.path.join(conversation_dir, f"chat_{round_idx}.wav")
-					sf.write(audio_hat.squeeze().cpu().numpy(), speech_sample_rate)
-					logger.info(f"[ID {conv_id}, Round {round_idx}] Generated Audio saved at: {output_wav_path}")
+					logger.info(f"[ID {conv_id}, Round {round_item['round']}] Generated Text: {output_text}")
+					round_item["output_text"] = output_text
 
-				logger.info(f"[ID {conv_id}, Round {round_item['round']}] Generated Text: {output_text}")
+				else:
+					audio_hat, output_text, history = generate_from_text(
+						source_text, model, dataset_config, decode_config, logger, device, model_config,
+						tone_dir, audio_prompt_path, output_text_only, history, layer_shift
+					)
+
+					if audio_hat is not None and not (decode_config.decode_text_only or output_text_only):
+						round_idx = round_item["round"]
+						output_wav_path = os.path.join(conversation_dir, f"chat_{round_idx}.wav")
+						sf.write(output_wav_path, audio_hat.squeeze().cpu().numpy(), speech_sample_rate)
+						logger.info(f"[ID {conv_id}, Round {round_idx}] Generated Audio saved at: {output_wav_path}")
+
+					logger.info(f"[ID {conv_id}, Round {round_item['round']}] Generated Text: {output_text}")
+					round_item["output_text"] = output_text
+
+			out_f.write(json.dumps({
+				"id": conv_id,
+				"num_round": num_round,
+				"dialogue": dialogue
+			}, ensure_ascii=False) + "\n")
 
 	logger.info("============== Batch Inference Finished ==============")
+	logger.info(f"Updated dialogues with output_text have been saved to: {output_jsonl_path}")
+

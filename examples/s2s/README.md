@@ -1,4 +1,5 @@
 # SLAM-Omni
+(*Reproduction of the paper SLAM-Omni: Timbre-Controllable Voice Interaction System with Single-Stage Training.*)
 
 ## Environment Setup
 Set up the environment using the following command after setting up the environment for SLAM-LLM:
@@ -18,10 +19,10 @@ docker run -it --gpus all --name slam-omni worstchan/slam-omni:v0 /bin/bash
 Our project supports two data formats: **Parquet** and **JSONL**. The open-source speech-to-speech dataset we provided is stored in **Parquet** format on the Hugging Face Hub.  You can find examples of how to use these datasets in [this notebook](./demo/demo_data/demo.ipynb).
 
 ### Parquet
-You can directly download the [VoiceAssistant-400K](https://huggingface.co/datasets/gpt-omni/VoiceAssistant-400K) dataset from the Hugging Face Hub using the following commands:
+You can directly download the [VoiceAssistant-400K](https://huggingface.co/datasets/worstchan/VoiceAssistant-400K-SLAM-Omni) dataset from the Hugging Face Hub using the following commands:
 ```python
 from datasets import load_dataset
-ds = load_dataset("gpt-omni/VoiceAssistant-400K")
+ds = load_dataset("worstchan/VoiceAssistant-400K-SLAM-Omni")
 ```
 
 ### JSONL
@@ -29,6 +30,9 @@ We also support data in JSONL format, which offers a more concise structure. Bel
 ```jsonl
 {"key": "1", "source_wav": "/xxx/1.wav", "source_text": "Can you recommend some Chinese food for me?", "target_wav": "/xxx/1.wav", "target_text": "Sure! I recommend trying dumplings, Peking duck, and mapo tofu for a mix of flavors and textures in Chinese cuisine. These dishes offer a good balance of savory, spicy, and crispy elements."}
 ```
+
+## Checkpoints
+We reproduced the single-stage fine-tuning results of SLAM-Omni on the VoiceAssistant-400K dataset with a group size of \( G = 3 \). You can download the [checkpoint](url) from Google Drive.
 
 ## Training
 
@@ -48,7 +52,7 @@ bash ./examples/s2s/scripts/finetune/mini-omni/finetune_s2s.sh
 ```
 
 ## Inference
-We provide online and batch inference scripts. For more tips and details, please refer to [./examples/s2s/scripts/inference/README.md](./scripts/inference/README.md).
+We provide online and batch inference scripts. You can use the trained model or the [checkpoint](url) we provide for inference. For more tips and details, please refer to [./examples/s2s/scripts/inference/README.md](./scripts/inference/README.md).
 
 
 ### Online Inference

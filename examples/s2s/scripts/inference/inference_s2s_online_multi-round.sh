@@ -33,7 +33,7 @@ num_latency_tokens=5                # number of latency tokens (same as the numb
 do_layershift=false                 # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
 
 # load the backbone model
-ckpt_path=/valleblob/v-wenxichen/exp/s2s/paper-ablation/s2s_train_v4-Qwen2-0.5b-gpu4-btz3-lr1e-4-fp16-epochs10-whisper_small-latency0-group3-Final-Ablation-VoiceAssistant-400K-v2-Total_update_100K/Qwen2-0.5b-gpu4-btz3-lr1e-4-fp16-epochs10-whisper_small-latency0-group3-Final-Ablation-VoiceAssistant-400K-v2-Total_update_100K-s2s_epoch_3_step_19594
+ckpt_path=/valleblob/v-wenxichen/exp/s2s/zh-single/s2s_train_v4-Qwen2-0.5b-gpu32-btz2-lr5e-4-nofp16-epochs10-whisper_small-latency5-group3-belle_3.5M-512-v1-from_scratch/Qwen2-0.5b-gpu32-btz2-lr5e-4-nofp16-epochs10-whisper_small-latency5-group3-belle_3.5M-512-v1-from_scratch-s2s_epoch_3_step_7676
 
 # load the peft module if needed
 # peft_ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v4-Qwen2-0.5b-gpu4-btz4-lr1e-4-fp16-epochs10-whisper_small-latency5-group3-UltraChat-from_pretrain-LoRA/s2s_epoch_5_step_3456
@@ -59,7 +59,7 @@ output_text_only=false
 speech_sample_rate=22050            # 22050 for CosyVoice, 24000 for SNAC
 inference_online=true
 multi_round=true
-online_output_dir=/home/v-wenxichen/exp/cosyvoice/multi-round-en-mix/test
+online_output_dir=/home/v-wenxichen/exp/cosyvoice/multi-round-zh-mix/test
 audio_prompt_path=./examples/s2s/audio_prompt/zh/prompt_6.wav      # replace this with your own audio prompt path or our provided audio prompt path
 # audio_prompt_path=./examples/s2s/audio_prompt/en/prompt_6.wav        # replace this with your own audio prompt path or our provided audio prompt path
 
