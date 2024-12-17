@@ -32,7 +32,7 @@ We also support data in JSONL format, which offers a more concise structure. Bel
 ```
 
 ## Checkpoints
-We reproduced the single-stage fine-tuning results of SLAM-Omni on the VoiceAssistant-400K dataset with a group size of \( G = 3 \). You can download the [checkpoint](url) from Google Drive.
+We reproduced the single-stage fine-tuning results of SLAM-Omni on the VoiceAssistant-400K dataset with a group size of $ G = 3 $. You can download the [checkpoint](url) from Google Drive.
 
 ## Training
 
