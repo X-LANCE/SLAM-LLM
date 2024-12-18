@@ -199,7 +199,7 @@ class DataConfig:
     upsampling_factor: int = 1
     upsample_method: str = "repeat"
     code_type: str = "SNAC" 
-    num_latency_tokens: int = 5
+    num_latency_tokens: int = 0
     do_layershift: bool = True
 
 @dataclass
