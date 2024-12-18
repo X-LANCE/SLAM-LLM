@@ -1,10 +1,10 @@
 #!/bin/bash
-# export CUDA_VISIBLE_DEVICES=0
+export CUDA_VISIBLE_DEVICES=0
 # export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
-export CUDA_VISIBLE_DEVICES=0,1,2,3
+# export CUDA_VISIBLE_DEVICES=0,1,2,3
 export TOKENIZERS_PARALLELISM=false
 export OMP_NUM_THREADS=1
-export LD_LIBRARY_PATH=/home/v-wenxichen/anaconda3/envs/slam/lib:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=/home/v-wenxichen/miniconda3/envs/slam/lib:$LD_LIBRARY_PATH
 
 code_dir=examples/s2s
 num_gpus_per_node=$(( $(echo ${CUDA_VISIBLE_DEVICES} | tr -cd ',' | wc -c) + 1 ))
@@ -24,13 +24,13 @@ total_vocabsize=$((total_audio_vocabsize + llm_vocabsize))
 
 # code settings
 code_type=CosyVoice                 # CosyVoice or SNAC
-num_latency_tokens=5                # number of latency tokens (in front of the generated audio tokens)
+num_latency_tokens=0                # number of delay tokens (in front of the generated audio tokens)
 do_layershift=false                 # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
 
 # dataset settings
-train_data_path="/valleblob/v-wenxichen/data/s2s/VoiceAssistant-400K-v2-arrow"
-val_data_path="/valleblob/v-wenxichen/data/s2s/VoiceAssistant-400K-v2-arrow"
-load_from_cache_file=false          # set to true if you have already generated the cache file, otherwise set to false
+train_data_path=worstchan/VoiceAssistant-400K-SLAM-Omni
+val_data_path=worstchan/VoiceAssistant-400K-SLAM-Omni
+load_from_cache_file=true          # set to true if you have already generated the cache file, otherwise set to false
 
 # training settings
 batch_size_training=6
@@ -58,12 +58,11 @@ exp_name="tts_train-${llm_name}-gpu${num_gpus}-btz${batch_size_training}-lr${lr}
 if [ "$use_fp16" = true ]; then
     exp_name="tts_train-${llm_name}-gpu${num_gpus}-btz${batch_size_training}-lr${lr}-fp16-epochs${num_epochs}-latency${num_latency_tokens}-group${code_layer}-maxsteps${total_steps}"
 fi
-# exp_name="debug"
+# exp_name=debug
 wandb_entity_name=test
 wandb_project_name=test
 
-home_dir=/valleblob/v-wenxichen/exp/tts
-# output_dir=$home_dir/$(TZ='Asia/Shanghai' date +"%Y_%m_%d")/$(TZ='Asia/Shanghai' date +"%H_%M_%S")
+home_dir=/home/v-wenxichen/exp/debug
 output_dir=$home_dir/$exp_name
 # ckpt_path=/valleblob/v-wenxichen/exp/s2s/2024_09_26/s2s_train_v0_gpu4_btz4/s2s_epoch_2_step_20982  # this line is for resuming training
 
@@ -154,6 +153,10 @@ else
         ++train_config.enable_fsdp=false \
         $hydra_args
 fi
+
+# for multi-machine training, you should add the following line to the torchrun command
+# --node_rank=$node_rank \
+# --master_addr=$master_addr \
 
 # bash ./examples/s2s/scripts/pretrain/pretrain_tts.sh
 

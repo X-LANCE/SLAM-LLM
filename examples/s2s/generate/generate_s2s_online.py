@@ -367,7 +367,8 @@ def main(kwargs: DictConfig):
 				logger.info(f"Generated Text: {output_text}")
 
 				if output_wav is None:
-					logger.warning(f"Generated Audio is None. Please try again.")
+					if not output_text_only or not decode_config.decode_text_only:
+						logger.warning(f"Generated Audio is None. Please try again.")
 					continue
 				
 				if tone_audio_dir is not None:
