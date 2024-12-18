@@ -4,7 +4,7 @@ This directory contains scripts for pre-training the S2S model using either TTS 
 
 ### Data Preparation
 Ensure your data is in the required format before starting pre-training:
-- **Parquet**: Load datasets directly from the Hugging Face Hub (e.g., VoiceAssistant-400K).
+- **Parquet**: Load datasets directly from the Hugging Face Hub (e.g., [VoiceAssistant-400K](https://huggingface.co/datasets/worstchan/VoiceAssistant-400K-SLAM-Omni) ).
 - **JSONL**: Refer to the main README for examples of the required data structure.
 
 ### Tasks
