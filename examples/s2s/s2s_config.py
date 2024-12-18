@@ -229,7 +229,7 @@ class DecodeConfig:
     upsampling_factor: int = 1
     input_text: bool = False
     do_layershift: bool = True
-    num_latency_tokens: int = 5
+    num_latency_tokens: int = 0
 
 @dataclass
 class FSDPConfig:
