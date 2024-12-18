@@ -62,7 +62,7 @@ speech_sample_rate=22050            # 22050 for CosyVoice, 24000 for SNAC
 inference_online=true
 online_output_dir=/home/v-wenxichen/exp/demo/single-round_en/0
 # audio_prompt_path=./examples/s2s/audio_prompt/zh/prompt_1.wav      # replace this with your own audio prompt path or our provided audio prompt path
-audio_prompt_path=/home/v-wenxichen/SLAM-LLM/examples/s2s/audio_prompt/en/prompt_3.wav      # replace this with your own audio prompt path or our provided audio prompt path
+audio_prompt_path=/home/v-wenxichen/data/prompt/girl.wav      # replace this with your own audio prompt path or our provided audio prompt path
 
 decode_log=$ckpt_path/s2s_decode_${split}_trp${text_repetition_penalty}_arp${audio_repetition_penalty}_seed${dataset_sample_seed}_greedy
 if [ "$do_sample" = true ] ; then
