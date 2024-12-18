@@ -32,7 +32,7 @@ We also support JSONL format for its concise structure. Below is an example:
 
 ## Checkpoints
 We reproduced the single-stage fine-tuning results of SLAM-Omni with a group size of **3**. The following checkpoints are available for download:
-- [SLAM-Omni (Single-Round Dialogue)](url)
+- [SLAM-Omni (Single-Round Dialogue)](https://drive.google.com/drive/folders/1ZmM1h5ZTvS-piuN-msmctmZdi51GWLAu?usp=sharing)
 - [SLAM-Omni (Multi-Round Dialogue)](url)
 
 The single-round dialogue model is trained on the VoiceAssistant-400K dataset, while the multi-round dialogue model is trained on a combination of VoiceAssistant-400K and UltraChat datasets.
