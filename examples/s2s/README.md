@@ -40,7 +40,7 @@ The single-round dialogue model is trained on the VoiceAssistant-400K dataset, w
 
 ## Training
 
-You can pre-train the S2S model using TTS or ASR tasks with our provided scripts, though we recommend proceeding directly to fine-tuning. Alternatively, you may directly train a TTS or ASR model under the SLAM-Omni framework. For detailed instructions, refer to the [pre-training README](./scripts/pretrain).
+You can pre-train the S2S model using TTS or ASR tasks with our provided scripts, though we recommend proceeding directly to fine-tuning. Alternatively, you may directly train a TTS or ASR model under the SLAM-Omni framework. For detailed instructions, refer to the [pre-training README](./scripts/pretrain/README.md).
 
 ### Fine-tuning
 We provide three fine-tuning options, supporting both **SLAM-Omni** and **Mini-Omni** modeling. Use the commands below:

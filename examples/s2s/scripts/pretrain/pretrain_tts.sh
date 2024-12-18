@@ -5,7 +5,6 @@ export CUDA_VISIBLE_DEVICES=0,1,2,3
 export TOKENIZERS_PARALLELISM=false
 export OMP_NUM_THREADS=1
 export LD_LIBRARY_PATH=/home/v-wenxichen/anaconda3/envs/slam/lib:$LD_LIBRARY_PATH
-export WANDB_API_KEY=406faa59cf62a3646fa3479a7e133c4cf5a77100       # please replace with your own wandb key thxxxx, unless you want to share your experiment results with me :)
 
 code_dir=examples/s2s
 num_gpus_per_node=$(( $(echo ${CUDA_VISIBLE_DEVICES} | tr -cd ',' | wc -c) + 1 ))
@@ -60,8 +59,8 @@ if [ "$use_fp16" = true ]; then
     exp_name="tts_train-${llm_name}-gpu${num_gpus}-btz${batch_size_training}-lr${lr}-fp16-epochs${num_epochs}-latency${num_latency_tokens}-group${code_layer}-maxsteps${total_steps}"
 fi
 # exp_name="debug"
-wandb_entity_name=wxc12
-wandb_project_name=SLAM-Omni
+wandb_entity_name=test
+wandb_project_name=test
 
 home_dir=/valleblob/v-wenxichen/exp/tts
 # output_dir=$home_dir/$(TZ='Asia/Shanghai' date +"%Y_%m_%d")/$(TZ='Asia/Shanghai' date +"%H_%M_%S")

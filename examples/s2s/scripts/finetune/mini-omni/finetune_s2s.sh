@@ -55,6 +55,8 @@ else
     use_wandb=true
 fi
 wandb_exp_name=$exp_name
+wandb_entity_name=test
+wandb_project_name=test
 
 hydra_args="
 hydra.run.dir=$output_dir \
@@ -96,8 +98,8 @@ hydra.run.dir=$output_dir \
 ++train_config.task_type=$task_type \
 ++metric=acc \
 ++log_config.use_wandb=$use_wandb \
-++log_config.wandb_entity_name=wxc12 \
-++log_config.wandb_project_name=SLAM-Omni \
+++log_config.wandb_entity_name=$wandb_entity_name \
+++log_config.wandb_project_name=$wandb_project_name \
 ++log_config.wandb_exp_name=$wandb_exp_name \
 ++log_config.wandb_dir=$output_dir \
 ++log_config.log_file=$output_dir/exp.log \
@@ -136,12 +138,4 @@ fi
 # --node_rank=$node_rank \
 # --master_addr=$master_addr \
 
-# bash ./examples/s2s/scripts/finetune/finetune_s2s.sh
-
-# 1GPU + 12w steps + btz4 = 1epoch
-# 1GPU + 24w steps + btz2 = 1epoch 
-
-# 40GB max batch size = 2
-# 80GB max batch size = 4
-
-# code_path -> cd /tmp/amlt-code-download
+# bash examples/s2s/scripts/finetune/mini-omni/finetune_s2s.sh

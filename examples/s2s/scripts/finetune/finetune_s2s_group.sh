@@ -1,11 +1,10 @@
 #!/bin/bash
-# export CUDA_VISIBLE_DEVICES=0
-# export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
+export CUDA_VISIBLE_DEVICES=0
+# export OMP_NUM_THREADS=1
 export CUDA_VISIBLE_DEVICES=0,1,2,3
+# export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 export TOKENIZERS_PARALLELISM=false
-export OMP_NUM_THREADS=1
-export LD_LIBRARY_PATH=/home/v-wenxichen/anaconda3/envs/slam/lib:$LD_LIBRARY_PATH
-export WANDB_API_KEY=406faa59cf62a3646fa3479a7e133c4cf5a77100       # please replace with your own wandb key thxxxx, unless you want to share your experiment results with me :)
+export LD_LIBRARY_PATH=/home/v-wenxichen/miniconda3/envs/slam/lib:$LD_LIBRARY_PATH
 
 code_dir=examples/s2s
 num_gpus_per_node=$(( $(echo ${CUDA_VISIBLE_DEVICES} | tr -cd ',' | wc -c) + 1 ))
@@ -29,13 +28,13 @@ total_vocabsize=$((total_audio_vocabsize + llm_vocabsize))
 
 # code settings
 code_type=CosyVoice                 # CosyVoice or SNAC
-num_latency_tokens=0                # number of latency tokens (in front of the generated audio tokens)
+num_latency_tokens=0                # number of delay tokens (in front of the generated audio tokens)
 do_layershift=false                 # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
 
 # dataset settings
-train_data_path="/valleblob/v-wenxichen/data/s2s/VoiceAssistant-400K-v2-arrow"
-val_data_path="/valleblob/v-wenxichen/data/s2s/VoiceAssistant-400K-v2-arrow"
-load_from_cache_file=false          # set to true if you have already generated the cache file, otherwise set to false
+train_data_path=worstchan/VoiceAssistant-400K-SLAM-Omni
+val_data_path=worstchan/VoiceAssistant-400K-SLAM-Omni
+load_from_cache_file=true          # set to true if you have already generated the cache file, otherwise set to false
 
 # training settings
 batch_size_training=6
@@ -56,16 +55,15 @@ group_decode=true
 group_decode_adapter_type=linear
 
 # log settings
-exp_name="s2s_train_v4-${llm_name}-gpu${num_gpus}-btz${batch_size_training}-lr${lr}-nofp16-epochs${num_epochs}-whisper_${whisper_size}-latency${num_latency_tokens}-group${code_layer}-Final-Ablation-VoiceAssistant-400K-v2-Total_update_100K"
+exp_name="s2s_train_v4-${llm_name}-gpu${num_gpus}-btz${batch_size_training}-lr${lr}-nofp16-epochs${num_epochs}-whisper_${whisper_size}-latency${num_latency_tokens}-group${code_layer}"
 if [ "$use_fp16" = true ]; then
-    exp_name="s2s_train_v4-${llm_name}-gpu${num_gpus}-btz${batch_size_training}-lr${lr}-fp16-epochs${num_epochs}-whisper_${whisper_size}-latency${num_latency_tokens}-group${code_layer}-Final-Ablation-VoiceAssistant-400K-v2-Total_update_100K"
+    exp_name="s2s_train_v4-${llm_name}-gpu${num_gpus}-btz${batch_size_training}-lr${lr}-fp16-epochs${num_epochs}-whisper_${whisper_size}-latency${num_latency_tokens}-group${code_layer}"
 fi
 # exp_name="debug"
-wandb_entity_name=wxc12
-wandb_project_name=SLAM-Omni
+wandb_entity_name=test
+wandb_project_name=test
 
-home_dir=/valleblob/v-wenxichen/exp/s2s/paper-ablation
-# output_dir=$home_dir/$(TZ='Asia/Shanghai' date +"%Y_%m_%d")/$(TZ='Asia/Shanghai' date +"%H_%M_%S")
+home_dir=/home/v-wenxichen/exp/debug
 output_dir=$home_dir/$exp_name
 # ckpt_path=/valleblob/v-wenxichen/exp/asr/asr-Qwen2-0.5b-gpu4-btz6-lr1e-4-fp16-epochs10-whisper_small-latency5-group3/s2s_epoch_5_step_3596  # this line is for resuming training
 
@@ -167,11 +165,3 @@ fi
 # --master_addr=$master_addr \
 
 # bash examples/s2s/scripts/finetune/finetune_s2s_group.sh
-
-# 1GPU + 12w steps + btz4 = 1epoch
-# 1GPU + 24w steps + btz2 = 1epoch 
-
-# 40GB max batch size = 2
-# 80GB max batch size = 4
-
-# code_path -> cd /tmp/amlt-code-download
