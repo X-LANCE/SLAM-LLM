@@ -1,2 +1,5 @@
 soundfile
 openai-whisper==20231117
+transformers==4.43.4
+librosa
+numpy==1.26.4
