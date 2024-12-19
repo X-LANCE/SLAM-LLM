@@ -17,11 +17,23 @@ docker run -it --gpus all --name slam-omni worstchan/slam-omni:v0 /bin/bash
 
 Our project supports two data formats: **Parquet** and **JSONL**. The open-source speech-to-speech dataset we provide is stored in **Parquet** format on the Hugging Face Hub.  Examples of dataset usage are available in [this notebook](./demo/demo_data/demo.ipynb).
 
-### Parquet
-Download the [VoiceAssistant-400K](https://huggingface.co/datasets/worstchan/VoiceAssistant-400K-SLAM-Omni)  dataset from the Hugging Face Hub:
+### Datasets
+We provide two cleaned and re-synthesized datasets tailored for SLAM-Omni training:
+- [VoiceAssistant-400K](https://huggingface.co/datasets/worstchan/VoiceAssistant-400K-SLAM-Omni): A single-round English dialogue dataset.
+- [UltraChat](https://huggingface.co/datasets/worstchan/UltraChat-300K-SLAM-Omni): A multi-round English dialogue dataset.
+
+Both datasets are available on the Hugging Face Hub.
+
+#### VoiceAssistant-400K
 ```python
 from datasets import load_dataset
 ds = load_dataset("worstchan/VoiceAssistant-400K-SLAM-Omni")
+```
+
+#### UltraChat
+```python
+from datasets import load_dataset
+ds = load_dataset("worstchan/UltraChat-300K-SLAM-Omni")
 ```
 
 ### JSONL
@@ -33,9 +45,9 @@ We also support JSONL format for its concise structure. Below is an example:
 ## Checkpoints
 We reproduced the single-stage fine-tuning results of SLAM-Omni with a group size of **3**. The following checkpoints are available for download:
 - [SLAM-Omni (Single-Round Dialogue)](https://drive.google.com/drive/folders/1ZmM1h5ZTvS-piuN-msmctmZdi51GWLAu?usp=sharing)
-- [SLAM-Omni (Multi-Round Dialogue, to be released)](url)
+- [SLAM-Omni (Multi-Round Dialogue)](https://drive.google.com/drive/folders/1xBNrqR2LWC0uEjezjx4aUgdsbstisboS?usp=sharing)
 
-The single-round dialogue model is trained on the VoiceAssistant-400K dataset, while the multi-round dialogue model is trained on a combination of VoiceAssistant-400K and UltraChat (not yet released) datasets.
+The single-round dialogue model is trained on the VoiceAssistant-400K dataset, while the multi-round dialogue model is trained on a combination of VoiceAssistant-400K and UltraChat-300K datasets.
 
 
 ## Training

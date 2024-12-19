@@ -29,10 +29,10 @@ total_vocabsize=$((total_audio_vocabsize + llm_vocabsize))
 # code settings
 code_type=CosyVoice                 # CosyVoice or SNAC
 codec_decoder_type=CosyVoice
-num_latency_tokens=5                # number of latency tokens (same as the number in training)
+num_latency_tokens=0                # number of latency tokens (same as the number in training)
 do_layershift=false                 # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
 
-ckpt_path=/valleblob/v-wenxichen/exp/s2s/s2s_train_v4-Qwen2-0.5b-gpu4-btz3-lr5e-4-nofp16-epochs10-whisper_small-latency5-group3-UltraChat_from_pre_train/Qwen2-0.5b-gpu4-btz3-lr5e-4-nofp16-epochs10-whisper_small-latency5-group3-UltraChat_from_pre_train-s2s_epoch_2_step_23152
+ckpt_path=/valleblob/v-wenxichen/exp/s2s/en-mix/s2s_train_v4-Qwen2-0.5b-gpu4-btz3-lr1e-4-fp16-epochs10-whisper_small-latency0-group3-multiround-from_pretrained/s2s_epoch_2_step_23152
 
 
 # model settings

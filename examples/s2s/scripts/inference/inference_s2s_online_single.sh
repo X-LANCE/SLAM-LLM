@@ -29,7 +29,7 @@ total_vocabsize=$((total_audio_vocabsize + llm_vocabsize))
 # code settings
 code_type=CosyVoice                 # CosyVoice or SNAC
 codec_decoder_type=CosyVoice
-num_latency_tokens=5                # number of latency tokens (same as the number in training)
+num_latency_tokens=0                # number of latency tokens (same as the number in training)
 do_layershift=false                 # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
 
 ckpt_path=/valleblob/v-wenxichen/exp/s2s/paper-ablation/s2s_train_v4-Qwen2-0.5b-gpu4-btz2-lr1e-4-fp16-epochs10-whisper_small-latency5-group1-Final-Ablation-VoiceAssistant-400K-v2-Total_update_100K/Qwen2-0.5b-gpu4-btz2-lr1e-4-fp16-epochs10-whisper_small-latency5-group1-Final-Ablation-VoiceAssistant-400K-v2-Total_update_100K-s2s_epoch_2_step_41695
