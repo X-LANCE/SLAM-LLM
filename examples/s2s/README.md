@@ -15,25 +15,25 @@ docker run -it --gpus all --name slam-omni worstchan/slam-omni:v0 /bin/bash
 
 ## Data Preparation
 
-Our project supports two data formats: **Parquet** and **JSONL**. The open-source speech-to-speech dataset we provide is stored in **Parquet** format on the Hugging Face Hub.  Examples of dataset usage are available in [this notebook](./demo/demo_data/demo.ipynb).
+Our project supports two data formats: **Parquet** and **JSONL**. The open-source datasets are available on the Hugging Face Hub in **Parquet** format. Examples usage is provided in [this notebook](./demo/demo_data/demo.ipynb).
 
-### Datasets
-We provide two cleaned and re-synthesized datasets tailored for SLAM-Omni training:
-- [VoiceAssistant-400K](https://huggingface.co/datasets/worstchan/VoiceAssistant-400K-SLAM-Omni): A single-round English dialogue dataset.
-- [UltraChat](https://huggingface.co/datasets/worstchan/UltraChat-300K-SLAM-Omni): A multi-round English dialogue dataset.
+### Supported Datasets
+We provide three re-synthesized datasets for SLAM-Omni training: 
+- [VoiceAssistant-400K](https://huggingface.co/datasets/worstchan/VoiceAssistant-400K-SLAM-Omni): Single-round English dialogue dataset. 
+- [UltraChat-300K](https://huggingface.co/datasets/worstchan/UltraChat-300K-SLAM-Omni): Multi-round English dialogue dataset. 
+- [Belle_1.4M](https://huggingface.co/datasets/worstchan/Belle_1.4M-SLAM-Omni): Multi-round Chinese dialogue dataset.
 
-Both datasets are available on the Hugging Face Hub.
-
-#### VoiceAssistant-400K
+#### Usage
+You can load any of these datasets using the following code:
 ```python
 from datasets import load_dataset
-ds = load_dataset("worstchan/VoiceAssistant-400K-SLAM-Omni")
-```
 
-#### UltraChat
-```python
-from datasets import load_dataset
-ds = load_dataset("worstchan/UltraChat-300K-SLAM-Omni")
+# Replace "DATASET_NAME" with one of the following:
+# - "worstchan/VoiceAssistant-400K-SLAM-Omni"
+# - "worstchan/UltraChat-300K-SLAM-Omni"
+# - "worstchan/Belle_1.4M-SLAM-Omni"
+
+ds = load_dataset("DATASET_NAME")
 ```
 
 ### JSONL
@@ -44,10 +44,8 @@ We also support JSONL format for its concise structure. Below is an example:
 
 ## Checkpoints
 We reproduced the single-stage fine-tuning results of SLAM-Omni with a group size of **3**. The following checkpoints are available for download:
-- [SLAM-Omni (Single-Round Dialogue)](https://drive.google.com/drive/folders/1ZmM1h5ZTvS-piuN-msmctmZdi51GWLAu?usp=sharing)
-- [SLAM-Omni (Multi-Round Dialogue)](https://drive.google.com/drive/folders/1xBNrqR2LWC0uEjezjx4aUgdsbstisboS?usp=sharing)
-
-The single-round dialogue model is trained on the VoiceAssistant-400K dataset, while the multi-round dialogue model is trained on a combination of VoiceAssistant-400K and UltraChat-300K datasets.
+- [Single-Round Dialogue (English)](https://drive.google.com/drive/folders/1ZmM1h5ZTvS-piuN-msmctmZdi51GWLAu?usp=sharing): Trained on VoiceAssistant-400K.
+- [Multi-Round Dialogue (English)](https://drive.google.com/drive/folders/1xBNrqR2LWC0uEjezjx4aUgdsbstisboS?usp=sharing): Trained on VoiceAssistant-400K and UltraChat-300K.
 
 
 ## Training
@@ -55,25 +53,30 @@ The single-round dialogue model is trained on the VoiceAssistant-400K dataset, w
 You can pre-train the S2S model using TTS or ASR tasks with our provided scripts, though we recommend proceeding directly to fine-tuning. Alternatively, you may directly train a TTS or ASR model under the SLAM-Omni framework. For detailed instructions, refer to the [pre-training README](./scripts/pretrain/README.md).
 
 ### Fine-tuning
-We provide three fine-tuning options, supporting both **SLAM-Omni** and **Mini-Omni** modeling. Use the commands below:
+We provide two primary fine-tuning options for **SLAM-Omni** modeling:
 ```bash
 # Fine-tune with grouping strategy (Recommended)
 bash ./examples/s2s/scripts/finetune/finetune_s2s_group.sh
 
 # Fine-tune without grouping
 bash ./examples/s2s/scripts/finetune/finetune_s2s.sh
+```
 
-# Mini-Omni framework
+We also include scripts for reproducing [Mini-Omni](https://github.com/gpt-omni/mini-omni). Note that this requires the original [VoiceAssistant-400K](https://huggingface.co/datasets/gpt-omni/VoiceAssistant-400K) dataset for training:
+```bash
 bash ./examples/s2s/scripts/finetune/mini-omni/finetune_s2s.sh
 ```
 
+#### Note:dizzy:
+Our framework theoretically supports **all codec-based spoken dialogue model training**. Simply re-synthesize the target tokens (e.g., CosyVoice2 tokens) during training for compatibility.
+
 ## Inference
-We provide scripts for both online and batch inference. You can use the trained model or the provided checkpoints for inference. For detailed guidance, refer to [inference README](./scripts/inference/README.md).
+We provide scripts for both **online** and **batch** inference. You can use the trained model or the provided checkpoints for inference. For detailed guidance, refer to [inference README](./scripts/inference/README.md).
 
 
 
 ### Online Inference
-Run the following commands for online inference in the S2S task. Provide a wav file as input, and the script will generate text and speech outputs:
+Run the following commands for real-time inference:
 
 ```bash
 # Multi-turn (Recommended)
@@ -81,33 +84,34 @@ bash ./examples/s2s/scripts/inference/inference_s2s_online_multi-round.sh
 
 # Single-turn
 bash ./examples/s2s/scripts/inference/inference_s2s_online.sh
+```
 
-# Mini-Omni framework (Single-turn + non-streaming/streaming)
+For Mini-Omni modeling, use the following commands:
+```bash
+# Single-turn non-streaming
 bash ./examples/s2s/scripts/inference/mini-omni/inference_s2s_online.sh
+
+# Single-turn streaming
 bash ./examples/s2s/scripts/inference/mini-omni/inference_s2s_online_stream.sh
 ```
 
 
 ### Batch Inference
 
-For batch inference in the S2S task, ensure the data format matches the training format (**Parquet** or **JSONL**). Run the following commands:
+For batch inference, ensure the data format matches the training format (**Parquet** or **JSONL**). Use the following commands:
 
 ```bash
 # SLAM-Omni framework
 bash ./examples/s2s/scripts/inference/inference_s2s_batch.sh
 
 # Mini-Omni framework
-bash ./examples/s2s/scripts/inference/mini-omni/inference_s2s_snac.sh
+bash ./examples/s2s/scripts/inference/mini-omni/inference_s2s_batch.sh
 ```
 
 
-<!-- ## Evaluation
-TBD
-
-## Gradio Demo
-TBD -->
+<!-- ## Gradio Demo -->
 
 
 ## Acknowledgement
-- We borrow some code from [Mini-Omni](https://github.com/gpt-omni/mini-omni) for SNAC token-based modeling.
+- We borrow some code from [Mini-Omni](https://github.com/gpt-omni/mini-omni) for SNAC-based modeling.
 - We borrow some code from [CosyVoice](https://github.com/FunAudioLLM/CosyVoice) for the vocoder.
