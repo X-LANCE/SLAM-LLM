@@ -67,7 +67,7 @@ We also include scripts for reproducing [Mini-Omni](https://github.com/gpt-omni/
 bash ./examples/s2s/scripts/finetune/mini-omni/finetune_s2s.sh
 ```
 
-#### Note:dizzy:
+#### Note💫
 Our framework theoretically supports **all codec-based spoken dialogue model training**. Simply re-synthesize the target tokens (e.g., CosyVoice2 tokens) during training for compatibility.
 
 ## Inference
