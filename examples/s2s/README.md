@@ -46,6 +46,7 @@ We also support JSONL format for its concise structure. Below is an example:
 We reproduced the single-stage fine-tuning results of SLAM-Omni with a group size of **3**. The following checkpoints are available for download:
 - [Single-Round Dialogue (English)](https://drive.google.com/drive/folders/1ZmM1h5ZTvS-piuN-msmctmZdi51GWLAu?usp=sharing): Trained on VoiceAssistant-400K.
 - [Multi-Round Dialogue (English)](https://drive.google.com/drive/folders/1xBNrqR2LWC0uEjezjx4aUgdsbstisboS?usp=sharing): Trained on VoiceAssistant-400K and UltraChat-300K.
+- [Multi-Round Dialogue (Chinese)](https://drive.google.com/drive/folders/1sExIp-UDdL37gb-mh9YlhuDIib0-wUVP?usp=sharing): Trained on Belle_1.4M.
 
 
 ## Training
@@ -115,3 +116,20 @@ bash ./examples/s2s/scripts/inference/mini-omni/inference_s2s_batch.sh
 ## Acknowledgement
 - We borrow some code from [Mini-Omni](https://github.com/gpt-omni/mini-omni) for SNAC-based modeling.
 - We borrow some code from [CosyVoice](https://github.com/FunAudioLLM/CosyVoice) for the vocoder.
+
+## Citation
+<!-- ```bibtex
+
+``` -->
+
+```bibtex
+@article{xie2024mini,
+  title={Mini-omni: Language models can hear, talk while thinking in streaming},
+  author={Xie, Zhifei and Wu, Changqiao},
+  journal={arXiv preprint arXiv:2408.16725},
+  year={2024}
+}
+```
+
+## License
+Our code is released under MIT License. The Chinese dialogue model is licensed under GPL-3.0 due to its use of Belle data and is intended for research purposes only.
