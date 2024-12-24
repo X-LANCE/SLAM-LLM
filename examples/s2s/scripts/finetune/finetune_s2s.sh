@@ -1,4 +1,5 @@
 #!/bin/bash
+export OMP_NUM_THREADS=1
 # export CUDA_VISIBLE_DEVICES=0
 # export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 export CUDA_VISIBLE_DEVICES=0,1,2,3
