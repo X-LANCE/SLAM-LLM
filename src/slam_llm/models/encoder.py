@@ -181,3 +181,15 @@ class MusicFMEncoder(nn.Module):
         _, hidden_states = self.model.get_predictions(source)
         out = hidden_states[self.config.encoder_layer_idx]
         return out
+
+class Emotion2vecEncoder:
+
+    @classmethod
+    def load(cls, model_config):
+        import fairseq
+        model_path = UserDirModule(model_config.encoder_fairseq_dir)
+        fairseq.utils.import_user_module(model_path)
+        model, cfg, task = fairseq.checkpoint_utils.load_model_ensemble_and_task([model_config.encoder_path])
+        model = model[0]
+
+        return model

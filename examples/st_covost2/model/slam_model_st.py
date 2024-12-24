@@ -41,7 +41,7 @@ def model_factory(train_config, model_config, **kwargs):
         **kwargs,
     )
 
-    ckpt_path = model_config.ckpt_path #FIX(MZY): load model ckpt(mainly projector, related to model_checkpointing/checkpoint_handler.py: save_model_checkpoint_peft)
+    ckpt_path = kwargs.get("ckpt_path", None) #FIX(MZY): load model ckpt(mainly projector, related to model_checkpointing/checkpoint_handler.py: save_model_checkpoint_peft)
     if ckpt_path is not None:
             logger.info("loading other parts from: {}".format(ckpt_path))
             ckpt_dict = torch.load(ckpt_path, map_location="cpu")
@@ -345,9 +345,9 @@ class slam_model(nn.Module):
                 encoder_outs = self.encoder_projector(encoder_outs, instruct_mask)
             if self.model_config.encoder_projector == "linear":
                 encoder_outs = self.encoder_projector(encoder_outs)
-
-
+        
         input_ids = input_ids[:, 80:]
+
 
         if input_ids is not None:
             input_ids[input_ids == -1] = 0
@@ -360,7 +360,6 @@ class slam_model(nn.Module):
                     inputs_embeds = self.llm.model.model.embed_tokens(input_ids)
                 else:
                     inputs_embeds = self.llm.model.model.model.embed_tokens(input_ids)
-
 
         inputs_embeds = torch.cat((encoder_outs, inputs_embeds), dim=1)
         
@@ -411,14 +410,16 @@ class slam_model(nn.Module):
         model_outputs = self.llm.generate(
             inputs_embeds=inputs_embeds,
             # max_length=kwargs.get("max_length", 200),
-            max_new_tokens=kwargs.get("max_new_tokens", 200),
-            num_beams=kwargs.get("num_beams", 5),
+            max_new_tokens=kwargs.get("max_new_tokens", 150),
+            num_beams=kwargs.get("num_beams", 4),
             do_sample=kwargs.get("do_sample", False),
             min_length=kwargs.get("min_length", 1),
             top_p=kwargs.get("top_p", 1.0),
             repetition_penalty=kwargs.get("repetition_penalty", 1.0),
             length_penalty=kwargs.get("length_penalty", 1.0),
             temperature=kwargs.get("temperature", 1.0),
+            no_repeat_ngram_size=4,
+            early_stopping=True,
             attention_mask=attention_mask,
             bos_token_id=self.tokenizer.bos_token_id,
             eos_token_id=self.tokenizer.eos_token_id,
