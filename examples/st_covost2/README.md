@@ -2,48 +2,12 @@
 
 
 ## Model Stracture
-<img src="image/framework.jpg" alt="Photo" style="width:75%;">
+<img src="image/framework.jpg" alt="示例图片" style="width:75%;">
 
 
 ## Multitask 
-<img src="image/prompt.png" alt="Photo" style="width:50%;">
+<img src="image/prompt.png" alt="示例图片" style="width:50%;">
 
-
-## Installation
-```
-conda create -n cotst python=3.10
-conda activate cotst
-
-git clone https://github.com/ddlBoJack/SLAM-LLM.git
-cd SLAM-LLM
-
-pip install -e .
-sudo apt install ffmpeg
-pip install -U openai-whisper
-pip install wandb
-pip install soundfile
-pip install evaluate
-pip install transformers
-pip install datasets
-pip install sacrebleu
-pip install jiwer
-pip install librosa
-pip install torch==2.4.0
-pip install torchaudio==2.4.0
-pip install torchvision==0.19.0
-```
-
-## Infer Demo
-It is recommended to run on a single GPU for the first execution. Later, remove CUDA_VISIBLE_DEVICES=0, and it will automatically utilize all GPUs.
-
-This demo will automatically download the model and dataset from Hugging Face, totaling approximately 100GB. Each card requires 128GB of RAM and 24GB of GPU memory.
-
-#supported translation languages are Chinese (zh), German (de), and Japanese (ja).
-
-
-```
-CUDA_VISIBLE_DEVICES=0 bash examples/st_covost2/scripts/infer_enzh.sh zh
-```
 
 
 ## Download Model 
@@ -82,25 +46,31 @@ You can find the test jsonl in "test_st.jsonl"
 Here, we have designed a three-step training process, where each training session uses the checkpoint obtained from the previous training session.
 ```
 #In this step, we perform ASR pretraining to acquire speech recognition capabilities.
-bash examples/st_covost2/scripts/asr_pretrain.sh
+bash asr_pretrain.sh
 
+#In this phase, we conduct multimodal machine translation training to enhance the final performance.
+bash mmt.sh
 
-#monolingual MMT,SRT training and multitask training. 
-#You can change the task type by modifying the value of **source** in the script.
-bash examples/st_covost2/scripts/all.sh
+#monolingual SRT training and multitask training.
+bash srt.sh
+bash zsrt.sh
 ```
 
+
+## Infer Stage
+You can try our pre-trained model.
+
+```
+bash infer_enzh.sh
+```
 
 ##  Citation
 You can refer to the paper for more results. 
 ```
-@misc{du2024cotstenhancingllmbasedspeech,
-      title={CoT-ST: Enhancing LLM-based Speech Translation with Multimodal Chain-of-Thought}, 
-      author={Yexing Du and Ziyang Ma and Yifan Yang and Keqi Deng and Xie Chen and Bo Yang and Yang Xiang and Ming Liu and Bing Qin},
-      year={2024},
-      eprint={2409.19510},
-      archivePrefix={arXiv},
-      primaryClass={cs.CL},
-      url={https://arxiv.org/abs/2409.19510}, 
+@article{du2024cot,
+  title={CoT-ST: Enhancing LLM-based Speech Translation with Multimodal Chain-of-Thought},
+  author={Yexing Du, Ziyang Ma, Yifan Yang, Keqi Deng, Xie Chen, Bo Yang, Yang Xiang, Ming Liu, Bing Qin},
+  journal={arXiv preprint arXiv:2409.19510},
+  year={2024}
 }
 ```

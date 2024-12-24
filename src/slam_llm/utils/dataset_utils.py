@@ -50,8 +50,15 @@ def get_preprocessed_dataset(
     tokenizer, dataset_config, split: str = "train"
 ) -> torch.utils.data.Dataset:
 
+    def get_split():
+        return (
+            dataset_config.train_split
+            if split == "train"
+            else dataset_config.test_split
+        )
+
     return get_custom_dataset(
         dataset_config,
         tokenizer,
-        split,
+        get_split(),
     )

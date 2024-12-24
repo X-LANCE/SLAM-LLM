@@ -98,9 +98,6 @@ def setup_encoder(train_config, model_config, **kwargs):
         if encoder_name == "musicfm":
             from slam_llm.models.encoder import MusicFMEncoder
             encoder = MusicFMEncoder.load(model_config)
-        if encoder_name == "emotion2vec":
-            from slam_llm.models.encoder import Emotion2vecEncoder
-            encoder = Emotion2vecEncoder.load(model_config)
 
         if "llama" in encoder_name.lower():
             from slam_llm.models.encoder import HfTextEncoder
@@ -346,8 +343,6 @@ class slam_model(nn.Module):
                 audio_mel_post_mask = (~audio_mel_post_mask).float()
             if self.model_config.encoder_name == 'musicfm':
                 encoder_outs = self.encoder.extract_features(audio, padding_mask = None) # MusicFM doesn't support padding mask 
-            if self.model_config.encoder_name == "emotion2vec":
-                encoder_outs = self.encoder.extract_features(audio, None)['x'] # bs*seq*dim
             if self.encoder is None:
                 encoder_outs = audio_mel if audio_mel is not None else audio
 

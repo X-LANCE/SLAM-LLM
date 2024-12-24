@@ -20,28 +20,7 @@ Encoder | Projector | LLM | dev | test
 
 
 ## Data preparation
-Refer to official [SLIDESPEECH CORPUS](https://slidespeech.github.io/).
-
-Specifically, take the file `slidespeech_dataset.py` as an example, the dataset requires four files: `my_wav.scp`, `utt2num_samples`, `text`, `hot_related/ocr_1gram_top50_mmr070_hotwords_list`.
-
-`my_wav.scp` is a file of audio path lists. We transform wav file to ark file, so this file looks like  
-```
-ID1 xxx/slidespeech/dev_oracle_v1/data/format.1/data_wav.ark:22  
-ID2 xxx/slidespeech/dev_oracle_v1/data/format.1/data_wav.ark:90445
-...
-```
-
-To generate this file, you can get audio wavs from https://www.openslr.org/144/ and get the time segments from https://slidespeech.github.io/. The second website provides segments, transcription text, OCR results at https://speech-lab-share-data.oss-cn-shanghai.aliyuncs.com/SlideSpeech/related_files.tar.gz (~1.37GB). You need to segment the wav by the timestamps provided in `segments` file.
-
-
- This _related_files.tar.gz_ also provides `text` and a file named `keywords`. The file `keywords` refers to `hot_related/ocr_1gram_top50_mmr070_hotwords_list`, which contains hotwords list.
-
-`utt2num_samples` contains the length of the wavs, which looks like   
-```
-ID1 103680  
-ID2 181600  
-...
-```
+Refer to official [SLIDESPEECH CORPUS](https://slidespeech.github.io/)
 
 ## Decode with checkpoints
 ```
