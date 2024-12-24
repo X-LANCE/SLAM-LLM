@@ -1,43 +1,47 @@
+export CUDA_VISIBLE_DEVICES=0,1
 export TOKENIZERS_PARALLELISM=false
 export WANDB_MODE=offline
+# export HYDRA_FULL_ERROR=1
 
-if command -v nvidia-smi &> /dev/null; then
-    gpu_count=$(nvidia-smi --query-gpu=name --format=csv,noheader | wc -l)
-if [ -n "$CUDA_VISIBLE_DEVICES" ]; then
-    gpu_count=$(echo "$CUDA_VISIBLE_DEVICES" | awk -F',' '{print NF}')
-fi
+your_code=/code
 
-echo "GPU number: $gpu_count"
-
-current_script=$(readlink -f "$0")
-current_dir=$(dirname "$current_script")
-code_dir=$(realpath "$current_dir/../../../../")
-cd ${code_dir}/SLAM-LLM
+your_data=/userhome
 
 source=covost_en
 
-output_dir=${code_dir}/speech/data/qwen/asr-pretrain
-
-encoder_path_hf=${code_dir}/speech/models/whisper-large-v3
-llm_path=${code_dir}/speech/models/Qwen2-7B
-
-#change your train data
-train_data_path=${code_dir}/SLAM-LLM/examples/st_covost2/test_st.jsonl
-val_data_path=${code_dir}/SLAM-LLM/examples/st_covost2/test_st.jsonl
+output_dir=${your_data}/speech/data/qwen/asr-pretrain
 
 
 
-# Find End checkpoint
+
+# speech_encoder_path=${your_data}/speech/models/whisper/large-v3.pt
+encoder_path_hf=${your_data}/speech/models/whisper-large-v3
+llm_path=${your_data}/speech/models/Qwen2-7B
+
+train_data_path=${your_data}/speech/data/qwen/train_spt_0926.jsonl
+val_data_path=${your_data}/speech/data/qwen/dev_spt_0926.jsonl
+
+
+
+run_dir=${your_code}/SLAM-LLM
+cd $run_dir
+code_dir=examples/st_covost2
+
+
+
+# 查找以asr_epoch_开头的目录，提取epoch和step，并找出最大的epoch和step
 max_epoch=$(ls -d ${checkpoint_dir}/asr_epoch_*_step_* | sed -n 's/.*asr_epoch_\([0-9]*\)_step_\([0-9]*\).*/\1/p' | sort -n | tail -1)
 max_step=$(ls -d ${checkpoint_dir}/asr_epoch_${max_epoch}_step_* | sed -n 's/.*asr_epoch_[0-9]*_step_\([0-9]*\).*/\1/p' | sort -n | tail -1)
 
-
+# 构建最终的路径
 final_path="${checkpoint_dir}/asr_epoch_${max_epoch}_step_${max_step}"
 
 
 ckpt_name=$final_path/model.pt
 
-echo $ckpt_name
+# 使用find命令搜索所有.pt文件，并获取最后修改日期最晚的文件
+
+
 
 
 
@@ -62,7 +66,7 @@ hydra.run.dir=$output_dir \
 ++dataset_config.fix_length_audio=80 \
 ++dataset_config.source=$source \
 ++train_config.model_name=asr \
-++train_config.num_epochs=50 \
+++train_config.num_epochs=10 \
 ++train_config.freeze_encoder=true \
 ++train_config.freeze_llm=true \
 ++train_config.batching_strategy=custom \
@@ -70,28 +74,41 @@ hydra.run.dir=$output_dir \
 ++train_config.warmup_steps=1000 \
 ++train_config.total_steps=1000000 \
 ++train_config.lr=1e-4 \
-++train_config.batch_size_training=8 \
-++train_config.val_batch_size=16 \
-++train_config.num_workers_dataloader=8 \
+++train_config.batch_size_training=2 \
+++train_config.val_batch_size=8 \
+++train_config.num_workers_dataloader=16 \
 ++train_config.output_dir=$output_dir \
 ++metric=acc \
+++train_config.use_fp16=false \
 "
 
 
-torchrun \
-    --nnodes 1 \
-    --nproc_per_node ${gpu_count} \
-    --master_port=29504 \
-    ${code_dir}/SLAM-LLM/examples/st_covost2/finetune_asr.py \
-    --config-path "conf" \
-    --config-name "prompt.yaml" \
-    ++train_config.enable_fsdp=false \
-    ++train_config.enable_ddp=true \
-    ++fsdp_config.pure_bf16=true \
-    ++log_config.use_wandb=true \
-    ++log_config.wandb_project_name=SLAM \
-    ++train_config.validation_interval=100 \
-    ++log_config.wandb_exp_name=asr-zh \
-    ++train_config.use_peft=false \
-    $hydra_args
+# 
+
+
+
+# -m debugpy --listen 5678 --wait-for-client
+if [[ $CUDA_VISIBLE_DEVICES != *","* ]]; then
+    python -m debugpy --listen 5678 --wait-for-client $code_dir/finetune_asr.py \
+        --config-path "conf" \
+        --config-name "prompt.yaml" \
+        $hydra_args
+else
+    torchrun \
+        --nnodes 1 \
+        --nproc_per_node 2 \
+        --master_port=29504 \
+        $code_dir/finetune_asr.py \
+        --config-path "conf" \
+        --config-name "prompt.yaml" \
+        ++train_config.enable_fsdp=false \
+        ++train_config.enable_ddp=true \
+        ++fsdp_config.pure_bf16=true \
+        ++log_config.use_wandb=false \
+        ++log_config.wandb_project_name=SLAM \
+        ++train_config.validation_interval=2000 \
+        ++log_config.wandb_exp_name=asr \
+        ++train_config.use_peft=false \
+        $hydra_args
 fi
+        
