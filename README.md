@@ -20,7 +20,7 @@ developers to train custom multimodal large language model (MLLM), focusing on <
 # Table of Contents
 1. [News](#news)
 2. [Installation](#installation)
-3. [Uasge](#uasge)
+3. [Usage](#usage)
     - [List of Recipes](#list-of-recipes)
     - [Configuration Priority](#configuration-priority)
 4. [Features](#features)
@@ -28,7 +28,9 @@ developers to train custom multimodal large language model (MLLM), focusing on <
 6. [Citation](#citation)
 
 # News
-- [Update Oct. 12, 2024] Recipes for [SLAM-AAC](examples/slam_aac/README.md) have been supported. 
+- [Update Nov. 17, 2024] Recipes for [LLM-Based Contextual ASR](examples/contextual_asr/README.md) have been supported. 
+- [Update Nov. 5, 2024] Recipes for [speech emotion captioning (SEC)](examples/sec_emotioncaps/README.md) with [emotion2vec](https://github.com/ddlBoJack/emotion2vec) as the encoder has been supported.
+- [Update Oct. 12, 2024] Recipes for [SLAM-AAC](examples/slam_aac/README.md) with [EAT](https://github.com/cwx-worst-one/EAT) as the encoder have been supported. 
 - [Update Sep. 28, 2024] Recipes for [CoT-ST](examples/st_covost2/README.md) have been supported. 
 - [Update Sep. 25, 2024] Recipes for [DRCap](examples/drcap_zeroshot_aac/README.md) have been supported. 
 - [Update Jun. 12, 2024] Recipes for [MaLa-ASR](examples/mala_asr_slidespeech/README.md) have been supported. 
@@ -83,6 +85,7 @@ We provide reference implementations of various LLM-based speech, audio, and mus
     
     - Contextual Automatic Speech Recognition (CASR)
         - [ Mala-ASR](examples/mala_asr_slidespeech/README.md)
+        - [LLM-Based Contextual ASR](examples/contextual_asr/README.md)
     
     - [Visual Speech Recognition (VSR)](examples/vsr_LRS3/README.md) 
     - Speech-to-Text Translation (S2TT)
@@ -90,6 +93,7 @@ We provide reference implementations of various LLM-based speech, audio, and mus
     
     - Text-to-Speech (TTS)
         - [VALL-E-X](examples/vallex/README.md)
+    - [Speech Emotion Captioning (SEC)](examples/sec_emotioncaps/README.md)
     
 - **Audio Task**
     - [Automated Audio Captioning (AAC)](examples/aac_audiocaps/README.md)
@@ -118,7 +122,10 @@ command-line (shell file) > Hydra configuration (yaml file) > dataclass configur
 - We borrow code from [Fairseq](https://github.com/facebookresearch/fairseq) for deepspeed configuration. 
 - We thank the contributors for providing diverse recipes. 
 
-## Citation
+# Citation
+
+## Speech Task
+
 SLAM-ASR:
 ```
 @article{ma2024embarrassingly,
@@ -128,4 +135,60 @@ SLAM-ASR:
   year={2024}
 }
 ```
+Mala-ASR:
+```
+@article{yang2024mala,
+  title={MaLa-ASR: Multimedia-Assisted LLM-Based ASR},
+  author={Yang, Guanrou and Ma, Ziyang and Yu, Fan and Gao, Zhifu and Zhang, Shiliang and Chen, Xie},
+  journal={Proc. INTERSPEECH},
+  year={2024}
+}
+```
+LLM-Based Contextual ASR:
+```
+@article{yang2024ctc,
+  title={CTC-Assisted LLM-Based Contextual ASR},
+  author={Yang, Guanrou and Ma, Ziyang and Gao, Zhifu and Zhang, Shiliang and Chen, Xie},
+  journal={Proc. SLT},
+  year={2024}
+}
+```
+CoT-ST:
+```
+@article{du2024cot,
+  title={CoT-ST: Enhancing LLM-based Speech Translation with Multimodal Chain-of-Thought},
+  author={Du, Yexing and Ma, Ziyang and Yang, Yifan and Deng, Keqi and Chen, Xie and Yang, Bo and Xiang, Yang and Liu, Ming and Qin, Bing},
+  journal={arXiv preprint arXiv:2409.19510},
+  year={2024}
+}
+```
 
+
+## Audio Task
+SLAM-AAC:
+```
+@article{chen2024slam,
+  title={SLAM-AAC: Enhancing Audio Captioning with Paraphrasing Augmentation and CLAP-Refine through LLMs},
+  author={Chen, Wenxi and Ma, Ziyang and Li, Xiquan and Xu, Xuenan and Liang, Yuzhe and Zheng, Zhisheng and Yu, Kai and Chen, Xie},
+  journal={arXiv preprint arXiv:2410.09503},
+  year={2024}
+}
+```
+DRCap:
+```
+@article{li2024drcap,
+  title={DRCap: Decoding CLAP Latents with Retrieval-augmented Generation for Zero-shot Audio Captioning},
+  author={Li, Xiquan and Chen, Wenxi and Ma, Ziyang and Xu, Xuenan and Liang, Yuzhe and Zheng, Zhisheng and Kong, Qiuqiang and Chen, Xie},
+  journal={arXiv preprint arXiv:2410.09472},
+  year={2024}
+}
+```
+BAT:
+```
+@article{zheng2024bat,
+  title={BAT: Learning to Reason about Spatial Sounds with Large Language Models},
+  author={Zheng, Zhisheng and Peng, Puyuan and Ma, Ziyang and Chen, Xie and Choi, Eunsol and Harwath, David},
+  journal={Proc. ICML},
+  year={2024}
+}
+```

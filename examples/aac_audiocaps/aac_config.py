@@ -1,5 +1,9 @@
 from dataclasses import dataclass, field
 from typing import Optional, List
+
+from torch.distributed.fsdp import ShardingStrategy
+
+
 @dataclass
 class ModelConfig:
     file: str = "examples/aac_audiocaps/model/slam_model_aac.py:model_factory"
@@ -114,7 +118,7 @@ class FSDPConfig:
     mixed_precision: bool = True
     use_fp16: bool = False
     # sharding_strategy = "FULL_SHARD" #ShardingStrategy = ShardingStrategy.FULL_SHARD
-    sharding_strategy: str = "NO_SHARD" #ShardingStrategy.NO_SHARD #MZY: set NO_SHARD when use DDP
+    sharding_strategy: ShardingStrategy = "NO_SHARD" #ShardingStrategy.NO_SHARD #MZY: set NO_SHARD when use DDP
     checkpoint_type: str = "SHARDED_STATE_DICT"  # alternatively can use SHARDED_STATE_DICT save one file per rank, and can resize the world-size.
     fsdp_activation_checkpointing: bool = True
     fsdp_cpu_offload: bool = False

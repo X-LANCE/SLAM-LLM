@@ -18,7 +18,7 @@ pd_text_support=$audio_encoder_dir/support_embeddings/audiocaps_text_support.pt
 encoder_projector_ds_rate=1
 num_beams=4
 
-inference_data_path=examples/drcap_zeroshot_aac/data/audiocaps_test.jsonl
+inference_data_path=examples/drcap_zeroshot_aac/data_examples/audiocaps_test.jsonl
 decode_log=$output_dir/decode_log_test_clean_beam${num_beams}_repetition_penalty1
 
 
