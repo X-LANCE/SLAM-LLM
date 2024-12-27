@@ -1,5 +1,7 @@
 # SLAM-Omni
-(*Reproduction of the paper SLAM-Omni: Timbre-Controllable Voice Interaction System with Single-Stage Training.*)
+[![Python 3.10](https://img.shields.io/badge/Python-3.10-blue.svg)](https://www.python.org/downloads/release/python-3100/) [![arXiv](https://img.shields.io/badge/arXiv-2412.15649-B31B1B.svg)](https://arxiv.org/abs/2412.15649) [![GitHub Demo Page](https://img.shields.io/badge/Github-Demo%20Page-orange.svg)](https://slam-omni.github.io/) [![License](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
+
+(*Reproduction of the [paper](https://arxiv.org/abs/2412.15649) SLAM-Omni: Timbre-Controllable Voice Interaction System with Single-Stage Training.*)
 
 ## Environment Setup
 Set up the environment using the following commands after preparing the SLAM-LLM environment:
@@ -112,16 +114,17 @@ bash ./examples/s2s/scripts/inference/mini-omni/inference_s2s_batch.sh
 
 <!-- ## Gradio Demo -->
 
-
-## Acknowledgement
-- We borrow some code from [Mini-Omni](https://github.com/gpt-omni/mini-omni) for SNAC-based modeling.
-- We borrow some code from [CosyVoice](https://github.com/FunAudioLLM/CosyVoice) for the vocoder.
-
 ## Citation
-<!-- ```bibtex
-
-``` -->
-
+SLAM-Omni:
+```bibtex
+@article{chen2024slam,
+  title={SLAM-Omni: Timbre-Controllable Voice Interaction System with Single-Stage Training},
+  author={Chen, Wenxi and Ma, Ziyang and Yan, Ruiqi and Liang, Yuzhe and Li, Xiquan and Xu, Ruiyang and Niu, Zhikang and Zhu, Yanqiao and Yang, Yifan and Liu, Zhanxun and others},
+  journal={arXiv preprint arXiv:2412.15649},
+  year={2024}
+}
+```
+Mini-Omni:
 ```bibtex
 @article{xie2024mini,
   title={Mini-omni: Language models can hear, talk while thinking in streaming},
@@ -130,6 +133,11 @@ bash ./examples/s2s/scripts/inference/mini-omni/inference_s2s_batch.sh
   year={2024}
 }
 ```
+
+## Acknowledgement
+- We borrow some code from [Mini-Omni](https://github.com/gpt-omni/mini-omni) for SNAC-based modeling.
+- We borrow some code from [CosyVoice](https://github.com/FunAudioLLM/CosyVoice) for the vocoder.
+
 
 ## License
 Our code is released under MIT License. The Chinese dialogue model is licensed under GPL-3.0 due to its use of Belle data and is intended for research purposes only.
