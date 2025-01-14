@@ -5,7 +5,7 @@ import logging
 from typing import Optional
 from dataclasses import dataclass, field
 from omegaconf import DictConfig, ListConfig, OmegaConf
-from s2s_config import ModelConfig, TrainConfig, DataConfig, LogConfig, FSDPConfig, VocabConfig
+from s2s_config import ModelConfig, TrainConfig, DataConfig, LogConfig, FSDPConfig, VocabConfig, PeftConfig
 
 @dataclass
 class RunConfig:
@@ -19,6 +19,7 @@ class RunConfig:
     ckpt_path: Optional[str] = field(
         default=None, metadata={"help": "The path to projector checkpoint"}
     )
+    peft_config: PeftConfig = field(default_factory=PeftConfig)
 
 @hydra.main(config_name=None, version_base=None)
 def main_hydra(cfg: DictConfig):

@@ -27,6 +27,9 @@ class VocabConfig:
     split: int = field(init=False) # split token
 
     def __post_init__(self):
+        # print(f"audio_vocabsize: {self.audio_vocabsize}")
+        # print(f"audio_specialtokens: {self.audio_specialtokens}")
+        # print(f"padded_audio_vocabsize calculated as: {self.audio_vocabsize + self.audio_specialtokens}")
         self.padded_text_vocabsize = self.text_vocabsize + self.text_specialtokens
         self.padded_audio_vocabsize = self.audio_vocabsize + self.audio_specialtokens
         self.total_audio_vocabsize = self.padded_audio_vocabsize * self.code_layer
@@ -97,6 +100,7 @@ class ModelConfig:
     group_decode: bool = False
     group_decode_adapter_type: str = "linear"
     whisper_decode: bool = False
+    cosyvoice_version: int = 1
 
 
 @dataclass
@@ -104,11 +108,16 @@ class PeftConfig:
     peft_method: str = "lora" # None , llama_adapter, prefix
     r: int = 8
     lora_alpha: int = 32
-    target_modules: List = field(default_factory=lambda: [ "q_proj", "v_proj" ])
+    # target_modules: List = field(default_factory=lambda: [ "q_proj", "v_proj" ])
+    target_modules:  List = field(default_factory=lambda: [ "q_proj", "v_proj","k_proj","o_proj" ])
     bias: str = "none"
     task_type: str = "CAUSAL_LM"
     lora_dropout: float = 0.05
     inference_mode: bool = False
+
+    # def __post_init__(self):
+    #     if isinstance(self.target_modules, str):
+    #         self.target_modules = self.target_modules.split(',')
 
 @dataclass
 class TrainConfig:
@@ -201,6 +210,8 @@ class DataConfig:
     code_type: str = "SNAC" 
     num_latency_tokens: int = 1
     do_layershift: bool = True
+    change_prompt: bool = False
+    use_emo: bool = False
 
 @dataclass
 class DecodeConfig:
@@ -229,6 +240,7 @@ class DecodeConfig:
     upsampling_factor: int = 1
     input_text: bool = False
     do_layershift: bool = True
+    num_latency_tokens: int = 5
 
 @dataclass
 class FSDPConfig:

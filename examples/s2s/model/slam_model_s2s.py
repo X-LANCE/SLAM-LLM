@@ -25,7 +25,7 @@ from slam_llm.utils.config_utils import generate_peft_config
 from peft import get_peft_model
 
 logger = logging.getLogger(__name__)
-
+import pdb
 
 def model_factory(train_config, model_config, **kwargs):
     # return necessary components for training
@@ -156,7 +156,7 @@ class slam_model_s2s(slam_model):
         # resize llm embedding layer
         self.original_vocabsize = self.llm.lm_head.weight.size(0)
         if self.model_config.vocab_config.total_vocabsize != self.original_vocabsize:
-            self.llm.resize_token_embeddings(self.model_config.vocab_config.total_vocabsize)
+            self.llm.resize_token_embeddings(self.model_config.vocab_config.total_vocabsize)  #!!!!!
 
             if int(os.environ.get("RANK", "0")) == 0:
                 logger.info("Resize llm embedding layer's vocab size to {}\n".format(self.model_config.vocab_config.total_vocabsize))
@@ -273,6 +273,7 @@ class slam_model_s2s(slam_model):
                 xa.append(x_ori[..., text_vocab_size + audio_vocab_size * i : text_vocab_size + audio_vocab_size * (i + 1)]) #xa[0].shape:torch.Size([4, 220, 4160])
 
         loss_recorder = []
+        # pdb.set_trace()
         total_loss, loss_recorder = self.compute_parallel_loss(xt, text_labels, xa, audio_labels) #torch.Size([4, 220, 152000]), [torch.Size([4, 220])], torch.Size([4, 220, 4160]), torch.Size([4, 1, 220])
         model_outputs.loss = total_loss
 
@@ -378,11 +379,12 @@ class slam_model_s2s(slam_model):
 
         # NOTE: currently, we only support greedy decoding and sampling for parallel generation, no beam search
         for step in tqdm(range(max_new_tokens), desc="Generating"):
+            # pdb.set_trace()
             if current_input_text is not None:
                 audio_tokens = torch.cat([layershift(current_audio_tokens[i], i).unsqueeze(1) for i in range(self.code_layer)], dim=1)
                 combined_input_ids = torch.cat([audio_tokens, current_input_text.unsqueeze(1)], dim=1)
                 inputs_embeds = self.llm.model.embed_tokens(combined_input_ids)
-                inputs_embeds = torch.mean(inputs_embeds, dim=1).unsqueeze(1)
+                inputs_embeds = torch.mean(inputs_embeds, dim=1).unsqueeze(1) #!!!
             
             outputs = self.llm(
                 inputs_embeds=inputs_embeds,                  # [btz, seq_len / 1, emb_dim]
@@ -391,7 +393,7 @@ class slam_model_s2s(slam_model):
                 use_cache=True,
             )
             
-            logits = outputs.logits[0]                      # batch size is 1
+            logits = outputs.logits[0]                      # batch size is 1  torch.Size([46, 156160])
             past_key_values = outputs.past_key_values       # Update past_key_values for the next step
 
             # Split logits into text and audio layers based on vocab size

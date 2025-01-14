@@ -176,6 +176,7 @@ def main(kwargs: DictConfig):
 			for key, source_text, target_text, generated_text in zip(batch["keys"], batch["source_texts"], batch["target_texts"], [output_text]):
 				q.write(key + "\t" + source_text + "\n")
 				gt.write(key + "\t" + target_text + "\n")
+				generated_text = generated_text.replace('\n', '')
 				pred.write(key + "\t" + generated_text + "\n")
 
 				if task_type == "s2s":
@@ -201,7 +202,12 @@ def main(kwargs: DictConfig):
 					with torch.inference_mode():
 						audio_hat = codec_decoder.decode(audio)
 				elif code_type == "CosyVoice":
-					audio_hat = audio_decode_cosyvoice(audio_tokens, model_config, codec_decoder, tone_dir, audio_prompt_path, code_layer, num_latency_tokens, speed=1.0)
+					try:
+						audio_hat = audio_decode_cosyvoice(audio_tokens, model_config, codec_decoder, tone_dir, audio_prompt_path, code_layer, num_latency_tokens, speed=1.0)
+						print(audio_hat)
+					except Exception as e:
+						logger.error(f"Error in decoding {key}: {e}")
+						continue
 				else:
 					raise NotImplementedError
 

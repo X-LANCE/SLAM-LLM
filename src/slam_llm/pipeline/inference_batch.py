@@ -18,7 +18,8 @@ from tqdm import tqdm
 
 import hydra
 from omegaconf import DictConfig, ListConfig, OmegaConf
-
+import time
+import pdb
 
 @hydra.main(config_name=None, version_base=None)
 def main_hydra(cfg: DictConfig):
@@ -130,8 +131,14 @@ def main(kwargs: DictConfig):
 		for step, batch in tqdm(enumerate(test_dataloader), total=len(test_dataloader)):
 			for key in batch.keys():
 				batch[key] = batch[key].to(device) if isinstance(batch[key], torch.Tensor) else batch[key]
+			start_time = time.time()
 			model_outputs = model.generate(**batch)
 			output_text = model.tokenizer.batch_decode(model_outputs, add_special_tokens=False, skip_special_tokens=True)
+			end_time = time.time()
+			# pdb.set_trace()
+			audio_length = batch["audio"].shape[0]*batch["audio"].shape[1]/16000
+			RTF = (end_time - start_time) / audio_length
+			logger.info(f"LLM RTF: {RTF:.2f}")
 			for key, text, target in zip(batch["keys"], output_text, batch["targets"]):
 				pred.write(key + "\t" + text.replace("\n", " ") + "\n")
 				gt.write(key + "\t" + target + "\n")

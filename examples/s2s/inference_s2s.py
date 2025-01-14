@@ -26,8 +26,12 @@ class RunConfig:
         default="output/decode_log",
         metadata={"help": "The prefix for the decode output"},
     )
-    ckpt_path: str = field(
-        default="output/model.pt", metadata={"help": "The path to projector checkpoint"}
+    # ckpt_path: str = field(
+    #     default="output/model.pt", metadata={"help": "The path to projector checkpoint"}
+    # )
+    ckpt_path: Optional[str] = field(
+        default=None, 
+        metadata={"help": "The path to projector checkpoint"}
     )
     peft_ckpt: Optional[str] = field(
         default=None,

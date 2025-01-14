@@ -1,7 +1,8 @@
 dataset_config:
     # we put prompt here, because the hydra override in shell script only support a small subset of chars
     # prompt: "Transcribe speech to text. Output the transcription directly without redundant content. Ensure that the output is not duplicated. "
-    prompt: "Generate a natural and expressive spoken version of the given text. "
+    # prompt: "Generate a natural and expressive spoken version of the given text. "
+    prompt: "请说这句话. "
     emotion_prompt: {
         "neu":
             ["Generate a natural and expressive spoken version of the given text with a calm and neutral tone.",
