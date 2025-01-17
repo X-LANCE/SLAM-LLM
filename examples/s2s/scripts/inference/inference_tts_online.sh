@@ -26,7 +26,7 @@ total_vocabsize=$((total_audio_vocabsize + llm_vocabsize))
 # code settings
 code_type=CosyVoice                 # CosyVoice or SNAC
 codec_decoder_type=CosyVoice
-num_latency_tokens=5                # number of latency tokens (same as the number in training)
+num_latency_tokens=0                # number of latency tokens (same as the number in training)
 do_layershift=false                 # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
 
 # load the backbone model

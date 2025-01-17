@@ -22,7 +22,7 @@ total_vocabsize=$((total_audio_vocabsize + llm_vocabsize))
 
 # code settings
 code_type=CosyVoice                 # CosyVoice or SNAC
-num_latency_tokens=5                # number of latency tokens (in front of the generated audio tokens)
+num_latency_tokens=0                # number of latency tokens (in front of the generated audio tokens)
 do_layershift=false                 # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
 
 # dataset settings
