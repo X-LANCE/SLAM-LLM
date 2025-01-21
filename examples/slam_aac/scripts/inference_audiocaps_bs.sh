@@ -6,6 +6,8 @@ run_dir=/data/wenxi.chen/SLAM-LLM
 cd $run_dir
 code_dir=examples/slam_aac
 
+encoder_fairseq_dir=/fairseq/EAT            # path to the fairseq directory of the encoder model
+
 audio_encoder_path=/data/xiquan.li/models/EAT-base_epoch30_ft.pt
 llm_path=/data/xiquan.li/models/vicuna-7b-v1.5
 
@@ -31,6 +33,7 @@ python $code_dir/inference_aac_batch.py \
     ++model_config.encoder_projector=linear \
     ++model_config.encoder_projector_ds_rate=$encoder_projector_ds_rate \
     ++model_config.normalize=true \
+    ++model_config.encoder_fairseq_dir=$encoder_fairseq_dir \
     ++dataset_config.encoder_projector_ds_rate=$encoder_projector_ds_rate \
     ++dataset_config.dataset=audio_dataset \
     ++dataset_config.val_data_path=$inference_data_path \

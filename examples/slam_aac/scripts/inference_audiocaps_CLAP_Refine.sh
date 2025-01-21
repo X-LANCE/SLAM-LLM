@@ -10,6 +10,8 @@ audio_encoder_path=/data/xiquan.li/models/EAT-base_epoch30_ft.pt
 llm_path=/data/xiquan.li/models/vicuna-7b-v1.5
 clap_dir=/data/xiquan.li/models/clap
 
+encoder_fairseq_dir=/fairseq/EAT            # path to the fairseq directory of the encoder model
+
 encoder_projector_ds_rate=5
 
 inference_data_path=/data/wenxi.chen/data/audiocaps/new_test.jsonl
@@ -41,6 +43,7 @@ for num_beams in "${beam_range[@]}"; do
         ++model_config.encoder_projector=linear \
         ++model_config.encoder_projector_ds_rate=$encoder_projector_ds_rate \
         ++model_config.normalize=true \
+        ++model_config.encoder_fairseq_dir=$encoder_fairseq_dir \
         ++dataset_config.encoder_projector_ds_rate=$encoder_projector_ds_rate \
         ++dataset_config.dataset=audio_dataset \
         ++dataset_config.val_data_path=$inference_data_path \
