@@ -1,17 +1,18 @@
 # SLAM-AAC
 
-SLAM-AAC is a LLM-based model for Automated Audio Captioning (AAC) task. Inspired by techniques in machine translation and ASR, the model enhances audio captioning by incorporating paraphrasing augmentation and a plug-and-play CLAP-Refine strategy. For more details, please refer to the [paper](https://arxiv.org/abs/2410.09503).
+SLAM-AAC is a LLM-based framework for Automated Audio Captioning (AAC) task. Inspired by techniques in machine translation and ASR, the model enhances audio captioning by incorporating **paraphrasing augmentation** and a plug-and-play **CLAP-Refine** strategy. For more details, please refer to the [paper](https://arxiv.org/abs/2410.09503).
 
 ## Model Architecture
-SLAM-AAC uses EAT as the audio encoder and Vicuna-7B as the LLM decoder. During training, only the Linear Projector and LoRA modules are trainable. For inference, multiple candidates are generated using different beam sizes, which are then refined using the CLAP-Refine strategy.
+SLAM-AAC uses **EAT** as the audio encoder and **Vicuna-7B** as the LLM decoder. During training, only the Linear Projector and LoRA modules are trainable. For inference, multiple candidates are generated using different beam sizes, which are then refined using the CLAP-Refine strategy.
 
 ![](./docs/model.png)
 
 ## Performance and checkpoints
-We have released the pre-trained checkpoint of SLAM-AAC, as well as the fine-tuned checkpoints for the Clotho and AudioCaps datasets. The provided checkpoints include the model's Linear Projector and LoRA modules. Please note that when using each component, be sure to set up the corresponding environments according to the instructions provided in the respective repositories (e.g., for [EAT](https://github.com/cwx-worst-one/EAT)).
+Pre-trained and fine-tuned checkpoints for the **Clotho** and **AudioCaps** datasets are available. These checkpoints include the Linear Projector and LoRA modules. Ensure proper setup of the corresponding environments (e.g., [EAT](https://github.com/cwx-worst-one/EAT)) before use.
+
 
 ### Pre-training
-SLAM-AAC was pre-trained on a combination of AudioCaps, Clotho, WavCaps, and MACS datasets. For more information on these datasets, you can refer to [this repository](https://github.com/Labbeti/aac-datasets). Additionally, the Clotho dataset was augmented using a back-translation-based paraphrasing technique.  
+SLAM-AAC was pre-trained on AudioCaps, Clotho, WavCaps, and MACS datasets. For more information on these datasets, you can refer to [this repository](https://github.com/Labbeti/aac-datasets). Additionally, the Clotho dataset was augmented using a back-translation-based paraphrasing technique.  
 Audio Encoder | LLM | Checkpoint | Pre-training Dataset|
 |:---:|:---:|:---:|:---:|
 [EAT-base (fine-tuned)](https://drive.google.com/file/d/1aCYiQmoZv_Gh1FxnR-CCWpNAp6DIJzn6/view?usp=sharing) |[vicuna-7b-v1.5](https://huggingface.co/lmsys/vicuna-7b-v1.5) | [link](https://drive.google.com/drive/folders/10kOjB112AeGYA_0mIUr8f1-i5rSg08_O?usp=sharing) | AudioCaps, Clotho, WavCaps, MACS |
@@ -25,7 +26,7 @@ Dataset | Audio Encoder | LLM | Checkpoint | METEOR | CIDEr | SPICE | SPIDEr | S
 
 
 ## Data preparation
-Ensure your `jsonl` data follows the structure outlined below:
+Ensure your `jsonl` data follows this format:
 ```json
 {"key": "Y7fmOlUlwoNg_1", "source": "/root/data/AudioCaps/waveforms/test/Y7fmOlUlwoNg.wav", "target": "Constant rattling noise and sharp vibrations"}
 {"key": "Y6BJ455B1aAs_1", "source": "/root/data/AudioCaps/waveforms/test/Y6BJ455B1aAs.wav", "target": "A rocket flies by followed by a loud explosion and fire crackling as a truck engine runs idle"}
@@ -57,7 +58,7 @@ You can also fine-tune the model without loading any pre-trained weights, though
 - Due to differences in dependency versions, there may be slight variations in the performance of the SLAM-AAC model.
 
 ## Inference
-To perform inference with the trained models, you can use the following commands to decode using the common beam search method:
+To perform inference with the trained models with beam search:
 ```bash
 # Inference on AudioCaps (Beam Search)
 bash scripts/inference_audiocaps_bs.sh
@@ -66,7 +67,9 @@ bash scripts/inference_audiocaps_bs.sh
 bash scripts/inference_clotho_bs.sh
 ```
 
-For improved inference results, you can use the CLAP-Refine strategy, which utilizes multiple beam search decoding. To use this method, you need to download and use our pre-trained [CLAP](https://drive.google.com/drive/folders/1X4NYE08N-kbOy6s_Itb0wBR_3X8oZF56?usp=sharing) model. Note that CLAP-Refine may take longer to run, but it can provide better quality outputs. You can execute the following commands:
+To generate better captions, use the CLAP-Refine strategy with multiple beam search decoding. This method leverages our pre-trained [CLAP](https://drive.google.com/drive/folders/1X4NYE08N-kbOy6s_Itb0wBR_3X8oZF56?usp=sharing) model. Though it takes more time, it ensures higher-quality results. Use the following commands to apply it:
+
+
 ```bash
 # Inference on AudioCaps (CLAP-Refine)
 bash scripts/inference_audiocaps_CLAP_Refine.sh
@@ -81,7 +84,7 @@ bash scripts/clap_refine.sh
 ```
 
 ##  Citation
-You can refer to the paper for more results. 
+If you find SLAM-AAC useful, please cite the following paper:
 ```
 @article{chen2024slam,
   title={SLAM-AAC: Enhancing Audio Captioning with Paraphrasing Augmentation and CLAP-Refine through LLMs},
