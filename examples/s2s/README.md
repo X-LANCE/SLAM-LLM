@@ -111,6 +111,10 @@ bash ./examples/s2s/scripts/inference/inference_s2s_batch.sh
 bash ./examples/s2s/scripts/inference/mini-omni/inference_s2s_batch.sh
 ```
 
+## TODO
+- [ ] Add evaluation scripts.
+- [ ] Add streaming inference scripts for SLAM-Omni.
+
 
 <!-- ## Gradio Demo -->
 
