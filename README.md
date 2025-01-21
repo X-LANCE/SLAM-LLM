@@ -28,7 +28,12 @@ developers to train custom multimodal large language model (MLLM), focusing on <
 6. [Citation](#citation)
 
 # News
-- [Update Jan. 22, 2025] Full reproduction for [SLAM-Omni](examples/s2s/README.md) has been supported.
+- [Update Jan. 22, 2025] 🔥🔥🔥 Full reproduction for [SLAM-Omni](examples/s2s/README.md) has been supported.  
+![](docs/slam-omni-model.png)
+  - SLAM-Omni is a **timbre-controllable** voice interaction system that requires only **single-stage training** and minimal resources to achieve high-quality, end-to-end speech dialogue, supporting multi-turn conversations in both Chinese and English.
+  - We have fully reproduced the **training and inference** processes of SLAM-Omni and open-sourced all related training datasets. The provided code framework theoretically supports all codec-based spoken dialogue models. Additionally, we offer the reproduction code for [Mini-Omni](https://github.com/gpt-omni/mini-omni).
+  - [Demo](https://slam-omni.github.io)
+  ![](docs/slam-omni-demo.mp4)
 - [Update Nov. 17, 2024] Recipes for [LLM-Based Contextual ASR](examples/contextual_asr/README.md) have been supported. 
 - [Update Nov. 5, 2024] Recipes for [speech emotion captioning (SEC)](examples/sec_emotioncaps/README.md) with [emotion2vec](https://github.com/ddlBoJack/emotion2vec) as the encoder has been supported.
 - [Update Oct. 12, 2024] Recipes for [SLAM-AAC](examples/slam_aac/README.md) with [EAT](https://github.com/cwx-worst-one/EAT) as the encoder have been supported. 
@@ -167,7 +172,7 @@ CoT-ST:
 ```
 
 SLAM-Omni:
-```bibtex
+```
 @article{chen2024slam,
   title={SLAM-Omni: Timbre-Controllable Voice Interaction System with Single-Stage Training},
   author={Chen, Wenxi and Ma, Ziyang and Yan, Ruiqi and Liang, Yuzhe and Li, Xiquan and Xu, Ruiyang and Niu, Zhikang and Zhu, Yanqiao and Yang, Yifan and Liu, Zhanxun and others},
