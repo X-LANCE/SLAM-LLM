@@ -28,7 +28,7 @@ developers to train custom multimodal large language model (MLLM), focusing on <
 6. [Citation](#citation)
 
 # News
-- [Update Jan. 22, 2025] 🔥🔥🔥 Full reproduction for [SLAM-Omni](examples/s2s/README.md) has been supported.  
+- [Update Jan. 22, 2025] 🔥🔥🔥 Full reproduction (including all data preparation, model training, and inference) for [SLAM-Omni](examples/s2s/README.md) has been supported.  
 ![](docs/slam-omni-model.png)
   - SLAM-Omni is a **timbre-controllable** voice interaction system that requires only **single-stage training** and minimal resources to achieve high-quality, end-to-end speech dialogue, supporting multi-turn conversations in both Chinese and English. ([paper](https://arxiv.org/abs/2412.15649), [demo](https://slam-omni.github.io))
   - We have fully reproduced the **training and inference** processes of SLAM-Omni and open-sourced all related training datasets. The provided code framework theoretically supports all codec-based spoken dialogue models. Additionally, we offer the reproduction code for [Mini-Omni](https://github.com/gpt-omni/mini-omni).
@@ -196,20 +196,20 @@ SLAM-Omni:
 ## Audio Task
 SLAM-AAC:
 ```
-@article{chen2024slam,
+@article{chen2025slam,
   title={SLAM-AAC: Enhancing Audio Captioning with Paraphrasing Augmentation and CLAP-Refine through LLMs},
   author={Chen, Wenxi and Ma, Ziyang and Li, Xiquan and Xu, Xuenan and Liang, Yuzhe and Zheng, Zhisheng and Yu, Kai and Chen, Xie},
-  journal={arXiv preprint arXiv:2410.09503},
-  year={2024}
+  journal={Proc. ICASSP},
+  year={2025}
 }
 ```
 DRCap:
 ```
-@article{li2024drcap,
+@article{li2025drcap,
   title={DRCap: Decoding CLAP Latents with Retrieval-augmented Generation for Zero-shot Audio Captioning},
   author={Li, Xiquan and Chen, Wenxi and Ma, Ziyang and Xu, Xuenan and Liang, Yuzhe and Zheng, Zhisheng and Kong, Qiuqiang and Chen, Xie},
-  journal={arXiv preprint arXiv:2410.09472},
-  year={2024}
+  journal={Proc. ICASSP},
+  year={2025}
 }
 ```
 BAT:
