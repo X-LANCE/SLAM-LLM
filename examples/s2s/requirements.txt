@@ -1,0 +1,23 @@
+soundfile
+openai-whisper==20231117
+transformers==4.43.4
+librosa
+numpy==1.26.4
+HyperPyYAML==1.2.2
+modelscope==1.15.0
+onnxruntime-gpu==1.18.0; sys_platform == 'linux'
+onnxruntime==1.18.0; sys_platform == 'darwin' or sys_platform == 'windows'
+WeTextProcessing==1.0.3
+conformer==0.3.2
+deepspeed==0.14.2; sys_platform == 'linux'
+diffusers==0.27.2
+gradio==5.3.0
+grpcio==1.57.0
+grpcio-tools==1.57.0
+huggingface_hub==0.25.2
+inflect==7.3.1
+matplotlib==3.7.5
+lightning==2.2.4
+torchaudio==2.3.0
+torchaudio==2.3.0
+wget==3.2

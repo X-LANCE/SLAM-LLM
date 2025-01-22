@@ -28,6 +28,22 @@ developers to train custom multimodal large language model (MLLM), focusing on <
 6. [Citation](#citation)
 
 # News
+- [Update Jan. 22, 2025] 🔥🔥🔥 Full reproduction (including all data preparation, model training, and inference) for [SLAM-Omni](examples/s2s/README.md) has been supported.  
+![](docs/slam-omni-model.png)
+  - SLAM-Omni is a **timbre-controllable** voice interaction system that requires only **single-stage training** and minimal resources to achieve high-quality, end-to-end speech dialogue, supporting multi-turn conversations in both Chinese and English. ([paper](https://arxiv.org/abs/2412.15649), [demo](https://slam-omni.github.io))
+  - We have fully reproduced the **training and inference** processes of SLAM-Omni and open-sourced all related training datasets. The provided code framework theoretically supports all codec-based spoken dialogue models. Additionally, we offer the reproduction code for [Mini-Omni](https://github.com/gpt-omni/mini-omni).
+
+<table class="center">
+<tr>
+    <td width=50% style="border: none">
+        <video controls autoplay loop src="https://github.com/user-attachments/assets/73597edb-0d66-453b-b10c-8cf8dd3cae18" muted="false"></video>
+    </td>
+    <td width=50% style="border: none">
+        <video controls autoplay loop src="https://github.com/user-attachments/assets/7a797491-0509-4da8-8662-f2107bd8856a" muted="false"></video>
+    </td>
+</tr>
+</table>
+
 - [Update Nov. 17, 2024] Recipes for [LLM-Based Contextual ASR](examples/contextual_asr/README.md) have been supported. 
 - [Update Nov. 5, 2024] Recipes for [speech emotion captioning (SEC)](examples/sec_emotioncaps/README.md) with [emotion2vec](https://github.com/ddlBoJack/emotion2vec) as the encoder has been supported.
 - [Update Oct. 12, 2024] Recipes for [SLAM-AAC](examples/slam_aac/README.md) with [EAT](https://github.com/cwx-worst-one/EAT) as the encoder have been supported. 
@@ -94,13 +110,17 @@ We provide reference implementations of various LLM-based speech, audio, and mus
     - Text-to-Speech (TTS)
         - [VALL-E-X](examples/vallex/README.md)
     - [Speech Emotion Captioning (SEC)](examples/sec_emotioncaps/README.md)
+    - Voice Interaction System
+        - [SLAM-Omni](examples/s2s/README.md)
     
 - **Audio Task**
     - [Automated Audio Captioning (AAC)](examples/aac_audiocaps/README.md)
       - [SLAM-AAC](examples/slam_aac/README.md)
       - [DRCap](examples/drcap_zeroshot_aac/README.md)
+  
     - Spatial Audio Understanding
       - [BAT](examples/seld_spatialsoundqa/README.md)
+    
 - **Music Task**
     - [Music Caption (MC)](examples/mc_musiccaps/README.md)
 
@@ -163,24 +183,33 @@ CoT-ST:
 }
 ```
 
+SLAM-Omni:
+```
+@article{chen2024slam,
+  title={SLAM-Omni: Timbre-Controllable Voice Interaction System with Single-Stage Training},
+  author={Chen, Wenxi and Ma, Ziyang and Yan, Ruiqi and Liang, Yuzhe and Li, Xiquan and Xu, Ruiyang and Niu, Zhikang and Zhu, Yanqiao and Yang, Yifan and Liu, Zhanxun and others},
+  journal={arXiv preprint arXiv:2412.15649},
+  year={2024}
+}
+```
 
 ## Audio Task
 SLAM-AAC:
 ```
-@article{chen2024slam,
+@article{chen2025slam,
   title={SLAM-AAC: Enhancing Audio Captioning with Paraphrasing Augmentation and CLAP-Refine through LLMs},
   author={Chen, Wenxi and Ma, Ziyang and Li, Xiquan and Xu, Xuenan and Liang, Yuzhe and Zheng, Zhisheng and Yu, Kai and Chen, Xie},
-  journal={arXiv preprint arXiv:2410.09503},
-  year={2024}
+  journal={Proc. ICASSP},
+  year={2025}
 }
 ```
 DRCap:
 ```
-@article{li2024drcap,
+@article{li2025drcap,
   title={DRCap: Decoding CLAP Latents with Retrieval-augmented Generation for Zero-shot Audio Captioning},
   author={Li, Xiquan and Chen, Wenxi and Ma, Ziyang and Xu, Xuenan and Liang, Yuzhe and Zheng, Zhisheng and Kong, Qiuqiang and Chen, Xie},
-  journal={arXiv preprint arXiv:2410.09472},
-  year={2024}
+  journal={Proc. ICASSP},
+  year={2025}
 }
 ```
 BAT:
