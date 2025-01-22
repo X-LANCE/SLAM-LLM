@@ -32,12 +32,17 @@ developers to train custom multimodal large language model (MLLM), focusing on <
 ![](docs/slam-omni-model.png)
   - SLAM-Omni is a **timbre-controllable** voice interaction system that requires only **single-stage training** and minimal resources to achieve high-quality, end-to-end speech dialogue, supporting multi-turn conversations in both Chinese and English. ([paper](https://arxiv.org/abs/2412.15649), [demo](https://slam-omni.github.io))
   - We have fully reproduced the **training and inference** processes of SLAM-Omni and open-sourced all related training datasets. The provided code framework theoretically supports all codec-based spoken dialogue models. Additionally, we offer the reproduction code for [Mini-Omni](https://github.com/gpt-omni/mini-omni).
-<table class="center">
-<td width=50% style="border: none">
-    <video controls autoplay loop src="https://github.com/user-attachments/assets/98223651-4285-4139-ab17-ece3a569076e" muted="false"></video>
-</td>
-</table>
 
+<table class="center">
+<tr>
+    <td width=50% style="border: none">
+        <video controls autoplay loop src="https://github.com/user-attachments/assets/73597edb-0d66-453b-b10c-8cf8dd3cae18" muted="false"></video>
+    </td>
+    <td width=50% style="border: none">
+        <video controls autoplay loop src="https://github.com/user-attachments/assets/7a797491-0509-4da8-8662-f2107bd8856a" muted="false"></video>
+    </td>
+</tr>
+</table>
 
 - [Update Nov. 17, 2024] Recipes for [LLM-Based Contextual ASR](examples/contextual_asr/README.md) have been supported. 
 - [Update Nov. 5, 2024] Recipes for [speech emotion captioning (SEC)](examples/sec_emotioncaps/README.md) with [emotion2vec](https://github.com/ddlBoJack/emotion2vec) as the encoder has been supported.
