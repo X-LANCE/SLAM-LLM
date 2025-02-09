@@ -20,6 +20,7 @@ mel_size=80     # 80 128 ( only whisper-large-v3 supports 128 )
 llm_dim=896     # 896 1536 2048 3584  -> 0.5B 1.5B 3B 7B
 
 # dataset settings
+manifest_format=parquet     # parquet or jsonl
 train_data_path="/valleblob/v-wenxichen/data/s2s/VoiceAssistant-400K"
 val_data_path="/valleblob/v-wenxichen/data/s2s/VoiceAssistant-400K"
 load_from_cache_file=false  # set to true if you have already generated the cache file, otherwise set to false
@@ -75,7 +76,7 @@ hydra.run.dir=$output_dir \
 ++dataset_config.input_type=mel \
 ++dataset_config.mel_size=$mel_size \
 ++dataset_config.seed=42 \
-++dataset_config.manifest_format=datasets \
+++dataset_config.manifest_format=$manifest_format \
 ++dataset_config.split_size=$split_size \
 ++dataset_config.load_from_cache_file=$load_from_cache_file \
 ++dataset_config.task_type=$task_type \

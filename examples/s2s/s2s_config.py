@@ -189,7 +189,7 @@ class DataConfig:
         "help": "whether input is normalized, used for models such as wavlm"
     })
     seed: int = 42
-    manifest_format: str = field(default="datasets", metadata={ "help": "alternative: jsonl" })
+    manifest_format: str = field(default="parquet", metadata={ "help": "alternative: jsonl" })
     split_size: float = 0.1
 
     vocab_config: VocabConfig = field(default_factory=VocabConfig)
