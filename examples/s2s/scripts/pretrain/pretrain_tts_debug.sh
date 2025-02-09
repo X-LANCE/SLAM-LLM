@@ -26,6 +26,7 @@ num_latency_tokens=0                # number of latency tokens (in front of the 
 do_layershift=false                 # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
 
 # dataset settings
+manifest_format=parquet             # parquet or jsonl
 train_data_path="/valleblob/v-wenxichen/data/debug/1"
 val_data_path="/valleblob/v-wenxichen/data/debug/1"
 load_from_cache_file=true          # set to true if you have already generated the cache file, otherwise set to false
@@ -82,7 +83,7 @@ hydra.run.dir=$output_dir \
 ++dataset_config.val_data_path=$val_data_path \
 ++dataset_config.input_type=mel \
 ++dataset_config.seed=42 \
-++dataset_config.manifest_format=datasets \
+++dataset_config.manifest_format=$manifest_format \
 ++dataset_config.split_size=$split_size \
 ++dataset_config.load_from_cache_file=$load_from_cache_file \
 ++dataset_config.task_type=$task_type \

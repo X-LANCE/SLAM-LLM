@@ -41,8 +41,11 @@ ds = load_dataset("DATASET_NAME")
 ### JSONL
 We also support JSONL format for its concise structure. Below is an example:
 ```jsonl
-{"key": "1", "source_wav": "/xxx/1.wav", "source_text": "Can you recommend some Chinese food for me?", "target_wav": "/xxx/1.wav", "target_text": "Sure! I recommend trying dumplings, Peking duck, and mapo tofu for a mix of flavors and textures in Chinese cuisine. These dishes offer a good balance of savory, spicy, and crispy elements."}
+{"key": "1", "source_wav": "/xxx/1.wav", "source_text": "Can you recommend some Chinese food for me?", "target_token": [742, 383, 455, 619, 180], "target_text": "Sure! I recommend trying dumplings, Peking duck, and mapo tofu for a mix of flavors and textures in Chinese cuisine. These dishes offer a good balance of savory, spicy, and crispy elements."}
 ```
+
+🔔**Update**:
+We now use `target_token` to replace the `target_wav` field. When using your own data, you need to generate the corresponding audio response tokens yourself (e.g., using [CosyVoice](https://github.com/FunAudioLLM/CosyVoice) tokens in SLAM-Omni).
 
 ## Checkpoints
 We reproduced the single-stage fine-tuning results of SLAM-Omni with a group size of **3**. The following checkpoints are available for download:

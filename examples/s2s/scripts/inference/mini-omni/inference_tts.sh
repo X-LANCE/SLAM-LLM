@@ -25,7 +25,7 @@ split=test
 # val_data_path=/home/v-wenxichen/SLAM-LLM/examples/s2s/demo/data/${split}.jsonl
 
 # huggingface dataset
-manifest_format=datasets
+manifest_format=parquet
 val_data_path="gpt-omni/VoiceAssistant-400K"
 load_from_cache_file=true
 dataset_sample_seed=1234
