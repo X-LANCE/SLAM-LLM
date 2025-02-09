@@ -15,7 +15,7 @@ num_gpus=$(( num_gpus_per_node * num_nodes ))
 
 llm_path="/nfs/yangguanrou.ygr/ckpts/Qwen/Qwen2-0.5B"
 llm_name=Qwen2-0.5b
-llm_dim=896                         # 896 1536 3584 8192  -> 0.5B yh1.5B 3B 7B
+llm_dim=896                         # 896 1536 3584 8192  -> 0.5B 1.5B 3B 7B
 
 # vocabulary settings
 code_layer=3                        # 1 single semantic code layer   2 3 4 5 6 7 8 group semantic code layers 

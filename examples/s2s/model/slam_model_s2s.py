@@ -92,7 +92,7 @@ def model_factory(train_config, model_config, **kwargs):
     ckpt_path = kwargs.get(
         "ckpt_path", None
     )  # FIX(MZY): load model ckpt(mainly projector, related to model_checkpointing/checkpoint_handler.py: save_model_checkpoint_peft)
-    if ckpt_path is not None:
+    if ckpt_path is not None: #x
         logger.info("loading other parts from: {}\n".format(ckpt_path))
         ckpt_dict = torch.load(ckpt_path, map_location="cpu")
         model.load_state_dict(ckpt_dict, strict=False)
@@ -102,7 +102,7 @@ def model_factory(train_config, model_config, **kwargs):
 
     if train_config.train_embed_only:
         train_embedding_layer_only(model)
-
+    # pdb.set_trace()
     # fixme: here has a bug -> during inference, we need load the ckpt again since the ckpt above is for FFT stage
     if train_config.use_peft:
         logger.info("setup peft for llm")
@@ -115,7 +115,7 @@ def model_factory(train_config, model_config, **kwargs):
         logger.info("loading peft-stage ckpt from: {}\n".format(kwargs.get("peft_ckpt")))
         ckpt_dict = torch.load(kwargs.get("peft_ckpt"), map_location="cpu")
         model.load_state_dict(ckpt_dict, strict=False)
-
+        # msg= model.load_state_dict(ckpt_dict, strict=False)logger.info(msg)
     print_model_size(
         model,
         train_config,
@@ -157,6 +157,11 @@ class slam_model_s2s(slam_model):
         self.original_vocabsize = self.llm.lm_head.weight.size(0)
         if self.model_config.vocab_config.total_vocabsize != self.original_vocabsize:
             self.llm.resize_token_embeddings(self.model_config.vocab_config.total_vocabsize)  #!!!!!
+            # embed_tokens = self.llm.model.embed_tokens
+            # save_path = '/nfs/yangguanrou.ygr/codes/SLAM-LLM/examples/s2s/scripts/ygr/belle/tts/tn_remake/embed_tokens.pth'
+            # save_path = '/nfs/yangguanrou.ygr/codes/SLAM-LLM/examples/s2s/scripts/ygr/belle/tts/tn_remake/embed_tokens_infer.pth'
+            # torch.save(embed_tokens, save_path)
+            # self.llm.model.embed_tokens = torch.load('/nfs/yangguanrou.ygr/codes/SLAM-LLM/examples/s2s/scripts/ygr/belle/tts/tn_remake/embed_tokens.pth') #重要
 
             if int(os.environ.get("RANK", "0")) == 0:
                 logger.info("Resize llm embedding layer's vocab size to {}\n".format(self.model_config.vocab_config.total_vocabsize))
@@ -383,7 +388,10 @@ class slam_model_s2s(slam_model):
             if current_input_text is not None:
                 audio_tokens = torch.cat([layershift(current_audio_tokens[i], i).unsqueeze(1) for i in range(self.code_layer)], dim=1)
                 combined_input_ids = torch.cat([audio_tokens, current_input_text.unsqueeze(1)], dim=1)
-                inputs_embeds = self.llm.model.embed_tokens(combined_input_ids)
+                if self.train_config.use_peft:
+                    inputs_embeds = self.llm.model.model.embed_tokens(combined_input_ids) #
+                else:
+                    inputs_embeds = self.llm.model.embed_tokens(combined_input_ids) #正常情况
                 inputs_embeds = torch.mean(inputs_embeds, dim=1).unsqueeze(1) #!!!
             
             outputs = self.llm(
@@ -413,7 +421,7 @@ class slam_model_s2s(slam_model):
                 next_token_text = self.sample_next_token(xt_logits[-1, :], **kwargs)
             else:
                 next_token_text = torch.tensor([pad_t], device=input_ids.device)
-
+            # logger.info(next_token_text.item())
             next_tokens_audio = []
             for i in range(self.code_layer):
                 if not audio_end and not decode_text_only:

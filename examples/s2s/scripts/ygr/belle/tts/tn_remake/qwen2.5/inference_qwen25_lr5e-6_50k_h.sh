@@ -1,5 +1,5 @@
 #!/bin/bash
-export CUDA_VISIBLE_DEVICES=1
+export CUDA_VISIBLE_DEVICES=3
 export TOKENIZERS_PARALLELISM=false
 export OMP_NUM_THREADS=1
 # export LD_LIBRARY_PATH=/home/v-wenxichen/anaconda3/envs/slam/lib:$LD_LIBRARY_PATH
@@ -10,19 +10,19 @@ export CUDA_LAUNCH_BLOCKING=1
 code_dir=examples/s2s
 
 speech_encoder_path="small"   # whisper small
-llm_path="/nfs/yangguanrou.ygr/ckpts/Qwen/Qwen2-0.5B"
+llm_path="/nfs/yangguanrou.ygr/ckpts/Qwen/Qwen2.5-0.5B"
 codec_decoder_path="/nfs/yangguanrou.ygr/ckpts/CosyVoice/CosyVoice-300M-SFT"
 
 tts_adapter=false
 task_type=tts
 
 
-ckpt_path=/nfs/yangguanrou.ygr/codes/SLAM-LLM/examples/s2s/scripts/ygr/exp/tts/ft_secap_belle_ckpt_lr5e-6_50k/s2s_epoch_15_step_2458
+ckpt_path=/nfs/yangguanrou.ygr/codes/SLAM-LLM/examples/s2s/scripts/ygr/exp/tts/ft_secap_qwen25_lr5e-6_50k/s2s_epoch_8_step_2677
 split=test
 
 # jsonl dataset
 manifest_format=jsonl
-val_data_path=/nfs/yangguanrou.ygr/data/Emotion/secap_data/cosyvoice1_50HZ_token/test_single.jsonl
+val_data_path=/nfs/yangguanrou.ygr/data/secap_my/test.jsonl
 # # huggingface dataset
 # manifest_format=datasets
 # val_data_path="gpt-omni/VoiceAssistant-400K"
@@ -60,7 +60,7 @@ output_text_only=false
 inference_online=false
 speech_sample_rate=22050 #只对算时间有用
 
-decode_log=$ckpt_path/tts_decode_${split}_rp${repetition_penalty}_seed${dataset_sample_seed}_greedy_secap_test_single_debug
+decode_log=$ckpt_path/tts_decode_${split}_rp${repetition_penalty}_seed${dataset_sample_seed}_greedy_secap_test
 if [ "$do_sample" = true ] ; then
     decode_log=$ckpt_path/s2s_decode_${split}_rp${repetition_penalty}_seed${dataset_sample_seed}_sampling_topk${top_k}_topp${top_p}_temp${temperature}
 fi
@@ -105,6 +105,7 @@ python $code_dir/inference_s2s.py \
         ++dataset_config.code_type=$code_type \
         ++dataset_config.num_latency_tokens=$num_latency_tokens \
         ++dataset_config.do_layershift=$do_layershift \
+        ++dataset_config.use_emo=true \
         ++train_config.model_name=s2s \
         ++train_config.freeze_encoder=true \
         ++train_config.freeze_llm=true \
@@ -130,7 +131,6 @@ python $code_dir/inference_s2s.py \
         ++output_text_only=$output_text_only \
         ++inference_online=$inference_online \
         ++speech_sample_rate=$speech_sample_rate
-
 
 python examples/s2s/utils/decode_whisper_v3_zh.py --parent_dir $decode_log
 

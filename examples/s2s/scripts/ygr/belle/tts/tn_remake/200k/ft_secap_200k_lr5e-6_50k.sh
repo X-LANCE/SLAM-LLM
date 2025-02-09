@@ -15,7 +15,7 @@ num_gpus=$(( num_gpus_per_node * num_nodes ))
 
 llm_path="/nfs/yangguanrou.ygr/ckpts/Qwen/Qwen2-0.5B"
 llm_name=Qwen2-0.5b
-llm_dim=896                         # 896 1536 3584 8192  -> 0.5B yh1.5B 3B 7B
+llm_dim=896                         # 896 1536 3584 8192  -> 0.5B 1.5B 3B 7B
 
 # vocabulary settings
 code_layer=3                        # 1 single semantic code layer   2 3 4 5 6 7 8 group semantic code layers 
@@ -29,21 +29,21 @@ num_latency_tokens=5                # number of latency tokens (in front of the 
 do_layershift=false                 # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
 
 # dataset settings
-train_data_path="/nfs/yangguanrou.ygr/data/Belle_manifest/train_clean.jsonl"
-val_data_path="/nfs/yangguanrou.ygr/data/Belle_manifest/val_clean.jsonl"
+train_data_path="/nfs/yangguanrou.ygr/data/secap_my/train.jsonl"
+val_data_path="/nfs/yangguanrou.ygr/data/secap_my/dev.jsonl"
 load_from_cache_file=true         # set to true if you have already generated the cache file, otherwise set to false
 
 # training settings
 batch_size_training=6
 use_fp16=true
-use_peft=true
-num_epochs=10
-lr=1e-4
+use_peft=false
+num_epochs=100
+lr=5e-6
 warmup_steps=1000
-total_steps=100000
+total_steps=50000
 
 # validation settings
-validation_interval=10000
+validation_interval=5000
 split_size=0.01
 
 # model settings
@@ -55,7 +55,7 @@ group_decode=true
 group_decode_adapter_type=linear
 
 # log settings
-exp_name="belle_pretrain_remake_lora"
+exp_name="ft_secap_200k_lr5e-6_50k"
 # if [ "$use_fp16" = true ]; then
 #     exp_name="tts_train-${llm_name}-gpu${num_gpus}-btz${batch_size_training}-lr${lr}-fp16-epochs${num_epochs}-latency${num_latency_tokens}-group${code_layer}-maxsteps${total_steps}"
 # fi
@@ -66,7 +66,7 @@ wandb_project_name=SLAM-Omni
 home_dir=/nfs/yangguanrou.ygr/codes/SLAM-LLM/examples/s2s/scripts/ygr/exp/tts
 # output_dir=$home_dir/$(TZ='Asia/Shanghai' date +"%Y_%m_%d")/$(TZ='Asia/Shanghai' date +"%H_%M_%S")
 output_dir=$home_dir/$exp_name
-# ckpt_path=/valleblob/v-wenxichen/exp/s2s/2024_09_26/s2s_train_v0_gpu4_btz4/s2s_epoch_2_step_20982  # this line is for resuming training
+ckpt_path=/nfs/yangguanrou.ygr/codes/SLAM-LLM/examples/s2s/scripts/ygr/exp/tts/belle_pretrain_remake_200k/s2s_epoch_3_step_33682  # this line is for resuming training
 
 if [ "$exp_name" = "debug" ]; then
     use_wandb=false
@@ -102,6 +102,7 @@ hydra.run.dir=$output_dir \
 ++dataset_config.code_type=$code_type \
 ++dataset_config.num_latency_tokens=$num_latency_tokens \
 ++dataset_config.do_layershift=$do_layershift \
+++dataset_config.use_emo=true \
 ++train_config.model_name=s2s \
 ++train_config.num_epochs=$num_epochs \
 ++train_config.freeze_encoder=true \
@@ -126,7 +127,7 @@ hydra.run.dir=$output_dir \
 ++log_config.wandb_dir=$output_dir \
 ++log_config.log_file=$output_dir/exp.log \
 ++log_config.log_interval=100 \
-++peft_config.r=32 \
+++ckpt_path=$ckpt_path/model.pt \
 "
 # ++ckpt_path=$ckpt_path/model.pt \
 # ↑ this line is for resuming training

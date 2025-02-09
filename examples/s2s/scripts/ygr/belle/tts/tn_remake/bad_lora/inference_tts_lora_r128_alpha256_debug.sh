@@ -1,5 +1,5 @@
 #!/bin/bash
-export CUDA_VISIBLE_DEVICES=0
+export CUDA_VISIBLE_DEVICES=2
 export TOKENIZERS_PARALLELISM=false
 export OMP_NUM_THREADS=1
 # export LD_LIBRARY_PATH=/home/v-wenxichen/anaconda3/envs/slam/lib:$LD_LIBRARY_PATH
@@ -17,7 +17,7 @@ tts_adapter=false
 task_type=tts
 
 
-peft_path=/nfs/yangguanrou.ygr/codes/SLAM-LLM/examples/s2s/scripts/ygr/exp/tts/belle_pretrain_remake_lora_r128_alpha256_1/s2s_epoch_2_step_31841
+peft_path=/nfs/yangguanrou.ygr/codes/SLAM-LLM/examples/s2s/scripts/ygr/exp/tts/belle_pretrain_remake_lora_r128_alpha256/s2s_epoch_2_step_31841
 split=test
 
 # jsonl dataset
@@ -59,8 +59,9 @@ output_text_only=false
 
 inference_online=false
 speech_sample_rate=22050 #只对算时间有用
+use_peft=true
 
-decode_log=$ckpt_path/tts_decode_${split}_rp${repetition_penalty}_seed${dataset_sample_seed}_greedy_secap_test
+decode_log=$ckpt_path/tts_decode_${split}_rp${repetition_penalty}_seed${dataset_sample_seed}_greedy_secap_test_debug
 if [ "$do_sample" = true ] ; then
     decode_log=$ckpt_path/s2s_decode_${split}_rp${repetition_penalty}_seed${dataset_sample_seed}_sampling_topk${top_k}_topp${top_p}_temp${temperature}
 fi
@@ -114,6 +115,7 @@ python $code_dir/inference_s2s.py \
         ++train_config.val_batch_size=1 \
         ++train_config.num_workers_dataloader=2 \
         ++train_config.task_type=$task_type \
+        ++train_config.use_peft=$use_peft \
         ++train_config.peft_config.r=128 \
         ++train_config.peft_config.lora_alpha=256 \
         ++decode_config.text_repetition_penalty=$text_repetition_penalty \
@@ -133,8 +135,8 @@ python $code_dir/inference_s2s.py \
         ++inference_online=$inference_online \
         ++speech_sample_rate=$speech_sample_rate
 
-python examples/s2s/utils/decode_whisper_v3_zh.py --parent_dir $decode_log
+# python examples/s2s/utils/decode_whisper_v3_zh.py --parent_dir $decode_log
 
-bash scripts/compute_wer_zh.sh $decode_log
+# bash scripts/compute_wer_zh.sh $decode_log
 
-python examples/s2s/utils/eval_emo.py --gt $val_data_path --pred $decode_log
+# python examples/s2s/utils/eval_emo.py --gt $val_data_path --pred $decode_log

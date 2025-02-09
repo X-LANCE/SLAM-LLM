@@ -23,3 +23,4 @@ examples/asr_librispeech/scripts/decode_hubert_xtralarge_linear_vicuna_7b_debug.
 **/.hydra/
 *.wav
 exp/
+*.pth

@@ -17,7 +17,7 @@ from slam_llm.utils.metric import compute_accuracy
 
 import logging
 logger = logging.getLogger(__name__)
-
+import pdb
 def model_factory(train_config, model_config, **kwargs):
     # return necessary components for training
     tokenizer = setup_tokenizer(train_config, model_config, **kwargs)
@@ -115,7 +115,7 @@ def setup_encoder(train_config, model_config, **kwargs):
 def setup_llm(train_config, model_config, **kwargs):
     from pkg_resources import packaging
     use_cache = False if train_config.enable_fsdp or train_config.enable_ddp else None
-    if (train_config.enable_fsdp or train_config.enable_ddp) and train_config.low_cpu_fsdp:
+    if (train_config.enable_fsdp or train_config.enable_ddp) and train_config.low_cpu_fsdp: #x
         """
         for FSDP, we can save cpu memory by loading pretrained model on rank0 only.
         this avoids cpu oom when loading large models like llama 70B, in which case
@@ -180,8 +180,9 @@ def setup_llm(train_config, model_config, **kwargs):
                 load_in_8bit=True if train_config.quantization else None,
                 device_map="auto" if train_config.quantization else None,
                 use_cache=use_cache,
-            )
-    if (train_config.enable_fsdp or train_config.enable_ddp) and train_config.use_fast_kernels:
+            ) #!!
+    # pdb.set_trace()
+    if (train_config.enable_fsdp or train_config.enable_ddp) and train_config.use_fast_kernels: #x
         """
         For FSDP and FSDP+PEFT, setting 'use_fast_kernels' will enable
         using of Flash Attention or Xformer memory-efficient kernels
