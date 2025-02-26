@@ -31,6 +31,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         self.emo_dict={"hap":"happy","neu":"neutral","sad":"sad","ang":"angry"}
         self.change_prompt= dataset_config.get("change_prompt", False)
         self.use_emo = dataset_config.get("use_emo", False)
+        self.en_dataset = dataset_config.get("en_dataset", False)
         self.mel_size = dataset_config.get("mel_size", 80) # 80 for whisper large v1 and v2, 128 for large v3
         self.prompt_template = "<SYSTEM>: {}\n "
         self.answer_template = "{}"
@@ -264,13 +265,15 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         if task_type == "s2s" or task_type == "asr":
             audio_mel, audio_length = self.extract_audio_feature(source_audio)
         
-        if task_type == "s2s" or task_type == "tts":  #
+        if task_type == "s2s" or task_type == "tts" and target_audio is not None:  #
             target_audio, target_audio_length = self.extract_audio_feature(target_audio) #torch.Size([7, 167]),167 ; torch.Size([1, 40]),40
 
         if self.fix_length_audio > 0:
             audio_length = self.fix_length_audio
 
         prompt = self.prompt
+        if self.en_dataset:
+            prompt="Say this sentence. "
         if self.use_emo:
             if "emotion_text_prompt" in data_dict:
                 emotion_text_prompt = data_dict.get("emotion_text_prompt" , None)
@@ -278,16 +281,21 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
                 emotion_text_prompt = re.sub(r'\.(?=.)', ',', emotion_text_prompt) #把句中的. 换成,
                 # if emotion_text_prompt[-1]!='。':
                 #     emotion_text_prompt = emotion_text_prompt+'。'
-                prompt = "请用{}的情感说这句话. ".format(emotion_text_prompt) #"请说这句话. " # prompt = "情感状态是{}请用这种情感说这句话。".format(emotion_text_prompt) 1.6之前  
+                if self.en_dataset:
+                    # prompt = "Generate a natural and expressive spoken version of the given text with emotion of {}. ".format(emotion_text_prompt)
+                    prompt = "Say this sentence with emotion of {}. ".format(emotion_text_prompt)
+                else:
+                    prompt = "请用{}的情感说这句话. ".format(emotion_text_prompt) #"请说这句话. " # prompt = "情感状态是{}请用这种情感说这句话。".format(emotion_text_prompt) 1.6之前  
                 # logger.info(prompt)
-            elif "emo" in data_dict:
-                emo=data_dict.get("emo" , None)
-                # emo = self.emo_dict[emo]  prompt = random.choice(self.emotion_prompt[emo])
-                prompt = "Generate a natural and expressive spoken version of the given text with a {} tone. ".format(emo)
-                # 'Generate a natural and expressive spoken version of the given text with a neutral tone. '
-                if self.change_prompt:
-                    prompt = "Please read the given text with a {} tone. ".format(emo)
+            # elif "emo" in data_dict:
+            #     emo=data_dict.get("emo" , None)
+            #     # emo = self.emo_dict[emo]  prompt = random.choice(self.emotion_prompt[emo])
+            #     prompt = "Generate a natural and expressive spoken version of the given text with a {} tone. ".format(emo)
+            #     # 'Generate a natural and expressive spoken version of the given text with a neutral tone. '
+            #     if self.change_prompt:
+            #         prompt = "Please read the given text with a {} tone. ".format(emo)
         prompt = self.prompt_template.format(prompt)
+        # logger.info(prompt)
 
         # add history conversation in front of the prompt
         if source_text is not None and "<USER>:" in source_text: #x

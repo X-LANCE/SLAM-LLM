@@ -106,13 +106,13 @@ class CosyVoiceFrontEnd:
         return speech_feat, speech_feat_len
 
     def text_normalize(self, text, split=True, text_frontend=True):
-        if text_frontend is False:
+        if text_frontend is False: #x
             return [text] if split is True else text
         text = text.strip()
         if self.use_ttsfrd:
             texts = [i["text"] for i in json.loads(self.frd.do_voicegen_frd(text))["sentences"]]
             text = ''.join(texts)
-        else:
+        else: # english
             if contains_chinese(text):
                 text = self.zh_tn_model.normalize(text)
                 text = text.replace("\n", "")

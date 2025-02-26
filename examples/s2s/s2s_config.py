@@ -101,6 +101,7 @@ class ModelConfig:
     group_decode_adapter_type: str = "linear"
     whisper_decode: bool = False
     cosyvoice_version: int = 1
+    random_init: bool = False
 
 
 @dataclass
@@ -212,6 +213,8 @@ class DataConfig:
     do_layershift: bool = True
     change_prompt: bool = False
     use_emo: bool = False
+    en_dataset : bool = False
+    spk_embedding: str = "中文女"
 
 @dataclass
 class DecodeConfig:

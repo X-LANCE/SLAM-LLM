@@ -175,12 +175,26 @@ def setup_llm(train_config, model_config, **kwargs):
                 use_cache=use_cache,
             )
         else:
-            model = AutoModelForCausalLM.from_pretrained(
-                model_config.llm_path,
-                load_in_8bit=True if train_config.quantization else None,
-                device_map="auto" if train_config.quantization else None,
-                use_cache=use_cache,
-            ) #!!
+            if model_config.random_init is True:
+                # 使用配置初始化模型
+                logger.info("Using random initialization for model")
+                llmmodel_config = AutoConfig.from_pretrained(model_config.llm_path)  # 你可以在这里设置模型的配置
+                model = AutoModelForCausalLM.from_config(
+                    llmmodel_config,  # 通过配置来初始化模型架构
+                    # device_map="auto" if train_config.quantization else None,
+                    # use_cache=use_cache,
+                )
+                # pdb.set_trace()
+                # load_in_8bit 将模型权重从浮动精度（如 32-bit 浮动数值）压缩成 8-bit 整数表示
+
+            else:
+                model = AutoModelForCausalLM.from_pretrained(
+                    model_config.llm_path,
+                    load_in_8bit=True if train_config.quantization else None,
+                    device_map="auto" if train_config.quantization else None,
+                    use_cache=use_cache,
+                ) #!!
+                # pdb.set_trace()
     # pdb.set_trace()
     if (train_config.enable_fsdp or train_config.enable_ddp) and train_config.use_fast_kernels: #x
         """

@@ -165,36 +165,39 @@ def main(kwargs: DictConfig):
 		for step, batch in enumerate(test_dataloader):
 			for key in batch.keys():
 				batch[key] = batch[key].to(device) if isinstance(batch[key], torch.Tensor) else batch[key]
-			start_time = time.time()
-			model_outputs = model.generate(**batch, **decode_config)
-			text_outputs = model_outputs[code_layer]
-			audio_outputs = model_outputs[:code_layer]
-			end_time_llm = time.time()
-			logger.info(f"LLM Inference Time: {end_time_llm - start_time:.2f}s")
+			# start_time = time.time()
+			# model_outputs = model.generate(**batch, **decode_config)
+			# text_outputs = model_outputs[code_layer]
+			# audio_outputs = model_outputs[:code_layer]
+			# end_time_llm = time.time()
+			# logger.info(f"LLM Inference Time: {end_time_llm - start_time:.2f}s")
 			# output_text = model.tokenizer.batch_decode(text_outputs, add_special_tokens=False, skip_special_tokens=True)
-			output_text = model.tokenizer.decode(text_outputs, add_special_tokens=False, skip_special_tokens=True)
-			for key, source_text, target_text, generated_text in zip(batch["keys"], batch["source_texts"], batch["target_texts"], [output_text]):
-				q.write(key + "\t" + source_text + "\n")
-				gt.write(key + "\t" + target_text + "\n")
-				generated_text = generated_text.replace('\n', '')
-				pred.write(key + "\t" + generated_text + "\n")
+			# output_text = model.tokenizer.decode(text_outputs, add_special_tokens=False, skip_special_tokens=True)
+			# for key, source_text, target_text, generated_text in zip(batch["keys"], batch["source_texts"], batch["target_texts"], [output_text]):
+			# 	q.write(key + "\t" + source_text + "\n")
+			# 	gt.write(key + "\t" + target_text + "\n")
+			# 	generated_text = generated_text.replace('\n', '')
+			# 	pred.write(key + "\t" + generated_text + "\n")
 
-				if task_type == "s2s":
-					logger.info(f"Question: {source_text}")
-				elif task_type == "tts":
-					logger.info(f"Target Text: {target_text}")
+			# 	if task_type == "s2s":
+			# 		logger.info(f"Question: {source_text}")
+			# 	elif task_type == "tts":
+			# 		logger.info(f"Target Text: {target_text}")
 
-				logger.info(f"Generated Text: {generated_text}")
+			# 	logger.info(f"Generated Text: {generated_text}")
 
-			if output_text_only or decode_config.decode_text_only:
-				continue
+			# if output_text_only or decode_config.decode_text_only:
+			# 	continue
 				
-			if audio_outputs[0].shape[0] == decode_config.max_new_tokens:	# if the audio token is too long, skip (bad case)
-				logger.warning(f"Audio token is too long, skip. You can try to increase the max_new_tokens in the decode_config.")
-				continue
+			# if audio_outputs[0].shape[0] == decode_config.max_new_tokens:	# if the audio token is too long, skip (bad case)
+			# 	logger.warning(f"Audio token is too long, skip. You can try to increase the max_new_tokens in the decode_config.")
+			# 	continue
 
 			for i, key in enumerate(batch["keys"]):
-				audio_tokens = [audio_outputs[layer] for layer in range(code_layer)]
+				# audio_tokens = [audio_outputs[layer] for layer in range(code_layer)]
+				# pdb.set_trace()
+				audio_tokens = batch['target_audio'][0]
+				audio_tokens = [audio_tokens[i].to('cuda') for i in range(audio_tokens.size(0))]
 
 				if code_type == "SNAC":
 					audiolist = reconscruct_snac(audio_tokens)
@@ -213,13 +216,13 @@ def main(kwargs: DictConfig):
 
 				if key[-4:] == ".wav":
 					key = key[:-4]
-				end_time = time.time()
+				# end_time = time.time()
 				audio_length = audio_hat.shape[1] / speech_sample_rate
-				RTF = (end_time - start_time) / audio_length
+				# RTF = (end_time - start_time) / audio_length
 				sf.write(f"{tone_audio_dir}/{key}.wav", audio_hat.squeeze().cpu().numpy(), speech_sample_rate)
-				logger.info(f"Generated Audio: {tone_dir}/{key}.wav, audio length: {audio_length:.2f}s, generation time: {end_time - start_time:.2f}s, RTF: {RTF:.2f}")
-				RTF_llm = (end_time_llm - start_time) / audio_length
-				logger.info(f"LLM RTF: {RTF_llm:.2f}")
+				logger.info(f"Generated Audio: {tone_dir}/{key}.wav, audio length: {audio_length:.2f}s, ")
+				# # RTF_llm = (end_time_llm - start_time) / audio_length
+				# logger.info(f"LLM RTF: {RTF_llm:.2f}")
 
 	logger.info("============== Inference Finished ==============")
 

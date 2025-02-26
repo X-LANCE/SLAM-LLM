@@ -56,7 +56,7 @@ def get_group_answer_token(audio_tokens, num_latency_tokens, padding_token, end_
     result_tensor = torch.stack(result)
     return result_tensor, audio_length
 
-def audio_decode_cosyvoice(audio_tokens, model_config, codec_decoder, tone_dir, audio_prompt_path=None, code_layer=1, num_latency_tokens=1, speed=1.0):
+def audio_decode_cosyvoice(audio_tokens, model_config, codec_decoder, tone_dir, spk_embedding="中文女", audio_prompt_path=None, code_layer=1, num_latency_tokens=1, speed=1.0):
     """
     Generate audio from tokens with optional tone and prompt embedding.
 
@@ -106,8 +106,13 @@ def audio_decode_cosyvoice(audio_tokens, model_config, codec_decoder, tone_dir, 
 
     # Set up the prompt speech features and speaker embedding
     if tone_dir == "default_tone":
+        if spk_embedding=="english_female":
+            spk_embedding='英文女'
+        # logger.info(spk_embedding)
+        
         # flow_embedding = codec_decoder.frontend.spk2info['英文女']['embedding']
-        flow_embedding = codec_decoder.frontend.spk2info['中文女']['embedding']
+        # flow_embedding = codec_decoder.frontend.spk2info['中文女']['embedding']
+        flow_embedding = codec_decoder.frontend.spk2info[spk_embedding]['embedding']
         # spk_list = list(codec_decoder.frontend.spk2info.keys()) # logger.info(spk_list)  #['中文女', '中文男', '日语男', '粤语女', '英文女', '英文男', '韩语女']
         flow_prompt_speech_token = torch.zeros(1, 0, dtype=torch.int32)
         prompt_speech_feat = torch.zeros(1, 0, 80)
