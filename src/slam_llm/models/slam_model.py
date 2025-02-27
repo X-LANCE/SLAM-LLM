@@ -1,9 +1,11 @@
 import os
 import types
 import torch
+import torch_npu
 import soundfile as sf
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.npu.amp import autocast
 import torch.distributed as dist
 from typing import List, Optional, Tuple, Union
 from transformers import AutoModelForCausalLM, AutoTokenizer, AutoConfig, AutoModel, AutoModelForSeq2SeqLM, T5ForConditionalGeneration
@@ -279,7 +281,7 @@ class slam_model(nn.Module):
                     item.forward = types.MethodType(new_forward, item)
 
 
-
+    @autocast(dtype=torch.bfloat16)
     def forward(self,
                 input_ids: torch.LongTensor = None,
                 attention_mask: Optional[torch.Tensor] = None,

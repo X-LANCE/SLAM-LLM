@@ -6,6 +6,7 @@ import importlib
 
 # nn
 import torch
+import torch_npu
 from transformers.models.llama.modeling_llama import LlamaDecoderLayer
 
 # opt
@@ -113,7 +114,7 @@ def main(kwargs: DictConfig):
 
 
     # Set the seeds for reproducibility
-    torch.cuda.manual_seed(train_config.seed)
+    torch_npu.npu.manual_seed(train_config.seed)
     torch.manual_seed(train_config.seed)
     random.seed(train_config.seed)
 
@@ -126,7 +127,7 @@ def main(kwargs: DictConfig):
         logger.info(f"local_rank: {local_rank}, rank: {rank}, world_size: {world_size}")
 
     if torch.distributed.is_initialized():
-        torch.cuda.set_device(local_rank)
+        torch_npu.npu.set_device(f"npu:{local_rank}")
         clear_gpu_cache(local_rank)
         setup_environ_flags(rank)
 
@@ -147,12 +148,12 @@ def main(kwargs: DictConfig):
 
     model_factory = get_custom_model_factory(model_config, logger)
     model, tokenizer = model_factory(train_config, model_config, **kwargs)
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("npu" if torch_npu.npu.is_available() else "cpu")
 
     
     # Convert the model to bfloat16 if fsdp and pure_bf16 is enabled
-    if (train_config.enable_fsdp or train_config.enable_ddp) and fsdp_config.pure_bf16:
-        model.to(torch.bfloat16)
+    # if (train_config.enable_fsdp or train_config.enable_ddp) and fsdp_config.pure_bf16:
+    #     model.to(torch.bfloat16)
 
     #setting up FSDP if enable_fsdp is enabled
     if train_config.enable_fsdp:
@@ -170,16 +171,16 @@ def main(kwargs: DictConfig):
             cpu_offload=CPUOffload(offload_params=True) if fsdp_config.fsdp_cpu_offload else None,
             mixed_precision=mixed_precision_policy if not fsdp_config.pure_bf16 else None,
             sharding_strategy=fsdp_config.sharding_strategy,
-            device_id=torch.cuda.current_device(),
+            device_id=torch_npu.npu.current_device(),
             limit_all_gathers=True,
             sync_module_states=train_config.low_cpu_fsdp,
-            param_init_fn=lambda module: module.to_empty(device=torch.device("cuda"), recurse=False)
+            param_init_fn=lambda module: module.to_empty(device=torch.device("npu"), recurse=False)
             if train_config.low_cpu_fsdp and rank != 0 else None,
         )
         if fsdp_config.fsdp_activation_checkpointing:
             apply_fsdp_checkpointing(model)
     elif train_config.enable_ddp:
-        model = model.cuda(local_rank)
+        model = model.npu(local_rank)
         model = DDP(model, device_ids=[local_rank],
                     find_unused_parameters=kwargs.get("train_conf", {}).get("find_unused_parameters", False))
     elif not train_config.quantization:

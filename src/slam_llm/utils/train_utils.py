@@ -10,7 +10,7 @@ from pkg_resources import packaging
 
 
 import torch
-import torch.cuda.nccl as nccl
+import torch_npu
 import torch.distributed as dist
 from torch.distributed.fsdp import ShardingStrategy
 from torch.distributed.fsdp import StateDictType
@@ -68,12 +68,12 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
     # elif train_config.use_fp16 and not train_config.enable_fsdp:
     #     scaler = torch.cuda.amp.GradScaler()
     if train_config.use_fp16:
-        scaler = torch.cuda.amp.GradScaler()
+        scaler = torch_npu.npu.amp.GradScaler()
         if train_config.enable_fsdp:
             scaler = ShardedGradScaler()
     if train_config.enable_fsdp or train_config.enable_ddp:
         world_size = int(os.environ["WORLD_SIZE"])
-    autocast = torch.cuda.amp.autocast if train_config.use_fp16 else nullcontext
+    autocast = torch_npu.npu.amp.autocast if train_config.use_fp16 else nullcontext
     
     train_prep = []
     train_loss = []
@@ -97,16 +97,16 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
             for step, batch in enumerate(train_dataloader):
                 for key in batch.keys():
                     if train_config.enable_fsdp or train_config.enable_ddp:
-                        batch[key] = batch[key].to(local_rank) if isinstance(batch[key], torch.Tensor) else batch[key]
+                        batch[key] = batch[key].to(f"npu:{local_rank}") if isinstance(batch[key], torch.Tensor) else batch[key]
                         if isinstance(batch[key], dict):
                             for k2 in batch[key].keys():
-                                batch[key][k2] = batch[key][k2].to(local_rank) if isinstance(batch[key][k2], torch.Tensor) else batch[key][k2]
+                                batch[key][k2] = batch[key][k2].to(f"npu:{local_rank}") if isinstance(batch[key][k2], torch.Tensor) else batch[key][k2]
                     else:
-                        batch[key] = batch[key].to('cuda:0') if isinstance(batch[key], torch.Tensor) else batch[key]
+                        batch[key] = batch[key].to('npu:0') if isinstance(batch[key], torch.Tensor) else batch[key]
                         if isinstance(batch[key], dict):
                             for k2 in batch[key].keys():
-                                batch[key][k2] = batch[key][k2].to('cuda:0') if isinstance(batch[key][k2], torch.Tensor) else batch[key][k2]
-                with autocast():
+                                batch[key][k2] = batch[key][k2].to('npu:0') if isinstance(batch[key][k2], torch.Tensor) else batch[key][k2]
+                with autocast(dtype=torch.bfloat16):
                     outputs, *rest = model(**batch)
                 acc = rest[0] if rest else -1
                 loss = outputs.loss
@@ -305,14 +305,14 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                         if rank==0:
                             logger.info("=====================================")
                             logger.info(f"Test the file {train_config.run_test_during_validation_file} during validation:")
-                            with autocast():
+                            with autocast(dtype=torch.bfloat16):
                                 logger.info(model.inference(train_config.run_test_during_validation_file, train_config.run_test_during_validation_prompt))
                             logger.info("=====================================")
                         dist.barrier()
                     else:
                         logger.info("=====================================")
                         logger.info(f"Test the file {train_config.run_test_during_validation_file} during validation:")
-                        with autocast():
+                        with autocast(dtype=torch.bfloat16):
                             logger.info(model.inference(train_config.run_test_during_validation_file, train_config.run_test_during_validation_prompt))
                         logger.info("=====================================")
             pbar.close()
@@ -320,7 +320,7 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
         epoch_end_time = time.perf_counter()-epoch_start_time
         epoch_times.append(epoch_end_time)
         # Reducing total_loss across all devices if there's more than one CUDA device
-        if torch.cuda.device_count() > 1 and (train_config.enable_fsdp or train_config.enable_ddp):
+        if torch_npu.npu.device_count() > 1 and (train_config.enable_fsdp or train_config.enable_ddp):
             dist.all_reduce(total_loss, op=dist.ReduceOp.SUM)
             dist.all_reduce(total_acc, op=dist.ReduceOp.SUM)
         train_epoch_loss = total_loss / len(train_dataloader)
@@ -352,13 +352,13 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                 logger.info(f"Max CUDA memory allocated was {memtrace.peak} GB")
                 logger.info(f"Max CUDA memory reserved was {memtrace.max_reserved} GB")
                 logger.info(f"Peak active CUDA memory was {memtrace.peak_active_gb} GB")
-                logger.info(f"Cuda Malloc retires : {memtrace.cuda_malloc_retires}")
+                logger.info(f"Cuda Malloc retires : {memtrace.npu_malloc_retires}")
                 logger.info(f"CPU Total Peak Memory consumed during the train (max): {memtrace.cpu_peaked + memtrace.cpu_begin} GB")
         else:
             logger.info(f"Max CUDA memory allocated was {memtrace.peak} GB")
             logger.info(f"Max CUDA memory reserved was {memtrace.max_reserved} GB")
             logger.info(f"Peak active CUDA memory was {memtrace.peak_active_gb} GB")
-            logger.info(f"Cuda Malloc retires : {memtrace.cuda_malloc_retires}")
+            logger.info(f"Cuda Malloc retires : {memtrace.npu_malloc_retires}")
             logger.info(f"CPU Total Peak Memory consumed during the train (max): {memtrace.cpu_peaked + memtrace.cpu_begin} GB")
 
         # Update the learning rate as needed
@@ -408,7 +408,7 @@ def evaluation(model,train_config, eval_dataloader, local_rank, tokenizer):
     eval_preds = []
     eval_loss = 0.0  # Initialize evaluation loss
     eval_acc = 0.0
-    autocast = torch.cuda.amp.autocast if train_config.use_fp16 else nullcontext # (Fix:MZY): fix expected scalar type mismatch in norm 
+    autocast = torch_npu.npu.amp.autocast if train_config.use_fp16 else nullcontext # (Fix:MZY): fix expected scalar type mismatch in norm 
 
     with MemoryTrace() as memtrace:
         total_length = len(eval_dataloader)
@@ -416,13 +416,13 @@ def evaluation(model,train_config, eval_dataloader, local_rank, tokenizer):
         for step, batch in enumerate(eval_dataloader):
             for key in batch.keys():
                 if train_config.enable_fsdp or train_config.enable_ddp:
-                    batch[key] = batch[key].to(local_rank) if isinstance(batch[key], torch.Tensor) else batch[key]
+                    batch[key] = batch[key].to(f"npu:{local_rank}") if isinstance(batch[key], torch.Tensor) else batch[key]
                 else:
-                    batch[key] = batch[key].to('cuda:0') if isinstance(batch[key], torch.Tensor) else batch[key]
+                    batch[key] = batch[key].to('npu:0') if isinstance(batch[key], torch.Tensor) else batch[key]
             # Ensure no gradients are computed for this scope to save memory
             with torch.no_grad():
                 # Forward pass and compute loss
-                with autocast(): # (Fix:MZY): fix expected scalar type mismatch in norm 
+                with autocast(dtype=torch.bfloat16): # (Fix:MZY): fix expected scalar type mismatch in norm 
                     outputs, *rest = model(**batch)
                 acc = rest[0] if rest else -1
                 loss = outputs.loss
@@ -441,7 +441,7 @@ def evaluation(model,train_config, eval_dataloader, local_rank, tokenizer):
             pbar.set_description(f"step: {step+1}/{total_length}, eval_loss: {eval_loss/(step+1):.4f}, eval_acc: {eval_acc/(step+1):.4f}")
 
     # If there's more than one CUDA device, reduce evaluation loss across all devices
-    if torch.cuda.device_count() > 1 and train_config.enable_fsdp or train_config.enable_ddp:
+    if torch_npu.npu.device_count() > 1 and train_config.enable_fsdp or train_config.enable_ddp:
         dist.all_reduce(eval_loss, op=dist.ReduceOp.SUM)
         dist.all_reduce(eval_acc, op=dist.ReduceOp.SUM)
 
@@ -477,7 +477,7 @@ def check_frozen_layers_peft_model(model):
 
 def setup():
     """Initialize the process group for distributed training"""
-    dist.init_process_group("nccl")
+    dist.init_process_group("hccl")
 
 
 def setup_environ_flags(rank):
@@ -501,7 +501,7 @@ def clear_gpu_cache(rank=None):
     """Clear the GPU cache for all ranks"""
     if rank == 0:
         logger.info(f"Clearing GPU cache for all ranks")
-    torch.cuda.empty_cache()
+    torch_npu.npu.empty_cache()
 
 
 def get_parameter_dtypes(model):
@@ -546,11 +546,11 @@ def get_policies(cfg, rank):
     """Get the policies for mixed precision and fsdp wrapping"""
 
     verify_bfloat_support = (
-    torch.version.cuda
-    and torch.cuda.is_bf16_supported()
-    and packaging.version.parse(torch.version.cuda).release >= (11, 0)
-    and dist.is_nccl_available()
-    and nccl.version() >= (2, 10)
+    # torch.version.cuda
+    torch_npu.npu.is_bf16_supported()
+    # and packaging.version.parse(torch.version.cuda).release >= (11, 0)
+    # and dist.is_nccl_available()
+    # and nccl.version() >= (2, 10)
     )
 
 
