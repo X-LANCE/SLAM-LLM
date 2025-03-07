@@ -1,8 +1,10 @@
 # import fire
 import random
 import torch
+import torch_npu
 import logging
 # import argparse
+import inspect
 from slam_llm.models.slam_model import slam_model
 # config
 # from llama_recipes.configs import fsdp_config as FSDP_CONFIG
@@ -11,7 +13,7 @@ from slam_llm.models.slam_model import slam_model
 # from llama_recipes.configs import log_config as LOG_CONFIG
 
 from slam_llm.utils.model_utils import get_custom_model_factory
-from slam_llm.utils.dataset_utils import get_preprocessed_dataset
+from slam_llm.utils.dataset_utils import get_custom_dataset, get_preprocessed_dataset
 import os
 import logging
 from tqdm import tqdm
@@ -92,17 +94,15 @@ def main(kwargs: DictConfig):
 
 	
 	# Set the seeds for reproducibility
-	torch.cuda.manual_seed(train_config.seed)
+	torch.npu.manual_seed(train_config.seed)
 	torch.manual_seed(train_config.seed)
 	random.seed(train_config.seed)
 	
 	model_factory = get_custom_model_factory(model_config, logger)
 	model, tokenizer = model_factory(train_config, model_config, **kwargs)
-	device = torch.device("cuda" if torch.cuda.is_available() else "cpu") # FIX(MZY): put the whole model to device.
+	device = torch.device("npu" if torch.npu.is_available() else "cpu") # FIX(MZY): put the whole model to device.
 	model.to(device)
 	model.eval()
-
-	# dataset_config = generate_dataset_config(train_config, kwargs)
 	logger.info("dataset_config: {}".format(dataset_config))
 	dataset_test = get_preprocessed_dataset(
         tokenizer,
@@ -131,10 +131,15 @@ def main(kwargs: DictConfig):
 			for key in batch.keys():
 				batch[key] = batch[key].to(device) if isinstance(batch[key], torch.Tensor) else batch[key]
 			model_outputs = model.generate(**batch)
-			output_text = model.tokenizer.batch_decode(model_outputs, add_special_tokens=False, skip_special_tokens=True)
+			if hasattr(model, 'tokenizer'):
+				output_text = model.tokenizer.batch_decode(model_outputs, add_special_tokens=False, skip_special_tokens=True)
+			else:
+				output_text = tokenizer.batch_decode(model_outputs, skip_special_tokens=True)
 			for key, text, target in zip(batch["keys"], output_text, batch["targets"]):
-				pred.write(key + "\t" + text.replace("\n", " ") + "\n")
-				gt.write(key + "\t" + target + "\n")
+				pred.write(key + " " + text.strip() + "\n")
+				gt.write(key + " " + target + "\n")
+				if key == "BAC009S0764W0149":
+					input()
 
 
 if __name__ == "__main__":

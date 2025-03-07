@@ -7,6 +7,7 @@ import importlib
 
 # nn
 import torch
+import torch_npu
 from transformers.models.llama.modeling_llama import LlamaDecoderLayer
 
 # opt
@@ -49,7 +50,7 @@ import hydra
 from omegaconf import DictConfig, ListConfig, OmegaConf
 from pathlib import Path
 
-@hydra.main(config_name=None, version_base=None)
+@hydra.main(config_name=None, version_base=None)  # strict=False 允许忽略未知参数)
 def main_hydra(cfg: DictConfig):
     def to_plain_list(cfg_item):
         if isinstance(cfg_item, ListConfig):
@@ -113,7 +114,7 @@ def main(kwargs: DictConfig):
 
 
     # Set the seeds for reproducibility
-    torch.cuda.manual_seed(train_config.seed)
+    torch.npu.manual_seed(train_config.seed)
     torch.manual_seed(train_config.seed)
     random.seed(train_config.seed)
 
@@ -122,7 +123,7 @@ def main(kwargs: DictConfig):
     world_size = int(os.environ["WORLD_SIZE"])
     logger.info(f"local_rank: {local_rank}, rank: {rank}, world_size: {world_size}")
 
-    torch.cuda.set_device(local_rank)
+    torch.npu.set_device(f"npu:{local_rank}")
     clear_gpu_cache(local_rank)
     setup_environ_flags(rank)
 
@@ -143,7 +144,7 @@ def main(kwargs: DictConfig):
     model_factory = get_custom_model_factory(model_config, logger)
     model, tokenizer = model_factory(train_config, model_config, **kwargs)
     parameters = filter(lambda p: p.requires_grad, model.parameters())
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("npu" if torch_npu.npu.is_available() else "cpu")
 
     # If you are facing problem from limited memory(<=256GB), you can try to replace the above code with the following code
     # for i in range(rank):
@@ -160,6 +161,7 @@ def main(kwargs: DictConfig):
 
 
     # Initialize the optimizer and learning rate scheduler
+
     model_engine, _, _, _ = deepspeed.initialize(
         model=model, model_parameters=parameters, config=deepspeed_config
     )
@@ -210,7 +212,7 @@ def main(kwargs: DictConfig):
         pin_memory=True,
         **train_dl_kwargs,
     )
-
+    
     eval_dataloader = None
     if train_config.run_validation:
         if train_config.batching_strategy == "packing":

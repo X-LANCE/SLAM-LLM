@@ -75,7 +75,8 @@ def get_dataloader_kwargs(train_config, dataset, tokenizer, mode):
                     batch_size=batch_size,
                     rank=dist.get_rank(),
                     num_replicas=dist.get_world_size(),
-                    shuffle=mode=="train",
+                    shuffle=False,
+                    # shuffle=mode=="train",
                 )
             else:
                 kwargs["batch_sampler"] = LengthBasedBatchSampler(dataset, batch_size, drop_last=True, shuffle=mode=="train")
@@ -86,23 +87,25 @@ def get_dataloader_kwargs(train_config, dataset, tokenizer, mode):
                 dataset,
                 rank=dist.get_rank(),
                 num_replicas=dist.get_world_size(),
-                shuffle=mode=="train",
+                shuffle=False
+                # shuffle=mode=="train",
             )
             kwargs["batch_size"] = batch_size
             kwargs["drop_last"] = True
             kwargs["collate_fn"] = default_data_collator
         else:
+            print(f"[Rank]{dist.get_rank()},world_size{dist.get_world_size()}")
             # raise ValueError(f"Unknown batching strategy: {train_config.batching_strategy}")
             if train_config.enable_fsdp or train_config.enable_ddp or train_config.enable_deepspeed:
                 kwargs["sampler"] = DistributedSampler(
                 dataset,
                 rank=dist.get_rank(),
                 num_replicas=dist.get_world_size(),
-                shuffle=mode=="train",
+                shuffle=False
+                # shuffle=mode=="train",
             )
             kwargs["batch_size"] = batch_size
             kwargs["drop_last"] = True
             kwargs["collate_fn"] = dataset.collator
             logger.info(f"Using batching strategy: {train_config.batching_strategy}")
-
         return kwargs

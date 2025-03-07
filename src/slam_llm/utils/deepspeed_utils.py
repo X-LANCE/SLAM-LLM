@@ -12,7 +12,7 @@ from pkg_resources import packaging
 import functools
 import hydra
 import torch
-import torch.cuda.nccl as nccl
+import torch_npu
 import torch.distributed as dist
 from omegaconf import DictConfig
 from tqdm import tqdm
@@ -155,7 +155,7 @@ def train(
     #     scaler = torch.cuda.amp.GradScaler()
     if train_config.enable_ddp:
         world_size = int(os.environ["WORLD_SIZE"])
-    autocast = torch.cuda.amp.autocast if train_config.use_fp16 else nullcontext
+    autocast = torch_npu.npu.amp.autocast if train_config.use_fp16 else nullcontext
 
     train_prep = []
     train_loss = []
@@ -184,11 +184,11 @@ def train(
             for step, batch in enumerate(train_dataloader):
                 for key in batch.keys():
                     batch[key] = (
-                        batch[key].to(local_rank).half()
+                        batch[key].to(f"npu:{local_rank}").half()
                         if isinstance(batch[key], torch.Tensor)
                         and batch[key].dtype == torch.float32
                         else (
-                            batch[key].to(local_rank)
+                            batch[key].to(f"npu:{local_rank}")
                             if isinstance(batch[key], torch.Tensor)
                             else batch[key]
                         )
@@ -306,7 +306,7 @@ def train(
         epoch_end_time = time.perf_counter() - epoch_start_time
         epoch_times.append(epoch_end_time)
         # Reducing total_loss across all devices if there's more than one CUDA device
-        if torch.cuda.device_count() > 1 and (
+        if torch_npu.npu.device_count() > 1 and (
             train_config.enable_fsdp or train_config.enable_ddp
         ):
             dist.all_reduce(total_loss, op=dist.ReduceOp.SUM)
@@ -350,7 +350,7 @@ def train(
             logger.info(f"Max CUDA memory allocated was {memtrace.peak} GB")
             logger.info(f"Max CUDA memory reserved was {memtrace.max_reserved} GB")
             logger.info(f"Peak active CUDA memory was {memtrace.peak_active_gb} GB")
-            logger.info(f"Cuda Malloc retires : {memtrace.cuda_malloc_retires}")
+            logger.info(f"Cuda Malloc retires : {memtrace.npu_malloc_retires}")
             logger.info(
                 f"CPU Total Peak Memory consumed during the train (max): {memtrace.cpu_peaked + memtrace.cpu_begin} GB"
             )
@@ -407,7 +407,7 @@ def evaluation(model, train_config, eval_dataloader, local_rank, tokenizer):
     eval_loss = 0.0  # Initialize evaluation loss
     eval_acc = 0.0
     autocast = (
-        torch.cuda.amp.autocast if train_config.use_fp16 else nullcontext
+        torch_npu.npu.amp.autocast if train_config.use_fp16 else nullcontext
     )  # (Fix:MZY): fix expected scalar type mismatch in norm
 
     with MemoryTrace() as memtrace:
@@ -421,10 +421,10 @@ def evaluation(model, train_config, eval_dataloader, local_rank, tokenizer):
         for step, batch in enumerate(eval_dataloader):
             for key in batch.keys():
                 batch[key] = (
-                    batch[key].to(local_rank).half()
+                    batch[key].to(f"npu:{local_rank}").half()
                     if isinstance(batch[key], torch.Tensor) and batch[key].dtype==torch.float32
                     else (
-                        batch[key].to(local_rank) if isinstance(batch[key], torch.Tensor) else batch[key]
+                        batch[key].to(f"npu:{local_rank}") if isinstance(batch[key], torch.Tensor) else batch[key]
                     )
                 )
             # Ensure no gradients are computed for this scope to save memory
@@ -451,7 +451,7 @@ def evaluation(model, train_config, eval_dataloader, local_rank, tokenizer):
 
     # If there's more than one CUDA device, reduce evaluation loss across all devices
     if (
-        torch.cuda.device_count() > 1
+        torch_npu.npu.device_count() > 1
     ):
         dist.all_reduce(eval_loss, op=dist.ReduceOp.SUM)
         dist.all_reduce(eval_acc, op=dist.ReduceOp.SUM)
@@ -488,7 +488,7 @@ def check_frozen_layers_peft_model(model):
 
 def setup():
     """Initialize the process group for distributed training"""
-    dist.init_process_group("nccl")
+    dist.init_process_group("hccl")
 
 
 def setup_environ_flags(rank):
@@ -512,7 +512,7 @@ def clear_gpu_cache(rank=None):
     """Clear the GPU cache for all ranks"""
     if rank == 0:
         logger.info(f"Clearing GPU cache for all ranks")
-    torch.cuda.empty_cache()
+    torch_npu.npu.empty_cache()
 
 
 def get_parameter_dtypes(model):

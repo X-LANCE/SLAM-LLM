@@ -1,11 +1,12 @@
 # os
 import os
-import fire
+# import fire
 import random
 import importlib
 
 # nn
 import torch
+import torch_npu
 from transformers.models.llama.modeling_llama import LlamaDecoderLayer
 
 # opt
@@ -111,11 +112,11 @@ def main(kwargs: DictConfig):
 
     logger.addHandler(file_handler)
 
-
-    # Set the seeds for reproducibility
-    torch.cuda.manual_seed(train_config.seed)
-    torch.manual_seed(train_config.seed)
-    random.seed(train_config.seed)
+    
+    
+    # torch.cuda.manual_seed(train_config.seed)
+    # torch.manual_seed(train_config.seed)
+    # random.seed(train_config.seed)
 
     if train_config.enable_fsdp or train_config.enable_ddp:
         setup()
@@ -125,8 +126,13 @@ def main(kwargs: DictConfig):
         world_size = int(os.environ["WORLD_SIZE"])
         logger.info(f"local_rank: {local_rank}, rank: {rank}, world_size: {world_size}")
 
+    # Set the seeds for reproducibility
+    torch.npu.manual_seed(train_config.seed)
+    torch.manual_seed(train_config.seed)
+    random.seed(train_config.seed)
+
     if torch.distributed.is_initialized():
-        torch.cuda.set_device(local_rank)
+        torch.npu.set_device(local_rank)
         clear_gpu_cache(local_rank)
         setup_environ_flags(rank)
 
@@ -144,42 +150,41 @@ def main(kwargs: DictConfig):
             wandb_config={"train_config": train_config, "fsdp_config": fsdp_config, "model_config": model_config, "log_config": log_config}
             wandb.init(dir=log_config.wandb_dir, entity=log_config.wandb_entity_name, project=log_config.wandb_project_name,name=log_config.wandb_exp_name ,config=wandb_config)
 
-
     model_factory = get_custom_model_factory(model_config, logger)
     model, tokenizer = model_factory(train_config, model_config, **kwargs)
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    
-    # Convert the model to bfloat16 if fsdp and pure_bf16 is enabled
-    if (train_config.enable_fsdp or train_config.enable_ddp) and fsdp_config.pure_bf16:
-        model.to(torch.bfloat16)
+    device = torch.device("npu" if torch.npu.is_available() else "cpu")
 
     #setting up FSDP if enable_fsdp is enabled
     if train_config.enable_fsdp:
         if not train_config.use_peft and train_config.freeze_layers:
 
             freeze_transformer_layers(train_config.num_freeze_layers)
+        # print(fsdp_config)
         # from torch.distributed.fsdp import ShardingStrategy
         # fsdp_config.sharding_strategy = getattr(ShardingStrategy, fsdp_config.sharding_strategy)
         mixed_precision_policy, wrapping_policy = get_policies(fsdp_config, rank)
         my_auto_wrapping_policy = fsdp_auto_wrap_policy(model, LlamaDecoderLayer)
-
+        # print(model.encoder)
+        # model.encoder.feature_extractor.conv_layers[0][0].parameters().device
+        model.llm.to(next(model.parameters()).device)
+        # model.llm.to(next(model.encoder.conv1.parameters()).device)
+        # model.llm.to(rank)
         model = FSDP(
             model,
             auto_wrap_policy= my_auto_wrapping_policy, #(FIX:MZY): Using my_auto_wrapping_policy whether peft or not. This will avoid model shard type check error of requires_grad mismatching.
             cpu_offload=CPUOffload(offload_params=True) if fsdp_config.fsdp_cpu_offload else None,
             mixed_precision=mixed_precision_policy if not fsdp_config.pure_bf16 else None,
             sharding_strategy=fsdp_config.sharding_strategy,
-            device_id=torch.cuda.current_device(),
+            device_id=torch.npu.current_device(),
             limit_all_gathers=True,
             sync_module_states=train_config.low_cpu_fsdp,
-            param_init_fn=lambda module: module.to_empty(device=torch.device("cuda"), recurse=False)
+            param_init_fn=lambda module: module.to_empty(device=torch.device("npu"), recurse=False)
             if train_config.low_cpu_fsdp and rank != 0 else None,
         )
         if fsdp_config.fsdp_activation_checkpointing:
             apply_fsdp_checkpointing(model)
     elif train_config.enable_ddp:
-        model = model.cuda(local_rank)
+        model = model.npu(local_rank)
         model = DDP(model, device_ids=[local_rank],
                     find_unused_parameters=kwargs.get("train_conf", {}).get("find_unused_parameters", False))
     elif not train_config.quantization:

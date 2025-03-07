@@ -1,0 +1,46 @@
+dataset_config:
+  prompt: Transcribe speech to text.
+  llm_name: Qwen2.5-7B-Instruct
+  prompt_style: normal
+  normalize: true
+  dataset: aishell-1
+  input_type: mel
+  speed_perturb: false
+  spec_augmentation: false
+  add_reverb: false
+  noise_file_path: ''
+  mel_size: 128
+  pad_or_trim: true
+  encoder_projector_ds_rate: 5
+  train_scp_file_path: /aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/aishell-1/asr/train/
+  dev_scp_file_path: /aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/aishell-1/asr/dev/
+train_config:
+  enable_fsdp: false
+  enable_ddp: true
+  use_fp16: true
+  model_name: mala_asr
+  num_epochs: 5
+  freeze_encoder: true
+  freeze_llm: true
+  use_peft: false
+  batching_strategy: custom
+  warmup_steps: 1000
+  total_steps: 100000
+  lr: 5.0e-05
+  validation_interval: 10000
+  batch_size_training: 10
+  val_batch_size: 10
+  num_workers_dataloader: 16
+  output_dir: examples/mala_asr_slidespeech/exp/aishell-1/20250226/whisper_linear_Qwen2.5-7B-Instruct_lorafalse_padtrue_normal_asr_speedfalse_specaugfalse-2211
+deepspeed_config: /aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/mala-asr/conf/ds_config.json
+model_config:
+  llm_name: Qwen2.5-7B-Instruct
+  llm_path: /aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/model/Qwen2.5-7B-Instruct
+  llm_dim: 3584
+  encoder_name: whisper
+  encoder_projector_ds_rate: 5
+  encoder_path: /aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/model/whisper/large-v3.pt
+  encoder_dim: 1280
+  encoder_projector: linear
+  normalize: true
+metric: acc

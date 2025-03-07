@@ -1,0 +1,12 @@
+# vc submit -p pdgpu-aispeech-ai -i hub.szaic.com/hpc-base/ai_base-pytorch-for-ascend:cann8.0.0-torch2.1.0-py3.10 -c 1 -m 1G -n 4 -g 1 --cmd "/usr/sbin/sshd -D -p 6666"
+vc submit -p pdgpu-aispeech-ai -i hub.szaic.com/hpc/ai_asr-yanguifang-llm-notebook:v1.4 -c 20 -m 100G -n 4 -g 1 --cmd "/usr/sbin/sshd -D -p 6666"
+vc submit -p pdgpu-aispeech-ai -i asr-yanguifang-llm-notebook:Qwen2-Audio -c 100 -m 300G  -g 2 --cmd "/usr/sbin/sshd -D -p 6666"
+vc submit -p pdgpu-aispeech-ai -i hub.szaic.com/hpc/ai_asr-yanguifang-llm-notebook:v1.4 -c 20 -m 100G -n 4 -g 2 --cmd "bash /aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/mala-asr/scripts/finetune_MaLa-ASR_multiple_node.sh"
+vc submit -p pdgpu-aispeech-ai -i hub.szaic.com/hpc/ai_asr-yanguifang-llm-notebook:v1.4 -c 100 -m 200G -n 2 -g 7 --cmd "bash /aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/mala-asr/scripts/finetune_MaLa-ASR_multiple_node.sh > /aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/mala-asr/scripts/train.log"
+vc submit -p pdgpu-aispeech-ai -i hub.szaic.com/hpc/ai_asr-yanguifang-llm-notebook:v1.4 -c 100 -m 200G -n 2 -g 8 --cmd "bash /aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/mala-asr/scripts/finetune_MaLa-ASR_deepspeed.sh > /aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/mala-asr/scripts/train.log"
+vc submit -p pdgpu-aispeech-ai -i hub.szaic.com/hpc/ai_asr-yanguifang-llm-notebook:v1.4 -c 160 -m 900G -n 2 -g 8 --cmd "bash /aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/mala-asr/scripts/finetune_MaLa-ASR_deepspeed.sh > /aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/mala-asr/scripts/train.log"
+vc submit -p pdgpu-aispeech-ai -i hub.szaic.com/hpc/ai_asr-yanguifang-llm-notebook:v1.4 -c 160 -m 900G -n 2 -g 8 --cmd "bash /aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/mala-asr/scripts/finetune_MaLa-ASR_deepspeed.sh > /aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/mala-asr/scripts/train.log"
+vc list -p pdgpu-aispeech-ai  --pri   
+vc describe
+
+vc submit -t deepspeed --enable-rdma 1 -p pdgpu-aispeech-ai -i hub.szaic.com/hpc/ai_asr-yanguifang-llm-notebook:v1.5 -c 160 -m 900G -n 2 -g 8 --cmd "bash /aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/mala-asr/scripts/finetune_MaLa-ASR_deepspeed_multinode.sh  > /aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/mala-asr/scripts/train.log"

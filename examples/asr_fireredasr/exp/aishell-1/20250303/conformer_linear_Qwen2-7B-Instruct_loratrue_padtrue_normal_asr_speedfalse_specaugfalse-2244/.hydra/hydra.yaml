@@ -1,0 +1,204 @@
+hydra:
+  run:
+    dir: examples/asr_fireredasr/exp/aishell-1/20250303/conformer_linear_Qwen2-7B-Instruct_loratrue_padtrue_normal_asr_speedfalse_specaugfalse-2244
+  sweep:
+    dir: multirun/${now:%Y-%m-%d}/${now:%H-%M-%S}
+    subdir: ${hydra.job.num}
+  launcher:
+    _target_: hydra._internal.core_plugins.basic_launcher.BasicLauncher
+  sweeper:
+    _target_: hydra._internal.core_plugins.basic_sweeper.BasicSweeper
+    max_batch_size: null
+    params: null
+  help:
+    app_name: ${hydra.job.name}
+    header: '${hydra.help.app_name} is powered by Hydra.
+
+      '
+    footer: 'Powered by Hydra (https://hydra.cc)
+
+      Use --hydra-help to view Hydra specific help
+
+      '
+    template: '${hydra.help.header}
+
+      == Configuration groups ==
+
+      Compose your configuration from those groups (group=option)
+
+
+      $APP_CONFIG_GROUPS
+
+
+      == Config ==
+
+      Override anything in the config (foo.bar=value)
+
+
+      $CONFIG
+
+
+      ${hydra.help.footer}
+
+      '
+  hydra_help:
+    template: 'Hydra (${hydra.runtime.version})
+
+      See https://hydra.cc for more info.
+
+
+      == Flags ==
+
+      $FLAGS_HELP
+
+
+      == Configuration groups ==
+
+      Compose your configuration from those groups (For example, append hydra/job_logging=disabled
+      to command line)
+
+
+      $HYDRA_CONFIG_GROUPS
+
+
+      Use ''--cfg hydra'' to Show the Hydra config.
+
+      '
+    hydra_help: ???
+  hydra_logging:
+    version: 1
+    formatters:
+      simple:
+        format: '[%(asctime)s][HYDRA] %(message)s'
+    handlers:
+      console:
+        class: logging.StreamHandler
+        formatter: simple
+        stream: ext://sys.stdout
+    root:
+      level: INFO
+      handlers:
+      - console
+    loggers:
+      logging_example:
+        level: DEBUG
+    disable_existing_loggers: false
+  job_logging:
+    version: 1
+    formatters:
+      simple:
+        format: '[%(asctime)s][%(name)s][%(levelname)s] - %(message)s'
+    handlers:
+      console:
+        class: logging.StreamHandler
+        formatter: simple
+        stream: ext://sys.stdout
+      file:
+        class: logging.FileHandler
+        formatter: simple
+        filename: ${hydra.runtime.output_dir}/${hydra.job.name}.log
+    root:
+      level: INFO
+      handlers:
+      - console
+      - file
+    disable_existing_loggers: false
+  env: {}
+  mode: RUN
+  searchpath: []
+  callbacks: {}
+  output_subdir: .hydra
+  overrides:
+    hydra:
+    - hydra.run.dir=examples/asr_fireredasr/exp/aishell-1/20250303/conformer_linear_Qwen2-7B-Instruct_loratrue_padtrue_normal_asr_speedfalse_specaugfalse-2244
+    - hydra.mode=RUN
+    task:
+    - ++train_config.enable_fsdp=false
+    - ++train_config.enable_ddp=true
+    - ++train_config.use_fp16=true
+    - ++model_config.llm_name=Qwen2-7B-Instruct
+    - ++model_config.llm_path=/aistor/aispeech/hpc_stor01/home/pengjing00sx/FireRedASR/pretrained_models/Qwen2-7B-Instruct
+    - ++model_config.llm_dim=3584
+    - ++model_config.encoder_name=conformer
+    - ++model_config.encoder_projector_ds_rate=2
+    - ++model_config.encoder_path=/aistor/aispeech/hpc_stor01/home/pengjing00sx/FireRedASR/pretrained_models/FireRedASR-LLM-L/asr_encoder.pth.tar
+    - ++model_config.encoder_dim=1280
+    - ++model_config.encoder_projector=linear
+    - ++model_config.ckpt_path=/aistor/aispeech/hpc_stor01/home/pengjing00sx/nfs/model/FireRedASR-LLM-L
+    - ++model_config.normalize=true
+    - ++model_config.file=examples/asr_fireredasr/model/slam_fireredasr.py:model_factory
+    - ++dataset_config.llm_name=Qwen2-7B-Instruct
+    - ++dataset_config.prompt_style=normal
+    - ++dataset_config.normalize=true
+    - ++dataset_config.dataset=aishell-1
+    - ++dataset_config.wav_scp=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/aishell-1/asr/test//my_wav.scp
+    - ++dataset_config.text=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/aishell-1/asr/test//text
+    - ++dataset_config.input_type=raw
+    - ++dataset_config.speed_perturb=false
+    - ++dataset_config.spec_augmentation=false
+    - ++dataset_config.add_reverb=false
+    - ++dataset_config.noise_file_path=
+    - ++dataset_config.mel_size=128
+    - ++dataset_config.pad_or_trim=true
+    - ++dataset_config.encoder_projector_ds_rate=2
+    - ++dataset_config.train_scp_file_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/aishell-1/asr/train//my_wav.scp
+    - ++dataset_config.train_text_file=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/aishell-1/asr/train//text
+    - ++dataset_config.dev_scp_file_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/aishell-1/asr/dev//my_wav.scp
+    - ++dataset_config.dev_text_file=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/aishell-1/asr/dev//text
+    - ++train_config.model_name=mala_asr
+    - ++train_config.num_epochs=5
+    - ++train_config.freeze_encoder=true
+    - ++train_config.freeze_llm=true
+    - ++train_config.use_peft=true
+    - ++train_config.batching_strategy=custom
+    - ++train_config.warmup_steps=1000
+    - ++train_config.total_steps=100000
+    - ++train_config.lr=5e-5
+    - ++train_config.validation_interval=50000
+    - ++train_config.batch_size_training=2
+    - ++train_config.val_batch_size=2
+    - ++train_config.num_workers_dataloader=8
+    - ++train_config.output_dir=examples/asr_fireredasr/exp/aishell-1/20250303/conformer_linear_Qwen2-7B-Instruct_loratrue_padtrue_normal_asr_speedfalse_specaugfalse-2244
+    - ++train_config.inference_mode=False
+    - ++metric=acc
+    - ++ckpt_path=/aistor/aispeech/hpc_stor01/home/pengjing00sx/nfs/model/FireRedASR-LLM-L
+  job:
+    name: finetune_fireredasr
+    chdir: null
+    override_dirname: ++ckpt_path=/aistor/aispeech/hpc_stor01/home/pengjing00sx/nfs/model/FireRedASR-LLM-L,++dataset_config.add_reverb=false,++dataset_config.dataset=aishell-1,++dataset_config.dev_scp_file_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/aishell-1/asr/dev//my_wav.scp,++dataset_config.dev_text_file=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/aishell-1/asr/dev//text,++dataset_config.encoder_projector_ds_rate=2,++dataset_config.input_type=raw,++dataset_config.llm_name=Qwen2-7B-Instruct,++dataset_config.mel_size=128,++dataset_config.noise_file_path=,++dataset_config.normalize=true,++dataset_config.pad_or_trim=true,++dataset_config.prompt_style=normal,++dataset_config.spec_augmentation=false,++dataset_config.speed_perturb=false,++dataset_config.text=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/aishell-1/asr/test//text,++dataset_config.train_scp_file_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/aishell-1/asr/train//my_wav.scp,++dataset_config.train_text_file=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/aishell-1/asr/train//text,++dataset_config.wav_scp=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/aishell-1/asr/test//my_wav.scp,++metric=acc,++model_config.ckpt_path=/aistor/aispeech/hpc_stor01/home/pengjing00sx/nfs/model/FireRedASR-LLM-L,++model_config.encoder_dim=1280,++model_config.encoder_name=conformer,++model_config.encoder_path=/aistor/aispeech/hpc_stor01/home/pengjing00sx/FireRedASR/pretrained_models/FireRedASR-LLM-L/asr_encoder.pth.tar,++model_config.encoder_projector=linear,++model_config.encoder_projector_ds_rate=2,++model_config.file=examples/asr_fireredasr/model/slam_fireredasr.py:model_factory,++model_config.llm_dim=3584,++model_config.llm_name=Qwen2-7B-Instruct,++model_config.llm_path=/aistor/aispeech/hpc_stor01/home/pengjing00sx/FireRedASR/pretrained_models/Qwen2-7B-Instruct,++model_config.normalize=true,++train_config.batch_size_training=2,++train_config.batching_strategy=custom,++train_config.enable_ddp=true,++train_config.enable_fsdp=false,++train_config.freeze_encoder=true,++train_config.freeze_llm=true,++train_config.inference_mode=False,++train_config.lr=5e-5,++train_config.model_name=mala_asr,++train_config.num_epochs=5,++train_config.num_workers_dataloader=8,++train_config.output_dir=examples/asr_fireredasr/exp/aishell-1/20250303/conformer_linear_Qwen2-7B-Instruct_loratrue_padtrue_normal_asr_speedfalse_specaugfalse-2244,++train_config.total_steps=100000,++train_config.use_fp16=true,++train_config.use_peft=true,++train_config.val_batch_size=2,++train_config.validation_interval=50000,++train_config.warmup_steps=1000
+    id: ???
+    num: ???
+    config_name: prompt.yaml
+    env_set: {}
+    env_copy: []
+    config:
+      override_dirname:
+        kv_sep: '='
+        item_sep: ','
+        exclude_keys: []
+  runtime:
+    version: 1.3.2
+    version_base: '1.3'
+    cwd: /aistor/aispeech/hpc_stor01/home/pengjing00sx/SLAM-LLM
+    config_sources:
+    - path: hydra.conf
+      schema: pkg
+      provider: hydra
+    - path: /aistor/aispeech/hpc_stor01/home/pengjing00sx/SLAM-LLM/examples/asr_fireredasr/conf
+      schema: file
+      provider: main
+    - path: ''
+      schema: structured
+      provider: schema
+    output_dir: /aistor/aispeech/hpc_stor01/home/pengjing00sx/SLAM-LLM/examples/asr_fireredasr/exp/aishell-1/20250303/conformer_linear_Qwen2-7B-Instruct_loratrue_padtrue_normal_asr_speedfalse_specaugfalse-2244
+    choices:
+      hydra/env: default
+      hydra/callbacks: null
+      hydra/job_logging: default
+      hydra/hydra_logging: default
+      hydra/hydra_help: default
+      hydra/help: default
+      hydra/sweeper: basic
+      hydra/launcher: basic
+      hydra/output: default
+  verbose: false

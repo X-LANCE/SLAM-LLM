@@ -2,6 +2,7 @@ from slam_llm.utils.dataset_utils import load_module_from_py_file
 from pathlib import Path
 
 def get_custom_model_factory(model_config, logger):
+    
     costom_model_path = model_config.get(
         "file", None
     )
@@ -20,7 +21,6 @@ def get_custom_model_factory(model_config, logger):
     module_path = Path(module_path)
     if not module_path.is_file():
         raise FileNotFoundError(f"Dataset py file {module_path.as_posix()} does not exist or is not a file.")
-
     module = load_module_from_py_file(module_path.as_posix())
     try:
         return getattr(module, func_name)

@@ -8,7 +8,7 @@ import torch.distributed as dist
 from typing import List, Optional, Tuple, Union
 from transformers import AutoModelForCausalLM, AutoTokenizer, AutoConfig, AutoModel, AutoModelForSeq2SeqLM, T5ForConditionalGeneration
 from peft import LoraConfig, TaskType, get_peft_model, prepare_model_for_kbit_training
-
+from torch.npu.amp import autocast
 from slam_llm.utils.config_utils import generate_peft_config
 from slam_llm.utils.train_utils import print_module_size, print_model_size
 from peft import PeftModel, PeftConfig
@@ -259,6 +259,8 @@ class slam_model(nn.Module):
 
         # tokenizer
         self.tokenizer = tokenizer
+
+
         self.metric = kwargs.get("metric", "acc")
 
         self.train_config = train_config
@@ -278,8 +280,7 @@ class slam_model(nn.Module):
                 if isinstance(item, nn.LayerNorm):
                     item.forward = types.MethodType(new_forward, item)
 
-
-
+    @autocast(dtype=torch.bfloat16)
     def forward(self,
                 input_ids: torch.LongTensor = None,
                 attention_mask: Optional[torch.Tensor] = None,
@@ -319,6 +320,10 @@ class slam_model(nn.Module):
 
             if self.model_config.encoder_name == "whisper":
                 encoder_outs = self.encoder.extract_variable_length_features(audio_mel.permute(0, 2, 1)) # bs*seq*dim
+                # encoder_outs = self.encoder(audio_mel.permute(0, 2, 1)) # bs*seq*dim
+                # output = self.encoder.decode(audio_mel.permute(0, 2, 1)) # bs*seq*dim
+                # encoder_outs = output.audio_features
+                # encoder_outs = kwargs.get("encoder_outs", None)
             if self.model_config.encoder_name == "beats":
                 encoder_outs, audio_mel_post_mask = self.encoder.extract_features(audio_mel, audio_mel_mask) # bs*seq*dim
             if self.model_config.encoder_name == "eat":

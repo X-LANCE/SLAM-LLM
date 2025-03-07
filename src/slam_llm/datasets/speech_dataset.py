@@ -102,7 +102,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
             # audio_raw = np.concatenate((np.zeros(random.randint(0, 16000)), audio_raw, np.zeros(random.randint(0, 16000)))).astype(audio_raw.dtype)[:16000*30]
             audio_mel = whisper.log_mel_spectrogram(audio_raw, n_mels=self.mel_size).permute(1, 0)
             audio_length = (audio_mel.shape[0] + 1) // 2  # ad-hoc for whisper for 2x downsample from mel to feats
-            audio_length = audio_length // 5 # ad-hoc for 5x fc downsample
+            audio_length = audio_length // config.encoder_projector_ds_rate # ad-hoc for 5x fc downsample
             # audio_length = calculate_output_length_1d(audio_length, 5, 5, 0) # ad-hoc for 5x cov1d downsample
         if self.fix_length_audio > 0:
             audio_length = self.fix_length_audio

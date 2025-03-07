@@ -1,0 +1,53 @@
+dataset_config:
+  prompt: 请转写音频为文字
+  llm_name: Qwen2-7B-Instruct
+  prompt_style: normal
+  normalize: true
+  dataset: aishell-1
+  wav_scp: /aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/aishell-1/asr/test//my_wav.scp
+  text: /aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/aishell-1/asr/test//text
+  input_type: raw
+  speed_perturb: false
+  spec_augmentation: false
+  add_reverb: false
+  noise_file_path: ''
+  mel_size: 128
+  pad_or_trim: true
+  encoder_projector_ds_rate: 2
+  train_scp_file_path: /aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/aishell-1/asr/train//my_wav.scp
+  train_text_file: /aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/aishell-1/asr/train//text
+  dev_scp_file_path: /aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/aishell-1/asr/dev//my_wav.scp
+  dev_text_file: /aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/aishell-1/asr/dev//text
+train_config:
+  enable_fsdp: false
+  enable_ddp: true
+  use_fp16: true
+  model_name: mala_asr
+  num_epochs: 5
+  freeze_encoder: true
+  freeze_llm: true
+  use_peft: true
+  batching_strategy: custom
+  warmup_steps: 1000
+  total_steps: 100000
+  lr: 5.0e-05
+  validation_interval: 50000
+  batch_size_training: 2
+  val_batch_size: 2
+  num_workers_dataloader: 8
+  output_dir: examples/asr_fireredasr/exp/aishell-1/20250305/conformer_linear_Qwen2-7B-Instruct_loratrue_padtrue_normal_asr_speedfalse_specaugfalse-1155
+  inference_mode: false
+model_config:
+  llm_name: Qwen2-7B-Instruct
+  llm_path: /aistor/aispeech/hpc_stor01/home/pengjing00sx/FireRedASR/pretrained_models/Qwen2-7B-Instruct
+  llm_dim: 3584
+  encoder_name: conformer
+  encoder_projector_ds_rate: 2
+  encoder_path: /aistor/aispeech/hpc_stor01/home/pengjing00sx/FireRedASR/pretrained_models/FireRedASR-LLM-L/asr_encoder.pth.tar
+  encoder_dim: 1280
+  encoder_projector: linear
+  ckpt_path: /aistor/aispeech/hpc_stor01/home/pengjing00sx/nfs/model/FireRedASR-LLM-L
+  normalize: true
+  file: examples/asr_fireredasr/model/slam_fireredasr.py:model_factory
+metric: acc
+ckpt_path: /aistor/aispeech/hpc_stor01/home/pengjing00sx/nfs/model/FireRedASR-LLM-L

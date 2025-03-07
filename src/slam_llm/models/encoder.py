@@ -3,6 +3,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from dataclasses import dataclass
+import whisper
+from typing import Dict, Iterable, Optional
+from torch import Tensor, nn
 
 
 class WhisperWrappedEncoder:
@@ -21,8 +24,20 @@ class WhisperWrappedEncoder:
 
             # assert x.shape[1:] == self.positional_embedding.shape, "incorrect audio shape"
             # x = (x + self.positional_embedding).to(x.dtype)
-            x = (x + self.positional_embedding[: x.shape[1]]).to(x.dtype)
-
+            if x.shape[1] < 1500:
+                x = (x + self.positional_embedding[: x.shape[1]]).to(x.dtype)
+            else:
+                length = x.shape[1]
+                base = 0
+                while length > 0:
+                    if length > 1500:
+                        x[:,base:base+1500] += self.positional_embedding
+                        length -= 1500
+                        base += 1500
+                    else:
+                        x[:,base:base+length] += self.positional_embedding[:length]
+                        length =-1
+            x = x.to(x.dtype)
             for block in self.blocks:
                 x = block(x)
 
@@ -34,7 +49,7 @@ class WhisperWrappedEncoder:
             encoder = WhisperModel.from_pretrained(model_config.encoder_path_hf,torch_dtype=torch.bfloat16).encoder
         else:
             import whisper
-            encoder = whisper.load_model(name=model_config.encoder_path, device='cpu').encoder
+            encoder = whisper.load_model(name=model_config.encoder_path).encoder
             encoder.extract_variable_length_features = types.MethodType(extract_variable_length_features, encoder)
         return encoder
 
