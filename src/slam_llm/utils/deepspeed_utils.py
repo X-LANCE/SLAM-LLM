@@ -181,6 +181,7 @@ def train(
                 total=total_length,
                 dynamic_ncols=True,
             )
+            train_dataloader.sampler.set_epoch(epoch)
             for step, batch in enumerate(train_dataloader):
                 for key in batch.keys():
                     batch[key] = (

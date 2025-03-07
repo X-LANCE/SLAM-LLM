@@ -20,6 +20,12 @@ class RunConfig:
         default=None, metadata={"help": "The path to projector checkpoint"}
     )
     deepspeed_config : str =""
+    deepspeed_ckpt_path: Optional[str] = field(
+        default=None, metadata={"help": "The path to projector checkpoint"}
+    )
+    deepspeed_ckpt_id: Optional[str] = field(
+        default=None, metadata={"help": "The id to projector checkpoint"}
+    )
 def parse_deepspeed_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--local_rank", type=int, default=-1)

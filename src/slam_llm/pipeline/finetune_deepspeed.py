@@ -164,7 +164,10 @@ def main(kwargs: DictConfig):
     model_engine, _, _, _ = deepspeed.initialize(
         model=model, model_parameters=parameters, config=deepspeed_config
     )
-
+    deepspeed_path = kwargs.get("deepspeed_ckpt_path",None)
+    if (deepspeed_path != None):
+        print(f"[Loading] loading model from {deepspeed_path}")
+        model_engine.load_checkpoint(deepspeed_path,load_module_strict=False)
     
     # Convert the model to bfloat16 if fsdp and pure_bf16 is enabled
     # if (train_config.enable_fsdp or train_config.enable_ddp) and fsdp_config.pure_bf16:

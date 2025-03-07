@@ -9,6 +9,7 @@ debug.sh
 transformers
 wandb/
 log/
+**/exp/
 *.log
 outputs/
 data/

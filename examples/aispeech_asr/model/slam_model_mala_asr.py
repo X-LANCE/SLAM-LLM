@@ -42,6 +42,7 @@ def model_factory(train_config, model_config, **kwargs):
         logger.info("loading other parts from: {}".format(ckpt_path))
         ckpt_dict = torch.load(ckpt_path, map_location="cpu")
         model.load_state_dict(ckpt_dict, strict=False)
+        
 
     print_model_size(
         model,

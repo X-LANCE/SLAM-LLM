@@ -17,9 +17,9 @@ cd $run_dir
 code_dir=examples/aispeech_asr
 # multitask 
 # dataset=alimeeting
-# dataset=multitask_asr
-dataset=aishell-1
-prompt_style=normal #instruct
+dataset=multitask_asr
+# dataset=aishell-1
+prompt_style=instruct #instruct
 if [[ $dataset == aishell-1 || $dataset == aishell-2 || $dataset == librispeech || $dataset == alimeeting || $dataset == gigaspeech || $dataset == wenetspeech ]]
 then
     # aishell1:asr hotword 
@@ -33,7 +33,7 @@ fi
 projector=linear
 encoder_name=whisper
 llm_name=Qwen2.5-7B-Instruct
-use_peft=false
+use_peft=true
 use_fp16=true
 freeze_encoder=true
 pad_or_trim=true
@@ -44,14 +44,17 @@ spec_augmentation=false
 add_noise=false
 add_reverb=false
 # deepspeed_config=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/mala-asr/conf/ds_config_from_k2.json
-deepspeed_config=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/mala-asr/conf/ds_config.json
+deepspeed_config=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/aispeech_asr/conf/ds_config.json
+deepspeed_ckpt_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/aispeech_asr/exp/multitask_asr/20250305/whisper_linear_Qwen2.5-7B-Instruct_loratrue_padtrue_instruct__speedfalse_specaugfalse-1309/mala_asr_epoch_1_step_90000
+# deepspeed_ckpt_id=global_step90000
 if [[ $encoder_name == "whisper" ]]
 then
     encoder_finetune=false
 fi
-if [[ $use_peft == "true" || $freeze_encoder == false ]];then
-    ckpt_path=
-fi
+# if [[ $use_peft == "true" || $freeze_encoder == false ]];then
+#     ckpt_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/aispeech_asr/exp/multitask_asr/20250302/whisper_linear_Qwen2.5-7B-Instruct_lorafalse_padtrue_normal__speedfalse_specaugfalse-2232/mala_asr_epoch_2_step_32463
+#     # deepspeed_ckpt_path=
+# fi
 
 # Choose Encoder
 if [[ $encoder_name == "whisper" ]]
@@ -145,21 +148,22 @@ hydra.run.dir=$output_dir \
 ++train_config.freeze_llm=true \
 ++train_config.use_peft=$use_peft \
 ++train_config.batching_strategy=custom \
-++train_config.warmup_steps=1000 \
-++train_config.total_steps=100000 \
-++train_config.lr=5e-5 \
-++train_config.validation_interval=1000 \
-++train_config.batch_size_training=10  \
-++train_config.val_batch_size=10 \
+++train_config.warmup_steps=10 \
+++train_config.total_steps=600000 \
+++train_config.lr=1e-4 \
+++train_config.validation_interval=10000 \
+++train_config.batch_size_training=5  \
+++train_config.val_batch_size=5 \
 ++train_config.num_workers_dataloader=8 \
 ++train_config.output_dir=$output_dir \
 ++metric=acc \
 "
-if [[ $use_peft == "true" || $freeze_encoder == false ]];then
-    hydra_args+="++ckpt_path=$ckpt_path/model.pt"
+if [[ $use_peft == "true"  ]];then
+    # hydra_args+="++ckpt_path=$ckpt_path/model.pt"
+    hydra_args+=" ++deepspeed_ckpt_path=$deepspeed_ckpt_path "
+    
 fi
-# hydra_args+="++ckpt_path=$ckpt_path/model.pt"
-
+# hydra_args+=" ++deepspeed_ckpt_path=$deepspeed_ckpt_path "
 
 HOST_FILE="/tmp/"${JobID}                        #生成的hostfile的完整文件名，$JobID调度系统会自动生成
 SSH_PORT=6666                                    #因调度系统强制普通用户身份起容器，需要将ssh端口指定为大于1024的值

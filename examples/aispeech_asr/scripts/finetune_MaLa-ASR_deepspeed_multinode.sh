@@ -41,7 +41,7 @@ spec_augmentation=false
 add_noise=false
 add_reverb=false
 # deepspeed_config=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/mala-asr/conf/ds_config_from_k2.json
-deepspeed_config=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/mala-asr/conf/ds_config.json
+deepspeed_config=./conf/ds_config.json
 if [[ $encoder_name == "whisper" ]]
 then
     encoder_finetune=false

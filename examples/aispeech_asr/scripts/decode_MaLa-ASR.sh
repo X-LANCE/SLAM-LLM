@@ -1,32 +1,35 @@
 #!/bin/bash
 #export PYTHONPATH=/root/whisper:$PYTHONPATH
-export ASCEND_VISIBLE_DEVICES=0
+# export ASCEND_VISIBLE_DEVICES=6
 export TOKENIZERS_PARALLELISM=false
+# export OPENBLAS_NUM_THREADS=1
+# export GOTO_NUM_THREADS=1
+# export OMP_NUM_THREADS=1
 # export CUDA_LAUNCH_BLOCKING=1
 set -e 
 run_dir=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/SLAM-LLM/
 cd $run_dir
 code_dir=examples/aispeech_asr
 
-dataset=aishell-1
-prompt_style=instruct  # normal #instruct
+dataset=librispeech-clean
+prompt_style=normal  # normal #instruct
 if [[ $dataset == aishell-1 || $dataset == aishell-2 || $dataset == librispeech-clean || $dataset == librispeech-other || $dataset == alimeeting ]]
 then
     # aishell-1:asr hotword
     # aishell-2:asr hotword mt
     # librispeech:asr prevtext mt
     # alimeeting: asr_far_bf asr_near
-    dataset_task=prevtext
+    dataset_task=asr
 fi
 projector=linear
 encoder_name=whisper
 sentence=connect
 llm_name=Qwen2.5-7B-Instruct
-use_peft=true
+use_peft=false
 use_fp16=true
 pad_or_trim=true
 encoder_projector_ds_rate=5
-ckpt_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/mala-asr/exp/aishell-1/20250211/whisper_linear_Qwen2.5-7B-Instruct_lorafalse_padtrue_instruct_asr_speedfalse_specaugfalse-1136/mala_asr_epoch_4_step_7482/model.pt
+ckpt_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/aispeech_asr/exp/multitask_asr/20250302/whisper_linear_Qwen2.5-7B-Instruct_lorafalse_padtrue_normal__speedfalse_specaugfalse-2232/mala_asr_epoch_2_step_32463/
 
 if [[ $encoder_name == "whisper" ]]
 then
@@ -38,10 +41,10 @@ if [[ $encoder_name == "whisper" ]]
 then
     if [[ $encoder_finetune == true ]]
     then    
-        speech_encoder_path=/hpc_stor01/home/yangui.fang_sx/workingspace/model/whisper-Pt/whisper-large-v2-multi-hans-zh-epoch-3-avg-10.pt
+        speech_encoder_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/model/whisper-Pt/whisper-large-v2-multi-hans-zh-epoch-3-avg-10.pt
         mel_size=80
     else
-        speech_encoder_path=/hpc_stor01/home/yangui.fang_sx/workingspace/model/whisper-large-v3/large-v3.pt
+        speech_encoder_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/model/whisper/large-v3.pt
         mel_size=128 
     fi
     encoder_dim=1280
@@ -49,7 +52,7 @@ then
     
 elif [[ $encoder_name == "wavlm" ]]
 then
-    speech_encoder_path=/hpc_stor01/home/yangui.fang_sx/workingspace/model/wavlm/WavLM-Large.pt
+    speech_encoder_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/model/wavlm/WavLM-Large.pt
     encoder_dim=1024
     input_type=raw
     mel_size=128
@@ -60,19 +63,19 @@ fi
 # Choose LLM
 if [[ $llm_name == "vicuna-7b-v1.5" ]]
 then
-    llm_path=/hpc_stor01/home/yangui.fang_sx/workingspace/model/vicuna-7b-v1.5
+    llm_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/model/vicuna-7b-v1.5
     llm_dim=4096
 elif [[ $llm_name == "Qwen2.5-7B-Instruct" ]]
 then
-    llm_path=/hpc_stor01/home/yangui.fang_sx/workingspace/model/Qwen2.5-7B-Instruct
+    llm_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/model/Qwen2.5-7B-Instruct
     llm_dim=3584 
 elif [[ $llm_name == "Qwen2-7B" ]]
 then
-    llm_path=/hpc_stor01/home/yangui.fang_sx/workingspace/model/Qwen2-7B
+    llm_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/model/Qwen2-7B
     llm_dim=3584 
 elif [[ $llm_name == "Qwen2.5-7B" ]]
 then
-    llm_path=/hpc_stor01/home/yangui.fang_sx/workingspace/model/Qwen2.5-7B
+    llm_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/model/Qwen2.5-7B
     llm_dim=3584 
 else
     exit 1
@@ -87,6 +90,12 @@ then
 elif [[  $dataset == "librispeech-clean" ]]
 then
     test_scp_file_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/librispeech/${dataset_task}/test-clean/
+elif [[  $dataset == "wenetspeech_test_net" ]]
+then
+    test_scp_file_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/wenetspeech/asr/test_net/
+elif [[  $dataset == "wenetspeech_test_meeting" ]]
+then
+    test_scp_file_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/wenetspeech/asr/test_meeting/  
 else
     test_scp_file_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/${dataset}/test/
 fi
@@ -120,12 +129,12 @@ python $code_dir/inference_mala_asr_batch.py \
     ++train_config.batching_strategy=custom \
     ++train_config.num_epochs=1 \
     ++train_config.val_batch_size=8 \
-    ++train_config.num_workers_dataloader=8\
+    ++train_config.num_workers_dataloader=0 \
     ++train_config.output_dir=$output_dir \
     ++decode_log=$decode_log \
-    ++ckpt_path=$ckpt_path/model.pt 
+    ++ckpt_path=$ckpt_path/model.pt  
 
 
-# python /aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/tools/wenet_compute_cer.py --char=1 -v=1 ${decode_log}_gt ${decode_log}_pred > ${decode_log}_cer 
-# python /aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/tools/pyResults/pyResults.py ${decode_log}_gt ${decode_log}_pred > ${decode_log}_ser 
-# python "/hpc_stor01/home/yangui.fang_sx/workingspace/SLAM-LLM/examples/mala_asr_slidespeech/slam_llm/utils/compute_wer.py"  ${decode_log}_gt ${decode_log}_pred ${decode_log}_ser
+python /aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/tools/wenet_compute_cer.py --char=1 -v=1 ${decode_log}_gt ${decode_log}_pred > ${decode_log}_cer 
+python /aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/tools/pyResults/pyResults.py ${decode_log}_gt ${decode_log}_pred > ${decode_log}_ser 
+python "/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/SLAM-LLM/examples/mala_asr_slidespeech/slam_llm/utils/compute_wer.py"  ${decode_log}_gt ${decode_log}_pred ${decode_log}_ser

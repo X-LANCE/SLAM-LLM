@@ -44,7 +44,7 @@ spec_augmentation=false
 add_noise=false
 add_reverb=false
 # deepspeed_config=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/mala-asr/conf/ds_config_from_k2.json
-deepspeed_config=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/mala-asr/conf/ds_config.json
+deepspeed_config=./conf/ds_config.json
 # /hpc_stor01/home/yangui.fang_sx/workingspace/project/mala_asr_slidespeech_origin/exp/multitask_asr/20250111/whisper_linear_Qwen2.5-7B-Instruct_lorafalse_padfalse_normal__speedtrue_specaugfalse-1106/mala_asr_epoch_2_step_1299/
 # ckpt_path=/hpc_stor01/home/yangui.fang_sx/workingspace/project/mala_asr_slidespeech_origin/exp/multitask_asr/20250114/whisper_linear_Qwen2.5-7B-Instruct_loratrue_padtrue_normal__speedfalse_specaugfalse-2018_Upper_/mala_asr_epoch_2_step_12299
 if [[ $encoder_name == "whisper" ]]
