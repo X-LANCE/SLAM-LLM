@@ -11,6 +11,7 @@ from pkg_resources import packaging
 
 import torch
 import torch_npu
+# import torch.npu.nccl as nccl
 import torch.distributed as dist
 from torch.distributed.fsdp import ShardingStrategy
 from torch.distributed.fsdp import StateDictType
@@ -67,8 +68,10 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
     #     scaler = ShardedGradScaler()
     # elif train_config.use_fp16 and not train_config.enable_fsdp:
     #     scaler = torch.cuda.amp.GradScaler()
+    
     if train_config.use_fp16:
         scaler = torch_npu.npu.amp.GradScaler()
+        # scaler = ShardedGradScaler()
         if train_config.enable_fsdp:
             scaler = ShardedGradScaler()
     if train_config.enable_fsdp or train_config.enable_ddp:
@@ -94,6 +97,7 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
             total_acc = 0.0
             total_length = len(train_dataloader)//gradient_accumulation_steps
             pbar = tqdm(colour="blue", desc=f"Training Epoch: {epoch+1}", total=total_length, dynamic_ncols=True)
+            train_dataloader.sampler.set_epoch(epoch)
             for step, batch in enumerate(train_dataloader):
                 for key in batch.keys():
                     if train_config.enable_fsdp or train_config.enable_ddp:
@@ -171,7 +175,7 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                     eval_ppl, eval_epoch_loss, *rest = evaluation(model, train_config, eval_dataloader, local_rank, tokenizer)
                     eval_epoch_acc = rest[0] if rest else -1
                     checkpoint_start_time = time.perf_counter()
-                    if train_config.save_model and (eval_epoch_loss < best_val_loss):
+                    if train_config.save_model and (eval_epoch_loss < best_val_loss or eval_epoch_acc > best_val_acc):
                         checkpoint_name = f"{train_config.model_name}_epoch_{str(epoch+1)}_step_{step+1}"
                         if train_config.enable_fsdp or train_config.enable_ddp:
                             dist.barrier()
@@ -212,6 +216,7 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                         elif not train_config.use_peft and train_config.freeze_llm:
                             logger.info(f"llm is frozen, we are about to save other parts.")
                             if train_config.enable_fsdp:
+                                logger.info(fsdp_config.sharding_strategy)
                                 if fsdp_config.sharding_strategy == ShardingStrategy.FULL_SHARD:
                                     save_model_checkpoint_peft_full_shard(
                                             model, optimizer, rank, train_config, epoch=epoch
@@ -422,8 +427,9 @@ def evaluation(model,train_config, eval_dataloader, local_rank, tokenizer):
             # Ensure no gradients are computed for this scope to save memory
             with torch.no_grad():
                 # Forward pass and compute loss
-                with autocast(dtype=torch.bfloat16): # (Fix:MZY): fix expected scalar type mismatch in norm 
-                    outputs, *rest = model(**batch)
+                # with autocast(dtype=torch.bfloat16): # (Fix:MZY): fix expected scalar type mismatch in norm 
+                # with autocast(enabled=True): # (Fix:MZY): fix expected scalar type mismatch in norm 
+                outputs, *rest = model(**batch)
                 acc = rest[0] if rest else -1
                 loss = outputs.loss
 

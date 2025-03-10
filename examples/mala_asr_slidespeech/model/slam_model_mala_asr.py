@@ -95,7 +95,7 @@ class slam_model_asr(slam_model):
     ):
         # inference for asr model
 
-        device = kwargs.get("device", "cuda")
+        device = kwargs.get("device", "npu")
         if os.path.exists(wav_path):  # Audio-Text QA
             import whisper
 

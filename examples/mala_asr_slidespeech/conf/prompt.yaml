@@ -1,4 +1,14 @@
 dataset_config:
     # we put prompt here, because the hydra override in shell script only support a small subset of chars
     # prompt: "Transcribe speech to text. Output the transcription directly without redundant content. Ensure that the output is not duplicated. "
-    prompt: "Transcribe speech to text. "
+    # prompt: "<|im_start|>user\n请将语音转写为汉字<|im_end|>\n<|im_start|>assistant\n"
+    # prompt: "识别语音"
+    # prompt : "将上面的语音转写为英文"
+    # prompt: "Transcribe speech to English."
+    # prompt: "Transcribe speech to text.And then translate the text to spanish."
+    # prompt: "Transcribe speech to text."
+    # prompt: "Tell me what is the language of the text."
+    prompt: "Transcribe speech to text."
+    # prompt: "Transcribe speech to text.Follow words may occur in audio:{}."
+    # prompt: ""
+    # prompt: "请问上面有几个句子,有多少个字,给字编号然后输出文本"

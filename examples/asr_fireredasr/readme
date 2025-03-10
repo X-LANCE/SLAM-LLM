@@ -1,0 +1,4 @@
+小红书推理与微调代码部分：
+    主体使用slam--llm框架, 但是Model的load、推理以及forward均在model文件夹的fireredasr完成
+    slam_fireredasr主要包含load和数据dataset的转写
+    注意精度设置方式与main分支不同, 尤其是bf16的时候, 请关注具体训练代码

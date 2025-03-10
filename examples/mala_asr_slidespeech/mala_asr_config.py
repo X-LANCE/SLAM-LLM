@@ -9,12 +9,14 @@ class ModelConfig:
     llm_name: str = "vicuna-7b-v1.5"
     llm_path: str = "PATH/to/LLAMA/7B"
     llm_type: str = "decoder_only"
-    llm_dim: int = 4096
+    llm_dim: int = 3584
     encoder_name: Optional[str] = None
     encoder_ds_rate: int = 2
     encoder_path: Optional[str] = None
+    encoder_path_hf: Optional[str] = None
     encoder_dim: int = 1280
     encoder_projector: str = "linear"
+    qformer_layers : int = 8
     encoder_projector_ds_rate: int = 5
     modal: str = "audio"
     normalize: Optional[bool] = field(default=False, metadata={
@@ -24,12 +26,23 @@ class ModelConfig:
         "help": "whether model is only pretrained or finetuned, used for models such as hubert"
     })
 
+# @dataclass
+# class PeftConfig:
+#     peft_method: str = "lora" # None , llama_adapter, prefix
+#     r: int = 8
+#     lora_alpha: int = 32
+#     target_modules: List = field(default_factory=lambda: [ "q_proj", "v_proj"])
+#     bias: str = "none"
+#     task_type: str = "CAUSAL_LM"
+#     lora_dropout: float = 0.05
+#     inference_mode: bool = False
+
 @dataclass
 class PeftConfig:
     peft_method: str = "lora" # None , llama_adapter, prefix
-    r: int = 8
-    lora_alpha: int = 32
-    target_modules: List = field(default_factory=lambda: [ "q_proj", "v_proj" ])
+    r: int = 64
+    lora_alpha: int = 16
+    target_modules: List = field(default_factory=lambda: [ "q_proj", "v_proj", "o_proj", "up_proj","gate_proj","down_proj"])
     bias: str = "none"
     task_type: str = "CAUSAL_LM"
     lora_dropout: float = 0.05
@@ -84,17 +97,31 @@ class TrainConfig:
 
 @dataclass
 class DataConfig:
-    dataset: str = "slidespeech_dataset"
-    file: str = "examples/mala_asr_slidespeech/dataset/slidespeech_dataset.py:get_speech_dataset"
-    train_scp_file_path: str = "/nfs/yangguanrou.ygr/slidespeech/train_L_95/"
-    dev_scp_file_path: str = "/nfs/yangguanrou.ygr/slidespeech/dev_oracle_v1/"
-    test_scp_file_path: str = "/nfs/yangguanrou.ygr/slidespeech/test_oracle_v1/"
+    # dataset: str = "slidespeech_dataset"
+    dataset: str = "multitask_dataset"
+    llm_name: str = "vicuna-7b-v1.5"
+    prompt_style: str = "normal" # instruct
+    # file: str = "examples/mala_asr_slidespeech/dataset/slidespeech_dataset.py:get_speech_dataset"
+    file: str = "examples/mala_asr_slidespeech/dataset/multitask_dataset.py:get_speech_dataset"
+    speed_perturb : bool = False
+    spec_augmentation : bool = False
+    add_noise : bool = False
+    add_reverb : bool = False
+    noise_file_path: str = ""
+    train_scp_file_path: str = ""
+    dev_scp_file_path: str = ""
+    test_scp_file_path: str = ""
     train_split: str = "train"
-    test_split:str = "val"
+    dev_split: str = "dev"
+    test_split:str = "test"
+    pad_or_trim: bool = True
     prompt: Optional[str] = None
     use_ocr: bool = True
     inference_mode: bool = False
+    prompt_mode : str = "qwen"
     lower: bool = False
+    encoder_ds_rate: int = 2
+    encoder_projector_ds_rate: int = 5
     fix_length_audio: int = -1
     inference_mode:bool = False
     input_type: str = field(default="raw", metadata={
@@ -112,7 +139,7 @@ class FSDPConfig:
     mixed_precision: bool = True
     use_fp16: bool = False
     # sharding_strategy = "FULL_SHARD" #ShardingStrategy = ShardingStrategy.FULL_SHARD
-    sharding_strategy: ShardingStrategy = "NO_SHARD" #ShardingStrategy.NO_SHARD #MZY: set NO_SHARD when use DDP
+    sharding_strategy: ShardingStrategy = "SHARD_GRAD_OP" #ShardingStrategy.NO_SHARD #MZY: set NO_SHARD when use DDP
     checkpoint_type: str = "SHARDED_STATE_DICT"  # alternatively can use SHARDED_STATE_DICT save one file per rank, and can resize the world-size.
     fsdp_activation_checkpointing: bool = True
     fsdp_cpu_offload: bool = False
@@ -122,9 +149,9 @@ class FSDPConfig:
 @dataclass
 class LogConfig:
     use_wandb: bool = False
-    wandb_dir: str = "/root/test_wandb"
+    wandb_dir: str = "tmp/test_wandb"
     wandb_entity_name: str = "project_name"
     wandb_project_name: str = "project_name"
     wandb_exp_name: str = "exp_name"
-    log_file: str = "/root/test.log"
+    log_file: str = "tmp/test.log"
     log_interval: int = 5

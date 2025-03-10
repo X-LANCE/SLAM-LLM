@@ -1,0 +1,40 @@
+dataset_config:
+  prompt: 'Transcribe speech to chinese text. '
+  normalize: true
+  dataset: aishell2
+  input_type: mel
+  mel_size: 128
+  use_ocr: false
+  train_scp_file_path: /hpc_stor01/home/yangui.fang_sx/workingspace/data/aishell-2/train/
+  dev_scp_file_path: /hpc_stor01/home/yangui.fang_sx/workingspace/data/aishell-2/iOS/dev/export/
+  test_scp_file_path: /hpc_stor01/home/yangui.fang_sx/workingspace/data/aishell-2/iOS/test/export/
+train_config:
+  enable_fsdp: false
+  enable_ddp: true
+  use_fp16: true
+  model_name: mala_asr
+  num_epochs: 5
+  freeze_encoder: true
+  freeze_llm: true
+  use_peft: true
+  batching_strategy: custom
+  warmup_steps: 1000
+  total_steps: 110000
+  lr: 5.0e-05
+  validation_interval: 2000
+  batch_size_training: 12
+  val_batch_size: 6
+  num_workers_dataloader: 2
+  output_dir: ''
+model_config:
+  llm_name: Qwen2.5-7B-Instruct
+  llm_path: /hpc_stor01/home/yangui.fang_sx/workingspace/model/Qwen2.5-7B-Instruct
+  llm_dim: 3584
+  encoder_name: whisper
+  normalize: true
+  encoder_projector_ds_rate: 5
+  encoder_path: /hpc_stor01/home/yangui.fang_sx/workingspace/model/whisper-large-v3/large-v3.pt
+  encoder_dim: 1280
+  encoder_projector: linear
+metric: acc
+ckpt_path: /hpc_stor01/home/yangui.fang_sx/workingspace/project/mala_asr_slidespeech_origin/exp/finetune_MaLa-ASR_whisper_linear_Qwen2.5-7B-Instruct_aishell2_hotwordfalse-20241124-0915/mala_asr_epoch_3_step_13682/model.pt

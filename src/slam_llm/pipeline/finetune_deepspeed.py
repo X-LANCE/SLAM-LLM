@@ -50,7 +50,7 @@ import hydra
 from omegaconf import DictConfig, ListConfig, OmegaConf
 from pathlib import Path
 
-@hydra.main(config_name=None, version_base=None)
+@hydra.main(config_name=None, version_base=None)  # strict=False 允许忽略未知参数)
 def main_hydra(cfg: DictConfig):
     def to_plain_list(cfg_item):
         if isinstance(cfg_item, ListConfig):
@@ -161,6 +161,7 @@ def main(kwargs: DictConfig):
 
 
     # Initialize the optimizer and learning rate scheduler
+
     model_engine, _, _, _ = deepspeed.initialize(
         model=model, model_parameters=parameters, config=deepspeed_config
     )
@@ -214,7 +215,7 @@ def main(kwargs: DictConfig):
         pin_memory=True,
         **train_dl_kwargs,
     )
-
+    
     eval_dataloader = None
     if train_config.run_validation:
         if train_config.batching_strategy == "packing":

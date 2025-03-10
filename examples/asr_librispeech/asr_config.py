@@ -14,6 +14,7 @@ class ModelConfig:
     encoder_name: Optional[str] = None
     encoder_ds_rate: int = 2
     encoder_path: Optional[str] = None
+    encoder_path_hf : Optional[str] = None
     encoder_dim: int = 1280
     encoder_projector: str = "linear"
     encoder_projector_ds_rate: int = 5
@@ -112,7 +113,7 @@ class FSDPConfig:
     mixed_precision: bool = True
     use_fp16: bool = False
     # sharding_strategy = "FULL_SHARD" #ShardingStrategy = ShardingStrategy.FULL_SHARD
-    sharding_strategy: ShardingStrategy = "NO_SHARD" #ShardingStrategy.NO_SHARD #MZY: set NO_SHARD when use DDP
+    sharding_strategy: ShardingStrategy = "FULL_SHARD" #ShardingStrategy.NO_SHARD #MZY: set NO_SHARD when use DDP
     checkpoint_type: str = "SHARDED_STATE_DICT"  # alternatively can use SHARDED_STATE_DICT save one file per rank, and can resize the world-size.
     fsdp_activation_checkpointing: bool = True
     fsdp_cpu_offload: bool = False
@@ -122,9 +123,9 @@ class FSDPConfig:
 @dataclass
 class LogConfig:
     use_wandb: bool = False
-    wandb_dir: str = "/root/test_wandb"
+    wandb_dir: str = "tmp/test_wandb"
     wandb_entity_name: str = "project_name"
     wandb_project_name: str = "project_name"
     wandb_exp_name: str = "exp_name"
-    log_file: str = "/root/test.log"
+    log_file: str = "tmp/test.log"
     log_interval: int = 5
