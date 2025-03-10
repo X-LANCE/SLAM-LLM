@@ -70,7 +70,7 @@ class TrainConfig:
     lr:float = 1e-4
     weight_decay:float = 0.0
     gamma:float = 0.85
-    seed:int = 42
+    seed:int = 1234
     use_fp16:bool = False
     mixed_precision:bool = True
     val_batch_size:int = 1

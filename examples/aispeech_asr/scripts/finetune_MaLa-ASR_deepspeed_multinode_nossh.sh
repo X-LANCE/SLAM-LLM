@@ -45,16 +45,16 @@ add_noise=false
 add_reverb=false
 # deepspeed_config=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/mala-asr/conf/ds_config_from_k2.json
 deepspeed_config=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/aispeech_asr/conf/ds_config.json
-deepspeed_ckpt_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/aispeech_asr/exp/multitask_asr/20250305/whisper_linear_Qwen2.5-7B-Instruct_loratrue_padtrue_instruct__speedfalse_specaugfalse-1309/mala_asr_epoch_1_step_90000
+# deepspeed_ckpt_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/aispeech_asr/exp/multitask_asr/20250305/whisper_linear_Qwen2.5-7B-Instruct_loratrue_padtrue_instruct__speedfalse_specaugfalse-1309/mala_asr_epoch_1_step_90000
 # deepspeed_ckpt_id=global_step90000
 if [[ $encoder_name == "whisper" ]]
 then
     encoder_finetune=false
 fi
-# if [[ $use_peft == "true" || $freeze_encoder == false ]];then
-#     ckpt_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/aispeech_asr/exp/multitask_asr/20250302/whisper_linear_Qwen2.5-7B-Instruct_lorafalse_padtrue_normal__speedfalse_specaugfalse-2232/mala_asr_epoch_2_step_32463
-#     # deepspeed_ckpt_path=
-# fi
+if [[ $use_peft == "true" || $freeze_encoder == false ]];then
+    ckpt_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/aispeech_asr/exp/multitask_asr/20250305/whisper_linear_Qwen2.5-7B-Instruct_loratrue_padtrue_instruct__speedfalse_specaugfalse-1309/mala_asr_epoch_1_step_90000
+    # deepspeed_ckpt_path=
+fi
 
 # Choose Encoder
 if [[ $encoder_name == "whisper" ]]
@@ -159,8 +159,8 @@ hydra.run.dir=$output_dir \
 ++metric=acc \
 "
 if [[ $use_peft == "true"  ]];then
-    # hydra_args+="++ckpt_path=$ckpt_path/model.pt"
-    hydra_args+=" ++deepspeed_ckpt_path=$deepspeed_ckpt_path "
+    hydra_args+="++ckpt_path=$ckpt_path/model.pt"
+    # hydra_args+=" ++deepspeed_ckpt_path=$deepspeed_ckpt_path "
     
 fi
 # hydra_args+=" ++deepspeed_ckpt_path=$deepspeed_ckpt_path "

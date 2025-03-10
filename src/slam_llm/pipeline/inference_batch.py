@@ -1,8 +1,10 @@
 # import fire
 import random
 import torch
+import torch_npu
 import logging
 # import argparse
+import multiprocessing as mp
 from slam_llm.models.slam_model import slam_model
 # config
 # from llama_recipes.configs import fsdp_config as FSDP_CONFIG
@@ -99,6 +101,7 @@ def main(kwargs: DictConfig):
 	model_factory = get_custom_model_factory(model_config, logger)
 	model, tokenizer = model_factory(train_config, model_config, **kwargs)
 	device = torch.device("npu" if torch.npu.is_available() else "cpu") # FIX(MZY): put the whole model to device.
+	# device = "npu:7"
 	model.to(device)
 	model.eval()
 
@@ -119,7 +122,8 @@ def main(kwargs: DictConfig):
 			shuffle=False,
             batch_size=train_config.val_batch_size,
 			drop_last=False,
-			collate_fn=dataset_test.collator
+			collate_fn=dataset_test.collator,
+			# multiprocessing_context=mp.get_context("spawn")
         )
 	
 

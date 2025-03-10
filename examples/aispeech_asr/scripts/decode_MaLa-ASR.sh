@@ -1,6 +1,7 @@
 #!/bin/bash
 #export PYTHONPATH=/root/whisper:$PYTHONPATH
-# export ASCEND_VISIBLE_DEVICES=6
+# export CUDA_VISIBLE_DEVICES=1
+# export ASCEND_VISIBLE_DEVICES=1
 export TOKENIZERS_PARALLELISM=false
 # export OPENBLAS_NUM_THREADS=1
 # export GOTO_NUM_THREADS=1
@@ -11,25 +12,25 @@ run_dir=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/SLAM-LL
 cd $run_dir
 code_dir=examples/aispeech_asr
 
-dataset=librispeech-clean
-prompt_style=normal  # normal #instruct
+dataset=wenetspeech_test_net
+prompt_style=instruct  # normal #instruct
 if [[ $dataset == aishell-1 || $dataset == aishell-2 || $dataset == librispeech-clean || $dataset == librispeech-other || $dataset == alimeeting ]]
 then
     # aishell-1:asr hotword
     # aishell-2:asr hotword mt
     # librispeech:asr prevtext mt
-    # alimeeting: asr_far_bf asr_near
-    dataset_task=asr
+    # alimeeting: asr_far_bf asr_near asr_far_gss
+    dataset_task=asr_near
 fi
 projector=linear
 encoder_name=whisper
 sentence=connect
 llm_name=Qwen2.5-7B-Instruct
-use_peft=false
+use_peft=true
 use_fp16=true
 pad_or_trim=true
 encoder_projector_ds_rate=5
-ckpt_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/aispeech_asr/exp/multitask_asr/20250302/whisper_linear_Qwen2.5-7B-Instruct_lorafalse_padtrue_normal__speedfalse_specaugfalse-2232/mala_asr_epoch_2_step_32463/
+ckpt_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/aispeech_asr/exp/multitask_asr/20250307/whisper_linear_Qwen2.5-7B-Instruct_loratrue_padtrue_instruct__speedfalse_specaugfalse-1718/mala_asr_epoch_1_step_160000/
 
 if [[ $encoder_name == "whisper" ]]
 then
