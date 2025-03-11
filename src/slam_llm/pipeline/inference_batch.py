@@ -123,7 +123,7 @@ def main(kwargs: DictConfig):
 			collate_fn=dataset_test.collator
         )
 	
-
+	rtf_list=[]
 	logger.info("=====================================")
 	pred_path = kwargs.get('decode_log') + "_pred"
 	gt_path = kwargs.get('decode_log') + "_gt"
@@ -138,7 +138,10 @@ def main(kwargs: DictConfig):
 			# pdb.set_trace()
 			audio_length = batch["audio"].shape[0]*batch["audio"].shape[1]/16000
 			RTF = (end_time - start_time) / audio_length
-			logger.info(f"LLM RTF: {RTF:.2f}")
+			rtf_list.append(RTF)
+			logger.info(f"LLM RTF: {RTF:.3f}")
+			avg_rtf = sum(rtf_list) / len(rtf_list)
+			logger.info(f"Average LLM RTF: {avg_rtf:.3f}")
 			for key, text, target in zip(batch["keys"], output_text, batch["targets"]):
 				pred.write(key + "\t" + text.replace("\n", " ") + "\n")
 				gt.write(key + "\t" + target + "\n")

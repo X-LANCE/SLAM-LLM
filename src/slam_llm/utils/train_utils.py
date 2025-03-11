@@ -12,6 +12,7 @@ from pkg_resources import packaging
 import torch
 import torch.cuda.nccl as nccl
 import torch.distributed as dist
+import torch.nn.functional as F
 from torch.distributed.fsdp import ShardingStrategy
 from torch.distributed.fsdp import StateDictType
 from torch.distributed.fsdp.sharded_grad_scaler import ShardedGradScaler
@@ -33,7 +34,8 @@ from slam_llm.utils.metric import compute_accuracy
 import wandb
 import logging
 logger = logging.getLogger(__name__)
-
+import pdb
+import copy
 
 def set_tokenizer_params(tokenizer: LlamaTokenizer):
     tokenizer.pad_token_id = 0
@@ -114,7 +116,10 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
                     outputs, *rest = model(**batch)
                 acc = rest[0] if rest else -1 #text_acc
                 audio_acc = rest[1] if rest else -1   # seven layers of audio acc
-                layer_loss = rest[2] if rest else -1  # eight layers of loss (seven audio and one text)
+                if train_config.modeling_paradigm == "parallel":
+                    layer_loss = rest[2] if rest else -1  # eight layers of loss (seven audio and one text)
+                else:
+                    layer_loss = [0] # 这样其他地方不需要修改
                 loss = outputs.loss
 
                 loss = loss / gradient_accumulation_steps
@@ -464,7 +469,7 @@ def evaluation(model,train_config, eval_dataloader, local_rank, tokenizer):
                 with autocast(): # (Fix:MZY): fix expected scalar type mismatch in norm 
                     outputs, *rest = model(**batch)
                 acc = rest[0] if rest else -1 #text_acc
-                audio_acc = rest[1][0] if rest else -1   # seven layers of audio acc
+                audio_acc = rest[1][0] if rest else -1   # seven layers of audio acc 第0层的
                 # layer_loss = rest[2] if rest else -1  # eight layers of loss (seven audio and one text)
                 loss = outputs.loss
 

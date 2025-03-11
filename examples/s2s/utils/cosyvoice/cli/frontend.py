@@ -138,6 +138,16 @@ class CosyVoiceFrontEnd:
         model_input = {'text': tts_text_token, 'text_len': tts_text_token_len, 'llm_embedding': embedding, 'flow_embedding': embedding}
         return model_input
 
+    def my_frontend_sft(self, tts_text, prompt_speech_16k):
+        flow_prompt_speech_token, flow_prompt_speech_token_len = self._extract_speech_token(prompt_speech_16k)
+        prompt_speech_22050 = torchaudio.transforms.Resample(orig_freq=16000, new_freq=22050)(prompt_speech_16k)
+        prompt_speech_feat, prompt_speech_feat_len = self._extract_speech_feat(prompt_speech_22050)
+        flow_embedding = self._extract_spk_embedding(prompt_speech_16k)
+
+        tts_text_token, tts_text_token_len = self._extract_text_token(tts_text)
+        model_input = {'text': tts_text_token, 'text_len': tts_text_token_len, 'llm_embedding': flow_embedding, 'flow_embedding': flow_embedding, 'flow_prompt_speech_token': flow_prompt_speech_token, 'prompt_speech_feat': prompt_speech_feat}
+        return model_input
+
     def frontend_zero_shot(self, tts_text, prompt_text, prompt_speech_16k, resample_rate):
         tts_text_token, tts_text_token_len = self._extract_text_token(tts_text)
         prompt_text_token, prompt_text_token_len = self._extract_text_token(prompt_text)
@@ -169,6 +179,15 @@ class CosyVoiceFrontEnd:
 
     def frontend_instruct(self, tts_text, spk_id, instruct_text):
         model_input = self.frontend_sft(tts_text, spk_id)
+        # in instruct mode, we remove spk_embedding in llm due to information leakage
+        del model_input['llm_embedding']
+        instruct_text_token, instruct_text_token_len = self._extract_text_token(instruct_text + '<endofprompt>')
+        model_input['prompt_text'] = instruct_text_token
+        model_input['prompt_text_len'] = instruct_text_token_len
+        return model_input
+
+    def my_frontend_instruct(self, tts_text, prompt_speech_16k, instruct_text):
+        model_input = self.my_frontend_sft(tts_text, prompt_speech_16k)
         # in instruct mode, we remove spk_embedding in llm due to information leakage
         del model_input['llm_embedding']
         instruct_text_token, instruct_text_token_len = self._extract_text_token(instruct_text + '<endofprompt>')

@@ -35,6 +35,7 @@ from slam_llm.utils.train_utils import (
     clear_gpu_cache,
     get_policies
 )
+from slam_llm.utils.train_utils_dpo import train_dpo
 
 import sys
 import logging
@@ -147,6 +148,8 @@ def main(kwargs: DictConfig):
 
     model_factory = get_custom_model_factory(model_config, logger)
     model, tokenizer = model_factory(train_config, model_config, **kwargs)
+    if train_config.dpo:
+        ref_model, _ = model_factory(train_config, model_config, **kwargs)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     
@@ -180,10 +183,14 @@ def main(kwargs: DictConfig):
             apply_fsdp_checkpointing(model)
     elif train_config.enable_ddp:
         model = model.cuda(local_rank)
-        model = DDP(model, device_ids=[local_rank],
-                    find_unused_parameters=kwargs.get("train_conf", {}).get("find_unused_parameters", False))
+        model = DDP(model, device_ids=[local_rank], find_unused_parameters=train_config.get("find_unused_parameters", False))
+        if train_config.dpo:
+            ref_model = ref_model.cuda(local_rank)
+            ref_model = DDP(ref_model, device_ids=[local_rank], find_unused_parameters=train_config.get("find_unused_parameters", False))
     elif not train_config.quantization:
         model.to(device)
+        if train_config.dpo:
+            ref_model.to(device)
 
     # dataset_config = generate_dataset_config(train_config, kwargs)
     logger.info("dataset_config: {}".format(dataset_config))
@@ -260,20 +267,38 @@ def main(kwargs: DictConfig):
     )
 
     # Start the training process
-    results = train(
-        model,
-        train_dataloader,
-        eval_dataloader,
-        tokenizer,
-        optimizer,
-        scheduler,
-        train_config.gradient_accumulation_steps,
-        train_config,
-        log_config,
-        fsdp_config if train_config.enable_fsdp else None,
-        local_rank if train_config.enable_fsdp or train_config.enable_ddp else None,
-        rank if train_config.enable_fsdp or train_config.enable_ddp else None,
-    )
+    if train_config.dpo:
+        results = train_dpo(
+            model,
+            ref_model,
+            train_dataloader,
+            eval_dataloader,
+            tokenizer,
+            optimizer,
+            scheduler,
+            train_config.gradient_accumulation_steps,
+            train_config,
+            log_config,
+            fsdp_config if train_config.enable_fsdp else None,
+            local_rank if train_config.enable_fsdp or train_config.enable_ddp else None,
+            rank if train_config.enable_fsdp or train_config.enable_ddp else None,
+        )
+    else:
+        results = train(
+            model,
+            train_dataloader,
+            eval_dataloader,
+            tokenizer,
+            optimizer,
+            scheduler,
+            train_config.gradient_accumulation_steps,
+            train_config,
+            log_config,
+            fsdp_config if train_config.enable_fsdp else None,
+            local_rank if train_config.enable_fsdp or train_config.enable_ddp else None,
+            rank if train_config.enable_fsdp or train_config.enable_ddp else None,
+        )
+
     if not (train_config.enable_fsdp or train_config.enable_ddp) or rank==0:
         [logger.info(f'Key: {k}, Value: {v}') for k, v in results.items()]
 

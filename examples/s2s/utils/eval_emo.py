@@ -14,11 +14,12 @@ import json
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Inference')
-    parser.add_argument('--gt', type=str, default="/nfs/yangguanrou.ygr/data/Emotion/all/cosyvoice_semantic_token_50HZ/dev_random_200.jsonl")
+    parser.add_argument('--gt', type=str, default="/nfs/yangguanrou.ygr/data/gpt4o_final_paper/test.jsonl")
     parser.add_argument('--pred', type=str)
+    parser.add_argument('--audio_subdir', type=str, default='pred_audio/default_tone', help='Subdirectory for audio files relative to the parent directory.')
     args = parser.parse_args()
 
-    pred_dir = os.path.join(args.pred, "pred_audio/default_tone")
+    pred_dir = os.path.join(args.pred, args.audio_subdir)
     # pred_dir = os.path.join(args.pred, "pred_audio/zero_shot_prompt")
     output_path = os.path.join(args.pred, "emo.log")
     model = AutoModel(model="iic/emotion2vec_plus_large")
@@ -36,8 +37,11 @@ if __name__ == "__main__":
                     print(pred_path)
                     continue
 
-
-                pred_emb = model.generate(pred_path, granularity="utterance", extract_embedding=True)[0]["feats"] # 1024
+                try:
+                    pred_emb = model.generate(pred_path, granularity="utterance", extract_embedding=True)[0]["feats"] # 1024
+                except:
+                    print(pred_path)
+                    continue
                 tgt_emb = model.generate(gt_path, granularity="utterance", extract_embedding=True)[0]["feats"] # 1024
                 simi = float(F.cosine_similarity(torch.FloatTensor([pred_emb]), torch.FloatTensor([tgt_emb])).item())
                 simis.append(simi)

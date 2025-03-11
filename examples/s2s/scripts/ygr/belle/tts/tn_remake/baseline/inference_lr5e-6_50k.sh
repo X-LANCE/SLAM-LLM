@@ -132,8 +132,8 @@ python $code_dir/inference_s2s.py \
         ++inference_online=$inference_online \
         ++speech_sample_rate=$speech_sample_rate
 
-python examples/s2s/utils/decode_whisper_v3_zh.py --parent_dir $decode_log
+# python examples/s2s/utils/decode_whisper_v3_zh.py --parent_dir $decode_log
 
-bash scripts/compute_wer_zh.sh $decode_log
+# bash scripts/compute_wer_zh.sh $decode_log
 
-python examples/s2s/utils/eval_emo.py --gt $val_data_path --pred $decode_log
+# python examples/s2s/utils/eval_emo.py --gt $val_data_path --pred $decode_log

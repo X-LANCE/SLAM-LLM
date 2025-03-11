@@ -18,10 +18,9 @@ def setup_codec(train_config, model_config, **kwargs):
         sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "third_party/Matcha-TTS"))
         from cosyvoice.cli.cosyvoice import CosyVoice,CosyVoice2
         if model_config.cosyvoice_version==1:
-            #codec_decoder = CosyVoice(model_config.codec_decoder_path, load_jit=True, load_onnx=False, fp16=True)
             codec_decoder = CosyVoice(model_config.codec_decoder_path, load_jit=False, load_trt=False, fp16=False)
         elif model_config.cosyvoice_version==2:
-            codec_decoder = CosyVoice2(model_config.codec_decoder_path, load_jit=False, load_trt=False, fp16=False) #?
+            codec_decoder = CosyVoice2(model_config.codec_decoder_path, load_jit=False, load_trt=False, fp16=False)
         else:
             raise NotImplementedError
         codec_decoder_module = nn.ModuleList((codec_decoder.model.flow,codec_decoder.model.hift))
@@ -56,7 +55,7 @@ def get_group_answer_token(audio_tokens, num_latency_tokens, padding_token, end_
     result_tensor = torch.stack(result)
     return result_tensor, audio_length
 
-def audio_decode_cosyvoice(audio_tokens, model_config, codec_decoder, tone_dir, spk_embedding="中文女", audio_prompt_path=None, code_layer=1, num_latency_tokens=1, speed=1.0):
+def audio_decode_cosyvoice(audio_tokens, model_config, codec_decoder, tone_dir, spk_embedding="中文女", audio_prompt_path=None, code_layer=1, num_latency_tokens=1, speed=1.0, replace_token=4095):
     """
     Generate audio from tokens with optional tone and prompt embedding.
 
@@ -80,8 +79,10 @@ def audio_decode_cosyvoice(audio_tokens, model_config, codec_decoder, tone_dir, 
         audio_tokens_permuted = audio_tokens_tensor.permute(1, 0)
         audio_tokens = audio_tokens_permuted.reshape(-1).unsqueeze(0)
         audio_tokens = audio_tokens[..., num_latency_tokens * code_layer:]
-    else:
+    elif code_layer == 1:
         audio_tokens = torch.cat(audio_tokens, dim=-1).unsqueeze(0)
+        audio_tokens = audio_tokens[..., num_latency_tokens:]
+    else:
         audio_tokens = audio_tokens[..., num_latency_tokens:]
 
     # Get vocabulary configuration for end of audio (EOA) and padding token
@@ -89,31 +90,28 @@ def audio_decode_cosyvoice(audio_tokens, model_config, codec_decoder, tone_dir, 
     pad_a = model_config.vocab_config.pad_a
 
     # Truncate audio tokens at the EOA token  前面已经处理过了
-    try:
-        end_index = torch.nonzero(audio_tokens[0] == eoa)[0]
-    except:
-        print(eoa)
-        print(audio_tokens[0])
+    end_index = torch.nonzero(audio_tokens[0] == eoa)[0]
     audio_tokens = audio_tokens[..., :end_index]
 
     # Handle padding tokens if present, # FIXME: this is a temporary fix for the padding issue, where the padding token may be included in the audio tokens
     if pad_a in audio_tokens:
-        end_index = torch.nonzero(audio_tokens[0] == pad_a)[0]
-        audio_tokens = audio_tokens[..., :end_index]
+        audio_tokens = audio_tokens.masked_fill(audio_tokens == pad_a, replace_token)  #将所有等于pad_a 的元素替换为replace_token
+    if model_config.save_audio_token:
+        return audio_tokens
 
     # Generate a unique ID for this audio generation
     this_uuid = str(uuid.uuid1()) #uuid.uuid1() 是一个函数，用于生成基于时间的 UUID（Universally Unique Identifier，通用唯一标识符）。uuid.uuid1() 生成的 UUID 包含时间戳和计算机的网络地址（通常是 MAC 地址），从而保证在空间和时间上的唯一性。
 
     # Set up the prompt speech features and speaker embedding
+    # pdb.set_trace()
     if tone_dir == "default_tone":
         if spk_embedding=="english_female":
             spk_embedding='英文女'
-        # logger.info(spk_embedding)
-        
-        # flow_embedding = codec_decoder.frontend.spk2info['英文女']['embedding']
-        # flow_embedding = codec_decoder.frontend.spk2info['中文女']['embedding']
-        flow_embedding = codec_decoder.frontend.spk2info[spk_embedding]['embedding']
-        # spk_list = list(codec_decoder.frontend.spk2info.keys()) # logger.info(spk_list)  #['中文女', '中文男', '日语男', '粤语女', '英文女', '英文男', '韩语女']
+        flow_embedding = codec_decoder.frontend.spk2info[spk_embedding]['embedding'] ## spk_list = list(codec_decoder.frontend.spk2info.keys()) # logger.info(spk_list)  #['中文女', '中文男', '日语男', '粤语女', '英文女', '英文男', '韩语女']
+        flow_prompt_speech_token = torch.zeros(1, 0, dtype=torch.int32)
+        prompt_speech_feat = torch.zeros(1, 0, 80)
+    elif tone_dir == "gt_spk_vector":
+        flow_embedding = spk_embedding
         flow_prompt_speech_token = torch.zeros(1, 0, dtype=torch.int32)
         prompt_speech_feat = torch.zeros(1, 0, 80)
     else:

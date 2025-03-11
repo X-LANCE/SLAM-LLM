@@ -174,7 +174,7 @@ class slam_model_s2s(slam_model):
 
 
     def forward(self,
-                input_ids: torch.LongTensor = None,
+                input_ids: torch.LongTensor = None, #torch.Size([6, 4, 178])
                 attention_mask: Optional[torch.Tensor] = None,
                 position_ids: Optional[torch.LongTensor] = None,
                 past_key_values: Optional[List[torch.FloatTensor]] = None,
@@ -238,20 +238,39 @@ class slam_model_s2s(slam_model):
                     inputs_embeds = self.llm.model.model.model.embed_tokens(input_ids)
 
         if modality_mask is not None and encoder_outs is not None: #x
-            modality_mask = modality_mask.unsqueeze(1).repeat(1, self.code_layer, 1)  # [btz, code_layer, seq_length]
-            modality_mask_start_indices = (modality_mask == True).float().argmax(dim=2)
-            modality_lengths = torch.clamp(modality_mask.sum(dim=2), max=encoder_outs.shape[1]).tolist()
+            if self.train_config.modeling_paradigm == "parallel":
+                modality_mask = modality_mask.unsqueeze(1).repeat(1, self.code_layer, 1)  # [btz, code_layer, seq_length]
+                modality_mask_start_indices = (modality_mask == True).float().argmax(dim=2)
+                modality_lengths = torch.clamp(modality_mask.sum(dim=2), max=encoder_outs.shape[1]).tolist()
 
-            encoder_outs_pad = torch.zeros_like(inputs_embeds)
-            for i in range(encoder_outs.shape[0]):
-                for j in range(self.code_layer):
-                    start_idx = modality_mask_start_indices[i, j].item()
-                    length = modality_lengths[i][j]
-                    encoder_outs_pad[i, j, start_idx:start_idx+length] = encoder_outs[i, :length]
-            
-            inputs_embeds[:, :self.code_layer, :, :] = encoder_outs_pad[:, :self.code_layer, :, :] + inputs_embeds[:, :self.code_layer, :, :] * (~modality_mask[:, :, :, None])
+                encoder_outs_pad = torch.zeros_like(inputs_embeds)
+                for i in range(encoder_outs.shape[0]):
+                    for j in range(self.code_layer):
+                        start_idx = modality_mask_start_indices[i, j].item()
+                        length = modality_lengths[i][j]
+                        encoder_outs_pad[i, j, start_idx:start_idx+length] = encoder_outs[i, :length]
+                
+                inputs_embeds[:, :self.code_layer, :, :] = encoder_outs_pad[:, :self.code_layer, :, :] + inputs_embeds[:, :self.code_layer, :, :] * (~modality_mask[:, :, :, None])
         
-        inputs_embeds = torch.mean(inputs_embeds, dim=1)  # [btz, seq_length, emb_dim], average over the code layers #torch.Size([4, 439, 896]) ; torch.Size([4, 220, 896])
+                inputs_embeds = torch.mean(inputs_embeds, dim=1)  # [btz, seq_length, emb_dim], average over the code layers #torch.Size([4, 439, 896]) ; torch.Size([4, 220, 896]) 这一步之后形状会有变化
+
+            elif self.train_config.modeling_paradigm == "interleaved":
+                inputs_embeds = inputs_embeds.squeeze(1)  # [btz, seq_length, emb_dim]
+                modality_mask_start_indices = (modality_mask == True).float().argmax(dim=1)
+                modality_lengths = torch.clamp(modality_mask.sum(dim=1), max=encoder_outs.shape[1]).tolist()
+
+                encoder_outs_pad = torch.zeros_like(inputs_embeds)
+                for i in range(encoder_outs.shape[0]):
+                    encoder_outs_pad[
+                        i, modality_mask_start_indices[i]:modality_mask_start_indices[i]+modality_lengths[i]
+                    ] = encoder_outs[i][:modality_lengths[i]]
+                
+                inputs_embeds = encoder_outs_pad + inputs_embeds * (~modality_mask[:, :, None])
+            
+            else:
+                raise NotImplementedError
+        
+        inputs_embeds = torch.mean(inputs_embeds, dim=1)  # [btz, seq_length, emb_dim], average over the code layers #torch.Size([4, 439, 896]) ; torch.Size([4, 220, 896]) 这一步之后形状会有变化
 
         if kwargs.get("inference_mode", False):
             return inputs_embeds, attention_mask
@@ -260,40 +279,65 @@ class slam_model_s2s(slam_model):
         audio_labels = labels[:, :self.code_layer] if labels is not None else None #torch.Size([4, 7, 448])
         model_outputs = self.llm(inputs_embeds=inputs_embeds, attention_mask=attention_mask, labels=text_labels)    # here we use the text token layer as the target label
 
-        # parrallel generation
+        # parrallel / interleaved
         # TODO: add tts adapter forward
-        x_ori = model_outputs.logits #torch.Size([4, 448, 181120])
-        text_vocab_size = self.model_config.vocab_config.padded_text_vocabsize
-        audio_vocab_size = self.model_config.vocab_config.padded_audio_vocabsize
-        xt = x_ori[..., :text_vocab_size] #torch.Size([4, 448, 152000]);torch.Size([4, 220, 152000])
-        xa = []
+        if self.train_config.modeling_paradigm == "parallel":
+            x_ori = model_outputs.logits #torch.Size([4, 448, 181120]). torch.Size([6, 178, 156160])
+            text_vocab_size = self.model_config.vocab_config.padded_text_vocabsize
+            audio_vocab_size = self.model_config.vocab_config.padded_audio_vocabsize
+            xt = x_ori[..., :text_vocab_size] #torch.Size([4, 448, 152000]);torch.Size([4, 220, 152000])
+            xa = []
 
-        if self.group_decode_adapter is not None:
-            x_audio_ori = x_ori[..., text_vocab_size:]
-            x_audio = self.group_decode_adapter(x_audio_ori)
-            for i in range(self.code_layer):
-                xa.append(x_audio[..., i * audio_vocab_size : (i + 1) * audio_vocab_size])
+            if self.group_decode_adapter is not None:
+                x_audio_ori = x_ori[..., text_vocab_size:] #torch.Size([6, 178, 4160])
+                x_audio = self.group_decode_adapter(x_audio_ori) #torch.Size([6, 178, 12480])
+                for i in range(self.code_layer):
+                    xa.append(x_audio[..., i * audio_vocab_size : (i + 1) * audio_vocab_size])
+            else:
+                for i in range(self.code_layer):
+                    xa.append(x_ori[..., text_vocab_size + audio_vocab_size * i : text_vocab_size + audio_vocab_size * (i + 1)]) #xa[0].shape:torch.Size([4, 220, 4160])
+
+            loss_recorder = []
+            total_loss, loss_recorder = self.compute_parallel_loss(xt, text_labels, xa, audio_labels) #torch.Size([4, 220, 152000]), [torch.Size([4, 220])], torch.Size([4, 220, 4160]), torch.Size([4, 1, 220])
+            model_outputs.loss = total_loss
+        elif self.train_config.modeling_paradigm == "interleaved":
+            x_ori = model_outputs.logits
         else:
-            for i in range(self.code_layer):
-                xa.append(x_ori[..., text_vocab_size + audio_vocab_size * i : text_vocab_size + audio_vocab_size * (i + 1)]) #xa[0].shape:torch.Size([4, 220, 4160])
-
-        loss_recorder = []
-        # pdb.set_trace()
-        total_loss, loss_recorder = self.compute_parallel_loss(xt, text_labels, xa, audio_labels) #torch.Size([4, 220, 152000]), [torch.Size([4, 220])], torch.Size([4, 220, 4160]), torch.Size([4, 1, 220])
-        model_outputs.loss = total_loss
+            raise NotImplementedError
 
         text_acc = -1
-        audio_acc = [-1 for _ in range(self.code_layer)]
+        audio_acc = [-1 for _ in range(self.code_layer)] if self.code_layer > 0 else -1
         if self.metric:
             with torch.no_grad():
-                preds = torch.argmax(xt, -1)
-                text_acc = compute_accuracy(preds.detach()[:, :-1], text_labels.detach()[:, 1:], ignore_label=-100)
+                if self.train_config.modeling_paradigm == "parallel":
+                    preds = torch.argmax(xt, -1)
+                    text_acc = compute_accuracy(preds.detach()[:, :-1], text_labels.detach()[:, 1:], ignore_label=-100)
 
-                preds_audio = [torch.argmax(xa[i], -1) for i in range(self.code_layer)]
-                audio_acc = [compute_accuracy(preds_audio[i].detach()[:, :-1], audio_labels[:, i, 1:], ignore_label=-100) for i in range(self.code_layer)]
+                    preds_audio = [torch.argmax(xa[i], -1) for i in range(self.code_layer)]
+                    audio_acc = [compute_accuracy(preds_audio[i].detach()[:, :-1], audio_labels[:, i, 1:], ignore_label=-100) for i in range(self.code_layer)]
+                elif self.train_config.modeling_paradigm == "interleaved":
+                    preds_start_idx = (text_labels != -100).float().argmax(dim=1)  #text_labels 张量中每一行第一个不等于 -100 的元素的索引。 tensor([131, 131], device='cuda:0')
+                    preds = torch.argmax(x_ori, -1) #torch.Size([2, 2531]) 预测的id
+                    # new_preds, new_labels = self.extract_interleaved_tokens(preds, text_labels, preds_start_idx) #new_preds:torch.Size([2, 600]) 
+                    text_preds, text_labels, audio_preds, audio_labels = self.extract_interleaved_tokens(preds, text_labels, preds_start_idx) #new_preds:torch.Size([2, 600]) 
+
+                    # padding token is not counted in text_acc
+                    text_pad_token = self.model_config.vocab_config.pad_t
+                    text_labels[text_labels == text_pad_token] = -100
+                    
+                    text_acc = compute_accuracy(text_preds.detach()[:, :-1], text_labels.detach()[:, 1:], ignore_label=-100)
+
+                    audio_pad_token = self.model_config.vocab_config.pad_a
+                    audio_labels[audio_labels == audio_pad_token] = -100
+                    
+                    audio_acc = [ compute_accuracy(audio_preds.detach()[:, :-1], audio_labels.detach()[:, 1:], ignore_label=-100)]
+
+                    loss_recorder = None
+                else:
+                    raise NotImplementedError
 
         # metrics = {"text_acc": text_acc, "audio_acc": audio_acc, "layer_loss": loss_recorder}
-        return model_outputs, text_acc, audio_acc, loss_recorder #model_outputs 各层取平均，loss_recorder记录每一层的loss值
+        return model_outputs, text_acc, audio_acc, loss_recorder #model_outputs 各层取平均，loss_recorder记录每一层的loss值  如果是interleave,rest-> [tensor(0.4856, device='cuda:0'), -1, None] (train_utils.py)
 
 
 
@@ -303,11 +347,11 @@ class slam_model_s2s(slam_model):
         """
         text_vocab_size = self.model_config.vocab_config.padded_text_vocabsize
         audio_vocab_size = self.model_config.vocab_config.padded_audio_vocabsize
-        layer_loss = [0 for _ in range(self.code_layer+1) ]
+        layer_loss = [0 for _ in range(self.code_layer+1) ] #[0, 0, 0, 0]
         
         if text_labels is not None:
             # text_loss = F.cross_entropy(xt.reshape(-1, text_vocab_size), text_labels.reshape(-1), ignore_index=-100)
-            text_loss = F.cross_entropy(xt[:, :-1, :].reshape(-1, text_vocab_size), text_labels[:, 1:].reshape(-1), ignore_index=-100)
+            text_loss = F.cross_entropy(xt[:, :-1, :].reshape(-1, text_vocab_size), text_labels[:, 1:].reshape(-1), ignore_index=-100) #torch.Size([6, 178]) torch.Size([1062])
             layer_loss[self.code_layer] = text_loss
         else:
             text_loss = 0
@@ -322,7 +366,7 @@ class slam_model_s2s(slam_model):
                 total_audio_loss += single_audio_loss
 
         total_loss = (text_loss + total_audio_loss) / (self.code_layer+1)
-        return total_loss, layer_loss #10.63 [13.54,7.71] 
+        return total_loss, layer_loss #10.63 [13.54,7.71]    #就要这个就可以
 
 
     @torch.no_grad()
@@ -364,6 +408,7 @@ class slam_model_s2s(slam_model):
         text_vocab_size = self.model_config.vocab_config.padded_text_vocabsize
         audio_vocab_size = self.model_config.vocab_config.padded_audio_vocabsize
 
+        num_latency_tokens = kwargs.get("num_latency_tokens", 0)
         text_repetition_penalty = kwargs.get("text_repetition_penalty", 1.0)
         audio_repetition_penalty = kwargs.get("audio_repetition_penalty", 1.0)
         decode_text_only = kwargs.get("decode_text_only", False)
@@ -382,10 +427,42 @@ class slam_model_s2s(slam_model):
         text_end = False     # Track whether text generation has ended
         audio_end = False    # Track whether audio generation has ended
 
-        # NOTE: currently, we only support greedy decoding and sampling for parallel generation, no beam search
+        first_n_token_gt = kwargs.get("first_n_token_gt", False)
+        if first_n_token_gt:
+            labels_ids = kwargs.get("labels_ids", None)[0] # 得用这个
+            # answer_ids = kwargs.get("answer_ids", None)[0] # 做了layer shift，但我看底下直接是4097
+            first_gt_percent = kwargs.get("first_gt_percent", 0.1)
+
+            text_length = kwargs["input_length"].item()
+            audio_length = len(labels_ids[0][0].squeeze())
+            # print(text_length,audio_length)
+            text_gt_token_num  = int(text_length* first_gt_percent)
+            audio_gt_token_num = int(audio_length/self.code_layer * first_gt_percent)
+            # print(text_gt_token_num,audio_gt_token_num)
+        
+
+        if self.train_config.modeling_paradigm == "interleaved":
+            model_outputs = self.llm.generate(
+                inputs_embeds=inputs_embeds,
+                max_new_tokens=max_new_tokens,
+                num_beams=kwargs.get("num_beams", 4),
+                do_sample=kwargs.get("do_sample", False),
+                min_length=kwargs.get("min_length", 1),
+                top_p=kwargs.get("top_p", 1.0),
+                repetition_penalty=text_repetition_penalty,
+                length_penalty=kwargs.get("length_penalty", 1.0),
+                temperature=kwargs.get("temperature", 1.0),
+                attention_mask=attention_mask,
+                bos_token_id=self.tokenizer.bos_token_id,
+                eos_token_id=layershift(eoa, 0),
+                pad_token_id=self.tokenizer.pad_token_id
+            )
+            model_outputs = self.process_interleaved_output(model_outputs)
+            return model_outputs
+
+        # NOTE: currently, we only support greedy decoding and sampling for parallel generation, no beam search  这是个问题？
         for step in tqdm(range(max_new_tokens), desc="Generating"):
-            # pdb.set_trace()
-            if current_input_text is not None:
+            if current_input_text is not None: #x
                 audio_tokens = torch.cat([layershift(current_audio_tokens[i], i).unsqueeze(1) for i in range(self.code_layer)], dim=1)
                 combined_input_ids = torch.cat([audio_tokens, current_input_text.unsqueeze(1)], dim=1)
                 if self.train_config.use_peft:
@@ -395,39 +472,51 @@ class slam_model_s2s(slam_model):
                 inputs_embeds = torch.mean(inputs_embeds, dim=1).unsqueeze(1) #!!!
             
             outputs = self.llm(
-                inputs_embeds=inputs_embeds,                  # [btz, seq_len / 1, emb_dim]
+                inputs_embeds=inputs_embeds,                  # [btz, seq_len / 1, emb_dim]  #torch.Size([1, 33, 896])
                 attention_mask=attention_mask,                # single sample, no need for attention mask
                 past_key_values=past_key_values,
                 use_cache=True,
             )
             
-            logits = outputs.logits[0]                      # batch size is 1  torch.Size([46, 156160])
+            logits = outputs.logits[0]                      # batch size is 1  torch.Size([33, 156160])
             past_key_values = outputs.past_key_values       # Update past_key_values for the next step
 
             # Split logits into text and audio layers based on vocab size
-            xt_logits = logits[..., :text_vocab_size]
-            if self.group_decode_adapter is not None:
-                xa_logits = self.group_decode_adapter(logits[..., text_vocab_size:])
-                xa_logits = [xa_logits[..., i * audio_vocab_size : (i + 1) * audio_vocab_size] for i in range(self.code_layer)]
+            xt_logits = logits[..., :text_vocab_size] #torch.Size([33, 152000])
+            if self.group_decode_adapter is not None: #
+                xa_logits = self.group_decode_adapter(logits[..., text_vocab_size:]) #输入: torch.Size([33, 4160]) -> torch.Size([33, 12480]) 原来是这么搞的  (linear): Linear(in_features=4160, out_features=12480, bias=True)
+                xa_logits = [xa_logits[..., i * audio_vocab_size : (i + 1) * audio_vocab_size] for i in range(self.code_layer)] #torch.Size([33, 4160]) 里头每一个是
             else:
                 xa_logits = [logits[..., text_vocab_size + audio_vocab_size * i : text_vocab_size + audio_vocab_size * (i + 1)] for i in range(self.code_layer)]
 
             # Apply repetition penalty to the logits
-            xt_logits = self.repetition_penalty(xt_logits, generated_ids[self.code_layer][:step], text_repetition_penalty)
+            xt_logits = self.repetition_penalty(xt_logits, generated_ids[self.code_layer][:step], text_repetition_penalty)  #已经生成的text token 的列表
             for i in range(self.code_layer):
-                xa_logits[i] = self.repetition_penalty(xa_logits[i], generated_ids[i][:step], audio_repetition_penalty)
+                xa_logits[i] = self.repetition_penalty(xa_logits[i], generated_ids[i][:step], audio_repetition_penalty)  #要加这一步吗
 
             if not text_end:
                 next_token_text = self.sample_next_token(xt_logits[-1, :], **kwargs)
             else:
                 next_token_text = torch.tensor([pad_t], device=input_ids.device)
-            # logger.info(next_token_text.item())
+            
+            if first_n_token_gt and step < text_gt_token_num:
+                gt_text_token = labels_ids[0][self.code_layer][0][step]
+                gt_text_token = torch.tensor([gt_text_token.item()], device=next_token_text.device)
+                # print(gt_text_token, next_token_text)
+                next_token_text = gt_text_token
+
             next_tokens_audio = []
             for i in range(self.code_layer):
-                if not audio_end and not decode_text_only:
+                if not audio_end and not decode_text_only and num_latency_tokens <= step:
                     next_token_audio = self.sample_next_token(xa_logits[i][-1, :], **kwargs)
                 else:
                     next_token_audio = torch.full((input_ids.size(0),), pad_a, device=input_ids.device)
+                if first_n_token_gt and step < audio_gt_token_num: #前1s
+                    gt_audio_token = labels_ids[0][i][0][step]
+                    gt_audio_token = torch.tensor([gt_audio_token.item()], device=next_token_audio.device)
+                    # print(gt_audio_token, next_token_audio)
+                    next_token_audio = gt_audio_token
+
                 next_tokens_audio.append(next_token_audio)
 
             if eoa in next_tokens_audio or decode_text_only:
@@ -447,10 +536,16 @@ class slam_model_s2s(slam_model):
                 generated_ids[i][step] = next_tokens_audio[i]  # Audio layers
             generated_ids[self.code_layer][step] = next_token_text  # Text layer
 
-            if audio_end and text_end:
-                for i in range(self.code_layer):
-                    generated_ids[i] = generated_ids[i][:step+1]
-                break
+            if self.model_config.use_text_stream:
+                if audio_end and text_end:
+                    for i in range(self.code_layer):
+                        generated_ids[i] = generated_ids[i][:step+1]
+                    break       
+            else:
+                if audio_end:
+                    for i in range(self.code_layer):
+                        generated_ids[i] = generated_ids[i][:step+1]
+                    break     
 
         # Concatenate the generated tokens to form the complete sequence
         text_tokens = generated_ids[self.code_layer]
@@ -697,3 +792,122 @@ class slam_model_s2s(slam_model):
         logits.scatter_(-1, generated_ids.unsqueeze(0), score)
 
         return logits
+
+    # def extract_interleaved_tokens(self, preds, text_labels, preds_start_idx):
+    #     """
+    #     Extract predictions and labels in interleaved mode.
+    #     """
+    #     interleaved_text_num = self.train_config.interleaved_text_token_num
+    #     interleaved_audio_num = self.train_config.interleaved_audio_token_num
+        
+    #     new_preds_batch = []
+    #     new_labels_batch = []
+
+    #     for i in range(preds.size(0)):
+    #         new_preds = []
+    #         new_labels = []
+    #         start_idx = preds_start_idx[i].item()
+    #         total_length = preds.size(1)
+    #         idx = start_idx
+            
+    #         while idx < total_length:
+    #             if idx + interleaved_text_num <= total_length:
+    #                 new_preds.append(preds[i, idx:idx + interleaved_text_num].unsqueeze(0))
+    #                 new_labels.append(text_labels[i, idx:idx + interleaved_text_num].unsqueeze(0))
+    #             idx += interleaved_text_num
+                
+    #             idx += interleaved_audio_num
+            
+    #         new_preds_batch.append(torch.cat(new_preds, dim=1))
+    #         new_labels_batch.append(torch.cat(new_labels, dim=1))
+        
+    #     new_preds = torch.cat(new_preds_batch, dim=0) if new_preds else torch.empty(0, interleaved_text_num)
+    #     new_labels = torch.cat(new_labels_batch, dim=0) if new_labels else torch.empty(0, interleaved_text_num)
+        
+    #     return new_preds, new_labels
+
+    def extract_interleaved_tokens(self, preds, text_labels, preds_start_idx):
+        """
+        Extract predictions and labels in interleaved mode.
+        """
+        interleaved_text_num = self.train_config.interleaved_text_token_num
+        interleaved_audio_num = self.train_config.interleaved_audio_token_num
+        
+        text_preds_batch = []
+        text_labels_batch = []
+        audio_preds_batch = []
+        audio_labels_batch = []
+
+        for i in range(preds.size(0)):
+            text_preds = []
+            text_labels_list = []
+            audio_preds = []
+            audio_labels = []
+
+            start_idx = preds_start_idx[i].item()
+            total_length = preds.size(1)
+            idx = start_idx
+            
+            while idx < total_length:
+                # 提取文本部分
+                if idx + interleaved_text_num <= total_length:
+                    text_preds.append(preds[i, idx:idx + interleaved_text_num].unsqueeze(0))
+                    text_labels_list.append(text_labels[i, idx:idx + interleaved_text_num].unsqueeze(0))
+                idx += interleaved_text_num
+                
+                # 提取音频部分
+                if idx + interleaved_audio_num <= total_length:
+                    audio_preds.append(preds[i, idx:idx + interleaved_audio_num].unsqueeze(0))
+                    audio_labels.append(text_labels[i, idx:idx + interleaved_audio_num].unsqueeze(0))
+                idx += interleaved_audio_num
+            
+            # 将每个样本的结果合并
+            text_preds_batch.append(torch.cat(text_preds, dim=1))
+            text_labels_batch.append(torch.cat(text_labels_list, dim=1))
+            audio_preds_batch.append(torch.cat(audio_preds, dim=1))
+            audio_labels_batch.append(torch.cat(audio_labels, dim=1))
+
+        # 合并所有批次的结果
+        text_preds = torch.cat(text_preds_batch, dim=0) if text_preds_batch else torch.empty(0, interleaved_text_num)
+        text_labels = torch.cat(text_labels_batch, dim=0) if text_labels_batch else torch.empty(0, interleaved_text_num)
+        audio_preds = torch.cat(audio_preds_batch, dim=0) if audio_preds_batch else torch.empty(0, interleaved_audio_num)
+        audio_labels = torch.cat(audio_labels_batch, dim=0) if audio_labels_batch else torch.empty(0, interleaved_audio_num)
+        
+        return text_preds, text_labels, audio_preds, audio_labels
+        
+    def process_interleaved_output(self, model_outputs):
+        """
+        Parse the interleaved generation results and separate tokens into audio and text.
+        """
+        batch_size, seq_len = model_outputs.shape
+        interleaved_audio_token_num = self.train_config.interleaved_audio_token_num
+        interleaved_text_token_num = self.train_config.interleaved_text_token_num
+        audio_shift = self.model_config.vocab_config.padded_text_vocabsize
+
+        audio_tokens, text_tokens = [], []
+
+        for i in range(batch_size):
+            current_audio, current_text = [], []
+            sequence = model_outputs[i]
+
+            idx = 0
+            while idx < seq_len:
+                text_chunk = sequence[idx: idx + interleaved_text_token_num]
+                current_text.append(text_chunk)
+                idx += interleaved_text_token_num
+
+                if idx < seq_len:
+                    audio_chunk = sequence[idx: idx + interleaved_audio_token_num] - audio_shift
+                    current_audio.append(audio_chunk)
+                    idx += interleaved_audio_token_num
+
+            audio_tokens.append(torch.cat(current_audio) if current_audio else torch.tensor([], device=model_outputs.device))
+            text_tokens.append(torch.cat(current_text) if current_text else torch.tensor([], device=model_outputs.device))
+
+        audio_tokens = torch.stack(audio_tokens) if audio_tokens else torch.empty((batch_size, 0), device=model_outputs.device)
+        text_tokens = torch.stack(text_tokens) if text_tokens else torch.empty((batch_size, 0), device=model_outputs.device)
+
+        return {
+            "audio": audio_tokens,
+            "text": text_tokens.squeeze(0),
+        }

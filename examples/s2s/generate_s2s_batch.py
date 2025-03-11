@@ -16,6 +16,7 @@ import hydra
 from omegaconf import DictConfig, ListConfig, OmegaConf
 import time
 import pdb
+import json
 
 @hydra.main(config_name=None, version_base=None)
 def main_hydra(cfg: DictConfig):
@@ -123,6 +124,9 @@ def main(kwargs: DictConfig):
 	code_layer = model_config.vocab_config.code_layer
 	code_type = model_config.code_type
 	num_latency_tokens = dataset_config.num_latency_tokens
+	modeling_paradigm = dataset_config.modeling_paradigm
+	interleaved_text_token_num = dataset_config.interleaved_text_token_num
+	interleaved_audio_token_num = dataset_config.interleaved_audio_token_num
 
 	decode_log_dir = kwargs.get('decode_log')
 	output_text_only = kwargs.get('output_text_only', False)
@@ -136,11 +140,17 @@ def main(kwargs: DictConfig):
 	gt_path = os.path.join(decode_log_dir, "gt_text")
 	question_path = os.path.join(decode_log_dir, "question_text")
 	generate_audio_dir = os.path.join(decode_log_dir, "pred_audio")
+	generate_audio_token_dir = os.path.join(decode_log_dir, "pred_audio_token")
 
 	if audio_prompt_path is None or not os.path.exists(audio_prompt_path):
 		tone_dir = "default_tone"
 	else:
 		tone_dir = os.path.basename(audio_prompt_path).split('.')[0]
+	if dataset_config.use_gt_spk_vector:
+		tone_dir = "gt_spk_vector"
+	if dataset_config.use_gt_prompt_speech:
+		tone_dir = "gt_prompt_speech"
+
 	tone_audio_dir = os.path.join(generate_audio_dir, tone_dir)
 
 	if not os.path.exists(tone_audio_dir) and not (output_text_only or decode_config.decode_text_only):
@@ -158,17 +168,37 @@ def main(kwargs: DictConfig):
 	logger.info("Decode Codec Type: {}".format(code_type))
 	logger.info("Decode Code Layer: {}".format(code_layer))
 	logger.info("Tone for Audio Generation: {}".format(tone_dir))
+	logger.info("Modeling Paradigm: {}".format(modeling_paradigm))
+
+	if modeling_paradigm == "interleaved":
+		logger.info("Interleaved Text Token Num: {}".format(interleaved_text_token_num))
+		logger.info("Interleaved Audio Token Num: {}".format(interleaved_audio_token_num))
+
 
 	logger.info("============== Start {task_type} Inference ==============".format(task_type=task_type))
 
-	with open(pred_path, "w") as pred, open(gt_path, "w") as gt, open(question_path, "w") as q:
+	with open(pred_path, "w") as pred, open(gt_path, "w") as gt, open(question_path, "w") as q, open(generate_audio_token_dir, 'w', encoding='utf-8') as json_file:
 		for step, batch in enumerate(test_dataloader):
 			for key in batch.keys():
 				batch[key] = batch[key].to(device) if isinstance(batch[key], torch.Tensor) else batch[key]
+			if dataset_config.use_gt_spk_vector: #spk_embedding 压不住
+				spk_embedding = batch["spk_embedding"][0]
+			else:
+				spk_embedding = dataset_config.spk_embedding
+			if 	dataset_config.use_gt_prompt_speech:
+				audio_prompt_path = batch["target_wav"][0]
+
 			start_time = time.time()
 			model_outputs = model.generate(**batch, **decode_config)
-			text_outputs = model_outputs[code_layer]
-			audio_outputs = model_outputs[:code_layer]
+
+			if modeling_paradigm == "parallel":
+				text_outputs = model_outputs[code_layer]
+				audio_outputs = model_outputs[:code_layer]
+			elif modeling_paradigm == "interleaved":
+				text_outputs = model_outputs["text"]
+				audio_outputs = model_outputs["audio"]
+			else:
+				raise NotImplementedError
 			end_time_llm = time.time()
 			logger.info(f"LLM Inference Time: {end_time_llm - start_time:.2f}s")
 			# output_text = model.tokenizer.batch_decode(text_outputs, add_special_tokens=False, skip_special_tokens=True)
@@ -194,32 +224,41 @@ def main(kwargs: DictConfig):
 				continue
 
 			for i, key in enumerate(batch["keys"]):
-				audio_tokens = [audio_outputs[layer] for layer in range(code_layer)]
+				audio_tokens = [audio_outputs[layer] for layer in range(code_layer)] if code_layer > 0 else audio_outputs
 
-				if code_type == "SNAC":
-					audiolist = reconscruct_snac(audio_tokens)
-					audio = reconstruct_tensors(audiolist)
-					with torch.inference_mode():
-						audio_hat = codec_decoder.decode(audio)
-				elif code_type == "CosyVoice":
-					try:
-						audio_hat = audio_decode_cosyvoice(audio_tokens, model_config, codec_decoder, tone_dir,dataset_config.spk_embedding, audio_prompt_path, code_layer, num_latency_tokens, speed=1.0)
-						print(audio_hat)
-					except Exception as e:
-						logger.error(f"Error in decoding {key}: {e}")
-						continue
+				if model_config.save_audio_token:
+					audio_tokens = audio_decode_cosyvoice(audio_tokens, model_config, codec_decoder, tone_dir, spk_embedding, audio_prompt_path, code_layer, num_latency_tokens, speed=1.0)
+					audio_tokens = audio_tokens.tolist()[0]
+					if key[-4:] == ".wav":
+						key = key[:-4]
+				
+					item = {"key":key, "generated_audio_tokens":audio_tokens, "generated_text":generated_text}
+					json.dump(item, json_file, ensure_ascii=False)
+					json_file.write('\n')
 				else:
-					raise NotImplementedError
+					if code_type == "SNAC":
+						audiolist = reconscruct_snac(audio_tokens)
+						audio = reconstruct_tensors(audiolist)
+						with torch.inference_mode():
+							audio_hat = codec_decoder.decode(audio)
+					elif code_type == "CosyVoice":
+						try:
+							audio_hat = audio_decode_cosyvoice(audio_tokens, model_config, codec_decoder, tone_dir, spk_embedding, audio_prompt_path, code_layer, num_latency_tokens, speed=1.0)
+						except Exception as e:
+							logger.error(f"Error in decoding {key}: {e}")
+							continue
+					else:
+						raise NotImplementedError
 
-				if key[-4:] == ".wav":
-					key = key[:-4]
-				end_time = time.time()
-				audio_length = audio_hat.shape[1] / speech_sample_rate
-				RTF = (end_time - start_time) / audio_length
-				sf.write(f"{tone_audio_dir}/{key}.wav", audio_hat.squeeze().cpu().numpy(), speech_sample_rate)
-				logger.info(f"Generated Audio: {tone_dir}/{key}.wav, audio length: {audio_length:.2f}s, generation time: {end_time - start_time:.2f}s, RTF: {RTF:.2f}")
-				RTF_llm = (end_time_llm - start_time) / audio_length
-				logger.info(f"LLM RTF: {RTF_llm:.2f}")
+					if key[-4:] == ".wav":
+						key = key[:-4]
+					end_time = time.time()
+					audio_length = audio_hat.shape[1] / speech_sample_rate
+					RTF = (end_time - start_time) / audio_length
+					sf.write(f"{tone_audio_dir}/{key}.wav", audio_hat.squeeze().cpu().numpy(), speech_sample_rate)
+					logger.info(f"Generated Audio: {tone_dir}/{key}.wav, audio length: {audio_length:.2f}s, generation time: {end_time - start_time:.2f}s, RTF: {RTF:.2f}")
+					RTF_llm = (end_time_llm - start_time) / audio_length
+					logger.info(f"LLM RTF: {RTF_llm:.2f}")
 
 	logger.info("============== Inference Finished ==============")
 

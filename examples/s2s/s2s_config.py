@@ -102,6 +102,8 @@ class ModelConfig:
     whisper_decode: bool = False
     cosyvoice_version: int = 1
     random_init: bool = False
+    use_text_stream: bool = True
+    save_audio_token: bool= False
 
 
 @dataclass
@@ -171,8 +173,18 @@ class TrainConfig:
     task_type:str = "s2s"
     freeze_encoder_projector:bool = False
     freeze_group_decode_adapter:bool = False
-
-
+    modeling_paradigm:str = field(default="parallel", metadata={
+        "help": "alternative: interleaved"
+    })
+    interleaved_text_token_num: int = 12
+    interleaved_audio_token_num: int = 36
+    find_unused_parameters: bool = False
+    dpo: bool = False
+    beta: float = 0.1 # The beta is a temperature parameter for the DPO loss, typically something in the range of 0.1 to 0.5. Parameter controlling the deviation from the reference model. Higher β means less deviation from the reference model. 
+    label_smoothing: float = 0.0
+    # label_smoothing (`float`, *optional*, defaults to `0.0`):
+    #     Robust DPO label smoothing parameter from the [cDPO](https://ericmitchell.ai/cdpo.pdf) report and
+    #     [Robust DPO](https://huggingface.co/papers/2403.00409) paper that should be between `0.0` and `0.5`.
 
 @dataclass
 class DataConfig:
@@ -209,12 +221,22 @@ class DataConfig:
     upsampling_factor: int = 1
     upsample_method: str = "repeat"
     code_type: str = "SNAC" 
-    num_latency_tokens: int = 1
+    num_latency_tokens: int = 0
     do_layershift: bool = True
     change_prompt: bool = False
     use_emo: bool = False
     en_dataset : bool = False
     spk_embedding: str = "中文女"
+    use_text_stream: bool = True
+    modeling_paradigm: str = field(default="parallel", metadata={
+        "help": "alternative: interleaved"
+    })
+    interleaved_text_token_num: int = 12
+    interleaved_audio_token_num: int = 36
+    first_n_token_gt: bool = False
+    first_gt_percent: float = 0.0
+    use_gt_spk_vector: bool = False
+    use_gt_prompt_speech: bool = False
 
 @dataclass
 class DecodeConfig:

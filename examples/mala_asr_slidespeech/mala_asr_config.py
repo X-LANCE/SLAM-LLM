@@ -20,6 +20,7 @@ class ModelConfig:
     encoder_type: str = field(default="finetune", metadata={
         "help": "whether model is only pretrained or finetuned, used for models such as hubert"
     })
+    random_init: bool = False
 
 @dataclass
 class PeftConfig:
