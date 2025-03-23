@@ -16,7 +16,7 @@ run_dir=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/SLAM-LL
 cd $run_dir
 code_dir=examples/aispeech_asr
 
-dataset=aishell-1
+dataset=aishell-2
 prompt_style=normal #instruct
 if [[ $dataset == aishell-1 || $dataset == aishell-2 || $dataset == librispeech || $dataset == alimeeting || $dataset == gigaspeech || $dataset == wenetspeech ]]
 then
@@ -55,7 +55,7 @@ if [[ $encoder_name == "whisper" ]]
 then
     if [[ $encoder_finetune == true ]]
     then    
-        speech_encoder_path=
+        speech_encoder_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/model/whisper/whisper-large-v2-multi-hans-zh-epoch-3-avg-10.pt
         mel_size=80
     else
         speech_encoder_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/model/whisper/large-v3.pt
@@ -142,9 +142,7 @@ hydra.run.dir=$output_dir \
 ++train_config.freeze_llm=true \
 ++train_config.use_peft=$use_peft \
 ++train_config.batching_strategy=custom \
-++train_config.warmup_steps=1000 \
 ++train_config.total_steps=100000 \
-++train_config.lr=5e-5 \
 ++train_config.validation_interval=1000 \
 ++train_config.batch_size_training=6  \
 ++train_config.val_batch_size=6 \

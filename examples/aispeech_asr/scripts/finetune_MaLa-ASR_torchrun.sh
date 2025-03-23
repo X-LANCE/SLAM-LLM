@@ -147,7 +147,7 @@ hydra.run.dir=$output_dir \
 ++train_config.warmup_steps=1000 \
 ++train_config.total_steps=100000 \
 ++train_config.lr=5e-5 \
-++train_config.validation_interval=50000 \
+++train_config.validation_interval=50 \
 ++train_config.batch_size_training=2 \
 ++train_config.val_batch_size=2 \
 ++train_config.num_workers_dataloader=8 \
@@ -168,7 +168,7 @@ if [[ $ASCEND_VISIBLE_DEVICES != *","* ]]; then
 else
     torchrun \
         --nnodes 1 \
-        --nproc_per_node 8 \
+        --nproc_per_node 2 \
         --master_port=29505 \
         $code_dir/finetune_mala_asr.py \
         --config-path "conf" \

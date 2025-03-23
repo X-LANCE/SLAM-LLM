@@ -12,8 +12,8 @@ run_dir=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/SLAM-LL
 cd $run_dir
 code_dir=examples/aispeech_asr
 
-dataset=librispeech-clean
-prompt_style=instruct  # normal #instruct
+dataset=librispeech-other
+prompt_style=normal  # normal #instruct
 if [[ $dataset == aishell-1 || $dataset == aishell-2 || $dataset == librispeech-clean || $dataset == librispeech-other || $dataset == alimeeting || $dataset == gigaspeech ]]
 then
     # aishell-1:asr hotword
@@ -28,9 +28,9 @@ sentence=connect
 llm_name=Qwen2.5-7B-Instruct
 use_peft=true
 use_fp16=true
-pad_or_trim=false
+pad_or_trim=true
 encoder_projector_ds_rate=5
-ckpt_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/aispeech_asr/exp/zh-1k-en-1k-asr/20250322/whisper_linear_Qwen2.5-7B-Instruct_loratrue_padfalse_normal__speedfalse_specaugfalse-0125/mala_asr_epoch_2_step_6000
+ckpt_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/aispeech_asr/exp/zh-1k-en-1k-asr/20250322/whisper_linear_Qwen2.5-7B-Instruct_loratrue_padtrue_normal__speedfalse_specaugfalse-1356/mala_asr_epoch_3_step_2000
 
 if [[ $encoder_name == "whisper" ]]
 then
@@ -101,8 +101,11 @@ else
     test_scp_file_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/${dataset}/test/
 fi
 
-decode_log=$ckpt_path/decode_${dataset}_${dataset_task}_${prompt_style}
-python $code_dir/inference_mala_asr_batch.py \
+decode_log=$ckpt_path/decode_${dataset}_${dataset_task}_${prompt_style}_40000
+deepspeed \
+    --num_nodes 1 \
+    --num_gpus 8 \
+    $code_dir/inference_batch_deepspeed.py \
     --config-path "conf" \
     --config-name "prompt.yaml" \
     hydra.run.dir=$ckpt_path \
@@ -136,6 +139,8 @@ python $code_dir/inference_mala_asr_batch.py \
     ++ckpt_path=$ckpt_path/model.pt  
 
 
+
 python /aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/tools/wenet_compute_cer.py --char=1 -v=1 ${decode_log}_gt ${decode_log}_pred > ${decode_log}_cer 
 python /aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/tools/pyResults/pyResults.py ${decode_log}_gt ${decode_log}_pred > ${decode_log}_ser 
 python "/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/SLAM-LLM/examples/mala_asr_slidespeech/slam_llm/utils/compute_wer.py"  ${decode_log}_gt ${decode_log}_pred ${decode_log}_ser
+

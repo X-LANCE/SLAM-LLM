@@ -2,7 +2,7 @@
 # export PYTHONPATH=/root/fairseq:$PYTHONPATH
 export ASCEND_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 export TOKENIZERS_PARALLELISM=false
-
+export HCCL_CONNECT_TIMEOUT=3600
 # export CUDA_LAUNCH_BLOCKING=1
 export HYDRA_FULL_ERROR=1
 export OMP_NUM_THREADS=1
@@ -16,8 +16,9 @@ run_dir=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/SLAM-LL
 cd $run_dir
 code_dir=examples/aispeech_asr
 # multitask 
-# dataset=zh-1w-en-1w-asr
-dataset=zh-1k-en-1k-asr
+# dataset=alimeeting
+# dataset=zh-6w-en-1w-asr
+dataset=aishell-1
 prompt_style=normal #instruct
 if [[ $dataset == aishell-1 || $dataset == aishell-2 || $dataset == librispeech || $dataset == alimeeting || $dataset == gigaspeech || $dataset == wenetspeech ]]
 then
@@ -42,17 +43,17 @@ speed_perturb=false
 spec_augmentation=false
 add_noise=false
 add_reverb=false
+ckpt_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/aispeech_asr/exp/zh-1k-en-1k-asr/20250313/whisper_linear_Qwen2.5-7B-Instruct_loratrue_padtrue_normal__speedfalse_specaugfalse-2021/mala_asr_epoch_1_step_4000
 # deepspeed_config=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/mala-asr/conf/ds_config_from_k2.json
 deepspeed_config=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/aispeech_asr/conf/ds_config.json
-# deepspeed_ckpt_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/aispeech_asr/exp/zh-1k-en-1k-asr/20250313/whisper_linear_Qwen2.5-7B-Instruct_loratrue_padtrue_normal__speedfalse_specaugfalse-2021/mala_asr_epoch_1_step_4000
-# ckpt_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/aispeech_asr/exp/zh-1k-en-1k-asr/20250313/whisper_linear_Qwen2.5-7B-Instruct_loratrue_padtrue_normal__speedfalse_specaugfalse-2021/mala_asr_epoch_1_step_4000
+# deepspeed_ckpt_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/aispeech_asr/exp/multitask_asr/20250305/whisper_linear_Qwen2.5-7B-Instruct_loratrue_padtrue_instruct__speedfalse_specaugfalse-1309/mala_asr_epoch_1_step_90000
 # deepspeed_ckpt_id=global_step90000
 if [[ $encoder_name == "whisper" ]]
 then
     encoder_finetune=false
 fi
-if [[ $use_peft == "true"  ]];then
-    ckpt_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/aispeech_asr/exp/zh-1k-en-1k-asr/20250313/whisper_linear_Qwen2.5-7B-Instruct_loratrue_padtrue_normal__speedfalse_specaugfalse-2021/mala_asr_epoch_1_step_4000/
+if [[ $use_peft == "true" || $freeze_encoder == false ]];then
+    ckpt_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/aispeech_asr/exp/multitask_asr/20250305/whisper_linear_Qwen2.5-7B-Instruct_loratrue_padtrue_instruct__speedfalse_specaugfalse-1309/mala_asr_epoch_1_step_90000
     # deepspeed_ckpt_path=
 fi
 
@@ -61,7 +62,7 @@ if [[ $encoder_name == "whisper" ]]
 then
     if [[ $encoder_finetune == true ]]
     then    
-        speech_encoder_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/model/whisper/whisper-large-v2-multi-hans-zh-epoch-3-avg-10.pt
+        speech_encoder_path=
         mel_size=80
     else
         speech_encoder_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/model/whisper/large-v3.pt
@@ -102,21 +103,28 @@ else
 fi
 
 # Choose Train/Dev/Test
-if [[ $dataset == aishell-1 || $dataset == aishell-2 || $dataset == librispeech || $dataset == alimeeting || $dataset == gigaspeech || $dataset == wenetspeech ]]
+if [[ $dataset == "aishell-1" || $dataset == "aishell-2" || $dataset == "alimeeting" || $dataset == gigaspeech ]]
 then
-    train_scp_file_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/${dataset}/${dataset_task}/train/
-    dev_scp_file_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/${dataset}/${dataset_task}/dev/
-elif [[  $dataset == "librispeech" ]]
+    test_scp_file_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/${dataset}/${dataset_task}/test/
+elif [[  $dataset == "librispeech-other" ]]
 then
-    train_scp_file_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/librispeech/${dataset_task}/train/
-    dev_scp_file_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/librispeech/${dataset_task}/dev-other/
+    test_scp_file_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/librispeech/${dataset_task}/test-other/
+elif [[  $dataset == "librispeech-clean" ]]
+then
+    test_scp_file_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/librispeech/${dataset_task}/test-clean/
+elif [[  $dataset == "wenetspeech_test_net" ]]
+then
+    test_scp_file_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/wenetspeech/asr/test_net/
+elif [[  $dataset == "wenetspeech_test_meeting" ]]
+then
+    test_scp_file_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/wenetspeech/asr/test_meeting/  
 else
-    train_scp_file_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/${dataset}/train/
-    dev_scp_file_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/${dataset}/dev/
+    test_scp_file_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/${dataset}/test/
 fi
 
+test_scp_file_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/zh-1k-en-1k-asr/train
 
-output_dir=${code_dir}/exp/${dataset}/$(date +"%Y%m%d")/${encoder_name}_${projector}_${llm_name}_lora${use_peft}_pad${pad_or_trim}_${prompt_style}_${dataset_task}_speed${speed_perturb}_specaug${spec_augmentation}-$(date +"%H")
+output_dir=${code_dir}/exp/${dataset}/$(date +"%Y%m%d")/${encoder_name}_${projector}_${llm_name}_lora${use_peft}_pad${pad_or_trim}_${prompt_style}_${dataset_task}_speed${speed_perturb}_specaug${spec_augmentation}-$(date +"%H%M")
 hydra_args="
 hydra.run.dir=$output_dir \
 ++model_config.llm_name=$llm_name \
@@ -140,8 +148,7 @@ hydra.run.dir=$output_dir \
 ++dataset_config.mel_size=$mel_size \
 ++dataset_config.pad_or_trim=$pad_or_trim \
 ++dataset_config.encoder_projector_ds_rate=$encoder_projector_ds_rate \
-++dataset_config.train_scp_file_path=$train_scp_file_path \
-++dataset_config.dev_scp_file_path=$dev_scp_file_path \
+++dataset_config.test_scp_file_path=$test_scp_file_path \
 ++train_config.model_name=mala_asr \
 ++train_config.num_epochs=5 \
 ++train_config.freeze_encoder=$freeze_encoder \
@@ -149,9 +156,9 @@ hydra.run.dir=$output_dir \
 ++train_config.use_peft=$use_peft \
 ++train_config.batching_strategy=custom \
 ++train_config.warmup_steps=10 \
-++train_config.total_steps=6000000 \
+++train_config.total_steps=600000 \
 ++train_config.lr=1e-4 \
-++train_config.validation_interval=1000 \
+++train_config.validation_interval=10000 \
 ++train_config.batch_size_training=6  \
 ++train_config.val_batch_size=7 \
 ++train_config.num_workers_dataloader=8 \
@@ -163,6 +170,7 @@ if [[ $use_peft == "true"  ]];then
     # hydra_args+=" ++deepspeed_ckpt_path=$deepspeed_ckpt_path "
     
 fi
+hydra_args+="++ckpt_path=$ckpt_path/model.pt"
 # hydra_args+=" ++deepspeed_ckpt_path=$deepspeed_ckpt_path "
 
 HOST_FILE="/tmp/"${JobID}                        #生成的hostfile的完整文件名，$JobID调度系统会自动生成
@@ -182,13 +190,12 @@ do_train() {
         --master_port $MASTER_PORT \
         --hostfile $HOST_FILE \
         --no_ssh \
-        $code_dir/finetune_mala_asr_deepspeed.py \
+        $code_dir/inference_batch_deepspeed.py \
         --config-path "conf" \
         --config-name "prompt.yaml" \
         ++train_config.enable_fsdp=false \
         ++train_config.enable_ddp=true \
         ++train_config.use_fp16=$use_fp16 \
-        ++deepspeed_config=$deepspeed_config \
         ${hydra_args}
 }
 gen_hostfile                               

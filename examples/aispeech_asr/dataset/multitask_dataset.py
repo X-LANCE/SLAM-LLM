@@ -1,11 +1,13 @@
 import torch
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset,IterableDataset
 import whisper
 import kaldiio
 # import pyroomacoustics as pra
+import torch.distributed as dist
 import string
 import copy
 import numpy as np
+import copy
 from tqdm import tqdm
 import os
 import json
@@ -15,19 +17,25 @@ from torchaudio.transforms import SpeedPerturbation
 import torchaudio
 import torchaudio.functional as F
 import random
-class MultiTaskDataset(Dataset):
+class MultiTaskDataset(IterableDataset):
     def __init__(self, dataset_config, tokenizer=None, split='train',musan_path=None):
         super().__init__()
-        self.data_list = {}
-        self.num_samples_list = {}
-        self.multitask_task_list = []
         self.multitask_prompt_list = {}
+        multitask_prompt_path = "/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/multiprompt.jsonl"
+        with open(multitask_prompt_path) as f_prompt:
+            for line in f_prompt:
+                item = json.loads(line.strip())
+                if item["task"] in self.multitask_prompt_list:
+                    self.multitask_prompt_list[item["task"]].append(item["prompt"])
+                else:
+                    self.multitask_prompt_list[item["task"]] = [item["prompt"]]
+        print(f"[Prompt] {self.multitask_prompt_list}")
         if split == "train":
-            data_path = dataset_config.train_scp_file_path
+            self.data_path = dataset_config.train_scp_file_path
         elif split == "val":
-            data_path = dataset_config.dev_scp_file_path
+            self.data_path = dataset_config.dev_scp_file_path
         elif split == "test":
-            data_path = dataset_config.test_scp_file_path
+            self.data_path = dataset_config.test_scp_file_path
         else:
             assert(0)
         if musan_path is not None:
@@ -36,32 +44,7 @@ class MultiTaskDataset(Dataset):
                 for line in f:
                     key,path = line.split(" ")
                     self.musan_list.append(path)
-        data_scp_file_path = os.path.join(data_path,"my_wav.scp")
-        # utt2numm_samples_path = os.path.join(data_path,"utt2num_samples") 
-        multitask_task_path = os.path.join(data_path,"multitask.jsonl")
-        multitask_prompt_path = "/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/multiprompt.jsonl"
-        with open(data_scp_file_path) as f:
-            for line in f:
-                key,path = line.split(" ")
-                self.data_list[key] = path
-        # with open(utt2numm_samples_path) as f:
-        #     for line in f:
-        #         key,samples = line.split(" ")
-        #         self.num_samples_list[key] = samples
-        with open(multitask_task_path) as f:
-            for line in f:
-                item = json.loads(line.strip())
-                if item["key"] in self.data_list:
-                    self.multitask_task_list.append(item)
-                else:
-                    print(item)
-        with open(multitask_prompt_path) as f:
-            for line in f:
-                item = json.loads(line.strip())
-                if item["task"] in self.multitask_prompt_list:
-                    self.multitask_prompt_list[item["task"]].append(item["prompt"])
-                else:
-                    self.multitask_prompt_list[item["task"]] = [item["prompt"]]
+        
 
         self.llm_name = dataset_config.get("llm_name", None)
         self.prompt_style = dataset_config.get("prompt_style", "normal")
@@ -98,16 +81,10 @@ class MultiTaskDataset(Dataset):
         self.prompt_mode = dataset_config.get("prompt_mode", None)
         self.normalize = dataset_config.get("normalize", False)
         self.input_type = dataset_config.get("input_type", None)
-        self.translator = str.maketrans('', '', string.punctuation)
         assert self.input_type in ["raw", "mel"], "input_type must be one of [raw, mel]" 
 
 
-    # def get_source_len(self, data_dict):
-    #     return data_dict["source_len"]
 
-    # def get_target_len(self, data_dict):
-    
-    #     return data_dict["target_len"] if "target_len" in data_dict else 0
     def speedPerturb(self, audio_raw):
         orig_freq = 16000
         # 定义速度扰动因子，例如 [0.9, 1.0, 1.1] 表示速度减少10%，保持不变，增加10%Q
@@ -183,96 +160,116 @@ class MultiTaskDataset(Dataset):
     #     return room.mic_array.signals[0, :]
 
 
-    def __len__(self):
-        return len(self.multitask_task_list)
-        
-    def __getitem__(self, index):
-        item = self.multitask_task_list[index]        
-        ark_path = self.data_list[item["key"]]
-        numpy_array = kaldiio.load_mat(ark_path)
-        audio_raw = numpy_array[1].astype(np.float32) / 32768
-        # num_samples = int(self.num_samples_list[item["key"]])
-        # assert(audio_raw.shape[0] == num_samples)
-        key = item["key"]
-        target = item["target"].upper()
-    # 使用 translate 方法去除标点符号
-        target = target.translate(self.translator)
-        # ocr = self.ocr_list[index]
-        # target = self.label_list[index]
-        # key = self.key_list[index]
-        ## data augmentation
-        if self.split == "train" and self.speed_perturb == True:
-            audio_raw = self.speedPerturb(audio_raw)
-        if self.split == "train" and self.add_noise == True:
-            audio_raw = self.addNoise(audio_raw, self.musan_list)
-        # if self.split == "train" and self.add_reverb == True:
-        #     audio_raw = self.simulate_room_reverb(audio_raw, 16000).astype(np.float32)
-        if self.input_type == "raw":
-            audio_raw = torch.from_numpy(audio_raw).float()
-            if self.normalize:
-                audio_raw = torch.nn.functional.layer_norm(audio_raw, audio_raw.shape)
-            audio_length = len(audio_raw) // 320 # ad-hoc for fairseq 320x downsample
-            audio_length = audio_length // 5 # ad-hoc for 5x fc downsample
-        elif self.input_type == "mel":
-            if self.pad_or_trim == True:
-                audio_raw = whisper.pad_or_trim(audio_raw)
-            audio_mel = whisper.log_mel_spectrogram(audio_raw, n_mels=self.mel_size).permute(1, 0)
-            if self.split == "train" and self.spec_augmentation == True:
-                audio_mel = self.specAugment(audio_mel)
-            audio_length = (audio_mel.shape[0] + 1) // 2  # ad-hoc for whisper for 2x downsample from mel to feats
-            audio_length = audio_length // 5 # ad-hoc for 5x fc downsample
-            # audio_length = calculate_output_length_1d(audio_length, 5, 5, 0) # ad-hoc for 5x cov1d downsample
-        if self.fix_length_audio > 0:
-            audio_length = self.fix_length_audio
-        audio_pseudo = torch.full((audio_length,), -1) # placeholder
+    def __iter__(self):
+        multitask_task_path = os.path.join(self.data_path,"multitask.jsonl")
+        worker_info = torch.utils.data.get_worker_info()
+        if worker_info is None:  # 不在 DataLoader 的多进程环境中
+            num_workers = 1
+            worker_id = 0
+        else:
+            num_workers = worker_info.num_workers
+            worker_id = worker_info.id
 
-        prompt = random.choice(self.multitask_prompt_list[item["task"]])
-        prompt = self.prompt_template1.format(prompt)
-        if item["task"] in ["prevtext","hotword","domain"]:
-            prompt = prompt.format(item[item["task"]].upper())
-        prompt_ids = self.tokenizer.encode(prompt)
-        prompt_length = len(prompt_ids)
-        
-        if self.inference_mode:
-            prompt_ids = torch.tensor(prompt_ids, dtype=torch.int64)
-            example_ids = torch.cat((audio_pseudo, prompt_ids))  # [audio,prompt]
-            example_mask = example_ids.ge(-1)  # [True,True]
+        # 获取分布式环境中的进程信息
+        if dist.is_available() and dist.is_initialized():
+            world_size = dist.get_world_size()
+            rank = dist.get_rank()
+        else:
+            world_size = 1
+            rank = 0
 
-            return {
-                "input_ids": example_ids,
-                "attention_mask": example_mask,
-                "audio": audio_raw if self.input_type == "raw" else None,
-                "audio_mel": audio_mel if self.input_type == "mel" else None,
-                'audio_length': audio_length,
-                'key': key,
-                'target': target,
-            }
+        # 计算每个 worker 和每个进程应该处理的数据范围
+        total_num_workers = num_workers * world_size
+        worker_rank = rank * num_workers + worker_id 
+        data_index = 0
+        with open(multitask_task_path) as f_task:
+            for line in f_task:
+                if (data_index % total_num_workers) == worker_rank :
+                    try:
+                        item = json.loads(line.strip())
+                        ark_path = item["path"]
+                        numpy_array = kaldiio.load_mat(ark_path)
+                        audio_raw = numpy_array[1].astype(np.float32) / 32768
+                        if len(audio_raw) / 16000 > 30: 
+                            continue
+                        key = item["key"]
+                        target = item["target"].upper()
+                        ## data augmentation
+                        if self.split == "train" and self.speed_perturb == True:
+                            audio_raw = self.speedPerturb(audio_raw)
+                        if self.split == "train" and self.add_noise == True:
+                            audio_raw = self.addNoise(audio_raw, self.musan_list)
+                        # if self.split == "train" and self.add_reverb == True:
+                        #     audio_raw = self.simulate_room_reverb(audio_raw, 16000).astype(np.float32)
+                        if self.input_type == "raw":
+                            audio_raw = torch.from_numpy(audio_raw).float()
+                            if self.normalize:
+                                audio_raw = torch.nn.functional.layer_norm(audio_raw, audio_raw.shape)
+                            audio_length = len(audio_raw) // 320 # ad-hoc for fairseq 320x downsample
+                            audio_length = audio_length // 5 # ad-hoc for 5x fc downsample
+                        elif self.input_type == "mel":
+                            if self.pad_or_trim == True:
+                                audio_raw = whisper.pad_or_trim(audio_raw)
+                            audio_mel = whisper.log_mel_spectrogram(audio_raw, n_mels=self.mel_size).permute(1, 0)
+                            if self.split == "train" and self.spec_augmentation == True:
+                                audio_mel = self.specAugment(audio_mel)
+                            audio_length = (audio_mel.shape[0] + 1) // 2  # ad-hoc for whisper for 2x downsample from mel to feats
+                            audio_length = audio_length // 5 # ad-hoc for 5x fc downsample
+                            # audio_length = calculate_output_length_1d(audio_length, 5, 5, 0) # ad-hoc for 5x cov1d downsample
+                        if self.fix_length_audio > 0:
+                            audio_length = self.fix_length_audio
+                        audio_pseudo = torch.full((audio_length,), -1) # placeholder
 
-        answer = self.answer_template.format(target)
-        example = prompt + answer  # FIX(MZY): avoid putting a bos token before answer.
-        example_ids = self.tokenizer.encode(example)  # [prompt,answer]
-        example_ids.append(self.tokenizer.eos_token_id)  # [prompt,answer,eos]
-        example_ids = torch.tensor(
-            example_ids, dtype=torch.int64
-        )
-        example_ids = torch.cat((audio_pseudo, example_ids))  # [audio,prompt,answer,eos]
+                        prompt = random.choice(self.multitask_prompt_list[item["task"]])
+                        prompt = self.prompt_template1.format(prompt)
+                        if item["task"] in ["prevtext","hotword","domain"]:
+                            prompt = prompt.format(item[item["task"]].upper())
+                        prompt_ids = self.tokenizer.encode(prompt)
+                        prompt_length = len(prompt_ids)
+                        
+                        if self.inference_mode:
+                            prompt_ids = torch.tensor(prompt_ids, dtype=torch.int64)
+                            example_ids = torch.cat((audio_pseudo, prompt_ids))  # [audio,prompt]
+                            example_mask = example_ids.ge(-1)  # [True,True]
 
-        labels_ids = copy.deepcopy(example_ids)  # [audio,prompt,answer,eos]
-        labels_ids[:audio_length + prompt_length] = -1  # [-1,-1,answer,eos];
-        example_mask = example_ids.ge(-1)  # FIX(GZF): [True,True,True,True]
+                            yield {
+                                "input_ids": example_ids,
+                                "attention_mask": example_mask,
+                                "audio": audio_raw if self.input_type == "raw" else None,
+                                "audio_mel": audio_mel if self.input_type == "mel" else None,
+                                'audio_length': audio_length,
+                                'key': key,
+                                'target': target,
+                            }
+                        else:
+                            answer = self.answer_template.format(target)
+                            example = prompt + answer  # FIX(MZY): avoid putting a bos token before answer.
+                            example_ids = self.tokenizer.encode(example)  # [prompt,answer]
+                            example_ids.append(self.tokenizer.eos_token_id)  # [prompt,answer,eos]
+                            example_ids = torch.tensor(
+                                example_ids, dtype=torch.int64
+                            )
+                            example_ids = torch.cat((audio_pseudo, example_ids))  # [audio,prompt,answer,eos]
 
-        label_mask = labels_ids.ge(0)  # [False,False,True,True]
-        example_ids[~example_mask] = 0  # [audio,prompt,answer,eos]
-        labels_ids[~label_mask] = self.IGNORE_INDEX  # [-100,-100,answer,eos]
+                            labels_ids = copy.deepcopy(example_ids)  # [audio,prompt,answer,eos]
+                            labels_ids[:audio_length + prompt_length] = -1  # [-1,-1,answer,eos];
+                            example_mask = example_ids.ge(-1)  # FIX(GZF): [True,True,True,True]
 
-        return {
-            "input_ids": example_ids,
-            "labels": labels_ids,
-            "attention_mask": example_mask,
-            "audio": audio_raw if self.input_type == "raw" else None,
-            "audio_mel": audio_mel if self.input_type == "mel" else None,
-            'audio_length': audio_length,
-        }             
+                            label_mask = labels_ids.ge(0)  # [False,False,True,True]
+                            example_ids[~example_mask] = 0  # [audio,prompt,answer,eos]
+                            labels_ids[~label_mask] = self.IGNORE_INDEX  # [-100,-100,answer,eos]
+                            yield {
+                                "input_ids": example_ids,
+                                "labels": labels_ids,
+                                "attention_mask": example_mask,
+                                "audio": audio_raw if self.input_type == "raw" else None,
+                                "audio_mel": audio_mel if self.input_type == "mel" else None,
+                                'audio_length': audio_length,
+                            }
+                    except:
+                        print("[Item Error]",key,target)
+                        exit(1)
+                data_index += 1           
     def pad(self, sequence, max_length, padding_idx=0):
             if isinstance(sequence, (int, list, tuple)):
                 if len(sequence) < max_length:

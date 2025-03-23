@@ -1,6 +1,6 @@
 #!/bin/bash
 # export PYTHONPATH=/root/fairseq:$PYTHONPATH
-export ASCEND_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
+# export ASCEND_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 export TOKENIZERS_PARALLELISM=false
 # export CUDA_LAUNCH_BLOCKING=1
 export HYDRA_FULL_ERROR=1
@@ -17,7 +17,7 @@ code_dir=examples/aispeech_asr
 # multitask 
 # dataset=alimeeting
 # dataset=multitask_asr
-dataset=aishell-1
+dataset=aishell-2
 prompt_style=normal #instruct
 if [[ $dataset == aishell-1 || $dataset == aishell-2 || $dataset == librispeech || $dataset == alimeeting || $dataset == gigaspeech || $dataset == wenetspeech ]]
 then
@@ -44,12 +44,12 @@ spec_augmentation=false
 add_noise=false
 add_reverb=false
 # deepspeed_config=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/mala-asr/conf/ds_config_from_k2.json
-deepspeed_config=./conf/ds_config.json
+deepspeed_config=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/aispeech_asr/conf/ds_config.json
 # /hpc_stor01/home/yangui.fang_sx/workingspace/project/mala_asr_slidespeech_origin/exp/multitask_asr/20250111/whisper_linear_Qwen2.5-7B-Instruct_lorafalse_padfalse_normal__speedtrue_specaugfalse-1106/mala_asr_epoch_2_step_1299/
 # ckpt_path=/hpc_stor01/home/yangui.fang_sx/workingspace/project/mala_asr_slidespeech_origin/exp/multitask_asr/20250114/whisper_linear_Qwen2.5-7B-Instruct_loratrue_padtrue_normal__speedfalse_specaugfalse-2018_Upper_/mala_asr_epoch_2_step_12299
 if [[ $encoder_name == "whisper" ]]
 then
-    encoder_finetune=false
+    encoder_finetune=true
 fi
 if [[ $use_peft == "true" || $freeze_encoder == false ]];then
     ckpt_path=
@@ -60,7 +60,7 @@ if [[ $encoder_name == "whisper" ]]
 then
     if [[ $encoder_finetune == true ]]
     then    
-        speech_encoder_path=
+        speech_encoder_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/aispeech_asr/scripts/finetune_MaLa-ASR_deepspeed_multinode.sh
         mel_size=80
     else
         speech_encoder_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/model/whisper/large-v3.pt
@@ -147,13 +147,11 @@ hydra.run.dir=$output_dir \
 ++train_config.freeze_llm=true \
 ++train_config.use_peft=$use_peft \
 ++train_config.batching_strategy=custom \
-++train_config.warmup_steps=1000 \
 ++train_config.total_steps=100000 \
-++train_config.lr=5e-5 \
-++train_config.validation_interval=10000 \
-++train_config.batch_size_training=10  \
-++train_config.val_batch_size=10 \
-++train_config.num_workers_dataloader=16 \
+++train_config.validation_interval=1000 \
+++train_config.batch_size_training=4  \
+++train_config.val_batch_size=4 \
+++train_config.num_workers_dataloader=8 \
 ++train_config.output_dir=$output_dir \
 ++metric=acc \
 "
@@ -171,7 +169,7 @@ if [[ $ASCEND_VISIBLE_DEVICES != *","* ]]; then
 else
     deepspeed \
         --num_nodes 1 \
-        --num_gpus 8 \
+        --num_gpus 2 \
         $code_dir/finetune_mala_asr_deepspeed.py \
         --config-path "conf" \
         --config-name "prompt.yaml" \
