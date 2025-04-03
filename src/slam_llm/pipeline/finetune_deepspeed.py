@@ -144,7 +144,7 @@ def main(kwargs: DictConfig):
     model_factory = get_custom_model_factory(model_config, logger)
     model, tokenizer = model_factory(train_config, model_config, **kwargs)
     parameters = filter(lambda p: p.requires_grad, model.parameters())
-    device = torch.device("npu" if torch_npu.npu.is_available() else "cpu")
+    device = torch.device(f"npu:{local_rank}" if torch_npu.npu.is_available() else "cpu")
 
     # If you are facing problem from limited memory(<=256GB), you can try to replace the above code with the following code
     # for i in range(rank):
@@ -161,8 +161,7 @@ def main(kwargs: DictConfig):
 
 
     # Initialize the optimizer and learning rate scheduler
-
-    model_engine, _, _, _ = deepspeed.initialize(
+    model_engine, _, _, lr_scheduler = deepspeed.initialize(
         model=model, model_parameters=parameters, config=deepspeed_config
     )
     deepspeed_path = kwargs.get("deepspeed_ckpt_path",None)
@@ -194,15 +193,13 @@ def main(kwargs: DictConfig):
         dataset_config,
         split="train",
     )
-    if not (train_config.enable_fsdp or train_config.enable_ddp) or rank == 0:
-        logger.info(f"--> Training Set Length = {len(dataset_train)}")
+
     dataset_val = get_preprocessed_dataset(
         tokenizer,
         dataset_config,
         split="val",
     )
-    if not (train_config.enable_fsdp or train_config.enable_ddp) or rank == 0:
-        logger.info(f"--> Validation Set Length = {len(dataset_val)}")
+    
     if train_config.batching_strategy == "packing":
         dataset_train = ConcatDataset(dataset_train, chunk_size=train_config.context_length)
 
@@ -212,7 +209,7 @@ def main(kwargs: DictConfig):
     train_dataloader = torch.utils.data.DataLoader(
         dataset_train,
         num_workers=train_config.num_workers_dataloader,
-        pin_memory=True,
+        prefetch_factor = train_config.num_workers_dataloader*2,
         **train_dl_kwargs,
     )
     
@@ -226,7 +223,6 @@ def main(kwargs: DictConfig):
         eval_dataloader = torch.utils.data.DataLoader(
             dataset_val,
             num_workers=train_config.num_workers_dataloader,
-            pin_memory=True,
             **val_dl_kwargs,
         )
 
@@ -234,6 +230,7 @@ def main(kwargs: DictConfig):
     # Start the training process
     results = train(
         model_engine,
+        lr_scheduler,
         train_dataloader,
         eval_dataloader,
         tokenizer,

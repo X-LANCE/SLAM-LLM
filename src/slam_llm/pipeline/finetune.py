@@ -97,7 +97,6 @@ def main(kwargs: DictConfig):
         datefmt="%Y-%m-%d %H:%M:%S",
         filemode='w'
     )
-
     logger = logging.getLogger()  
     logger.setLevel(logging.INFO)
 
@@ -152,7 +151,7 @@ def main(kwargs: DictConfig):
 
     model_factory = get_custom_model_factory(model_config, logger)
     model, tokenizer = model_factory(train_config, model_config, **kwargs)
-    device = torch.device("npu" if torch_npu.npu.is_available() else "cpu")
+    device = torch.device(f"npu:{local_rank}" if torch_npu.npu.is_available() else "cpu")
 
     
     # Convert the model to bfloat16 if fsdp and pure_bf16 is enabled
@@ -169,11 +168,7 @@ def main(kwargs: DictConfig):
         # fsdp_config.sharding_strategy = getattr(ShardingStrategy, fsdp_config.sharding_strategy)
         mixed_precision_policy, wrapping_policy = get_policies(fsdp_config, rank)
         my_auto_wrapping_policy = fsdp_auto_wrap_policy(model, LlamaDecoderLayer)
-        # print(model.encoder)
-        # model.encoder.feature_extractor.conv_layers[0][0].parameters().device
-        model.llm.to(next(model.parameters()).device)
-        # model.llm.to(next(model.encoder.conv1.parameters()).device)
-        # model.llm.to(rank)
+
         model = FSDP(
             model,
             auto_wrap_policy= my_auto_wrapping_policy, #(FIX:MZY): Using my_auto_wrapping_policy whether peft or not. This will avoid model shard type check error of requires_grad mismatching.
@@ -207,15 +202,13 @@ def main(kwargs: DictConfig):
         dataset_config,
         split="train",
     )
-    if not (train_config.enable_fsdp or train_config.enable_ddp) or rank == 0:
-        logger.info(f"--> Training Set Length = {len(dataset_train)}")
+
     dataset_val = get_preprocessed_dataset(
         tokenizer,
         dataset_config,
         split="val",
     )
-    if not (train_config.enable_fsdp or train_config.enable_ddp) or rank == 0:
-        logger.info(f"--> Validation Set Length = {len(dataset_val)}")
+
     if train_config.batching_strategy == "packing":
         dataset_train = ConcatDataset(dataset_train, chunk_size=train_config.context_length)
 

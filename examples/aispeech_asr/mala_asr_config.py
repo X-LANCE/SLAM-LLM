@@ -42,7 +42,9 @@ class PeftConfig:
     peft_method: str = "lora" # None , llama_adapter, prefix
     r: int = 64
     lora_alpha: int = 16
-    target_modules: List = field(default_factory=lambda: [ "q_proj", "v_proj", "o_proj", "up_proj","gate_proj","down_proj"])
+    target_modules: List = field(default_factory=lambda: [ "q_proj","k_proj", "v_proj", "o_proj", "up_proj","gate_proj","down_proj"])
+    # target_modules: List = field(default_factory=lambda: ['q_proj', 'k_proj', 'v_proj', 'o_proj', 'gate_proj', 'down_proj'])
+    
     bias: str = "none"
     task_type: str = "CAUSAL_LM"
     lora_dropout: float = 0.05
@@ -56,7 +58,7 @@ class TrainConfig:
     enable_fsdp:bool = False
     low_cpu_fsdp:bool = False
     run_validation:bool = True
-    batch_size_training:int = 4
+    batch_size_training: Optional[int] = None
     batching_strategy:str = field(default="packing", metadata={
         "help":"alternative: padding"
     }) #
@@ -73,7 +75,7 @@ class TrainConfig:
     seed:int = 42
     use_fp16:bool = False
     mixed_precision:bool = True
-    val_batch_size:int = 1
+    val_batch_size:Optional[int] = None
 
     use_peft:bool = False
     peft_config:PeftConfig = field(default_factory=PeftConfig)
@@ -99,6 +101,7 @@ class TrainConfig:
 class DataConfig:
     dataset: str = "multitask_dataset"
     llm_name: str = "vicuna-7b-v1.5"
+    max_frame_length: int = 1400
     prompt_style: str = "normal" # instruct
     file: str = "examples/aispeech_asr/dataset/multitask_dataset.py:get_speech_dataset"
     speed_perturb : bool = False

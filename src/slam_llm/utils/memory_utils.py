@@ -44,7 +44,7 @@ class MemoryTrace:
         self.peak_monitoring = False
 
         gc.collect()
-        torch.npu.empty_cache()
+        # torch.npu.empty_cache()
         self.end = byte2gb(torch.npu.memory_allocated())
         self.peak = byte2gb(torch.npu.max_memory_allocated())
         npu_info = torch.npu.memory_stats()

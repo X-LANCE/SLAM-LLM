@@ -122,7 +122,6 @@ else
     test_scp_file_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/${dataset}/test/
 fi
 
-test_scp_file_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/zh-1k-en-1k-asr/train
 
 output_dir=${code_dir}/exp/${dataset}/$(date +"%Y%m%d")/${encoder_name}_${projector}_${llm_name}_lora${use_peft}_pad${pad_or_trim}_${prompt_style}_${dataset_task}_speed${speed_perturb}_specaug${spec_augmentation}-$(date +"%H%M")
 hydra_args="

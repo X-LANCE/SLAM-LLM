@@ -2,7 +2,7 @@
 # export PYTHONPATH=/root/fairseq:$PYTHONPATH
 export ASCEND_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 export TOKENIZERS_PARALLELISM=false
-
+export HCCL_CONNECT_TIMEOUT=3600
 # export CUDA_LAUNCH_BLOCKING=1
 export HYDRA_FULL_ERROR=1
 export OMP_NUM_THREADS=1
@@ -31,7 +31,7 @@ fi
 projector=linear
 encoder_name=whisper
 llm_name=Qwen2.5-7B-Instruct
-use_peft=false
+use_peft=true
 use_fp16=true
 freeze_encoder=true
 pad_or_trim=true
@@ -47,7 +47,7 @@ then
     encoder_finetune=false
 fi
 if [[ $use_peft == "true" || $freeze_encoder == false ]];then
-    ckpt_path=
+    ckpt_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/aispeech_asr/exp/librispeech/20250322/whisper_linear_Qwen2.5-7B-Instruct_lorafalse_padtrue_normal_asr_speedfalse_specaugfalse-1121/mala_asr_epoch_2_step_25000_best
 fi
 
 # Choose Encoder
@@ -142,10 +142,6 @@ hydra.run.dir=$output_dir \
 ++train_config.freeze_llm=true \
 ++train_config.use_peft=$use_peft \
 ++train_config.batching_strategy=custom \
-++train_config.total_steps=100000 \
-++train_config.validation_interval=1000 \
-++train_config.batch_size_training=6  \
-++train_config.val_batch_size=6 \
 ++train_config.num_workers_dataloader=0 \
 ++train_config.output_dir=$output_dir \
 ++metric=acc \

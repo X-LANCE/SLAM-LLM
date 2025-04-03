@@ -1,0 +1,32 @@
+dataset_config:
+  prompt: 请转写音频为文字
+  llm_name: Qwen2-7B-Instruct
+  prompt_style: normal
+  dataset: slidespeech
+  pad_or_trim: true
+  test_scp_file_path: /aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/slidespeech/asr/test/
+  input_type: raw
+  mel_size: 128
+  inference_mode: true
+model_config:
+  llm_name: Qwen2-7B-Instruct
+  llm_path: /aistor/aispeech/hpc_stor01/home/pengjing00sx/FireRedASR/pretrained_models/Qwen2-7B-Instruct
+  llm_dim: 3584
+  encoder_name: conformer
+  normalize: true
+  encoder_projector_ds_rate: 2
+  encoder_path: /aistor/aispeech/hpc_stor01/home/pengjing00sx/FireRedASR/pretrained_models/FireRedASR-LLM-L/asr_encoder.pth.tar
+  encoder_dim: 1280
+  encoder_projector: linear
+train_config:
+  model_name: firered_asr
+  freeze_encoder: true
+  freeze_llm: true
+  use_peft: false
+  batching_strategy: custom
+  num_epochs: 1
+  val_batch_size: 8
+  num_workers_dataloader: 8
+  output_dir: ''
+  inference_mode: true
+decode_log: ./decode_slidespeech_asr_normal

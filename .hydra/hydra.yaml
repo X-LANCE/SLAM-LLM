@@ -113,46 +113,38 @@ hydra:
     - hydra.run.dir=
     - hydra.mode=RUN
     task:
-    - ++train_config.enable_fsdp=false
-    - ++train_config.enable_ddp=true
-    - ++train_config.use_fp16=true
-    - ++model_config.llm_name=Qwen2.5-7B-Instruct
-    - ++model_config.llm_path=/hpc_stor01/home/yangui.fang_sx/workingspace/model/Qwen2.5-7B-Instruct
+    - ++model_config.llm_name=Qwen2-7B-Instruct
+    - ++model_config.llm_path=/aistor/aispeech/hpc_stor01/home/pengjing00sx/FireRedASR/pretrained_models/Qwen2-7B-Instruct
     - ++model_config.llm_dim=3584
-    - ++model_config.encoder_name=whisper
+    - ++model_config.encoder_name=conformer
     - ++model_config.normalize=true
-    - ++dataset_config.normalize=true
-    - ++model_config.encoder_projector_ds_rate=5
-    - ++model_config.encoder_path=/hpc_stor01/home/yangui.fang_sx/workingspace/model/whisper-large-v3/large-v3.pt
+    - ++model_config.encoder_projector_ds_rate=2
+    - ++model_config.encoder_path=/aistor/aispeech/hpc_stor01/home/pengjing00sx/FireRedASR/pretrained_models/FireRedASR-LLM-L/asr_encoder.pth.tar
     - ++model_config.encoder_dim=1280
     - ++model_config.encoder_projector=linear
-    - ++dataset_config.dataset=aishell2
-    - ++dataset_config.input_type=mel
+    - ++dataset_config.llm_name=Qwen2-7B-Instruct
+    - ++dataset_config.prompt_style=normal
+    - ++dataset_config.dataset=slidespeech
+    - ++dataset_config.pad_or_trim=true
+    - ++dataset_config.test_scp_file_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/slidespeech/asr/test/
+    - ++dataset_config.input_type=raw
     - ++dataset_config.mel_size=128
-    - ++dataset_config.use_ocr=false
-    - ++dataset_config.train_scp_file_path=/hpc_stor01/home/yangui.fang_sx/workingspace/data/aishell-2/train/
-    - ++dataset_config.dev_scp_file_path=/hpc_stor01/home/yangui.fang_sx/workingspace/data/aishell-2/iOS/dev/export/
-    - ++dataset_config.test_scp_file_path=/hpc_stor01/home/yangui.fang_sx/workingspace/data/aishell-2/iOS/test/export/
-    - ++train_config.model_name=mala_asr
-    - ++train_config.num_epochs=5
+    - ++dataset_config.inference_mode=true
+    - ++train_config.model_name=firered_asr
     - ++train_config.freeze_encoder=true
     - ++train_config.freeze_llm=true
-    - ++train_config.use_peft=true
+    - ++train_config.use_peft=false
     - ++train_config.batching_strategy=custom
-    - ++train_config.warmup_steps=1000
-    - ++train_config.total_steps=110000
-    - ++train_config.lr=5e-5
-    - ++train_config.validation_interval=2000
-    - ++train_config.batch_size_training=12
-    - ++train_config.val_batch_size=6
-    - ++train_config.num_workers_dataloader=2
+    - ++train_config.num_epochs=1
+    - ++train_config.val_batch_size=8
+    - ++train_config.num_workers_dataloader=8
     - ++train_config.output_dir=
-    - ++metric=acc
-    - ++ckpt_path=/hpc_stor01/home/yangui.fang_sx/workingspace/project/mala_asr_slidespeech_origin/exp/finetune_MaLa-ASR_whisper_linear_Qwen2.5-7B-Instruct_aishell2_hotwordfalse-20241124-0915/mala_asr_epoch_3_step_13682/model.pt
+    - ++train_config.inference_mode=true
+    - ++decode_log=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/SLAM-LLM/examples/asr_fireredasr/decode_slidespeech_asr_normal
   job:
-    name: finetune_mala_asr
+    name: inference_fireredasr_deepspeed
     chdir: null
-    override_dirname: ++ckpt_path=/hpc_stor01/home/yangui.fang_sx/workingspace/project/mala_asr_slidespeech_origin/exp/finetune_MaLa-ASR_whisper_linear_Qwen2.5-7B-Instruct_aishell2_hotwordfalse-20241124-0915/mala_asr_epoch_3_step_13682/model.pt,++dataset_config.dataset=aishell2,++dataset_config.dev_scp_file_path=/hpc_stor01/home/yangui.fang_sx/workingspace/data/aishell-2/iOS/dev/export/,++dataset_config.input_type=mel,++dataset_config.mel_size=128,++dataset_config.normalize=true,++dataset_config.test_scp_file_path=/hpc_stor01/home/yangui.fang_sx/workingspace/data/aishell-2/iOS/test/export/,++dataset_config.train_scp_file_path=/hpc_stor01/home/yangui.fang_sx/workingspace/data/aishell-2/train/,++dataset_config.use_ocr=false,++metric=acc,++model_config.encoder_dim=1280,++model_config.encoder_name=whisper,++model_config.encoder_path=/hpc_stor01/home/yangui.fang_sx/workingspace/model/whisper-large-v3/large-v3.pt,++model_config.encoder_projector=linear,++model_config.encoder_projector_ds_rate=5,++model_config.llm_dim=3584,++model_config.llm_name=Qwen2.5-7B-Instruct,++model_config.llm_path=/hpc_stor01/home/yangui.fang_sx/workingspace/model/Qwen2.5-7B-Instruct,++model_config.normalize=true,++train_config.batch_size_training=12,++train_config.batching_strategy=custom,++train_config.enable_ddp=true,++train_config.enable_fsdp=false,++train_config.freeze_encoder=true,++train_config.freeze_llm=true,++train_config.lr=5e-5,++train_config.model_name=mala_asr,++train_config.num_epochs=5,++train_config.num_workers_dataloader=2,++train_config.output_dir=,++train_config.total_steps=110000,++train_config.use_fp16=true,++train_config.use_peft=true,++train_config.val_batch_size=6,++train_config.validation_interval=2000,++train_config.warmup_steps=1000
+    override_dirname: ++dataset_config.dataset=slidespeech,++dataset_config.inference_mode=true,++dataset_config.input_type=raw,++dataset_config.llm_name=Qwen2-7B-Instruct,++dataset_config.mel_size=128,++dataset_config.pad_or_trim=true,++dataset_config.prompt_style=normal,++dataset_config.test_scp_file_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/slidespeech/asr/test/,++decode_log=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/SLAM-LLM/examples/asr_fireredasr/decode_slidespeech_asr_normal,++model_config.encoder_dim=1280,++model_config.encoder_name=conformer,++model_config.encoder_path=/aistor/aispeech/hpc_stor01/home/pengjing00sx/FireRedASR/pretrained_models/FireRedASR-LLM-L/asr_encoder.pth.tar,++model_config.encoder_projector=linear,++model_config.encoder_projector_ds_rate=2,++model_config.llm_dim=3584,++model_config.llm_name=Qwen2-7B-Instruct,++model_config.llm_path=/aistor/aispeech/hpc_stor01/home/pengjing00sx/FireRedASR/pretrained_models/Qwen2-7B-Instruct,++model_config.normalize=true,++train_config.batching_strategy=custom,++train_config.freeze_encoder=true,++train_config.freeze_llm=true,++train_config.inference_mode=true,++train_config.model_name=firered_asr,++train_config.num_epochs=1,++train_config.num_workers_dataloader=8,++train_config.output_dir=,++train_config.use_peft=false,++train_config.val_batch_size=8
     id: ???
     num: ???
     config_name: prompt.yaml
@@ -166,18 +158,18 @@ hydra:
   runtime:
     version: 1.3.2
     version_base: '1.3'
-    cwd: /mnt/lustre/hpc_stor01/home/yangui.fang_sx/workingspace/SLAM-LLM
+    cwd: /aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/SLAM-LLM
     config_sources:
     - path: hydra.conf
       schema: pkg
       provider: hydra
-    - path: /mnt/lustre/hpc_stor01/home/yangui.fang_sx/workingspace/SLAM-LLM/examples/mala_asr_slidespeech/conf
+    - path: /aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/SLAM-LLM/examples/asr_fireredasr/conf
       schema: file
       provider: main
     - path: ''
       schema: structured
       provider: schema
-    output_dir: /mnt/lustre/hpc_stor01/home/yangui.fang_sx/workingspace/SLAM-LLM
+    output_dir: /aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/SLAM-LLM
     choices:
       hydra/env: default
       hydra/callbacks: null

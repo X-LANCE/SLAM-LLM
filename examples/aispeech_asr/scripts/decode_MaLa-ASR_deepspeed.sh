@@ -12,7 +12,7 @@ run_dir=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/SLAM-LL
 cd $run_dir
 code_dir=examples/aispeech_asr
 
-dataset=librispeech-other
+dataset=aishell-2-train
 prompt_style=normal  # normal #instruct
 if [[ $dataset == aishell-1 || $dataset == aishell-2 || $dataset == librispeech-clean || $dataset == librispeech-other || $dataset == alimeeting || $dataset == gigaspeech ]]
 then
@@ -24,14 +24,12 @@ then
 fi
 projector=linear
 encoder_name=whisper
-sentence=connect
 llm_name=Qwen2.5-7B-Instruct
 use_peft=true
 use_fp16=true
 pad_or_trim=true
 encoder_projector_ds_rate=5
 ckpt_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/aispeech_asr/exp/zh-1k-en-1k-asr/20250322/whisper_linear_Qwen2.5-7B-Instruct_loratrue_padtrue_normal__speedfalse_specaugfalse-1356/mala_asr_epoch_3_step_2000
-
 if [[ $encoder_name == "whisper" ]]
 then
     encoder_finetune=false
@@ -100,8 +98,7 @@ then
 else
     test_scp_file_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/${dataset}/test/
 fi
-
-decode_log=$ckpt_path/decode_${dataset}_${dataset_task}_${prompt_style}_40000
+decode_log=$ckpt_path/decode_${dataset}_${dataset_task}_${prompt_style}
 deepspeed \
     --num_nodes 1 \
     --num_gpus 8 \

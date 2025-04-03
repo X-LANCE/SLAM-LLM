@@ -16,6 +16,7 @@ class LlmTokenizerWrapper:
             tokenizer.padding_side = "left"
         else:
             tokenizer.padding_side = "right"
+        # tokenizer.padding_side = "left"
         special_tokens_dict = {"additional_special_tokens": [DEFAULT_SPEECH_TOKEN]}
         tokenizer.add_special_tokens(special_tokens_dict)
         return tokenizer

@@ -2,7 +2,7 @@
 # export PYTHONPATH=/root/fairseq:$PYTHONPATH
 export ASCEND_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 export TOKENIZERS_PARALLELISM=false
-
+export HCCL_CONNECT_TIMEOUT=3600
 # export CUDA_LAUNCH_BLOCKING=1
 export HYDRA_FULL_ERROR=1
 export OMP_NUM_THREADS=1
@@ -17,7 +17,7 @@ cd $run_dir
 code_dir=examples/aispeech_asr
 # multitask 
 # dataset=zh-1w-en-1w-asr
-dataset=zh-1k-en-1k-asr
+dataset=zh-6w-en-1w-fangyan-3w-asr
 prompt_style=normal #instruct
 if [[ $dataset == aishell-1 || $dataset == aishell-2 || $dataset == librispeech || $dataset == alimeeting || $dataset == gigaspeech || $dataset == wenetspeech ]]
 then
@@ -32,10 +32,10 @@ fi
 projector=linear
 encoder_name=whisper
 llm_name=Qwen2.5-7B-Instruct
-use_peft=false
+use_peft=true
 use_fp16=true
-freeze_encoder=true
-pad_or_trim=true
+freeze_encoder=false
+pad_or_trim=false
 encoder_projector_ds_rate=5
 
 speed_perturb=false
@@ -44,16 +44,17 @@ add_noise=false
 add_reverb=false
 # deepspeed_config=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/mala-asr/conf/ds_config_from_k2.json
 deepspeed_config=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/aispeech_asr/conf/ds_config.json
-# deepspeed_ckpt_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/aispeech_asr/exp/zh-1k-en-1k-asr/20250313/whisper_linear_Qwen2.5-7B-Instruct_loratrue_padtrue_normal__speedfalse_specaugfalse-2021/mala_asr_epoch_1_step_4000
+deepspeed_ckpt_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/aispeech_asr/exp/zh-6w-en-1w-fangyan-3w-asr/20250331/whisper_linear_Qwen2.5-7B-Instruct_loratrue_padfalse_normal__speedfalse_specaugfalse-08/mala_asr_epoch_1_step_100000
 # ckpt_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/aispeech_asr/exp/zh-1k-en-1k-asr/20250313/whisper_linear_Qwen2.5-7B-Instruct_loratrue_padtrue_normal__speedfalse_specaugfalse-2021/mala_asr_epoch_1_step_4000
 # deepspeed_ckpt_id=global_step90000
 if [[ $encoder_name == "whisper" ]]
 then
     encoder_finetune=false
 fi
-if [[ $use_peft == "true"  ]];then
-    ckpt_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/aispeech_asr/exp/zh-1k-en-1k-asr/20250313/whisper_linear_Qwen2.5-7B-Instruct_loratrue_padtrue_normal__speedfalse_specaugfalse-2021/mala_asr_epoch_1_step_4000/
-    # deepspeed_ckpt_path=
+if [[ $use_peft == "true" ||  $freeze_encoder == false ]];
+then
+    # ckpt_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/aispeech_asr/exp/zh-1k-en-1k-asr/20250326/whisper_linear_Qwen2.5-7B-Instruct_lorafalse_padfalse_normal__speedfalse_specaugfalse-14/mala_asr_epoch_3_step_7000
+    deepspeed_ckpt_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/aispeech_asr/exp/zh-6w-en-1w-fangyan-3w-asr/20250331/whisper_linear_Qwen2.5-7B-Instruct_loratrue_padfalse_normal__speedfalse_specaugfalse-08/mala_asr_epoch_1_step_100000
 fi
 
 # Choose Encoder
@@ -148,23 +149,16 @@ hydra.run.dir=$output_dir \
 ++train_config.freeze_llm=true \
 ++train_config.use_peft=$use_peft \
 ++train_config.batching_strategy=custom \
-++train_config.warmup_steps=10 \
-++train_config.total_steps=6000000 \
-++train_config.lr=1e-4 \
-++train_config.validation_interval=1000 \
-++train_config.batch_size_training=6  \
-++train_config.val_batch_size=7 \
+++train_config.validation_interval=10000 \
 ++train_config.num_workers_dataloader=8 \
 ++train_config.output_dir=$output_dir \
 ++metric=acc \
 "
-if [[ $use_peft == "true"  ]];then
-    hydra_args+="++ckpt_path=$ckpt_path/model.pt"
-    # hydra_args+=" ++deepspeed_ckpt_path=$deepspeed_ckpt_path "
-    
+if [[  $use_peft == "true" ||  $freeze_encoder == false ]];then
+    # hydra_args+="++ckpt_path=$ckpt_path/model.pt"
+    hydra_args+=" ++deepspeed_ckpt_path=$deepspeed_ckpt_path "
 fi
 # hydra_args+=" ++deepspeed_ckpt_path=$deepspeed_ckpt_path "
-
 HOST_FILE="/tmp/"${JobID}                        #生成的hostfile的完整文件名，$JobID调度系统会自动生成
 SSH_PORT=6666                                    #因调度系统强制普通用户身份起容器，需要将ssh端口指定为大于1024的值
  

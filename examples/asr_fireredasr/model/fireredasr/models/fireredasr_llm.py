@@ -6,7 +6,7 @@ import re
 import torch
 import torch.nn as nn
 from transformers import AutoModelForCausalLM
-
+from torch.npu.amp import autocast
 from fireredasr.models.fireredasr_aed import FireRedAsrAed
 from fireredasr.models.module.adapter import Adapter
 from fireredasr.tokenizer.llm_tokenizer import DEFAULT_SPEECH_TOKEN, IGNORE_TOKEN_ID
@@ -60,8 +60,8 @@ class FireRedAsrLlm(nn.Module):
             attn_implementation=attn_implementation,
             torch_dtype=torch_dtype,
         )
-        count_model_parameters(llm)
 
+        count_model_parameters(llm)
         # LLM Freeze or LoRA
         llm_dim = llm.config.hidden_size
         if args.freeze_llm:
@@ -150,10 +150,8 @@ class FireRedAsrLlm(nn.Module):
         )
 
         return generated_ids
-
+    @autocast(dtype=torch.bfloat16)
     def forward(self, **batch):
-        # targets = batch["targets"]
-        # keys = batch["keys"]
         padded_feat = batch["feats"]
         feat_lengths = batch["lengths"]
         padded_input_ids = batch["input_ids"]
@@ -175,14 +173,12 @@ class FireRedAsrLlm(nn.Module):
         with torch.no_grad():
             preds = torch.argmax(model_outputs.logits, -1)
             acc = compute_accuracy(preds.detach()[:, :-1], labels.detach()[:, 1:], ignore_label=-100)
-        print(f"acc{acc}")
         # input()
         return model_outputs, acc
 
     # SLAM-LLM api
     @torch.no_grad()
     def generate(self, **batch):
-
         # decode args:
         beam_size=3
         decode_max_len=0
@@ -191,8 +187,7 @@ class FireRedAsrLlm(nn.Module):
         llm_length_penalty=1.0
         temperature=1.0
 
-
-        # keys = batch["keys"]
+        keys = batch["keys"]
         padded_feat = batch["feats"]
         feat_lengths = batch["lengths"]
         padded_input_ids = batch["input_ids"]

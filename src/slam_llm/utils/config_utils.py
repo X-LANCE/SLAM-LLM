@@ -68,6 +68,7 @@ def generate_peft_config(train_config):
 def get_dataloader_kwargs(train_config, dataset, tokenizer, mode):
         kwargs = {}
         batch_size = train_config.batch_size_training if mode=="train" else train_config.val_batch_size
+        # batch_size = None
         if train_config.batching_strategy == "padding":
             if train_config.enable_fsdp or train_config.enable_ddp or train_config.enable_deepspeed:
                 kwargs["batch_sampler"] = DistributedLengthBasedBatchSampler(
@@ -75,7 +76,7 @@ def get_dataloader_kwargs(train_config, dataset, tokenizer, mode):
                     batch_size=batch_size,
                     rank=dist.get_rank(),
                     num_replicas=dist.get_world_size(),
-                    shuffle=False,
+                    shuffle=False
                     # shuffle=mode=="train",
                 )
             else:
@@ -91,21 +92,21 @@ def get_dataloader_kwargs(train_config, dataset, tokenizer, mode):
                 # shuffle=mode=="train",
             )
             kwargs["batch_size"] = batch_size
-            kwargs["drop_last"] = True
+            kwargs["drop_last"] = False
             kwargs["collate_fn"] = default_data_collator
         else:
             print(f"[Rank]{dist.get_rank()},world_size{dist.get_world_size()}")
             # raise ValueError(f"Unknown batching strategy: {train_config.batching_strategy}")
-            if train_config.enable_fsdp or train_config.enable_ddp or train_config.enable_deepspeed:
-                kwargs["sampler"] = DistributedSampler(
-                dataset,
-                rank=dist.get_rank(),
-                num_replicas=dist.get_world_size(),
-                shuffle=False
-                # shuffle=mode=="train",
-            )
+            # if train_config.enable_fsdp or train_config.enable_ddp or train_config.enable_deepspeed:
+            #     kwargs["sampler"] = DistributedSampler(
+            #     dataset,
+            #     rank=dist.get_rank(),
+            #     num_replicas=dist.get_world_size(),
+            #     shuffle=False
+            #     # shuffle=mode=="train",
+            # )
             kwargs["batch_size"] = batch_size
-            kwargs["drop_last"] = True
+            kwargs["drop_last"] = False
             kwargs["collate_fn"] = dataset.collator
             logger.info(f"Using batching strategy: {train_config.batching_strategy}")
         return kwargs

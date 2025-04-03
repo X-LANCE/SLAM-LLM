@@ -2,15 +2,14 @@ from dataclasses import dataclass, field
 from typing import Optional, List
 from torch.distributed.fsdp import ShardingStrategy
 
-
 @dataclass
 class ModelConfig:
-    file: str = "examples/mala_asr_slidespeech/model/slam_model_mala_asr.py:model_factory"
+    file: str = "examples/asr_fireredasr/model/slam_fireredasr.py"
     llm_name: str = "vicuna-7b-v1.5"
     llm_path: str = "PATH/to/LLAMA/7B"
     llm_type: str = "decoder_only"
     llm_dim: int = 4096
-    ckpt_path: str = "/aistor/aispeech/hpc_stor01/home/pengjing00sx/nfs/model/FireRedLLM-L"
+    firered_path :str = "/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/model/FireRedASR-LLM/"
     encoder_name: Optional[str] = None
     encoder_ds_rate: int = 2
     encoder_path: Optional[str] = None
@@ -43,7 +42,7 @@ class PeftConfig:
     peft_method: str = "lora" # None , llama_adapter, prefix
     r: int = 64
     lora_alpha: int = 16
-    target_modules: List = field(default_factory=lambda: [ "q_proj", "v_proj", "o_proj", "up_proj","gate_proj","down_proj"])
+    target_modules: List = field(default_factory=lambda: [ "q_proj","k_proj", "v_proj", "o_proj", "up_proj","gate_proj","down_proj"])
     bias: str = "none"
     task_type: str = "CAUSAL_LM"
     lora_dropout: float = 0.05
@@ -105,7 +104,7 @@ class DataConfig:
     prompt_style: str = "normal" # instruct
     # file: str = "examples/mala_asr_slidespeech/dataset/slidespeech_dataset.py:get_speech_dataset"
     file: str = "examples/asr_fireredasr/model/slam_fireredasr.py:get_speech_dataset"
-    cmvn_file: str = "//aistor/aispeech/hpc_stor01/home/pengjing00sx/nfs/model/FireRedASR-LLM-L/cmvn.ark"
+    cmvn_file: str = "/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/model/FireRedASR-LLM/cmvn.ark"
     text: Optional[str] = None
     wav_paths: Optional[List[str]] = None
     wav_path: Optional[str] = None

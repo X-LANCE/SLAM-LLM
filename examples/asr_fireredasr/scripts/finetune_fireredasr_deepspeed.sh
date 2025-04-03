@@ -1,6 +1,6 @@
 #!/bin/bash
 # export PYTHONPATH=/root/fairseq:$PYTHONPATH
-export ASCEND_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
+# export ASCEND_VISIBLE_DEVICES=6,7
 export TOKENIZERS_PARALLELISM=false
 # export CUDA_LAUNCH_BLOCKING=1
 export HYDRA_FULL_ERROR=1
@@ -10,16 +10,15 @@ export OMP_NUM_THREADS=1
 # export NCCL_DEBUG=INFO
 # export NCCL_DEBUG_SUBSYS=ALL
 # export TORCH_DISTRIBUTED_DEBUG=INFO
-run_dir=/aistor/aispeech/hpc_stor01/home/pengjing00sx/SLAM-LLM/
+run_dir=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/SLAM-LLM/
 cd $run_dir
 code_dir=examples/asr_fireredasr
 # multitask 
 # dataset=alimeeting
 # multitask_asr
-dataset=aishell-1
+dataset=aishell-2
+deepspeed_config=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/asr_fireredasr/conf/ds_config.json
 prompt_style=normal #instruct
-deepspeed_config=/aistor/aispeech/hpc_stor01/home/pengjing00sx/SLAM-LLM/examples/asr_fireredasr/conf/ds_config.json
-
 if [[ $dataset == aishell-1 || $dataset == aishell-2 || $dataset == librispeech || $dataset == alimeeting || $dataset == gigaspeech || $dataset == wenetspeech ]]
 then
     # aishell1:asr hotword 
@@ -35,7 +34,7 @@ encoder_name=conformer
 llm_name=Qwen2-7B-Instruct
 use_peft=true
 use_fp16=true
-freeze_encoder=false
+freeze_encoder=true
 pad_or_trim=true
 encoder_projector_ds_rate=2
 # enhance
@@ -44,11 +43,9 @@ speed_perturb=false
 spec_augmentation=false
 add_noise=false
 add_reverb=false
-
-if [[ $use_peft == "true" || $freeze_encoder == false ]];then
-    ckpt_path=/aistor/aispeech/hpc_stor01/home/pengjing00sx/nfs/model/FireRedASR-LLM-L
-fi
-
+# if [[ $use_peft == "true" || $freeze_encoder == false ]];then
+# ckpt_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/asr_fireredasr/exp/alimeeting/20250315/conformer_linear_Qwen2-7B-Instruct_loratrue_padtrue_normal_asr_far_bf_sot_speedfalse_specaugfalse-1410/mala_asr_epoch_1_step_12000
+# fi
 # Choose Encoder
 if [[ $encoder_name == "whisper" ]]
 then
@@ -131,13 +128,14 @@ hydra.run.dir=$output_dir \
 ++model_config.encoder_path=$speech_encoder_path \
 ++model_config.encoder_dim=$encoder_dim \
 ++model_config.encoder_projector=$projector \
-++model_config.ckpt_path=$ckpt_path \
 ++model_config.normalize=true \
 ++model_config.file=$file \
 ++dataset_config.llm_name=$llm_name \
 ++dataset_config.prompt_style=$prompt_style \
 ++dataset_config.normalize=true \
 ++dataset_config.dataset=$dataset \
+++dataset_config.wav_scp=$test_scp_file_path/my_wav.scp \
+++dataset_config.text=$test_scp_file_path/text \
 ++dataset_config.input_type=$input_type \
 ++dataset_config.speed_perturb=$speed_perturb \
 ++dataset_config.spec_augmentation=$spec_augmentation \
@@ -147,45 +145,38 @@ hydra.run.dir=$output_dir \
 ++dataset_config.pad_or_trim=$pad_or_trim \
 ++dataset_config.encoder_projector_ds_rate=$encoder_projector_ds_rate \
 ++dataset_config.train_scp_file_path=$train_scp_file_path \
+++dataset_config.train_text_file=$train_scp_file_path \
 ++dataset_config.dev_scp_file_path=$dev_scp_file_path \
+++dataset_config.dev_text_file=$dev_scp_file_path \
 ++train_config.model_name=mala_asr \
 ++train_config.num_epochs=5 \
 ++train_config.freeze_encoder=$freeze_encoder \
+++train_config.freeze_llm=true \
 ++train_config.use_peft=$use_peft \
 ++train_config.batching_strategy=custom \
-++train_config.warmup_steps=1000 \
+++train_config.warmup_steps=100 \
 ++train_config.total_steps=100000 \
 ++train_config.lr=5e-5 \
-++train_config.validation_interval=50000 \
-++train_config.batch_size_training=12 \
-++train_config.val_batch_size=12 \
+++train_config.validation_interval=4000 \
+++train_config.batch_size_training=4 \
+++train_config.val_batch_size=6 \
 ++train_config.num_workers_dataloader=8 \
 ++train_config.output_dir=$output_dir \
 ++train_config.inference_mode=$inference_mode \
 ++metric=acc \
 "
-if [[ $use_peft == "true" || $freeze_encoder == false ]];then
-    hydra_args+="++ckpt_path=$ckpt_path"
-fi
-# hydra_args+="++ckpt_path=$ckpt_path/model.pt"
-
-# -m debugpy --listen 5678 --wait-for-client
-if [[ $ASCEND_VISIBLE_DEVICES != *","* ]]; then
-    python -m debugpy --listen 5678 --wait-for-client $code_dir/finetune_fireredasr.py \
-        --config-path "conf" \
-        --config-name "prompt.yaml" \
-        $hydra_args
-else
-    torchrun \
-        --nnodes 1 \
-        --nproc_per_node 8 \
-        --master_port=29505 \
-        $code_dir/finetune_fireredasr_deepspeed.py \
-        --config-path "conf" \
-        --config-name "prompt.yaml" \
-        ++train_config.enable_fsdp=false \
-        ++train_config.enable_ddp=true \
-        ++train_config.use_fp16=$use_fp16 \
-        ++deepspeed_config=$deepspeed_config \
-        ${hydra_args}
-fi
+# if [[ $use_peft == "true" || $freeze_encoder == false ]];then
+# hydra_args+="  ++ckpt_path=$ckpt_path/model.pt "
+# fi
+ 
+deepspeed \
+    --num_nodes 1 \
+    --num_gpus 2 \
+    $code_dir/finetune_fireredasr_deepspeed.py \
+    --config-path "conf" \
+    --config-name "prompt.yaml" \
+    ++train_config.enable_fsdp=false \
+    ++train_config.enable_ddp=true \
+    ++train_config.use_fp16=$use_fp16 \
+    ++deepspeed_config=$deepspeed_config \
+    ${hydra_args}

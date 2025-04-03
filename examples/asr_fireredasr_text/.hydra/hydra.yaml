@@ -1,0 +1,183 @@
+hydra:
+  run:
+    dir: /aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/SLAM-LLM/examples/asr_fireredasr
+  sweep:
+    dir: multirun/${now:%Y-%m-%d}/${now:%H-%M-%S}
+    subdir: ${hydra.job.num}
+  launcher:
+    _target_: hydra._internal.core_plugins.basic_launcher.BasicLauncher
+  sweeper:
+    _target_: hydra._internal.core_plugins.basic_sweeper.BasicSweeper
+    max_batch_size: null
+    params: null
+  help:
+    app_name: ${hydra.job.name}
+    header: '${hydra.help.app_name} is powered by Hydra.
+
+      '
+    footer: 'Powered by Hydra (https://hydra.cc)
+
+      Use --hydra-help to view Hydra specific help
+
+      '
+    template: '${hydra.help.header}
+
+      == Configuration groups ==
+
+      Compose your configuration from those groups (group=option)
+
+
+      $APP_CONFIG_GROUPS
+
+
+      == Config ==
+
+      Override anything in the config (foo.bar=value)
+
+
+      $CONFIG
+
+
+      ${hydra.help.footer}
+
+      '
+  hydra_help:
+    template: 'Hydra (${hydra.runtime.version})
+
+      See https://hydra.cc for more info.
+
+
+      == Flags ==
+
+      $FLAGS_HELP
+
+
+      == Configuration groups ==
+
+      Compose your configuration from those groups (For example, append hydra/job_logging=disabled
+      to command line)
+
+
+      $HYDRA_CONFIG_GROUPS
+
+
+      Use ''--cfg hydra'' to Show the Hydra config.
+
+      '
+    hydra_help: ???
+  hydra_logging:
+    version: 1
+    formatters:
+      simple:
+        format: '[%(asctime)s][HYDRA] %(message)s'
+    handlers:
+      console:
+        class: logging.StreamHandler
+        formatter: simple
+        stream: ext://sys.stdout
+    root:
+      level: INFO
+      handlers:
+      - console
+    loggers:
+      logging_example:
+        level: DEBUG
+    disable_existing_loggers: false
+  job_logging:
+    version: 1
+    formatters:
+      simple:
+        format: '[%(asctime)s][%(name)s][%(levelname)s] - %(message)s'
+    handlers:
+      console:
+        class: logging.StreamHandler
+        formatter: simple
+        stream: ext://sys.stdout
+      file:
+        class: logging.FileHandler
+        formatter: simple
+        filename: ${hydra.runtime.output_dir}/${hydra.job.name}.log
+    root:
+      level: INFO
+      handlers:
+      - console
+      - file
+    disable_existing_loggers: false
+  env: {}
+  mode: RUN
+  searchpath: []
+  callbacks: {}
+  output_subdir: .hydra
+  overrides:
+    hydra:
+    - hydra.run.dir=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/SLAM-LLM/examples/asr_fireredasr
+    - hydra.mode=RUN
+    task:
+    - ++model_config.llm_name=Qwen2-7B-Instruct
+    - ++model_config.llm_path=/aistor/aispeech/hpc_stor01/home/pengjing00sx/FireRedASR/pretrained_models/Qwen2-7B-Instruct
+    - ++model_config.llm_dim=3584
+    - ++model_config.encoder_name=conformer
+    - ++model_config.normalize=true
+    - ++model_config.encoder_projector_ds_rate=2
+    - ++model_config.encoder_path=/aistor/aispeech/hpc_stor01/home/pengjing00sx/FireRedASR/pretrained_models/FireRedASR-LLM-L/asr_encoder.pth.tar
+    - ++model_config.encoder_dim=1280
+    - ++model_config.encoder_projector=linear
+    - ++dataset_config.llm_name=Qwen2-7B-Instruct
+    - ++dataset_config.prompt_style=normal
+    - ++dataset_config.dataset=slidespeech
+    - ++dataset_config.pad_or_trim=true
+    - ++dataset_config.test_scp_file_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/slidespeech/asr/test/
+    - ++dataset_config.input_type=raw
+    - ++dataset_config.mel_size=128
+    - ++dataset_config.inference_mode=true
+    - ++train_config.model_name=firered_asr
+    - ++train_config.freeze_encoder=true
+    - ++train_config.freeze_llm=true
+    - ++train_config.use_peft=false
+    - ++train_config.batching_strategy=custom
+    - ++train_config.num_epochs=1
+    - ++train_config.val_batch_size=8
+    - ++train_config.num_workers_dataloader=8
+    - ++train_config.output_dir=
+    - ++train_config.inference_mode=true
+    - ++decode_log=./decode_slidespeech_asr_normal
+  job:
+    name: inference_fireredasr_deepspeed
+    chdir: null
+    override_dirname: ++dataset_config.dataset=slidespeech,++dataset_config.inference_mode=true,++dataset_config.input_type=raw,++dataset_config.llm_name=Qwen2-7B-Instruct,++dataset_config.mel_size=128,++dataset_config.pad_or_trim=true,++dataset_config.prompt_style=normal,++dataset_config.test_scp_file_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/slidespeech/asr/test/,++decode_log=./decode_slidespeech_asr_normal,++model_config.encoder_dim=1280,++model_config.encoder_name=conformer,++model_config.encoder_path=/aistor/aispeech/hpc_stor01/home/pengjing00sx/FireRedASR/pretrained_models/FireRedASR-LLM-L/asr_encoder.pth.tar,++model_config.encoder_projector=linear,++model_config.encoder_projector_ds_rate=2,++model_config.llm_dim=3584,++model_config.llm_name=Qwen2-7B-Instruct,++model_config.llm_path=/aistor/aispeech/hpc_stor01/home/pengjing00sx/FireRedASR/pretrained_models/Qwen2-7B-Instruct,++model_config.normalize=true,++train_config.batching_strategy=custom,++train_config.freeze_encoder=true,++train_config.freeze_llm=true,++train_config.inference_mode=true,++train_config.model_name=firered_asr,++train_config.num_epochs=1,++train_config.num_workers_dataloader=8,++train_config.output_dir=,++train_config.use_peft=false,++train_config.val_batch_size=8
+    id: ???
+    num: ???
+    config_name: prompt.yaml
+    env_set: {}
+    env_copy: []
+    config:
+      override_dirname:
+        kv_sep: '='
+        item_sep: ','
+        exclude_keys: []
+  runtime:
+    version: 1.3.2
+    version_base: '1.3'
+    cwd: /aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/SLAM-LLM
+    config_sources:
+    - path: hydra.conf
+      schema: pkg
+      provider: hydra
+    - path: /aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/SLAM-LLM/examples/asr_fireredasr/conf
+      schema: file
+      provider: main
+    - path: ''
+      schema: structured
+      provider: schema
+    output_dir: /aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/SLAM-LLM/examples/asr_fireredasr
+    choices:
+      hydra/env: default
+      hydra/callbacks: null
+      hydra/job_logging: default
+      hydra/hydra_logging: default
+      hydra/hydra_help: default
+      hydra/help: default
+      hydra/sweeper: basic
+      hydra/launcher: basic
+      hydra/output: default
+  verbose: false

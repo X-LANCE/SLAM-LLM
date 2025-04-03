@@ -121,6 +121,7 @@ def byte2mb(x):
 
 def train(
     model,
+    lr_scheduler,
     train_dataloader,
     eval_dataloader,
     tokenizer,
@@ -174,14 +175,12 @@ def train(
             model.train()
             total_loss = 0.0
             total_acc = 0.0
-            total_length = len(train_dataloader) // gradient_accumulation_steps
+            # total_length = len(train_dataloader) // gradient_accumulation_steps
             pbar = tqdm(
                 colour="blue",
                 desc=f"Training Epoch: {epoch+1}",
-                total=total_length,
                 dynamic_ncols=True,
             )
-            train_dataloader.sampler.set_epoch(epoch)
             for step, batch in enumerate(train_dataloader):
                 for key in batch.keys():
                     batch[key] = (
@@ -194,8 +193,8 @@ def train(
                             else batch[key]
                         )
                     )
-                # with autocast():
-                outputs, *rest = model(**batch)
+                with autocast(dtype=torch.bfloat16):
+                    outputs, *rest = model(**batch)
                 acc = rest[0] if rest else -1
                 loss = outputs.loss
 
@@ -210,7 +209,7 @@ def train(
                                     "train_inner/train_inner_loss": loss,
                                     "train_inner/train_inner_accuracy": acc,
                                 },
-                                step=(epoch * total_length + step),
+                                step= step,
                             )
                     else:
                         wandb.log(
@@ -218,7 +217,7 @@ def train(
                                 "train_inner/train_inner_loss": loss,
                                 "train_inner/train_inner_accuracy": acc,
                             },
-                            step=(epoch * total_length + step),
+                            step= step,
                         )
 
                 total_loss += loss.detach().float()
@@ -227,18 +226,17 @@ def train(
                 # deepspeed should handle gradient accumulate
                 model.backward(loss)
                 model.step()
+                lr_scheduler.step()
 
-                if (step + 1) % gradient_accumulation_steps == 0 or step == len(
-                    train_dataloader
-                ) - 1:
+                if (step + 1) % gradient_accumulation_steps == 0:
                     pbar.update(1)
 
                 pbar.set_description(
-                    f"Training Epoch: {epoch+1}/{train_config.num_epochs}, step {step}/{len(train_dataloader)} completed (loss: {loss.detach().float()}, acc: {acc})"
+                    f"Training Epoch: {epoch+1}/{train_config.num_epochs}, step {step} completed (loss: {loss.detach().float()}, acc: {acc})"
                 )
 
                 if (
-                    (epoch * total_length + step + 1) % train_config.validation_interval
+                    ( step + 1) % train_config.validation_interval
                     == 0
                     and train_config.run_validation
                 ):
@@ -248,11 +246,11 @@ def train(
                     eval_epoch_acc = rest[0] if rest else -1
                     checkpoint_start_time = time.perf_counter()
 
-                    if train_config.save_model and (eval_epoch_loss < best_val_loss):
-                        checkpoint_name = f"{train_config.model_name}_epoch_{str(epoch+1)}_step_{step+1}"
-                        save_model_checkpoint_deepspeed(
-                            model, train_config, checkpoint_name
-                        )
+                    # if train_config.save_model and (eval_epoch_loss < best_val_loss or eval_epoch_acc > best_val_acc):
+                    checkpoint_name = f"{train_config.model_name}_epoch_{str(epoch+1)}_step_{step+1}"
+                    save_model_checkpoint_deepspeed(
+                        model,rank, train_config, checkpoint_name
+                    )
 
                     checkpoint_end_time = time.perf_counter() - checkpoint_start_time
                     checkpoint_times.append(checkpoint_end_time)
@@ -307,16 +305,17 @@ def train(
         epoch_end_time = time.perf_counter() - epoch_start_time
         epoch_times.append(epoch_end_time)
         # Reducing total_loss across all devices if there's more than one CUDA device
-        if torch_npu.npu.device_count() > 1 and (
-            train_config.enable_fsdp or train_config.enable_ddp
-        ):
-            dist.all_reduce(total_loss, op=dist.ReduceOp.SUM)
-            dist.all_reduce(total_acc, op=dist.ReduceOp.SUM)
-        train_epoch_loss = total_loss / len(train_dataloader)
-        train_epoch_acc = total_acc / len(train_dataloader)
-        if train_config.enable_fsdp or train_config.enable_ddp:
-            train_epoch_loss = train_epoch_loss / world_size
-            train_epoch_acc = train_epoch_acc / world_size
+        # dist.barrier()
+        # if torch_npu.npu.device_count() > 1 and (
+        #     train_config.enable_fsdp or train_config.enable_ddp
+        # ):
+        #     dist.all_reduce(total_loss, op=dist.ReduceOp.SUM)
+        #     dist.all_reduce(total_acc, op=dist.ReduceOp.SUM)
+        train_epoch_loss = total_loss /  (step+ 1)
+        train_epoch_acc = total_acc / (step+ 1)
+        # if train_config.enable_fsdp or train_config.enable_ddp:
+        #     train_epoch_loss = train_epoch_loss / world_size
+        #     train_epoch_acc = train_epoch_acc / world_size
         train_perplexity = torch.exp(train_epoch_loss)
 
         train_prep.append(train_perplexity)
@@ -402,6 +401,7 @@ def evaluation(model, train_config, eval_dataloader, local_rank, tokenizer):
 
     Returns: eval_ppl, eval_epoch_loss
     """
+    dist.barrier()
     world_size = int(os.environ["WORLD_SIZE"])
     model.eval()
     eval_preds = []
@@ -412,11 +412,9 @@ def evaluation(model, train_config, eval_dataloader, local_rank, tokenizer):
     )  # (Fix:MZY): fix expected scalar type mismatch in norm
 
     with MemoryTrace() as memtrace:
-        total_length = len(eval_dataloader)
         pbar = tqdm(
             colour="green",
             desc=f"Evaluating Epoch",
-            total=total_length,
             dynamic_ncols=True,
         )
         for step, batch in enumerate(eval_dataloader):
@@ -447,10 +445,12 @@ def evaluation(model, train_config, eval_dataloader, local_rank, tokenizer):
             )
             pbar.update(1)
             pbar.set_description(
-                f"step: {step+1}/{total_length}, eval_loss: {eval_loss/(step+1):.4f}, eval_acc: {eval_acc/(step+1):.4f}"
+                f"step: {step+1}, eval_loss: {eval_loss/(step+1):.4f}, eval_acc: {eval_acc/(step+1):.4f}"
             )
 
     # If there's more than one CUDA device, reduce evaluation loss across all devices
+    if train_config.enable_fsdp or train_config.enable_ddp:
+        dist.barrier()
     if (
         torch_npu.npu.device_count() > 1
     ):
@@ -458,8 +458,8 @@ def evaluation(model, train_config, eval_dataloader, local_rank, tokenizer):
         dist.all_reduce(eval_acc, op=dist.ReduceOp.SUM)
 
     # Compute average loss and perplexity
-    eval_epoch_loss = eval_loss / len(eval_dataloader)
-    eval_epoch_acc = eval_acc / len(eval_dataloader)
+    eval_epoch_loss = eval_loss / (step+ 1)
+    eval_epoch_acc = eval_acc / (step+ 1)
     eval_epoch_loss = eval_epoch_loss / world_size
     eval_epoch_acc = eval_epoch_acc / world_size
     eval_ppl = torch.exp(eval_epoch_loss)

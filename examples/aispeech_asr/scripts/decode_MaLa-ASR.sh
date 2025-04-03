@@ -12,8 +12,8 @@ run_dir=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/SLAM-LL
 cd $run_dir
 code_dir=examples/aispeech_asr
 
-dataset=librispeech-clean
-prompt_style=instruct  # normal #instruct
+dataset=slidespeech
+prompt_style=normal  # normal #instruct
 if [[ $dataset == aishell-1 || $dataset == aishell-2 || $dataset == librispeech-clean || $dataset == librispeech-other || $dataset == alimeeting || $dataset == gigaspeech ]]
 then
     # aishell-1:asr hotword
@@ -28,9 +28,9 @@ sentence=connect
 llm_name=Qwen2.5-7B-Instruct
 use_peft=true
 use_fp16=true
-pad_or_trim=false
+pad_or_trim=true
 encoder_projector_ds_rate=5
-ckpt_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/aispeech_asr/exp/zh-1k-en-1k-asr/20250322/whisper_linear_Qwen2.5-7B-Instruct_loratrue_padfalse_normal__speedfalse_specaugfalse-0125/mala_asr_epoch_2_step_6000
+# ckpt_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/aispeech_asr/exp/librispeech/20250325/whisper_linear_Qwen2.5-7B-Instruct_loratrue_padtrue_normal_asr_speedfalse_specaugfalse-1123/mala_asr_epoch_1_step_34000
 
 if [[ $encoder_name == "whisper" ]]
 then

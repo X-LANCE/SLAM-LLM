@@ -4,13 +4,13 @@ export ASCEND_VISIBLE_DEVICES=0
 export TOKENIZERS_PARALLELISM=false
 # export CUDA_LAUNCH_BLOCKING=1
 set -e 
-run_dir=/aistor/aispeech/hpc_stor01/home/pengjing00sx/SLAM-LLM
+run_dir=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/SLAM-LLM/
 cd $run_dir
 code_dir=examples/asr_fireredasr
 
-dataset=aishell-1
+dataset=aishell-2
 prompt_style=instruct  # normal #instruct
-if [[ $dataset == aishell-1 || $dataset == aishell-2 || $dataset == librispeech-clean || $dataset == librispeech-other || $dataset == alimeeting ]]
+if [[ $dataset == aishell-1 || $dataset == aishell-2 || $dataset == librispeech-clean || $dataset == librispeech-other || $dataset == alimeeting || $dataset == "slidespeech" ]]
 then
     # aishell-1:asr hotword
     # aishell-2:asr hotword mt
@@ -25,8 +25,8 @@ use_peft=false
 use_fp16=true
 pad_or_trim=true
 encoder_projector_ds_rate=2
-ckpt_path=/aistor/aispeech/hpc_stor01/home/pengjing00sx/nfs/model/FireRedASR-LLM-L
 file=examples/asr_fireredasr/model/slam_fireredasr.py:model_factory
+ckpt_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/asr_fireredasr/exp/slidespeech/20250401/conformer_linear_Qwen2-7B-Instruct_loratrue_padtrue_normal_asr_speedfalse_specaugfalse-2217/mala_asr_epoch_1_step_6000
 # Choose Encoder， 这个还是一点用也没有
 if [[ $encoder_name == "whisper" ]]
 then
@@ -84,9 +84,9 @@ else
     exit 1
 fi
 
-if [[ $dataset == "aishell-1" || $dataset == "aishell-2" || $dataset == "alimeeting" ]]
+if [[ $dataset == "aishell-1" || $dataset == "aishell-2" || $dataset == "alimeeting" ||  $dataset == "slidespeech" ]]
 then
-    test_scp_file_path=/aistor/aispeech/hpc_stor01/group/asr/mandarin/${dataset}/${dataset_task}/test/
+    test_scp_file_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/${dataset}/${dataset_task}/test/
 elif [[ $dataset == "librispeech-other" ]]
 then
     test_scp_file_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/librispeech/${dataset_task}/test-other/
@@ -96,15 +96,13 @@ then
 else
     test_scp_file_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/${dataset}/test/
 fi
-
-decode_log=/aistor/aispeech/hpc_stor01/home/pengjing00sx/SLAM-LLM/examples/asr_fireredasr/decode_log/decode_${dataset}_${dataset_task}_${prompt_style}
+decode_log=$ckpt_path/decode_${dataset}_${dataset_task}_${prompt_style}
+# decode_log=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/SLAM-LLM/examples/asr_fireredasr/decode_${dataset}_${dataset_task}_${prompt_style}
 # -m debugpy --listen 5678 --wait-for-client
 python $code_dir/inference_fireredasr.py \
     --config-path "conf" \
     --config-name "prompt.yaml" \
     hydra.run.dir=$ckpt_path \
-    ++model_config.file=$file \
-    ++model_config.ckpt_path=$ckpt_path \
     ++model_config.llm_name=$llm_name \
     ++model_config.llm_path=$llm_path \
     ++model_config.llm_dim=$llm_dim \
@@ -122,7 +120,6 @@ python $code_dir/inference_fireredasr.py \
     ++dataset_config.input_type=$input_type \
     ++dataset_config.mel_size=$mel_size \
     ++dataset_config.inference_mode=true \
-    ++dataset_config.cmvn_file=$ckpt_path/cmvn.ark \
     ++train_config.model_name=firered_asr \
     ++train_config.freeze_encoder=true \
     ++train_config.freeze_llm=true \
@@ -130,11 +127,11 @@ python $code_dir/inference_fireredasr.py \
     ++train_config.batching_strategy=custom \
     ++train_config.num_epochs=1 \
     ++train_config.val_batch_size=8 \
-    ++train_config.num_workers_dataloader=8\
+    ++train_config.num_workers_dataloader=8 \
     ++train_config.output_dir=$output_dir \
     ++train_config.inference_mode=true \
     ++decode_log=$decode_log \
-    ++ckpt_path=$ckpt_path/model.pth.tar
+    ++ckpt_path=$ckpt_path
 
 
 # python /aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/tools/wenet_compute_cer.py --char=1 -v=1 ${decode_log}_gt ${decode_log}_pred > ${decode_log}_cer 
