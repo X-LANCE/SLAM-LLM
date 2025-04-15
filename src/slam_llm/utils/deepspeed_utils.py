@@ -12,7 +12,7 @@ from pkg_resources import packaging
 import functools
 import hydra
 import torch
-import torch.cuda.nccl as nccl
+# import torch.npu.nccl as nccl
 import torch.distributed as dist
 from omegaconf import DictConfig
 from tqdm import tqdm
@@ -152,10 +152,10 @@ def train(
     # if train_config.use_fp16 and train_config.enable_fsdp:
     #     scaler = ShardedGradScaler()
     # elif train_config.use_fp16 and not train_config.enable_fsdp:
-    #     scaler = torch.cuda.amp.GradScaler()
+    #     scaler = torch.npu.amp.GradScaler()
     if train_config.enable_ddp:
         world_size = int(os.environ["WORLD_SIZE"])
-    autocast = torch.cuda.amp.autocast if train_config.use_fp16 else nullcontext
+    autocast = torch.npu.amp.autocast if train_config.use_fp16 else nullcontext
 
     train_prep = []
     train_loss = []
@@ -184,11 +184,11 @@ def train(
             for step, batch in enumerate(train_dataloader):
                 for key in batch.keys():
                     batch[key] = (
-                        batch[key].to(local_rank).half()
+                        batch[key].to(f"npu:{local_rank}").half()
                         if isinstance(batch[key], torch.Tensor)
                         and batch[key].dtype == torch.float32
                         else (
-                            batch[key].to(local_rank)
+                            batch[key].to(f"npu:{local_rank}")
                             if isinstance(batch[key], torch.Tensor)
                             else batch[key]
                         )
@@ -305,8 +305,8 @@ def train(
 
         epoch_end_time = time.perf_counter() - epoch_start_time
         epoch_times.append(epoch_end_time)
-        # Reducing total_loss across all devices if there's more than one CUDA device
-        if torch.cuda.device_count() > 1 and (
+        # Reducing total_loss across all devices if there's more than one npu device
+        if torch.npu.device_count() > 1 and (
             train_config.enable_fsdp or train_config.enable_ddp
         ):
             dist.all_reduce(total_loss, op=dist.ReduceOp.SUM)
@@ -347,10 +347,10 @@ def train(
             )
 
         if rank == 0:
-            logger.info(f"Max CUDA memory allocated was {memtrace.peak} GB")
-            logger.info(f"Max CUDA memory reserved was {memtrace.max_reserved} GB")
-            logger.info(f"Peak active CUDA memory was {memtrace.peak_active_gb} GB")
-            logger.info(f"Cuda Malloc retires : {memtrace.cuda_malloc_retires}")
+            logger.info(f"Max npu memory allocated was {memtrace.peak} GB")
+            logger.info(f"Max npu memory reserved was {memtrace.max_reserved} GB")
+            logger.info(f"Peak active npu memory was {memtrace.peak_active_gb} GB")
+            logger.info(f"npu Malloc retires : {memtrace.npu_malloc_retires}")
             logger.info(
                 f"CPU Total Peak Memory consumed during the train (max): {memtrace.cpu_peaked + memtrace.cpu_begin} GB"
             )
@@ -407,7 +407,7 @@ def evaluation(model, train_config, eval_dataloader, local_rank, tokenizer):
     eval_loss = 0.0  # Initialize evaluation loss
     eval_acc = 0.0
     autocast = (
-        torch.cuda.amp.autocast if train_config.use_fp16 else nullcontext
+        torch.npu.amp.autocast if train_config.use_fp16 else nullcontext
     )  # (Fix:MZY): fix expected scalar type mismatch in norm
 
     with MemoryTrace() as memtrace:
@@ -421,10 +421,10 @@ def evaluation(model, train_config, eval_dataloader, local_rank, tokenizer):
         for step, batch in enumerate(eval_dataloader):
             for key in batch.keys():
                 batch[key] = (
-                    batch[key].to(local_rank).half()
+                    batch[key].to(f"npu:{local_rank}").half()
                     if isinstance(batch[key], torch.Tensor) and batch[key].dtype==torch.float32
                     else (
-                        batch[key].to(local_rank) if isinstance(batch[key], torch.Tensor) else batch[key]
+                        batch[key].to(f"npu:{local_rank}") if isinstance(batch[key], torch.Tensor) else batch[key]
                     )
                 )
             # Ensure no gradients are computed for this scope to save memory
@@ -449,9 +449,9 @@ def evaluation(model, train_config, eval_dataloader, local_rank, tokenizer):
                 f"step: {step+1}/{total_length}, eval_loss: {eval_loss/(step+1):.4f}, eval_acc: {eval_acc/(step+1):.4f}"
             )
 
-    # If there's more than one CUDA device, reduce evaluation loss across all devices
+    # If there's more than one npu device, reduce evaluation loss across all devices
     if (
-        torch.cuda.device_count() > 1
+        torch.npu.device_count() > 1
     ):
         dist.all_reduce(eval_loss, op=dist.ReduceOp.SUM)
         dist.all_reduce(eval_acc, op=dist.ReduceOp.SUM)
@@ -496,9 +496,9 @@ def setup_environ_flags(rank):
     os.environ["TORCH_SHOW_CPP_STACKTRACES"] = str(1)
     os.environ["NCCL_ASYNC_ERROR_HANDLING"] = str(1)
     # os.environ["TORCH_DISTRIBUTED_DEBUG"] = "DETAIL"
-    # This flag will help with CUDA memory fragmentations that can lead into OOM in some cases.
+    # This flag will help with npu memory fragmentations that can lead into OOM in some cases.
     # Note this is only availble in PyTorch Nighlies (as of July 30 2023)
-    # os.environ['PYTORCH_CUDA_ALLOC_CONF']='expandable_segments:True'
+    # os.environ['PYTORCH_npu_ALLOC_CONF']='expandable_segments:True'
     if rank == 0:
         logger.info(f"--> Running with torch dist debug set to detail")
 
@@ -512,7 +512,7 @@ def clear_gpu_cache(rank=None):
     """Clear the GPU cache for all ranks"""
     if rank == 0:
         logger.info(f"Clearing GPU cache for all ranks")
-    torch.cuda.empty_cache()
+    torch.npu.empty_cache()
 
 
 def get_parameter_dtypes(model):
