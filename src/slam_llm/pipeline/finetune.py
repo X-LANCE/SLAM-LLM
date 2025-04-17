@@ -197,14 +197,14 @@ def main(kwargs: DictConfig):
         dataset_config,
         split="train",
     )
-    if not (train_config.enable_fsdp or train_config.enable_ddp) or rank == 0:
+    if (not (train_config.enable_fsdp or train_config.enable_ddp) or rank == 0) and train_config.batching_strategy != "dynamic":
         logger.info(f"--> Training Set Length = {len(dataset_train)}")
     dataset_val = get_preprocessed_dataset(
         tokenizer,
         dataset_config,
         split="val",
     )
-    if not (train_config.enable_fsdp or train_config.enable_ddp) or rank == 0:
+    if not (train_config.enable_fsdp or train_config.enable_ddp) or rank == 0 and train_config.batching_strategy != "dynamic":
         logger.info(f"--> Validation Set Length = {len(dataset_val)}")
     if train_config.batching_strategy == "packing":
         dataset_train = ConcatDataset(dataset_train, chunk_size=train_config.context_length)

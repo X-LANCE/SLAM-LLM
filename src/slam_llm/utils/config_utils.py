@@ -91,6 +91,12 @@ def get_dataloader_kwargs(train_config, dataset, tokenizer, mode):
             kwargs["batch_size"] = batch_size
             kwargs["drop_last"] = True
             kwargs["collate_fn"] = default_data_collator
+        elif train_config.batching_strategy == "dynamic":
+            kwargs["sampler"] = None
+            kwargs["batch_size"] = None
+            kwargs["drop_last"] = False
+            kwargs["collate_fn"] = dataset.collator 
+            logger.info(f"Using batching strategy: {train_config.batching_strategy}")
         else:
             # raise ValueError(f"Unknown batching strategy: {train_config.batching_strategy}")
             if train_config.enable_fsdp or train_config.enable_ddp or train_config.enable_deepspeed:
