@@ -40,7 +40,7 @@ class MultiTaskDataset(IterableDataset):
         elif split == "test":
             self.data_path = dataset_config.test_scp_file_path
         else:
-            assert(0)
+            raise ValueError("split must be train val test")
         
         self.llm_name = dataset_config.get("llm_name", None)
         self.prompt_template1 = dataset_config.get("prompt_style", "{}")
