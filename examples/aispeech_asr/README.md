@@ -9,7 +9,6 @@ This example is designed for large-scale industrial data training, suitable for 
 - **Deepspeed training**: Supports DeepSpeed training to significantly reduce memory usage.
 - **Multi-machine multi-GPU inference**: Supports distributed inference across multiple machines and GPUs to reduce evaluation time.
 - **Dynamic frame batching**: Dynamically combines frames based on audio size rather than using a fixed batch size, significantly reducing training and evaluation time (reduces training time by 3/4 for 100,000 hours of data).
-- **Ascend NPU compatibility**: Optimized for compatibility with Ascend NPU.
 
 This example is modified from `mala_asr_slidespeech`.
 
@@ -75,7 +74,7 @@ use_peft=false  # Whether to use PEFT (for LLM)
 use_fp16=true  # Whether to use FP16
 freeze_encoder=true  # Whether to freeze the encoder
 pad_or_trim=true  # Whether to use pad_or_trim (for Whisper)
-deepspeed_config=  # Path to DeepSpeed configuration file
+deepspeed_config=  # Path to DeepSpeed configuration file（Use absolute path)
 ```
 
 Typically, we first train the projector and then fine-tune the LoRA. For projector training, set:
