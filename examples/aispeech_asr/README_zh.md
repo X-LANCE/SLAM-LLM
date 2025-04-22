@@ -9,7 +9,6 @@
 - **Deepspeed训练**：支持Deepspeed训练，显著减少内存使用。
 - **多机多卡推理**：支持多机多卡推理，减少评估时间。
 - **动态帧数组合**：根据每个音频大小动态组合合适的帧数进行训练，而非使用固定的batch_size，大大减少了训练和评估时间（在10万小时量级的数据上，训练时间减少了3/4）。
-- **昇腾NPU适配**：适配支持昇腾NPU。
 
 本示例基于`mala_asr_slidespeech`进行修改。
 
@@ -75,7 +74,7 @@ use_peft=false  # 是否使用PEFT（对于LLM）
 use_fp16=true  # 是否使用FP16
 freeze_encoder=true  # 是否冻结Encoder
 pad_or_trim=true  # 是否使用pad_or_trim（对于Whisper）
-deepspeed_config=  # DeepSpeed配置文件路径
+deepspeed_config=  # DeepSpeed配置文件路径(由于未解决的原因，必须使用绝对路径）
 ```
 
 通常，我们首先训练Projector，然后再训练LoRA。训练Projector时，设置如下：
