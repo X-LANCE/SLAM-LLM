@@ -15,8 +15,8 @@ code_dir=examples/asr_librispeech
 
 speech_encoder_path=/home/v-yifyang/ckpt/WavLM-Large.pt
 llm_path=/home/v-yifyang/ckpt/vicuna-7b-v1.5
-train_data_path=/home/v-yifyang/librispeech_train_960h.jsonl
-val_data_path=/home/v-yifyang/librispeech_dev_other.jsonl
+train_data_path=/home/v-yifyang/manifests/librispeech_train_960h.jsonl
+val_data_path=/home/v-yifyang/manifests/librispeech_dev_other.jsonl
 
 output_dir=/home/v-yifyang/exp/vicuna-7b-v1.5-librispeech-linear-steplrwarmupkeep1e-4-wavlm-large-$(date +"%Y%m%d")
 

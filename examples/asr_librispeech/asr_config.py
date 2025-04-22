@@ -24,6 +24,8 @@ class ModelConfig:
     encoder_type: str = field(default="finetune", metadata={
         "help": "whether model is only pretrained or finetuned, used for models such as hubert"
     })
+    encoder_path_hf: Optional[str] = None
+    whisper_decode: Optional[bool] = False
 
 @dataclass
 class PeftConfig:
@@ -122,9 +124,9 @@ class FSDPConfig:
 @dataclass
 class LogConfig:
     use_wandb: bool = False
-    wandb_dir: str = "/root/test_wandb"
+    wandb_dir: str = "/home/v-yifyang/exp/train_wandb"
     wandb_entity_name: str = "project_name"
     wandb_project_name: str = "project_name"
     wandb_exp_name: str = "exp_name"
-    log_file: str = "/root/test.log"
+    log_file: str = "/home/v-yifyang/exp/train.log"
     log_interval: int = 5
