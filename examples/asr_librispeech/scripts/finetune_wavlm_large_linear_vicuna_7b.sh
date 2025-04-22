@@ -1,9 +1,7 @@
 #!/bin/bash
-# export PYTHONPATH=/root/whisper:$PYTHONPATH
-export PYTHONPATH=/root/fairseq:$PYTHONPATH
+export PYTHONPATH=/home/v-yifyang/fairseq:$PYTHONPATH
 export CUDA_VISIBLE_DEVICES=0,1
 export TOKENIZERS_PARALLELISM=false
-# export CUDA_LAUNCH_BLOCKING=1
 export OMP_NUM_THREADS=1
 
 # debug setting for multiple gpus
@@ -11,16 +9,16 @@ export OMP_NUM_THREADS=1
 # export NCCL_DEBUG_SUBSYS=ALL
 # export TORCH_DISTRIBUTED_DEBUG=INFO
 
-run_dir=/root/SLAM-LLM
+run_dir=/home/v-yifyang/SLAM-LLM
 cd $run_dir
 code_dir=examples/asr_librispeech
 
-speech_encoder_path=/nfs/maziyang.mzy/models/wavlm/WavLM-Large.pt
-llm_path=/nfs/maziyang.mzy/models/vicuna-7b-v1.5
-train_data_path=/nfs/maziyang.mzy/data/librispeech/librispeech_train_960h.jsonl
-val_data_path=/nfs/maziyang.mzy/data/librispeech/librispeech_dev_other.jsonl
+speech_encoder_path=/home/v-yifyang/ckpt/WavLM-Large.pt
+llm_path=/home/v-yifyang/ckpt/vicuna-7b-v1.5
+train_data_path=/home/v-yifyang/librispeech_train_960h.jsonl
+val_data_path=/home/v-yifyang/librispeech_dev_other.jsonl
 
-output_dir=/root/tmp/vicuna-7b-v1.5-librispeech-linear-steplrwarmupkeep1e-4-wavlm-large-$(date +"%Y%m%d")
+output_dir=/home/v-yifyang/exp/vicuna-7b-v1.5-librispeech-linear-steplrwarmupkeep1e-4-wavlm-large-$(date +"%Y%m%d")
 
 hydra_args="
 hydra.run.dir=$output_dir \
