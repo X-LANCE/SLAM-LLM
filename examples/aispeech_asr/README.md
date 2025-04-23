@@ -74,7 +74,7 @@ use_peft=false  # Whether to use PEFT (for LLM)
 use_fp16=true  # Whether to use FP16
 freeze_encoder=true  # Whether to freeze the encoder
 pad_or_trim=true  # Whether to use pad_or_trim (for Whisper)
-deepspeed_config=  # Path to DeepSpeed configuration file（Use absolute path)
+deepspeed_config=  # Path to DeepSpeed configuration file
 ```
 
 Typically, we first train the projector and then fine-tune the LoRA. For projector training, set:
