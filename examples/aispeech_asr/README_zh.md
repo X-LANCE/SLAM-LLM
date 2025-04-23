@@ -74,7 +74,7 @@ use_peft=false  # 是否使用PEFT（对于LLM）
 use_fp16=true  # 是否使用FP16
 freeze_encoder=true  # 是否冻结Encoder
 pad_or_trim=true  # 是否使用pad_or_trim（对于Whisper）
-deepspeed_config=  # DeepSpeed配置文件路径(由于未解决的原因，必须使用绝对路径）
+deepspeed_config=  # DeepSpeed配置文件路径
 ```
 
 通常，我们首先训练Projector，然后再训练LoRA。训练Projector时，设置如下：
