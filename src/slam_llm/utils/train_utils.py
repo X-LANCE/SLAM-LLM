@@ -452,8 +452,8 @@ def evaluation(model,train_config, eval_dataloader, local_rank, tokenizer):
         dist.all_reduce(eval_acc, op=dist.ReduceOp.SUM)
 
     # Compute average loss and perplexity
-    eval_epoch_loss = eval_loss / (len(eval_dataloader) if train_config.batching_strategy != "dynamic" else step)
-    eval_epoch_acc = eval_acc / (len(eval_dataloader) if train_config.batching_strategy != "dynamic" else step)
+    eval_epoch_loss = eval_loss / (len(eval_dataloader) if train_config.batching_strategy != "dynamic" else step + 1)
+    eval_epoch_acc = eval_acc / (len(eval_dataloader) if train_config.batching_strategy != "dynamic" else step + 1)
     if train_config.enable_fsdp or train_config.enable_ddp:
         eval_epoch_loss = eval_epoch_loss/world_size
         eval_epoch_acc = eval_epoch_acc/world_size
