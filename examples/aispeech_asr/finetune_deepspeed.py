@@ -21,7 +21,7 @@ class RunConfig:
     ckpt_path: Optional[str] = field(
         default=None, metadata={"help": "The path to projector checkpoint"}
     )
-    deepspeed_config : str =""
+    deepspeed_config : str ="examples/aispeech_asr/conf/ds_config.json"
     deepspeed_ckpt_path: Optional[str] = field(
         default=None, metadata={"help": "The path to projector checkpoint"}
     )

@@ -60,14 +60,14 @@ class MultiTaskDataset(IterableDataset):
     def __iter__(self):
         multitask_task_path = os.path.join(self.data_path,"multitask.jsonl")
         worker_info = torch.utils.data.get_worker_info()
-        if worker_info is None:  # 不在 DataLoader 的多进程环境中
+        if worker_info is None:  # Not in the multi-processing environment of DataLoader.
             num_workers = 1
             worker_id = 0
         else:
             num_workers = worker_info.num_workers
             worker_id = worker_info.id
 
-        # 获取分布式环境中的进程信息
+        # Obtain the process information in the distributed environment.
         if dist.is_available() and dist.is_initialized():
             world_size = dist.get_world_size()
             rank = dist.get_rank()
@@ -75,7 +75,7 @@ class MultiTaskDataset(IterableDataset):
             world_size = 1
             rank = 0
 
-        # 计算每个 worker 和每个进程应该处理的数据范围
+        # Calculate the data range that each worker and each process should handle.
         total_num_workers = num_workers * world_size
         worker_rank = rank * num_workers + worker_id 
         data_index = 0
