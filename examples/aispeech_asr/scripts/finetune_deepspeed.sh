@@ -15,8 +15,8 @@ code_dir=examples/aispeech_asr
 
 train_scp_file_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/aishell-1/asr/test
 dev_scp_file_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/aishell-1/asr/test
-train_max_frame_length=1500
-eval_max_frame_length=1000
+train_max_frame_length=500
+eval_max_frame_length=500
 multitask_prompt_path="/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/multiprompt.jsonl"
 prompt_style="\{\}" # "<|im_start|>user\n{}<|im_end|>\n<|im_start|>assistant\n" | "USER: {}\n ASSISTANT:"
 projector=linear
