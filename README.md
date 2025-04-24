@@ -28,6 +28,14 @@ developers to train custom multimodal large language model (MLLM), focusing on <
 6. [Citation](#citation)
 
 # News
+- [Update Apr. 24, 2025] We have supported [large-scale industrial training](examples/aispeech_asr/README.md), suitable for datasets on the order of 100,000 hours. Its main features include:
+  - **Support for multi-task training:** Designed to support tasks such as ASR and ST through a unified data format. 
+  - **Dynamic prompt selection:** Supports random selection from multiple prompts. 
+  - **Iterative dataset:** Uses an iterative dataset format to reduce startup time for large datasets. 
+  - **Deepspeed training:** Supports DeepSpeed training to significantly reduce memory usage.
+  - **Multi-machine multi-GPU inference:** Supports distributed inference across multiple machines and GPUs to reduce evaluation time.
+  - **Dynamic frame batching:** Dynamically combines frames based on audio size rather than using a fixed batch size, significantly reducing training and evaluation time (reduces training time by 3/4 for 100,000 hours of data).
+- [Update Apr. 24, 2025] We have supported the Deepspeed, checkout the instruction #Fine-tuning using Deepspeed at [here](examples/asr_librispeech/README.md).
 - [Update Jan. 22, 2025] 🔥🔥🔥 Full reproduction (including all data preparation, model training, and inference) for [SLAM-Omni](examples/s2s/README.md) has been supported.  
 ![](docs/slam-omni-model.png)
   - SLAM-Omni is a **timbre-controllable** voice interaction system that requires only **single-stage training** and minimal resources to achieve high-quality, end-to-end speech dialogue, supporting multi-turn conversations in both Chinese and English. ([paper](https://arxiv.org/abs/2412.15649), [demo](https://slam-omni.github.io))
