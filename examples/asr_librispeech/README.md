@@ -53,6 +53,60 @@ Setting `use_fast_kernels` will enable using of Flash Attention or Xformer memor
 
 If you are interested in running full parameter fine-tuning on the 70B model, you can enable `low_cpu_fsdp` mode as the following command. This option will load model on rank0 only before moving model to devices to construct FSDP. This can dramatically save cpu memory when loading large models like 70B (on a 8-gpu node, this reduces cpu memory from 2+T to 280G for 70B model). This has been tested with `BF16` on 16xA100, 80GB GPUs.
 
+### Fine-tuning using Deepspeed
+
+If you're interested in training with DeepSpeed, refer to the script `finetune_whisper_large_linear_vicuna_7b_deepspeed.sh`. The training configuration is shown in `conf/ds_config.json`. When using `bf16`/`fp16` for training, it saves about 20GB of GPU memory compared to `torchrun` when training a 7B model. For 7B models, it's recommended to use `zero-0`/`1`/`2`, while for extremely large models, `zero-3` can be used, though communication may become a bottleneck.
+
+```json
+{
+    "train_micro_batch_size_per_gpu": 4,
+    "gradient_accumulation_steps": 1,
+    "optimizer": {
+        "type": "Adam",
+        "params": {
+            "lr": 1e-4
+        }
+    },
+    "fp16": {
+        "enabled": true
+    },
+    "zero_optimization": {
+        "stage": 2,
+        "offload_optimizer": {
+            "device": "cpu"
+        }
+    }
+}
+```
+
+Note that when using `zero-0`/`1`/`2`, the DeepSpeed model is saved in a format that requires a script to convert `mp_rank_00_model_states.pt` to `model.pt`, such as `python transcribe_deepspeed_to_pt.py mp_rank_00_model_states.pt output_dir`.
+
+```
+global_step1000
+global_step1000/bf16_zero_pp_rank_0_mp_rank_00_optim_states.pt
+...
+global_step1000/mp_rank_00_model_states.pt
+latest
+zero_to_fp32.py
+```
+
+If training with `Zero-3`, the model is saved in a different format and can be converted using `python zero_to_fp32.py global_step50 outputdir`.
+
+```
+global_step50
+global_step50/zero_pp_rank_0_mp_rank_00_model_states.pt
+global_step50/zero_pp_rank_0_mp_rank_00_optim_states.pt
+...
+latest
+zero_to_fp32.py
+```
+If you use bf16/fp16 training in DeepSpeed and encounter NaN in train/eval loss, check the autocast in `src/slam_llm/utils/deepspeed_utils.py`:
+
+```python
+with autocast()  # original code
+with autocast(dtype=torch.bfloat16)
+with autocast(dtype=torch.float16)
+```
 ##  Citation
 You can refer to the paper for more results. 
 ```

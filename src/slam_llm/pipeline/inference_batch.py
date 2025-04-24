@@ -109,7 +109,7 @@ def main(kwargs: DictConfig):
         dataset_config,
         split="test",
     )
-	if not (train_config.enable_fsdp or train_config.enable_ddp) or rank == 0:
+	if (not (train_config.enable_fsdp or train_config.enable_ddp) or rank == 0) and train_config.batching_strategy != "dynamic":
 		logger.info(f"--> Training Set Length = {len(dataset_test)}")
 
 	test_dataloader = torch.utils.data.DataLoader(
@@ -127,7 +127,7 @@ def main(kwargs: DictConfig):
 	pred_path = kwargs.get('decode_log') + "_pred"
 	gt_path = kwargs.get('decode_log') + "_gt"
 	with open(pred_path, "w") as pred, open(gt_path, "w") as gt:
-		for step, batch in tqdm(enumerate(test_dataloader), total=len(test_dataloader)):
+		for step, batch in tqdm(enumerate(test_dataloader), total=len(test_dataloader) if train_config.batching_strategy != "dynamic" else ""):
 			for key in batch.keys():
 				batch[key] = batch[key].to(device) if isinstance(batch[key], torch.Tensor) else batch[key]
 			model_outputs = model.generate(**batch)
