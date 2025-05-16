@@ -55,6 +55,8 @@ class MultiTaskDataset(IterableDataset):
         self.inference_mode = dataset_config.get("inference_mode", False)
         self.normalize = dataset_config.get("normalize", False)
         self.input_type = dataset_config.get("input_type", None)
+        self.max_audio_length = dataset_config.get("max_audio_length", 30)
+        self.audio_sample_rate = dataset_config.get("audio_sample_rate", 16000)
         assert self.input_type in ["raw", "mel"], "input_type must be one of [raw, mel]" 
 
     def __iter__(self):
@@ -86,7 +88,7 @@ class MultiTaskDataset(IterableDataset):
                     ark_path = item["path"]
                     numpy_array = kaldiio.load_mat(ark_path)
                     audio_raw = numpy_array[1].astype(np.float32) / 32768
-                    if len(audio_raw) / 16000 > 30: 
+                    if len(audio_raw) / self.audio_sample_rate > self.max_audio_length: 
                         continue
                     key = item["key"]
                     target = item["target"]

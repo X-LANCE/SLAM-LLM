@@ -82,11 +82,11 @@ deepspeed_config=  # DeepSpeed配置文件路径
 use_peft=false
 ```
 
-训练LoRA时，设置如下（`ckpt_path`是上一步训练保存的模型路径）：
+训练LoRA时，设置如下（`ckpt_path`是上一步训练保存的模型路径`pytorch_model.bin/model.pt`）：
 ```bash
 use_peft=true
 if [[ $use_peft == "true" ]]; then
-    ckpt_path=  # 如果是DDP训练，直接写入保存的pt文件路径；如果是Deepspeed训练，需将mp_rank_00_model_states.pt文件转化为model.pt，可使用`scripts/transcribe_deepspeed_to_pt.py`脚本
+    ckpt_path= 
 fi
 ```
 

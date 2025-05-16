@@ -79,27 +79,7 @@ If you're interested in training with DeepSpeed, refer to the script `finetune_w
 }
 ```
 
-Note that when using `zero-0`/`1`/`2`, the DeepSpeed model is saved in a format that requires a script to convert `mp_rank_00_model_states.pt` to `model.pt`, such as `python transcribe_deepspeed_to_pt.py mp_rank_00_model_states.pt output_dir`.
-
-```
-global_step1000
-global_step1000/bf16_zero_pp_rank_0_mp_rank_00_optim_states.pt
-...
-global_step1000/mp_rank_00_model_states.pt
-latest
-zero_to_fp32.py
-```
-
-If training with `Zero-3`, the model is saved in a different format and can be converted using `python zero_to_fp32.py global_step50 outputdir`.
-
-```
-global_step50
-global_step50/zero_pp_rank_0_mp_rank_00_model_states.pt
-global_step50/zero_pp_rank_0_mp_rank_00_optim_states.pt
-...
-latest
-zero_to_fp32.py
-```
+Note that when using `zero-0`/`1`/`2`/`3`, the DeepSpeed model is saved as `pytorch_model.bin`
 If you use bf16/fp16 training in DeepSpeed and encounter NaN in train/eval loss, check the autocast in `src/slam_llm/utils/deepspeed_utils.py`:
 
 ```python

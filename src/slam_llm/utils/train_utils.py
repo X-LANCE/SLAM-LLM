@@ -88,7 +88,7 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
     best_val_acc = 0.0
     for epoch in range(train_config.num_epochs):
         epoch_start_time = time.perf_counter()
-        with MemoryTrace() as memtrace,Join([model,optimizer]):  # track the memory usage
+        with MemoryTrace() as memtrace,Join([model]):  # track the memory usage
             model.train()
             total_loss = 0.0
             total_acc = 0.0
@@ -326,8 +326,8 @@ def train(model, train_dataloader,eval_dataloader, tokenizer, optimizer, lr_sche
         if torch.cuda.device_count() > 1 and (train_config.enable_fsdp or train_config.enable_ddp):
             dist.all_reduce(total_loss, op=dist.ReduceOp.SUM)
             dist.all_reduce(total_acc, op=dist.ReduceOp.SUM)
-        train_epoch_loss = total_loss / (len(train_dataloader)  if train_config.batching_strategy != "dynamic" else (step + 1) *train_config.num_epochs)
-        train_epoch_acc = total_acc / (len(train_dataloader) if train_config.batching_strategy != "dynamic" else (step + 1) *train_config.num_epochs)
+        train_epoch_loss = total_loss / (len(train_dataloader)  if train_config.batching_strategy != "dynamic" else (step + 1) )
+        train_epoch_acc = total_acc / (len(train_dataloader) if train_config.batching_strategy != "dynamic" else (step + 1) )
         if train_config.enable_fsdp or train_config.enable_ddp:
             train_epoch_loss = train_epoch_loss/world_size
             train_epoch_acc = train_epoch_acc/world_size
