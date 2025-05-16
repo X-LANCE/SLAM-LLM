@@ -9,16 +9,16 @@ export OMP_NUM_THREADS=1
 
 
 
-run_dir=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/github/SLAM-LLM-NPU
+run_dir=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/github/SLAM-LLM
 cd $run_dir
 code_dir=examples/aispeech_asr
 
 train_scp_file_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/aishell-1/asr/test
 dev_scp_file_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/aishell-1/asr/test
-train_max_frame_length=500
-eval_max_frame_length=500
+train_max_frame_length=2000
+eval_max_frame_length=2500
 multitask_prompt_path="/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/multiprompt.jsonl"
-prompt_style="\{\}" # "<|im_start|>user\n{}<|im_end|>\n<|im_start|>assistant\n" | "USER: {}\n ASSISTANT:"
+# prompt_style="\{\}" # "<|im_start|>user\n{}<|im_end|>\n<|im_start|>assistant\n" | "USER: {}\n ASSISTANT:" Comment:Changed it in aispeech_asr_config.py
 projector=linear
 encoder_name=whisper
 llm_name=Qwen2.5-7B-Instruct
@@ -30,7 +30,7 @@ pad_or_trim=true # For whisper
 deepspeed_config=examples/aispeech_asr/conf/ds_config.json
 
 if [[ $use_peft == "true" || $freeze_encoder == false ]];then
-    ckpt_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/aispeech_asr/exp/slidespeech/20250414/whisper_linear_Qwen2.5-7B-Instruct_lorafalse_padtrue_normal_asr_speedfalse_specaugfalse-1515_slidespeech_text/mala_asr_epoch_2_step_7000
+    ckpt_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/aispeech_asr/exp/slidespeech/20250414/whisper_linear_Qwen2.5-7B-Instruct_lorafalse_padtrue_normal_asr_speedfalse_specaugfalse-1515_slidespeech_text/mala_asr_epoch_2_step_7000/pytorch_model.bin
 fi
 
 # Choose Encoder
@@ -86,7 +86,6 @@ hydra.run.dir=$output_dir \
 ++model_config.encoder_path=$speech_encoder_path \
 ++model_config.encoder_dim=$encoder_dim \
 ++model_config.encoder_projector=$projector \
-++dataset_config.prompt_style=$prompt_style \
 ++dataset_config.train_max_frame_length=$train_max_frame_length \
 ++dataset_config.eval_max_frame_length=$eval_max_frame_length \
 ++dataset_config.multitask_prompt_path=$multitask_prompt_path \
@@ -107,7 +106,7 @@ hydra.run.dir=$output_dir \
 ++metric=acc \
 "
 if [[ $use_peft == "true" || $freeze_encoder == false ]];then
-    hydra_args+="++ckpt_path=$ckpt_path/model.pt"
+    hydra_args+="++ckpt_path=$ckpt_path"
 fi
 
 

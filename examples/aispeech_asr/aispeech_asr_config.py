@@ -91,8 +91,10 @@ class DataConfig:
     dataset: str = "multitask_dataset"
     train_max_frame_length: int = 1500
     eval_max_frame_length: int = 1000
+    audio_sample_rate: int = 16000
+    max_audio_length: int = 30
     multitask_prompt_path: str = "/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/multiprompt.jsonl"
-    prompt_style: str = "\{\}" # 
+    prompt_style: str = "{}" # "<|im_start|>user\n{}<|im_end|>\n<|im_start|>assistant\n" | "USER: {}\n ASSISTANT:" Comment:Changed it in aispeech_asr_config.py
     append_info_tasks : List = field(default_factory=lambda: [ "hotword"])
     file: str = "examples/aispeech_asr/slam_llm/datasets/speech_dataset_large.py:get_speech_dataset"
     train_scp_file_path: str = ""

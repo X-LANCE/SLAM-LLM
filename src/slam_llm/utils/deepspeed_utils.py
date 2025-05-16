@@ -123,7 +123,7 @@ def deepspeed_join(group_join):
         local_rank = int(os.environ["LOCAL_RANK"])
         rank = int(os.environ["RANK"])
         world_size = int(os.environ["WORLD_SIZE"])
-        logging.info("Detected uneven workload distribution: {}\n".format(e) +
+        logging.info("Detected uneven workload distribution. " +
                      "Break current worker to manually join all workers, " +
                      "world_size {}, current rank {}, current local_rank {}\n".
                      format(world_size, rank, local_rank))
