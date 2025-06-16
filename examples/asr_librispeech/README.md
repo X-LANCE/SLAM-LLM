@@ -79,7 +79,7 @@ If you're interested in training with DeepSpeed, refer to the script `finetune_w
 }
 ```
 
-Note that when using `zero-0`/`1`/`2`/`3`, the DeepSpeed model is saved as `pytorch_model.bin`
+Note that when using `zero-0`/`1`/`2`/`3`, the DeepSpeed model is saved as `pytorch_model.bin`, and you should change "++ckpt_path=$ckpt_path/model.pt" to " ++ckpt_path=$ckpt_path/pytorch_model.bin" in the script to use the model during inference.
 If you use bf16/fp16 training in DeepSpeed and encounter NaN in train/eval loss, check the autocast in `src/slam_llm/utils/deepspeed_utils.py`:
 
 ```python
