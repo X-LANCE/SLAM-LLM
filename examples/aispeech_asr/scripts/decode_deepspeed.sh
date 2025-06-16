@@ -1,10 +1,9 @@
 #!/bin/bash
 set -e 
-run_dir=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/github/SLAM-LLM-NPU
+run_dir=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/github/SLAM-LLM
 cd $run_dir
 code_dir=examples/aispeech_asr
 
-prompt_style="\{\}" # "<|im_start|>user\n{}<|im_end|>\n<|im_start|>assistant\n" | "USER: {}\n ASSISTANT:"
 projector=linear
 encoder_name=whisper
 llm_name=Qwen2.5-7B-Instruct
@@ -15,6 +14,7 @@ encoder_projector_ds_rate=5
 eval_max_frame_length=1000
 ckpt_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/aispeech_asr/exp/librispeech/20250322/whisper_linear_Qwen2.5-7B-Instruct_lorafalse_padtrue_normal_asr_speedfalse_specaugfalse-1121/mala_asr_epoch_2_step_25000_best
 test_scp_file_path=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/aishell-1/asr/test
+# prompt_style="\{\}" # "<|im_start|>user\n{}<|im_end|>\n<|im_start|>assistant\n" | "USER: {}\n ASSISTANT:" Comment:Changed it in aispeech_asr_config.py
 
 
 # Choose Encoder

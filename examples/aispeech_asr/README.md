@@ -66,7 +66,6 @@ dev_scp_file_path=  # Path to validation data
 train_max_frame_length=1500  # Maximum frame length for training
 eval_max_frame_length=1000  # Maximum frame length for evaluation
 multitask_prompt_path=  # Path to multitask.jsonl
-prompt_style="\{\}"  # Prompt style, e.g., "<|im_start|>user\n{}<|im_end|>\n<|im_start|>assistant\n" or "USER: {}\n ASSISTANT:"
 projector=linear  # Type of projector
 encoder_name=whisper  # Name of the encoder
 llm_name=Qwen2.5-7B-Instruct  # Name of the LLM
@@ -86,7 +85,7 @@ For LoRA training, set (with `ckpt_path` pointing to the model saved in the prev
 ```bash
 use_peft=true
 if [[ $use_peft == "true" ]]; then
-    ckpt_path=  # For DDP training, provide the path to the saved pt file; for DeepSpeed training, convert mp_rank_00_model_states.pt to model.pt using the `scripts/transcribe_deepspeed_to_pt.py` script
+    ckpt_path=  
 fi
 ```
 ### Deepspeed
@@ -113,28 +112,7 @@ When using `bf16`/`fp16` for training, deepspeed saves about 20GB of GPU memory 
     }
 }
 ```
-
-Note that when using `zero-0`/`1`/`2`, the DeepSpeed model is saved in a format that requires a script to convert `mp_rank_00_model_states.pt` to `model.pt`, such as `python scripts/transcribe_deepspeed_to_pt.py mp_rank_00_model_states.pt output_dir`.
-
-```
-global_step1000
-global_step1000/bf16_zero_pp_rank_0_mp_rank_00_optim_states.pt
-...
-global_step1000/mp_rank_00_model_states.pt
-latest
-zero_to_fp32.py
-```
-
-If training with `Zero-3`, the model is saved in a different format and can be converted using `python zero_to_fp32.py global_step50 outputdir`.
-
-```
-global_step50
-global_step50/zero_pp_rank_0_mp_rank_00_model_states.pt
-global_step50/zero_pp_rank_0_mp_rank_00_optim_states.pt
-...
-latest
-zero_to_fp32.py
-```
+Note that when using `zero-0`/`1`/`2`/`3`, the DeepSpeed model is saved as `pytorch_model.bin`
 If you use bf16/fp16 training in DeepSpeed and encounter NaN in train/eval loss, check the autocast in `src/slam_llm/utils/deepspeed_utils.py`:
 
 ```python
