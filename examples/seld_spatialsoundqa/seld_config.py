@@ -17,6 +17,7 @@ class ModelConfig:
     encoder_projector: str = "q-former"
     encoder_dim: int = 768
     qformer_layers: int = 8
+    query_len: int = 64
 
 @dataclass
 class PeftConfig:

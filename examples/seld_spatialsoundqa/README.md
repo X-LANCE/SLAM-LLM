@@ -15,7 +15,15 @@ Encoder | Projector | LLM |
 [Spatial-AST](https://huggingface.co/datasets/zhisheng01/SpatialAudio/blob/main/SpatialAST/finetuned.pth) | [Q-former](https://huggingface.co/datasets/zhisheng01/SpatialAudio/blob/main/BAT/model.pt)(~73.56M) | [llama-2-7b-hf](https://huggingface.co/meta-llama/Llama-2-7b) |
 
 ## Demo (Spatial Audio Inference)
-Try [`inference.ipynb`](https://github.com/X-LANCE/SLAM-LLM/blob/main/examples/seld_spatialsoundqa/inference.ipynb).
+### Environment setup
+```
+cd SLAM-LLM/examples/seld_spatialsoundqa/
+pip install -r requirements.txt
+cd SLAM-LLM/
+pip install -e .
+```
+
+Then try [`inference.ipynb`](https://github.com/X-LANCE/SLAM-LLM/blob/main/examples/seld_spatialsoundqa/inference.ipynb).
 
 
 ## Data preparation
