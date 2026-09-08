@@ -1,0 +1,15 @@
+SmartSLAM is an enhanced multimodal large language framework for explainable and retrieval-augmented audio understanding.
+
+SmartSLAM extends the SLAM-LLM framework with adaptive multimodal routing, retrieval-augmented generation, explainable AI, confidence estimation, and noise-aware audio enhancement.
+
+Retrieval-Augmented Generation, or RAG, improves question answering by retrieving relevant information from an external knowledge source before generating an answer. The RAG pipeline consists of document loading, text chunking, embedding generation, vector indexing, similarity-based retrieval, context construction, and answer generation.
+
+The SmartSLAM RAG module loads text documents, divides them into smaller chunks, converts the chunks into vector embeddings, and stores the embeddings in an in-memory vector index. When a query is received, cosine similarity is used to retrieve the most relevant chunks.
+
+SmartSLAM explainability provides observable evidence for an answer. It can display the retrieved source documents, relevant passages, similarity scores, and whether supporting evidence was found.
+
+SmartSLAM confidence estimation is based on measurable retrieval signals. The confidence score combines retrieval similarity and the amount of supporting evidence rather than claiming access to hidden model reasoning.
+
+Noise-aware audio enhancement is designed to improve audio quality before audio feature extraction. Adaptive multimodal routing dynamically selects appropriate processing paths for different inputs.
+
+SLAM-LLM uses an encoder to extract input features, a projector to map features into the language model representation space, and a large language model for language understanding and generation.
